@@ -1,51 +1,48 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
     <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
+      <UniqueIdentifier>{ad390cb1-f70e-404d-8c35-6ed28811f0bb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{95305f57-76ca-47c6-998d-f1590c8fdbf9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\layers">
-      <UniqueIdentifier>{c6c087c1-2a1b-452c-a0a0-e36700e2675f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\layers">
-      <UniqueIdentifier>{b6a18001-498f-4ddd-9e26-69f64eb6b3d0}</UniqueIdentifier>
+      <UniqueIdentifier>{1344bab3-3fe0-45f4-af95-d901f41c3ae4}</UniqueIdentifier>
     </Filter>
     <Filter Include="Header Files\proto">
-      <UniqueIdentifier>{8d70bb23-0485-4811-8ebf-31c8a1100c10}</UniqueIdentifier>
+      <UniqueIdentifier>{c821ba74-3f02-4ceb-a34c-5ba478a671e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\layers">
+      <UniqueIdentifier>{23f1bdab-7c9f-40b2-9186-deb272a8be53}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\proto">
-      <UniqueIdentifier>{675bee71-4734-418f-a3d3-115b174ad764}</UniqueIdentifier>
+      <UniqueIdentifier>{b99ff835-5e07-47ee-903a-8bca44960da0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cuda Files">
+      <UniqueIdentifier>{9b400353-1c8a-4646-aef3-7107f0bdf40b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Mordred_BasicMath.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Excalibur_MathFunctions.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Homunculus_Layers.hpp">
+    <ClInclude Include="Accelerator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Avalon_Synchronizer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Accelerator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Pandora_Blob.hpp">
+    <ClInclude Include="Excalibur_MathFunctions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Geofront_Net.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Homunculus_Layers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mordred_BasicMath.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pandora_Blob.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ReLU_Layer.hpp">
@@ -56,22 +53,22 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="Avalon_Synchronizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Excalibur_MathFunctions.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Geofront_Net.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="Homunculus_Layers.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Avalon_Synchronizer.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Pandora_Blob.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Geofront_Net.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ReLU_Layer.cpp">
@@ -80,5 +77,10 @@
     <ClCompile Include="caffe.pb.cc">
       <Filter>Source Files\proto</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Excalibur_MathFunctions.cu">
+      <Filter>Cuda Files</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
