@@ -11,7 +11,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [Intel® MPI](https://software.intel.com/en-us/intel-mpi-library)
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
 - [cuDNNv5.1](https://developer.nvidia.com/cudnn)
-- cuBLAS
+- [NCCL](https://github.com/NVIDIA/nccl)
 
 ## Features
   * Suppoert caffemodel directly without any change.
@@ -22,8 +22,9 @@ As we described above, the implementation is able to be divided into 2 parts: CP
   * Now, the project is under developing. No offical API has been provied.
 
 ## Todo list
-  * Change some layer implementation into MKL and  and CUDA implementation.
+  * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.
   * Separate the net's weights and the images calculated to make it threadsafe.
+  * Add ARM NEON support.
   * Support multi-machine, multi-uint(CPU) and multi-card(GPU)
   * Add more layer support, such as PReLU, Eltwise, Softmax...
   * Compress the model file.
