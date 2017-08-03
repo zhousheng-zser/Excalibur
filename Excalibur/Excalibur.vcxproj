@@ -41,6 +41,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Excalibur_MathFunctions.cu" />
+    <CudaCompile Include="ReLU_Layer.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{062A8340-7A10-4333-A1AB-869739DF5115}</ProjectGuid>

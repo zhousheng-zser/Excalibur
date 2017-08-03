@@ -44,7 +44,7 @@ namespace Excalibur
 			}
 			if (gpu_ptr_ != cpu_ptr_)
 			{
-				CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_ * sizeof(Dtype), cudaMemcpyDefault));
+				CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_ * sizeof(Dtype), cudaMemcpyDeviceToHost));
 			}
 			//excalibur_gpu_memcpy(size_, gpu_ptr_, cpu_ptr_);
 			head_ = SYNCED;
@@ -66,7 +66,7 @@ namespace Excalibur
 		{
 		case UNINITIALIZED:
 			CUDA_CHECK(cudaGetDevice(&gpu_device_));
-			CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+			CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
 			//excalibur_gpu_memset(size_, 0, gpu_ptr_);
 			CUDA_CHECK(cudaMemset(gpu_ptr_, 0, size_ * sizeof(Dtype)));
 			head_ = HEAD_AT_GPU;
@@ -76,12 +76,12 @@ namespace Excalibur
 			if (gpu_ptr_ == NULL) 
 			{
 				CUDA_CHECK(cudaGetDevice(&gpu_device_));
-				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
 				own_gpu_data_ = true;
 			}
 			if (cpu_ptr_!=gpu_ptr_)
 			{
-				CUDA_CHECK(cudaMemcpy(gpu_ptr_, cpu_ptr_, size_*sizeof(Dtype), cudaMemcpyDefault));
+				CUDA_CHECK(cudaMemcpy(gpu_ptr_, cpu_ptr_, size_*sizeof(Dtype), cudaMemcpyHostToDevice));
 			}
 			//excalibur_gpu_memcpy(size_, cpu_ptr_, gpu_ptr_);
 			head_ = SYNCED;

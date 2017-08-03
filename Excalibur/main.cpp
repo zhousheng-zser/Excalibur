@@ -51,8 +51,8 @@ void main() {
 	Excalibur_MathFunctions exmath = Excalibur_MathFunctions();
 	exmath.excalibur_cpu_gemm(CblasNoTrans, CblasNoTrans, M, N, K, alpha, A, B, beta, C);
 	vsMul(6, a, b, y);
-	Excalibur_MathFunctions exmath1 = Excalibur_MathFunctions(0, GPU);
-	Excalibur_MathFunctions exmath2 = Excalibur_MathFunctions(1, GPU);
+	/*Excalibur_MathFunctions exmath1 = Excalibur_MathFunctions(0, GPU);
+	Excalibur_MathFunctions exmath2 = Excalibur_MathFunctions(1, GPU);*/
 	caffe::NetParameter net;
 	bool success = ReadProtoFromBinaryFile("det1.caffemodel", &net);
 	caffe::LayerParameter& param = *net.mutable_layer(4);
@@ -65,9 +65,15 @@ void main() {
 	{
 		temp[i] = param.blobs(0).data(i);
 	}
+	//std::cout << std::endl << std::endl;
 	ReLU_Layer<float> relu_layer = ReLU_Layer<float>(param, 1, GPU);
 	relu_layer.Forward_cpu(bottom_data, top_data);
 	for (int i = 0; i < 270; i++) {
 		std::cout << (top_data[0]->cpu_data())[i]<< " ";
+	}
+	std::cout << std::endl << std::endl;
+	relu_layer.Forward_gpu(bottom_data, top_data);
+	for (int i = 0; i < 270; i++) {
+		std::cout << (top_data[0]->cpu_data())[i] << " ";
 	}
 }

@@ -174,6 +174,12 @@ namespace Excalibur
 			Dtype* C);
 
 		template <typename Dtype>
+		void excalibur_gpu_gemm_batch(const CBLAS_TRANSPOSE TransA,
+			const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+			const Dtype alpha, const Dtype** A, const Dtype** B, const Dtype beta,
+			Dtype** C, const int batchCount);
+
+		template <typename Dtype>
 		void excalibur_gpu_gemv(const CBLAS_TRANSPOSE TransA, const int M, const int N,
 			const Dtype alpha, const Dtype* A, const Dtype* x, const Dtype beta,
 			Dtype* y);
@@ -256,13 +262,13 @@ __global__ void name##_kernel(const int n, const Dtype* x, Dtype* y) { \
   } \
 } \
 template <> \
-void excalibur_gpu_##name<float>(const int n, const float* x, float* y) { \
+void Excalibur_MathFunctions::excalibur_gpu_##name<float>(const int n, const float* x, float* y) { \
   /* NOLINT_NEXT_LINE(whitespace/operators) */ \
   name##_kernel<float><<<EXCALIBUR_GET_BLOCKS(n), EXCALIBUR_CUDA_NUM_THREADS>>>( \
       n, x, y); \
 } \
 template <> \
-void excalibur_gpu_##name<double>(const int n, const double* x, double* y) { \
+void Excalibur_MathFunctions::excalibur_gpu_##name<double>(const int n, const double* x, double* y) { \
   /* NOLINT_NEXT_LINE(whitespace/operators) */ \
   name##_kernel<double><<<EXCALIBUR_GET_BLOCKS(n), EXCALIBUR_CUDA_NUM_THREADS>>>( \
       n, x, y); \

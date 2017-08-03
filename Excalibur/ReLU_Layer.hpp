@@ -20,7 +20,10 @@ namespace Excalibur
 		
 		virtual void Forward_cpu(const std::vector<Pandora_Blob<Dtype>*>& bottom,
 			const std::vector<Pandora_Blob<Dtype>*>& top);
-
+#ifdef USE_CUDA
+		virtual void Forward_gpu(const std::vector<Pandora_Blob<Dtype>*>& bottom,
+			const std::vector<Pandora_Blob<Dtype>*>& top);
+#endif
 		ReLU_Layer();
 		~ReLU_Layer();
 		std::string test();
