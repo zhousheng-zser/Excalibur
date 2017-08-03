@@ -55,7 +55,7 @@ namespace Excalibur
 	Excalibur_MathFunctions::~Excalibur_MathFunctions()
 	{
 #ifdef USE_CUDA
-		if (cublas_handle_) 
+		if (mode == GPU)//if(cublas_handle_)
 			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 #ifdef USE_CUDNN
 		if (cudnn_handle_) 
@@ -387,5 +387,43 @@ namespace Excalibur
 	void Excalibur_MathFunctions::excalibur_cpu_abs<double>(const int n, const double* a, double* y) 
 	{
 		vdAbs(n, a, y);
+	}
+
+	template <>
+	float Excalibur_MathFunctions::excalibur_cpu_strided_dot<float>(const int n, const float* x, const int incx,
+		const float* y, const int incy)
+	{
+		return cblas_sdot(n, x, incx, y, incy);
+	}
+
+	template <>
+	double Excalibur_MathFunctions::excalibur_cpu_strided_dot<double>(const int n, const double* x,
+		const int incx, const double* y, const int incy) 
+	{
+		return cblas_ddot(n, x, incx, y, incy);
+	}
+
+	template <>
+	float Excalibur_MathFunctions::excalibur_cpu_asum<float>(const int n, const float* x) {
+		return cblas_sasum(n, x, 1);
+	}
+
+	template <>
+	double Excalibur_MathFunctions::excalibur_cpu_asum<double>(const int n, const double* x) {
+		return cblas_dasum(n, x, 1);
+	}
+
+	template <>
+	void Excalibur_MathFunctions::excalibur_cpu_scale<float>(const int n, const float alpha, const float *x,
+		float* y) {
+		cblas_scopy(n, x, 1, y, 1);
+		cblas_sscal(n, alpha, y, 1);
+	}
+
+	template <>
+	void Excalibur_MathFunctions::excalibur_cpu_scale<double>(const int n, const double alpha, const double *x,
+		double* y) {
+		cblas_dcopy(n, x, 1, y, 1);
+		cblas_dscal(n, alpha, y, 1);
 	}
 }
