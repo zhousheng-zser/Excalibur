@@ -22,6 +22,9 @@
     <Filter Include="Cuda Files">
       <UniqueIdentifier>{9b400353-1c8a-4646-aef3-7107f0bdf40b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Cuda Files\layers">
+      <UniqueIdentifier>{b8ad37bd-f9c5-4371-af80-57008ed41e30}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accelerator.hpp">
@@ -50,6 +53,12 @@
     </ClInclude>
     <ClInclude Include="caffe.pb.h">
       <Filter>Header Files\proto</Filter>
+    </ClInclude>
+    <ClInclude Include="Dummy_cudnn.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dummy_mkldnn.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -81,6 +90,9 @@
   <ItemGroup>
     <CudaCompile Include="Excalibur_MathFunctions.cu">
       <Filter>Cuda Files</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ReLU_Layer.cu">
+      <Filter>Cuda Files\layers</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

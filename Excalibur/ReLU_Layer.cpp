@@ -40,7 +40,7 @@ namespace Excalibur
 		{
 			top_data[i] = std::max(bottom_data[i], Dtype(0));
 		}
-		this->exmath_->excalibur_cpu_sub(count, bottom_data, top_data, top_data);
+		//this->exmath_->excalibur_cpu_sub(count, bottom_data, top_data, top_data);
 	}
 
 	template class ReLU_Layer<float>;

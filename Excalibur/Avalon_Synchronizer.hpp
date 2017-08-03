@@ -18,6 +18,14 @@ namespace Excalibur
 		// it improved stability for large models on many GPUs.
 		void ExcaliburMallocHost(void** ptr, size_t size, bool* use_cuda) 
 		{
+#ifdef USE_CUDA
+			if (mode == GPU) 
+			{
+				CUDA_CHECK(cudaMallocHost(ptr, size));
+				*use_cuda = true;
+				return;
+			}
+#endif
 			//mkl_malloc function is thread safe function which enables safe execution by multiple threads at the same time. Such buffer can be 
 			//allocated in one thread but freed inanother one. So, it is not TLSdata. In comparison with standard malloc,mkl_malloc allocates memory 
 			//from heap but with needed alignment to get better performance via vectorization instructions oncomputation with these data if any. As to 
@@ -27,31 +35,23 @@ namespace Excalibur
 #else
 			*ptr = malloc(size);
 #endif
-#ifdef USE_CUDA
-			if (mode == GPU) 
-			{
-				CUDA_CHECK(cudaMallocHost(ptr, size));
-				*use_cuda = true;
-				return;
-			}
-#endif
 			*use_cuda = false;
 			CHECK(*ptr) << "host allocation of size " << size << " failed";
 		}
 
 		void ExcaliburFreeHost(void* ptr, bool use_cuda) 
 		{
-#ifdef USE_MKL
-			mkl_free(ptr);
-#else
-			free(ptr);
-#endif
 #ifdef USE_CUDA
 			if (use_cuda) 
 			{
 				CUDA_CHECK(cudaFreeHost(ptr));
 				return;
 			}
+#endif
+#ifdef USE_MKL
+			mkl_free(ptr);
+#else
+			free(ptr);
 #endif
 		}
 
