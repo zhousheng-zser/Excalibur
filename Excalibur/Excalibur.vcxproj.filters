@@ -54,6 +54,12 @@
     <ClInclude Include="caffe.pb.h">
       <Filter>Header Files\proto</Filter>
     </ClInclude>
+    <ClInclude Include="Dummy_cudnn.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Dummy_mkldnn.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Avalon_Synchronizer.cpp">
