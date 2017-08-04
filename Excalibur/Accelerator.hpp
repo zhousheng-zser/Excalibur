@@ -9,7 +9,7 @@
 #define USE_MKL//For Intel platform
 #ifdef USE_MKL // If use MKL, simply include the MKL header
 #include <mkl.h>
-//#define USE_MKLDNN
+#define USE_MKLDNN
 #ifdef USE_MKLDNN // Use MKLDNN
 #include "mkldnn.hpp"
 #endif // Use MKLDNN
