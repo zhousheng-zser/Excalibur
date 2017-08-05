@@ -92,6 +92,36 @@ namespace Excalibur
 		return static_cast<Dtype*>(data_->mutable_gpu_data());
 	}
 
+#ifdef USE_MKLDNN
+	template <typename Dtype>
+	const Dtype* Pandora_Blob<Dtype>::prv_data() const
+	{
+		CHECK(data_);
+		return (const Dtype*)data_->prv_data();
+	}
+
+	template <typename Dtype>
+	Dtype* Pandora_Blob<Dtype>::mutable_prv_data()
+	{
+		CHECK(data_);
+		return static_cast<Dtype*>(data_->mutable_prv_data());
+	}
+
+	template <typename Dtype>
+	PrvMemDescr* Pandora_Blob<Dtype>::get_prv_data_descriptor()
+	{
+		CHECK(data_);
+		return data_->prv_descriptor_;
+	}
+
+	template <typename Dtype>
+	void Pandora_Blob<Dtype>::set_prv_data_descriptor(PrvMemDescr* descriptor, bool same_data)
+	{
+		CHECK(data_);
+		data_->set_prv_descriptor(descriptor, same_data);
+	}
+#endif
+
 #ifdef CAFFEMODEL_SUPPORT
 	template <typename Dtype>
 	void Pandora_Blob<Dtype>::FromProto(const caffe::BlobProto& proto, bool reshape) {

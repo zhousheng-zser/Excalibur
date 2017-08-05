@@ -79,9 +79,9 @@ namespace Excalibur
 	public:
 		Avalon_Synchronizer()
 			: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(0), head_(UNINITIALIZED),
-			own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false)
+			own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false),
 #ifdef USE_MKLDNN
-			, own_prv_data_(false),
+			own_prv_data_(false),
 #endif
 			gpu_device_(-1), mode(CPU){}
 		Avalon_Synchronizer(size_t size, int gpu_device, Avalon mode_)
