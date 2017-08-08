@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accelerator.hpp" />
+    <ClInclude Include="Atalanta_SplitsInsertor.hpp" />
     <ClInclude Include="Avalon_Synchronizer.hpp" />
     <ClInclude Include="caffe.pb.h" />
     <ClInclude Include="Dummy_cudnn.hpp" />
@@ -32,6 +33,7 @@
     <ClInclude Include="ReLU_Layer.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Atalanta_SplitsInsertor.cpp" />
     <ClCompile Include="Avalon_Synchronizer.cpp" />
     <ClCompile Include="caffe.pb.cc" />
     <ClCompile Include="Excalibur_MathFunctions.cpp" />

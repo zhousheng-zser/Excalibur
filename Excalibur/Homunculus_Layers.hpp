@@ -23,7 +23,7 @@ namespace Excalibur
 #endif
 	public:
 #ifdef CAFFEMODEL_SUPPORT
-		/*explicit */Homunculus_Layers(const caffe::LayerParameter& param, int gpu_device, Avalon mode);
+		explicit Homunculus_Layers(const caffe::LayerParameter& param, int gpu_device, Avalon mode);
 #endif
 		Homunculus_Layers();
 		virtual ~Homunculus_Layers();

@@ -25,6 +25,12 @@
     <Filter Include="Cuda Files\layers">
       <UniqueIdentifier>{b8ad37bd-f9c5-4371-af80-57008ed41e30}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\util">
+      <UniqueIdentifier>{739cfdbe-5144-4a69-ba81-93b0e36cc4da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\util">
+      <UniqueIdentifier>{c4fc23fb-f8f3-4800-8ab9-7dc2711a5753}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accelerator.hpp">
@@ -60,6 +66,9 @@
     <ClInclude Include="Dummy_mkldnn.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Atalanta_SplitsInsertor.hpp">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Avalon_Synchronizer.cpp">
@@ -85,6 +94,9 @@
     </ClCompile>
     <ClCompile Include="caffe.pb.cc">
       <Filter>Source Files\proto</Filter>
+    </ClCompile>
+    <ClCompile Include="Atalanta_SplitsInsertor.cpp">
+      <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
