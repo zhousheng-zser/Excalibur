@@ -1,7 +1,7 @@
 # MCL_Forward
 A thread safe re-implementation of [MathCoreLibrary](https://github.com/CompileSense/Temporary_MathCoreLibrary) forward propagation part.
 
-This implementation, has been specifically optimized in response to **Intel CPU** and **Nvidia GPU** situation. As  for embedded/ mobile terminal situation, you may need [MCLdroid]().
+This implementation, has been specifically optimized in response to **Intel CPU**, **Nvidia GPU** and **ARM** situation.
 
 ## Overview
 As we described above, the implementation is able to be divided into 2 parts: CPU and GPU. In order to accelerate the forward propagation, the following frameworks and libraries will be used in the project:
@@ -12,10 +12,13 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
 - [cuDNNv5.1](https://developer.nvidia.com/cudnn)
 - [NCCL](https://github.com/NVIDIA/nccl)
+- [gemmlowp](https://github.com/google/gemmlowp)
+- [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 ## Features
   * Suppoert caffemodel directly without any change.
   * Faster implementation on CPU with MKL(specifically, with sgemm_batch() function).
+  * Faster implementation on Convolution and Inner-product with sparse model.
   * Supported layers currently: `INPUT`, `CONVOLUTION`, `POOLING`, `DENSE`(or `INNER_PRODUCT`), `RELU`.
 
 ## How to use

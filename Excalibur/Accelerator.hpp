@@ -6,6 +6,7 @@
 
 //If on x86, choose your accelerator before compiling
 #ifdef x86
+
 #define USE_MKL//For Intel platform
 #ifdef USE_MKL // If use MKL, simply include the MKL header
 #include <mkl.h>
@@ -46,6 +47,7 @@ extern "C" {
 #endif
 #include <glog/logging.h>
 #define CAFFEMODEL_SUPPORT
+#define COMPRESSIOM_SUPPORT
 namespace Excalibur
 {
 	//Processor platform, default CPU

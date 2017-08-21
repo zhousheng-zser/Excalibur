@@ -22,6 +22,16 @@ namespace Excalibur
 		std::map<std::string, int> blob_name_to_idx;
 		std::set<std::string> available_blobs;
 		memory_used_ = 0;
+		// For each layer, set up its input and output
+		bottom_vecs_.resize(param.layer_size());
+		top_vecs_.resize(param.layer_size());
+		bottom_id_vecs_.resize(param.layer_size());
+		param_id_vecs_.resize(param.layer_size());
+		top_id_vecs_.resize(param.layer_size());
+		for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id)
+		{
+			
+		}
 	}
 
 	template <typename Dtype>

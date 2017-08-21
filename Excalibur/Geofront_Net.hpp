@@ -59,6 +59,14 @@ namespace Excalibur
 		/// top_vecs stores the vectors containing the output for each layer
 		std::vector<std::vector<Pandora_Blob<Dtype>*> > top_vecs_;
 		std::vector<std::vector<int> > top_id_vecs_;
+		/// Vector of weight in the loss (or objective) function of each net blob,
+		/// indexed by blob_id.
+		std::vector<Dtype> blob_loss_weights_;
+		std::vector<std::vector<int> > param_id_vecs_;
+		std::vector<int> param_owners_;
+		std::vector<std::string> param_display_names_;
+		std::vector<std::pair<int, int> > param_layer_indices_;
+		std::map<std::string, int> param_names_index_;
 		/// blob indices for the input and the output of the net
 		std::vector<int> net_input_blob_indices_;
 		std::vector<int> net_output_blob_indices_;
