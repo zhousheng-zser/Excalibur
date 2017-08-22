@@ -31,6 +31,12 @@
     <Filter Include="Header Files\util">
       <UniqueIdentifier>{c4fc23fb-f8f3-4800-8ab9-7dc2711a5753}</UniqueIdentifier>
     </Filter>
+    <Filter Include="3rdparty">
+      <UniqueIdentifier>{080f4778-e4a5-42c9-9b5f-525f972e7248}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="3rdparty\half_float">
+      <UniqueIdentifier>{ac360763-07ed-46b4-897f-59da612c9bac}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accelerator.hpp">
@@ -69,6 +75,15 @@
     <ClInclude Include="Atalanta_SplitsInsertor.hpp">
       <Filter>Header Files\util</Filter>
     </ClInclude>
+    <ClInclude Include="float16.hpp">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="gpu_math_functions.cuh">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="half.cuh">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Avalon_Synchronizer.cpp">
@@ -97,6 +112,9 @@
     </ClCompile>
     <ClCompile Include="Atalanta_SplitsInsertor.cpp">
       <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="half.hpp">
+      <Filter>3rdparty\half_float</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

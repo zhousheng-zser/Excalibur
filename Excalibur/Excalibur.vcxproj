@@ -26,7 +26,10 @@
     <ClInclude Include="Dummy_cudnn.hpp" />
     <ClInclude Include="Dummy_mkldnn.hpp" />
     <ClInclude Include="Excalibur_MathFunctions.hpp" />
+    <ClInclude Include="float16.hpp" />
     <ClInclude Include="Geofront_Net.hpp" />
+    <ClInclude Include="half.cuh" />
+    <ClInclude Include="gpu_math_functions.cuh" />
     <ClInclude Include="Homunculus_Layers.hpp" />
     <ClInclude Include="Mordred_BasicMath.hpp" />
     <ClInclude Include="Pandora_Blob.hpp" />
@@ -38,6 +41,7 @@
     <ClCompile Include="caffe.pb.cc" />
     <ClCompile Include="Excalibur_MathFunctions.cpp" />
     <ClCompile Include="Geofront_Net.cpp" />
+    <ClCompile Include="half.hpp" />
     <ClCompile Include="Homunculus_Layers.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Pandora_Blob.cpp" />

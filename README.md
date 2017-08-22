@@ -19,6 +19,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
   * Suppoert caffemodel directly without any change.
   * Faster implementation on CPU with MKL(specifically, with sgemm_batch() function).
   * Faster implementation on Convolution and Inner-product with sparse model.
+  * Half pricision(float16) support on x86(Intel only); fixed pricision(int8) support on x86 and ARM arch.
   * Supported layers currently: `INPUT`, `CONVOLUTION`, `POOLING`, `DENSE`(or `INNER_PRODUCT`), `RELU`.
 
 ## How to use
