@@ -1,6 +1,6 @@
 #pragma once
-#ifndef CAFFE_UTIL_FP16_H_
-#define CAFFE_UTIL_FP16_H_
+#ifndef EXCALIBUR_UTIL_FP16_H_
+#define EXCALIBUR_UTIL_FP16_H_
 
 #include <algorithm>
 #include <cfloat>
@@ -17,7 +17,7 @@ namespace Excalibur {
 	typedef half_float::half float16;
 }
 #else
-#define CAFFE_UTIL_HD
-#define CAFFE_UTIL_IHD inline
+#define EXCALIBUR_UTIL_HD
+#define EXCALIBUR_UTIL_IHD inline
 #endif
 #endif

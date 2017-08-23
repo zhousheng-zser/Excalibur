@@ -150,6 +150,8 @@ copy "$(CudaToolkitBinDir)\cudnn$(PlatformArchitecture)*.dll" "$(OutDir)"</Comma
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Defines>
+      </Defines>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
