@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _DUMMY_MKLDNN_HPP_
 #define _DUMMY_MKLDNN_HPP_
-//#ifdef USE_MKLDNN
+#ifdef USE_MKLDNN
 #include "Accelerator.hpp"
 #include <stdarg.h>
 #include <stddef.h>
@@ -929,5 +929,5 @@ namespace Excalibur
 		}
 	}
 }
-//#endif
+#endif
 #endif

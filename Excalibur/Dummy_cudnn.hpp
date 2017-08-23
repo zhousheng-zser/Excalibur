@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _DUMMY_CUDNN_HPP_
 #define _DUMMY_CUDNN_HPP_
-//#ifdef USE_CUDNN
+#ifdef USE_CUDNN
 #include "Accelerator.hpp"
 #include <cudnn.h>
 
@@ -158,5 +158,5 @@ namespace Excalibur
 		}
 	}
 }
-//#endif
+#endif
 #endif

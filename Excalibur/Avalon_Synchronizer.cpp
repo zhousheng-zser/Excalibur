@@ -52,6 +52,19 @@ namespace Excalibur
 			NO_GPU;
 #endif
 			break;
+#ifdef USE_MKLDNN
+		case HEAD_AT_PRV:
+			if (cpu_ptr_ == NULL) {
+				ExcaliburMallocHost(&cpu_ptr_, size_ * sizeof(Dtype), &cpu_malloc_use_cuda_);
+				own_cpu_data_ = true;
+			}
+			CHECK(prv_descriptor_);
+			prv_descriptor_->convert_from_prv(cpu_ptr_);
+			prv_descriptor_->on_to_cpu();
+			head_ = SYNCED_PRV;
+			break;
+		case SYNCED_PRV:
+#endif
 		case HEAD_AT_CPU:
 		case SYNCED:
 			break;
@@ -86,6 +99,12 @@ namespace Excalibur
 			//excalibur_gpu_memcpy(size_, cpu_ptr_, gpu_ptr_);
 			head_ = SYNCED;
 			break;
+#ifdef USE_MKLDNN
+		case HEAD_AT_PRV:
+			to_cpu();
+			break;
+		case SYNCED_PRV:
+#endif
 		case HEAD_AT_GPU:
 		case SYNCED:
 			break;
@@ -203,6 +222,52 @@ namespace Excalibur
 		// Assume caller will synchronize on the stream before use
 		head_ = SYNCED;
 	}
+#endif
+
+#ifdef USE_MKLDNN
+	template <typename Dtype>
+	void Avalon_Synchronizer<Dtype>::set_prv_descriptor(PrvMemDescr* descriptor, bool same_data)
+	{
+		if (descriptor == NULL) 
+		{
+			if (head_ != UNINITIALIZED)
+				head_ = HEAD_AT_CPU;
+		}
+		else 
+		{
+			if ((head_ != HEAD_AT_PRV) && same_data)
+				head_ = SYNCED_PRV;
+			else
+				head_ = HEAD_AT_PRV;
+		}
+		prv_descriptor_ = descriptor;
+	}
+
+	template <typename Dtype>
+	const void* Avalon_Synchronizer<Dtype>::prv_data()
+	{
+		if ((head_ != HEAD_AT_PRV) &&
+			(head_ != SYNCED_PRV)) 
+		{
+			return NULL;
+		}
+
+		CHECK(prv_descriptor_);
+		return (const void*)prv_descriptor_->prv_ptr();
+	}
+
+	template <typename Dtype>
+	void* Avalon_Synchronizer<Dtype>::mutable_prv_data()
+	{
+		CHECK(prv_descriptor_);
+		if (head_ == HEAD_AT_CPU) 
+		{
+			prv_descriptor_->convert_to_prv(cpu_ptr_);
+		}
+		head_ = HEAD_AT_PRV;
+		return prv_descriptor_->prv_ptr();
+	}
+
 #endif
 
 	template class Avalon_Synchronizer<float>;

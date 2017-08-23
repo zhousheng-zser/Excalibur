@@ -23,13 +23,30 @@ namespace Excalibur
 #endif
 	public:
 #ifdef CAFFEMODEL_SUPPORT
-		/*explicit */Homunculus_Layers(const caffe::LayerParameter& param, int gpu_device, Avalon mode);
+		explicit Homunculus_Layers(const caffe::LayerParameter& param, int gpu_device, Avalon mode);
 #endif
 		Homunculus_Layers();
 		virtual ~Homunculus_Layers();
 
 		virtual void Reshape(const std::vector<Pandora_Blob<Dtype>*>& bottom,
 			const std::vector<Pandora_Blob<Dtype>*>& top) = 0;
+		/**
+		* @brief Returns the exact number of bottom blobs required by the layer,
+		*        or -1 if no exact number is required.
+		*
+		* This method should be overridden to return a non-negative value if your
+		* layer expects some exact number of bottom blobs.
+		*/
+		virtual inline int ExactNumBottomBlobs() const { return -1; }
+
+		/**
+		* @brief Returns the exact number of top blobs required by the layer,
+		*        or -1 if no exact number is required.
+		*
+		* This method should be overridden to return a non-negative value if your
+		* layer expects some exact number of top blobs.
+		*/
+		virtual inline int ExactNumTopBlobs() const { return -1; }
 
 		/** @brief Using the CPU device, compute the layer output. */
 		virtual void Forward_cpu(const std::vector<Pandora_Blob<Dtype>*>& bottom,

@@ -117,6 +117,21 @@ namespace Excalibur
 		Dtype* mutable_cpu_data();
 		Dtype* mutable_gpu_data();
 
+#ifdef USE_MKLDNN
+		size_t prv_data_count() const 
+		{
+			CHECK(data_); 
+			return data_->prv_descriptor_->prv_count();
+		}
+
+		const Dtype* prv_data() const;
+		Dtype* mutable_prv_data();
+
+		void set_prv_data_descriptor(PrvMemDescr* descriptor,
+			bool same_data = false);
+
+		PrvMemDescr* get_prv_data_descriptor();
+#endif
 #ifdef CAFFEMODEL_SUPPORT
 		void FromProto(const caffe::BlobProto& proto, bool reshape = true);
 #endif

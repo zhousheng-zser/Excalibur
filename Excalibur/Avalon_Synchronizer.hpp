@@ -8,6 +8,27 @@
 
 namespace Excalibur
 {
+#ifdef USE_MKLDNN
+	// Base class
+	struct PrvMemDescr {
+		virtual ~PrvMemDescr() {}
+		virtual void convert_from_prv(void* cpu_ptr) = 0;
+		virtual void convert_to_prv(void* cpu_ptr) = 0;
+		virtual void convert_from_other(PrvMemDescr* other) = 0;
+		virtual bool on_to_cpu() { return false; }
+		virtual void* prv_ptr() = 0;
+		// returns true for matching layouts
+		virtual bool layout_compare(PrvMemDescr* other) = 0;
+		virtual size_t prv_count() = 0;  //data count
+		virtual size_t prv_size() = 0;  // data size = data count * sizeof(data_type)
+		// This might help using prv_ptr_ by different accelerators/engines
+		enum PrvDescrType {
+			PRV_DESCR_MKL2017,
+			PRV_DESCR_MKLDNN
+		};
+		virtual PrvDescrType get_descr_type() = 0;
+	};
+#endif
 	template <typename Dtype>
 	class Avalon_Synchronizer
 	{
@@ -59,10 +80,16 @@ namespace Excalibur
 		Avalon_Synchronizer()
 			: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(0), head_(UNINITIALIZED),
 			own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false),
+#ifdef USE_MKLDNN
+			own_prv_data_(false),
+#endif
 			gpu_device_(-1), mode(CPU){}
 		Avalon_Synchronizer(size_t size, int gpu_device, Avalon mode_)
 			: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(size), head_(UNINITIALIZED),
 			own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false)
+#ifdef USE_MKLDNN
+			, own_prv_data_(false)
+#endif
 		{
 			if (mode_==
 				CPU
@@ -90,7 +117,22 @@ namespace Excalibur
 		void set_gpu_data(void* data);
 		void* mutable_cpu_data();
 		void* mutable_gpu_data();
-		enum SyncedHead { UNINITIALIZED, HEAD_AT_CPU, HEAD_AT_GPU, SYNCED };
+
+#ifdef USE_MKLDNN
+		const void* cpu_ptr() const { return cpu_ptr_; }
+
+		PrvMemDescr* prv_descriptor_ = NULL;
+		void set_prv_descriptor(PrvMemDescr* descriptor, bool same_data);
+		const void* prv_data();
+		void* mutable_prv_data();
+#endif
+		enum SyncedHead
+		{
+			UNINITIALIZED, HEAD_AT_CPU, HEAD_AT_GPU, SYNCED
+#ifdef USE_MKLDNN
+			, HEAD_AT_PRV, SYNCED_PRV
+#endif
+		};
 		SyncedHead head() { return head_; }
 		size_t size() { return size_; }
 #ifdef USE_CUDA
@@ -109,6 +151,7 @@ namespace Excalibur
 		bool own_cpu_data_;
 		bool cpu_malloc_use_cuda_;
 		bool own_gpu_data_;
+		bool own_prv_data_;
 		int gpu_device_;
 		Avalon mode;
 	};

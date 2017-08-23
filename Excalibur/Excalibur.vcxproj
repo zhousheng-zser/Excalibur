@@ -20,22 +20,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Accelerator.hpp" />
+    <ClInclude Include="Atalanta_SplitsInsertor.hpp" />
     <ClInclude Include="Avalon_Synchronizer.hpp" />
     <ClInclude Include="caffe.pb.h" />
     <ClInclude Include="Dummy_cudnn.hpp" />
     <ClInclude Include="Dummy_mkldnn.hpp" />
     <ClInclude Include="Excalibur_MathFunctions.hpp" />
+    <ClInclude Include="float16.hpp" />
     <ClInclude Include="Geofront_Net.hpp" />
+    <ClInclude Include="half.cuh" />
+    <ClInclude Include="gpu_math_functions.cuh" />
     <ClInclude Include="Homunculus_Layers.hpp" />
     <ClInclude Include="Mordred_BasicMath.hpp" />
     <ClInclude Include="Pandora_Blob.hpp" />
     <ClInclude Include="ReLU_Layer.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Atalanta_SplitsInsertor.cpp" />
     <ClCompile Include="Avalon_Synchronizer.cpp" />
     <ClCompile Include="caffe.pb.cc" />
     <ClCompile Include="Excalibur_MathFunctions.cpp" />
     <ClCompile Include="Geofront_Net.cpp" />
+    <ClCompile Include="half.hpp" />
     <ClCompile Include="Homunculus_Layers.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Pandora_Blob.cpp" />
@@ -135,11 +141,17 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <AdditionalDependencies>cublas.lib;cuda.lib;curand.lib;cudart.lib;cudnn.lib;mkldnn.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+      <Command>echo copy "$(CudaToolkitBinDir)\cudart$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudart$(PlatformArchitecture)*.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cublas$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cublas$(PlatformArchitecture)*.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudnn$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudnn$(PlatformArchitecture)*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
+      <Defines>
+      </Defines>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -178,8 +190,12 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <AdditionalDependencies>cublas.lib;cuda.lib;curand.lib;cudart.lib;cudnn.lib;mkldnn.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
-copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
+      <Command>echo copy "$(CudaToolkitBinDir)\cudart$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudart$(PlatformArchitecture)*.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cublas$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cublas$(PlatformArchitecture)*.dll" "$(OutDir)"
+echo copy "$(CudaToolkitBinDir)\cudnn$(PlatformArchitecture)*.dll" "$(OutDir)"
+copy "$(CudaToolkitBinDir)\cudnn$(PlatformArchitecture)*.dll" "$(OutDir)"</Command>
     </PostBuildEvent>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
