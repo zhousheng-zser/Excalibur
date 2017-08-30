@@ -44,6 +44,40 @@ namespace Excalibur
 	}
 
 	template <typename Dtype>
+	void Pandora_Blob<Dtype>::Release()
+	{
+		data_ = nullptr;
+		// no need to free shape data, cache it in blob level
+		//shape_data_ = nullptr;
+		shape_.clear();
+		count_ = 0;
+		capacity_ = 0;
+	}
+
+	template <typename Dtype>
+	bool Pandora_Blob<Dtype>::ShapeEquals(const caffe::BlobProto& other) {
+		if (other.has_num() || other.has_channels() ||
+			other.has_height() || other.has_width()) {
+			// Using deprecated 4D Blob dimensions --
+			// shape is (num, channels, height, width).
+			// Note: we do not use the normal Blob::num(), Blob::channels(), etc.
+			// methods as these index from the beginning of the blob shape, where legacy
+			// parameter blobs were indexed from the end of the blob shape (e.g., bias
+			// Blob shape (1 x 1 x 1 x N), IP layer weight Blob shape (1 x 1 x M x N)).
+			return shape_.size() <= 4 &&
+				LegacyShape(-4) == other.num() &&
+				LegacyShape(-3) == other.channels() &&
+				LegacyShape(-2) == other.height() &&
+				LegacyShape(-1) == other.width();
+		}
+		std::vector<int> other_shape(other.shape().dim_size());
+		for (int i = 0; i < other.shape().dim_size(); ++i) {
+			other_shape[i] = other.shape().dim(i);
+		}
+		return shape_ == other_shape;
+	}
+
+	template <typename Dtype>
 	const Dtype* Pandora_Blob<Dtype>::cpu_data() const
 	{
 		CHECK(data_);

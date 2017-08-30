@@ -2,6 +2,7 @@
 #ifndef _GEOFRONT_NET_HPP_
 #define _GEOFRONT_NET_HPP_
 #include "Homunculus_Layers.hpp"
+#include "io.hpp"
 #include <string>
 #ifdef CAFFEMODEL_SUPPORT
 #include "Atalanta_SplitsInsertor.hpp"
@@ -22,6 +23,8 @@ namespace Excalibur
 		explicit Geofront_Net(const caffe::NetParameter& param) {
 			Init(param);
 		}
+
+		~Geofront_Net();
 
 		/// @brief Initialize a network with a NetParameter.
 		void Init(const caffe::NetParameter& param);
@@ -166,7 +169,16 @@ namespace Excalibur
 		/// top_vecs stores the vectors containing the output for each layer
 		std::vector<std::vector<Pandora_Blob<Dtype>*> > top_vecs_;
 		std::vector<std::vector<int> > top_id_vecs_;
+		///
+		Excalibur_MathFunctions* exmath_;
 		//DISABLE_COPY_AND_ASSIGN(Net);
 	};
+
+	/// @brief Read text net parameter, like xxx.prototxt
+	std::shared_ptr<caffe::NetParameter> ReadTextNetParameterFromFile(const std::string& file);
+	std::shared_ptr<caffe::NetParameter> ReadTextNetParameterFromBuffer(const char* buffer, int buffer_len);
+	/// @brief Read binary net parameter, like xxx.binaryproto
+	std::shared_ptr<caffe::NetParameter> ReadBinaryNetParameterFromFile(const std::string& file);
+	std::shared_ptr<caffe::NetParameter> ReadBinaryNetParameterFromBuffer(const char* buffer, int buffer_len);
 }
 #endif //_GEOFRONT_NET_HPP_

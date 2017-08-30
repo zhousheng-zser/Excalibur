@@ -108,6 +108,32 @@ namespace Excalibur
 			return offset;
 		}
 
+		int LegacyShape(int index) const {
+			CHECK_LE(num_axes(), 4)
+				<< "Cannot use legacy accessors on Blobs with > 4 axes.";
+			CHECK_LT(index, 4);
+			CHECK_GE(index, -4);
+			if (index >= num_axes() || index < -num_axes()) {
+				// Axis is out of range, but still in [0, 3] (or [-4, -1] for reverse
+				// indexing) -- this special case simulates the one-padding used to fill
+				// extraneous axes of legacy blobs.
+				return 1;
+			}
+			return shape()[index];
+		}
+
+		std::string shape_string() const {
+			std::ostringstream stream;
+			for (int i = 0; i < shape_.size(); ++i) {
+				stream << shape_[i] << " ";
+			}
+			stream << "(" << count_ << ")";
+			return stream.str();
+		}
+
+		bool ShapeEquals(const caffe::BlobProto& other);
+
+		void Release();
 
 		const Dtype* cpu_data() const;
 		void set_cpu_data(Dtype* data);
@@ -136,7 +162,7 @@ namespace Excalibur
 		void FromProto(const caffe::BlobProto& proto, bool reshape = true);
 #endif
 	protected:
-		Avalon_Synchronizer<Dtype>* data_;
+		std::shared_ptr<Avalon_Synchronizer<Dtype>> data_;
 		std::vector<int> shape_;
 		int count_;
 		int capacity_;

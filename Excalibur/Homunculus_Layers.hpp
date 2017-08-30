@@ -36,9 +36,12 @@ namespace Excalibur
 			}
 			exmath_ = nullptr;
 		}
-		virtual ~Homunculus_Layers() {}
+		virtual ~Homunculus_Layers(){}
 
-		void SetExmathFun(Excalibur_MathFunctions )
+		void SetExmathFun(Excalibur_MathFunctions &exmath)
+		{
+			*exmath_ = exmath;
+		}
 
 		/**
 		* @brief Implements common layer setup functionality.

@@ -84,6 +84,12 @@
     <ClInclude Include="half.cuh">
       <Filter>Header Files\util</Filter>
     </ClInclude>
+    <ClInclude Include="io.hpp">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
+    <ClInclude Include="upgrade_proto.hpp">
+      <Filter>Header Files\util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Avalon_Synchronizer.cpp">
@@ -115,6 +121,12 @@
     </ClCompile>
     <ClCompile Include="half.hpp">
       <Filter>3rdparty\half_float</Filter>
+    </ClCompile>
+    <ClCompile Include="io.cpp">
+      <Filter>Source Files\util</Filter>
+    </ClCompile>
+    <ClCompile Include="upgrade_proto.cpp">
+      <Filter>Source Files\util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

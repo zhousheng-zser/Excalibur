@@ -7,8 +7,7 @@ namespace Excalibur
 {
 	class Excalibur_MathFunctions
 	{
-		Avalon mode;
-		int gpu_device_;
+		
 	public:
 		Excalibur_MathFunctions();
 //#ifdef USE_CUDA
@@ -20,6 +19,9 @@ namespace Excalibur
 		//static Excalibur_MathFunctions& Get();
 
 		void set_Avalon(Avalon mode_);
+
+		Avalon mode;
+		int gpu_device_;
 
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_;

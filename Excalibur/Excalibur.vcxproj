@@ -31,9 +31,11 @@
     <ClInclude Include="half.cuh" />
     <ClInclude Include="gpu_math_functions.cuh" />
     <ClInclude Include="Homunculus_Layers.hpp" />
+    <ClInclude Include="io.hpp" />
     <ClInclude Include="Mordred_BasicMath.hpp" />
     <ClInclude Include="Pandora_Blob.hpp" />
     <ClInclude Include="ReLU_Layer.hpp" />
+    <ClInclude Include="upgrade_proto.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Atalanta_SplitsInsertor.cpp" />
@@ -43,9 +45,11 @@
     <ClCompile Include="Geofront_Net.cpp" />
     <ClCompile Include="half.hpp" />
     <ClCompile Include="Homunculus_Layers.cpp" />
+    <ClCompile Include="io.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Pandora_Blob.cpp" />
     <ClCompile Include="ReLU_Layer.cpp" />
+    <ClCompile Include="upgrade_proto.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="Excalibur_MathFunctions.cu" />
