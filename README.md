@@ -12,7 +12,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
 - [cuDNNv5.1](https://developer.nvidia.com/cudnn)
 - [NCCL](https://github.com/NVIDIA/nccl)
-- [gemmlowp](https://github.com/google/gemmlowp)
+- [gemmlowp](https://github.com/inlmouse/gemmlowp)
 - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
 
 ## Features

@@ -3,34 +3,53 @@
 namespace Excalibur
 {
 #ifdef CAFFEMODEL_SUPPORT
-	template <typename Dtype>
-	Geofront_Net<Dtype>::Geofront_Net(const caffe::NetParameter& param)
+	
+	//template <typename Dtype>
+	void Geofront_Net<Dtype>::Init(const caffe::NetParameter& param)
 	{
-		Init(param);
-	}
-
-	template <typename Dtype>
-	void Geofront_Net<Dtype>::Init(const caffe::NetParameter& in_param)
-	{
-		caffe::NetParameter filtered_param;
-		FilterNet(in_param, &filtered_param);
-		// Create a copy of filtered_param with splits added where necessary.
-		caffe::NetParameter param;
-		InsertSplits(filtered_param, &param);
 		// Basically, build all the layers and set up their connections.
 		name_ = param.name();
 		std::map<std::string, int> blob_name_to_idx;
 		std::set<std::string> available_blobs;
-		memory_used_ = 0;
 		// For each layer, set up its input and output
 		bottom_vecs_.resize(param.layer_size());
 		top_vecs_.resize(param.layer_size());
 		bottom_id_vecs_.resize(param.layer_size());
-		param_id_vecs_.resize(param.layer_size());
 		top_id_vecs_.resize(param.layer_size());
-		for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id)
-		{
-			
+		param_id_vecs_.resize(param.layer_size());
+		for (int layer_id = 0; layer_id < param.layer_size(); ++layer_id) {
+			// Setup layer.
+			const caffe::LayerParameter& layer_param = param.layer(layer_id);
+			layers_.push_back(LayerRegistry::CreateLayer(layer_param));
+			layer_names_.push_back(layer_param.name());
+			// Figure out this layer's input and output
+			const int num_bottom = layer_param.bottom_size();
+			for (int bottom_id = 0; bottom_id < num_bottom; ++bottom_id) {
+				AppendBottom(param, layer_id, bottom_id, &available_blobs, &blob_name_to_idx);
+			}
+			const int num_top = layer_param.top_size();
+			for (int top_id = 0; top_id < num_top; ++top_id) {
+				AppendTop(param, layer_id, top_id, &available_blobs, &blob_name_to_idx);
+			}
+			// After this layer is connected, set it up.
+			layers_[layer_id]->SetUp(bottom_vecs_[layer_id], top_vecs_[layer_id]);
+			// Layer Parameters
+			const int num_param_blobs = layers_[layer_id]->blobs().size();
+			for (int param_id = 0; param_id < num_param_blobs; ++param_id) {
+				AppendParam(param, layer_id, param_id);
+			}
+		}
+		/*CHECK_EQ(std::string(layers_[0]->type()), std::string("Input"))
+			<< "Network\'s first layer should be Input Layer.";*/
+		// for most case, not fully convolutional network, hold input data will be convenient
+		for (int blob_id : top_id_vecs_[0]) {
+			blob_life_time_[blob_id] = layers_.size();
+		}
+		for (size_t blob_id = 0; blob_id < blob_names_.size(); ++blob_id) {
+			blob_names_index_[blob_names_[blob_id]] = blob_id;
+		}
+		for (size_t layer_id = 0; layer_id < layer_names_.size(); ++layer_id) {
+			layer_names_index_[layer_names_[layer_id]] = layer_id;
 		}
 	}
 

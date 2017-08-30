@@ -5,11 +5,11 @@ namespace Excalibur
 {
 #ifdef CAFFEMODEL_SUPPORT
 	template <typename Dtype>
-	Homunculus_Layers<Dtype>::Homunculus_Layers(const caffe::LayerParameter& param, int gpu_device, Avalon mode)
+	Homunculus_Layers<Dtype>::Homunculus_Layers(const caffe::LayerParameter& param)
 	{
-		gpu_device_ = gpu_device;
+		/*gpu_device_ = gpu_device;
 		mode_ = mode;
-		exmath_ = new Excalibur_MathFunctions(gpu_device_, mode_);
+		exmath_ = new Excalibur_MathFunctions(gpu_device_, mode_);*/
 		layer_param_ = param;
 		if (layer_param_.blobs_size() > 0)
 		{
@@ -43,6 +43,17 @@ namespace Excalibur
 		type = layer_param_.type();
 		name = layer_param_.name();
 	}
+
+	// Serialize LayerParameter to protocol buffer
+	template <typename Dtype>
+	inline void Homunculus_Layers<Dtype>::ToProto(caffe::LayerParameter* param) {
+		param->Clear();
+		param->CopyFrom(layer_param_);
+		param->clear_blobs();
+		for (int i = 0; i < blobs_.size(); ++i) {
+			blobs_[i]->ToProto(param->add_blobs());
+		}
+	}
 #endif
 
 	template <typename Dtype>
@@ -64,6 +75,13 @@ namespace Excalibur
 		delete exmath_;
 	}
 
+	template <typename Dtype>
+	void Homunculus_Layers<Dtype>::SetDevice(Avalon mode, int device)
+	{
+		gpu_device_ = device;
+		mode_ = mode;
+		exmath_ = new Excalibur_MathFunctions(gpu_device_, mode_);
+	}
 
 	template <typename Dtype>
 	inline Dtype Homunculus_Layers<Dtype>::Forward(const std::vector<Pandora_Blob<Dtype>*>& bottom,

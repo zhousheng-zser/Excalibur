@@ -16,41 +16,148 @@ namespace Excalibur
 	* TODO(dox): more thorough description.
 	*/
 	template <typename Dtype>
-	class Geofront_Net
-	{
-#ifdef CAFFEMODEL_SUPPORT
+	class Geofront_Net {
+	public:
+		explicit Geofront_Net(const std::string& param_file);
+		explicit Geofront_Net(const caffe::NetParameter& param) {
+			Init(param);
+		}
+
 		/// @brief Initialize a network with a NetParameter.
 		void Init(const caffe::NetParameter& param);
-		// Helpers for Init.
-		/**
-		* @brief Remove layers that the user specified should be excluded given the current
-		*        phase, level, and stage.
-		*/
-		static void FilterNet(const caffe::NetParameter& param,
-			caffe::NetParameter* param_filtered);
 
-		/// @brief return whether NetState state meets NetStateRule rule
-		static bool StateMeetsRule(const caffe::NetState& state, const caffe::NetStateRule& rule,
-			const std::string& layer_name);
-#endif
-	public:
-#ifdef CAFFEMODEL_SUPPORT
-		explicit Geofront_Net(const caffe::NetParameter& param);
-#endif
-		explicit Geofront_Net(const std::string& param_file);
-		virtual ~Geofront_Net();
+		/**
+		* @brief Run Forward and return the result.
+		*
+		*/
+		const void Forward() {
+			ForwardFromTo(0, layers_.size() - 1);
+		}
+
+		/**
+		* The From and To variants of Forward and Backward operate on the
+		* (topological) ordering by which the net is specified. For general DAG
+		* networks, note that (1) computing from one layer to another might entail
+		* extra computation on unrelated branches, and (2) computation starting in
+		* the middle may be incorrect if all of the layers of a fan-in are not
+		* included.
+		*/
+		void ForwardFromTo(int start, int end);
+		void ForwardFrom(int start);
+		void ForwardTo(int end);
+
+		/**
+		* @brief Reshape all layers from bottom to top.
+		*
+		* This is useful to propagate changes to layer sizes without running
+		* a forward pass, e.g. to compute output feature size.
+		*/
+		void Reshape();
+
+		// For an already initialized net, CopyTrainedLayersFrom() copies the already
+		// trained layers from another net parameter instance.
+		/**
+		* @brief For an already initialized net, copies the pre-trained layers from
+		*        another Net.
+		*/
+		void CopyTrainedLayersFrom(const caffe::NetParameter& param);
+		void CopyTrainedLayersFrom(const std::string& trained_filename);
+		/// @brief Writes the net to a proto.
+		void ToProto(caffe::NetParameter* param) const;
+
+		/// @brief returns the network name.
+		const std::string& name() const { return name_; }
+		/// @brief returns the layer names
+		const std::vector<std::string>& layer_names() const { return layer_names_; }
+		/// @brief returns the blob names
+		const std::vector<std::string>& blob_names() const { return blob_names_; }
+		/// @biref return the param names
+		const std::vector<std::string>& param_names() const { return param_display_names_; }
+		/// @brief returns the blobs
+		const std::vector<std::shared_ptr<Pandora_Blob<Dtype>> >& blobs() const {
+			return blobs_;
+		}
+		/// @brief returns the layers
+		const std::vector<std::shared_ptr<Homunculus_Layers<Dtype>> >& layers() const {
+			return layers_;
+		}
+		/// @brief all parameters
+		const std::vector<std::shared_ptr<Pandora_Blob<Dtype>> >& params() const {
+			return params_;
+		}
+		/**
+		* @brief returns the bottom vecs for each layer -- usually you won't
+		*        need this unless you do per-layer checks such as gradients.
+		*/
+		const std::vector<std::vector<Pandora_Blob<Dtype>*> >& bottom_vecs() const {
+			return bottom_vecs_;
+		}
+		/**
+		* @brief returns the top vecs for each layer -- usually you won't
+		*        need this unless you do per-layer checks such as gradients.
+		*/
+		const std::vector<std::vector<Pandora_Blob<Dtype>*> >& top_vecs() const {
+			return top_vecs_;
+		}
+		/**
+		* @brief returns the params in every layer with id in params
+		*/
+		const std::vector<std::vector<int> >& param_id_vecs() const {
+			return param_id_vecs_;
+		}
+		/// @brief returns the ids of the top blobs of layer i
+		const std::vector<int> & top_ids(int i) const {
+			CHECK_GE(i, 0) << "Invalid layer id";
+			CHECK_LT(i, top_id_vecs_.size()) << "Invalid layer id";
+			return top_id_vecs_[i];
+		}
+		/// @brief returns the ids of the bottom blobs of layer i
+		const std::vector<int> & bottom_ids(int i) const {
+			CHECK_GE(i, 0) << "Invalid layer id";
+			CHECK_LT(i, bottom_id_vecs_.size()) << "Invalid layer id";
+			return bottom_id_vecs_[i];
+		}
+		bool has_blob(const std::string& blob_name) const;
+		const std::shared_ptr<Pandora_Blob<Dtype>> blob_by_name(const std::string& blob_name) const;
+		bool has_layer(const std::string& layer_name) const;
+		const std::shared_ptr<Homunculus_Layers<Dtype>> layer_by_name(const std::string& layer_name) const;
+
+		/// @brief calculate memory usage in MB
+		Dtype MemSize() const;
+
+		/// @brief mark extra output named blob
+		void MarkOutputs(const std::vector<std::string>& outs);
 
 	protected:
+		// Helpers for Init.
+		/// @brief Append a new top blob to the net.
+		void AppendTop(const caffe::NetParameter& param, const int layer_id,
+			const int top_id, std::set<std::string>* available_blobs,
+			std::map<std::string, int>* blob_name_to_idx);
+		/// @brief Append a new bottom blob to the net.
+		int AppendBottom(const caffe::NetParameter& param, const int layer_id,
+			const int bottom_id, std::set<std::string>* available_blobs,
+			std::map<std::string, int>* blob_name_to_idx);
+		/// @brief Append a new parameter blob to the net.
+		void AppendParam(const caffe::NetParameter& param, const int layer_id,
+			const int param_id);
+
 		/// @brief The network name
 		std::string name_;
 		/// @brief Individual layers in the net
-		std::vector<Homunculus_Layers< Dtype>* > layers_;
+		std::vector<std::shared_ptr<Homunculus_Layers<Dtype>> > layers_;
 		std::vector<std::string> layer_names_;
 		std::map<std::string, int> layer_names_index_;
 		/// @brief the blobs storing intermediate results between the layer.
-		std::vector<Pandora_Blob<Dtype>*> blobs_;
+		std::vector<std::shared_ptr<Pandora_Blob<Dtype>> > blobs_;
 		std::vector<std::string> blob_names_;
+		std::vector<int> blob_life_time_;
 		std::map<std::string, int> blob_names_index_;
+		/// @brief parameters in the network.
+		std::vector<std::shared_ptr<Pandora_Blob<Dtype>> > params_;
+		std::vector<std::string> param_display_names_;
+		std::vector<std::vector<int> > param_id_vecs_;
+		std::map<std::string, int> param_names_index_;
 		/// bottom_vecs stores the vectors containing the input for each layer.
 		/// They don't actually host the blobs (blobs_ does), so we simply store
 		/// pointers.
@@ -59,25 +166,7 @@ namespace Excalibur
 		/// top_vecs stores the vectors containing the output for each layer
 		std::vector<std::vector<Pandora_Blob<Dtype>*> > top_vecs_;
 		std::vector<std::vector<int> > top_id_vecs_;
-		/// Vector of weight in the loss (or objective) function of each net blob,
-		/// indexed by blob_id.
-		std::vector<Dtype> blob_loss_weights_;
-		std::vector<std::vector<int> > param_id_vecs_;
-		std::vector<int> param_owners_;
-		std::vector<std::string> param_display_names_;
-		std::vector<std::pair<int, int> > param_layer_indices_;
-		std::map<std::string, int> param_names_index_;
-		/// blob indices for the input and the output of the net
-		std::vector<int> net_input_blob_indices_;
-		std::vector<int> net_output_blob_indices_;
-		std::vector<Pandora_Blob<Dtype>*> net_input_blobs_;
-		std::vector<Pandora_Blob<Dtype>*> net_output_blobs_;
-		/// The parameters in the network.
-		std::vector<Pandora_Blob<Dtype>* > params_;
-		/// The bytes of memory used by this net
-		size_t memory_used_;
-		/// Whether to compute and display debug info for the net.
-		bool debug_info_;
+		//DISABLE_COPY_AND_ASSIGN(Net);
 	};
 }
 #endif //_GEOFRONT_NET_HPP_
