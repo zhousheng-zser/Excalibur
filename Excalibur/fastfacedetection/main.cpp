@@ -1,7 +1,9 @@
 #include <iostream>
 #include "../Excalibur/io.hpp"
+#include "mtcnn.hpp"
 
 using namespace excalibur;
+using namespace fastface;
 
 void unittest()
 {
@@ -35,7 +37,7 @@ void unittest()
 
 void mtcnntset()
 {
-	/*cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087.png");
+	cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087.png");
 	mtcnn mt = mtcnn();
 	double threshold[3] = { 0.7, 0.7, 0.3 };
 	double factor = 0.709;
@@ -44,12 +46,12 @@ void mtcnntset()
 	mt.Detect(image, faceInfo, minSize, threshold, factor);
 	mtcnn::drawDectionResult(image, faceInfo);
 	imshow("final", image);
-	cv::waitKey(0);*/
+	cv::waitKey(0);
 }
 
 int main()
 {
-	unittest();
-	//mtcnntset();
+	//unittest();
+	mtcnntset();
 	return 0;
 }

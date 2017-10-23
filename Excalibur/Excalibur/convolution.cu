@@ -1,100 +1,47 @@
+#include "accelerator.hpp"
+#ifdef USE_CUDA
 #include "convolution.hpp"
-#include <stdio.h>  
-#include <stdlib.h>  
-#include <time.h>  
-#include <cuda_runtime.h>  
 
-#define BLOCK_SIZE 16  
-static void HandleError(cudaError_t err, const char *file, int line)
+namespace excalibur
 {
-	if (err != cudaSuccess)
+	void convolution::Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
 	{
-		printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-		exit(EXIT_FAILURE);
-	}
-}
-#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))  
+		const int num = bottom->data_shape()[0];
+		const float* bottom_data = bottom->cpu_data();
+		//
+		intput_shape_.clear();
+		intput_shape_ = bottom->data_shape();
+		int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
+		int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
+		top.reset(new tensor(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
+		//
 
-//#define HANDLE_NULL( a ) {if ((a) == NULL) { \  
-//printf("Host memory failed in %s at line %d\n", \
-//	__FILE__, __LINE__); \
-//	exit(EXIT_FAILURE); }}
-
-static void GenerateNumbers(int *number, int size)
-{
-	for (int i = 0; i < size; i++)
-	{
-		number[i] = rand() % 10;
-	}
-}
-
-static bool InitCUDA()
-{
-	int count;
-
-	cudaGetDeviceCount(&count);
-	if (count == 0)
-	{
-		fprintf(stderr, "There is no device.\n");
-		return false;
-	}
-
-	int i;
-	for (i = 0; i < count; i++)
-	{
-		cudaDeviceProp prop;
-		if (cudaGetDeviceProperties(&prop, i) == cudaSuccess)
+		float* top_data = (top)->mutable_cpu_data();
+		if (col_buffer_ != nullptr)
 		{
-			if (prop.major >= 1)
-			{
-				break;
-			}
+			delete col_buffer_;
+		}
+		col_buffer_ = new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_);
+		if (bias_multiplier_ != nullptr)
+		{
+			delete bias_multiplier_;
+		}
+		bias_multiplier_ = new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_);
+		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
+		out_spatial_dim_ = output_dim_w_*output_dim_h_;
+		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+		output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+		for (int i = 0; i < output_dim_w_*output_dim_h_; i++)
+		{
+			bias_multiplier_->mutable_gpu_data()[i] = 1.0f;
+		}
+		//
+		int bottom_dim_ = bottom->count(1, 4);
+		int top_dim = top->count(1, 4);
+		for (int n = 0; n < num; n++)
+		{
+			forward_gpu_gemm(cublas_handle_, bottom_data + n * bottom_dim_, top_data + n * top_dim);
 		}
 	}
-
-	if (i >= count)
-	{
-		fprintf(stderr, "There is no device supporting CUDA 1.x.\n");
-		return false;
-	}
-
-	cudaSetDevice(i);
-
-	return true;
 }
-
-//1个block，block内256个thread，threadIdx.x = 0的线程计时，每个线程计算一个结果  
-//最终的结果由threadIdx.x = 0的线程进行累加，临时结果存放在块内共享内存中  
-__global__ static void sumOfSquares(int *num, int size, int* result, clock_t* time)
-{
-	extern __shared__ int temp[];
-	int sum = 0;
-	clock_t start;
-	const int tid = threadIdx.x;
-	temp[tid] = 0;
-
-	if (tid == 0)
-	{
-		start = clock();
-	}
-
-	for (int index = tid; index < size; index += blockDim.x)
-	{
-		sum += num[index] * num[index];
-	}
-
-	temp[tid] = sum;
-	__syncthreads();
-
-	if (tid == 0)
-	{
-		sum = 0;
-		for (int index = 0; index < blockDim.x; index++)
-		{
-			sum += temp[index];
-		}
-
-		*result = sum;
-		*time = clock() - start;
-	}
-}
+#endif

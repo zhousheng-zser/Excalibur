@@ -21,6 +21,9 @@
     <CudaCompile Include="convolution.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="im2col.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -101,6 +104,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="tensor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="accelerator.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

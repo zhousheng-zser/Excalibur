@@ -118,6 +118,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="convolution.cu" />
+    <CudaCompile Include="im2col.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp" />
@@ -136,6 +137,7 @@
     <ClInclude Include="tensor.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="accelerator.cpp" />
     <ClCompile Include="caffe.pb.cc" />
     <ClCompile Include="convolution.cpp" />
     <ClCompile Include="eltwise.cpp" />

@@ -35,11 +35,14 @@ namespace excalibur
 		int kernel_dim_;
 		int col_offset_;
 		int output_offset_;
-		float* bias_multiplier_;
+		tensor* bias_multiplier_;
 		///
 		inline void conv_im2col_cpu(const float* data, float* col_buff);
 		inline void conv_col2im_cpu(const float* col_buff, float* data);
-
+#ifdef USE_CUDA
+		void conv_im2col_gpu(const float* data, float* col_buff);
+		void conv_col2im_gpu(const float* col_buff, float* data);
+#endif
 		void setup_internal_params();
 	public:
 		convolution(int input_Channel, int output_Channel, int kernelSize,
@@ -52,9 +55,14 @@ namespace excalibur
 			bias_term_ = bias_term;
 		}
 		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
-	protected:
+#ifdef USE_CUDA
+		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#endif
+	private:
 		void forward_cpu_gemm(const float* input, float* output, bool skip_im2col = false);
-		
+#ifdef USE_CUDA
+		void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, float* output, bool skip_im2col = false);
+#endif
 	};
 }
 
