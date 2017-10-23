@@ -2,6 +2,23 @@
 #ifdef USE_CUDA
 namespace excalibur
 {
+	__global__ void set_kernel(const int n, const float alpha, float* y) {
+		CUDA_KERNEL_LOOP(index, n) {
+			y[index] = alpha;
+		}
+	}
+
+	void math_functions::gpu_set(const int N, const float alpha, float* Y)
+	{
+		if (alpha == 0) {
+			CUDA_CHECK(cudaMemset(Y, 0, sizeof(float) * N));  // NOLINT(caffe/alt_fn)
+			return;
+		}
+		// NOLINT_NEXT_LINE(whitespace/operators)
+		set_kernel << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> >(
+			N, alpha, Y);
+	}
+
 	void math_functions::gpu_sgemm(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,
 		const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 		const float alpha, const float* A, const float* B, const float beta,

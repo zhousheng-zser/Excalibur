@@ -30,10 +30,11 @@ namespace excalibur
 		out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
 		output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
-		for (int i = 0; i < output_dim_w_*output_dim_h_; i++)
+		math_functions::gpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_gpu_data());
+		/*for (int i = 0; i < output_dim_w_*output_dim_h_; i++)
 		{
 			bias_multiplier_->mutable_gpu_data()[i] = 1.0f;
-		}
+		}*/
 		//
 		int bottom_dim_ = bottom->count(1, 4);
 		int top_dim = top->count(1, 4);

@@ -20,6 +20,26 @@ namespace excalibur
 			ldb, beta, C, N);
 	}
 
+	void math_functions::excalibur_copy(const int N, const float* X, float* Y, int device)
+	{
+		if (X!=Y)
+		{
+			if (device>=0)
+			{
+#ifdef USE_CUDA
+				cudaSetDevice(device);
+				CUDA_CHECK(cudaMemcpy(Y, X, sizeof(float) * N, cudaMemcpyDefault));
+#else
+				NO_GPU
+#endif
+			}
+			else
+			{
+				memcpy(Y, X, sizeof(float) * N);
+			}
+		}
+	}
+
 }
 
 

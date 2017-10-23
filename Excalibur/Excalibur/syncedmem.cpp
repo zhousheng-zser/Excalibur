@@ -92,7 +92,7 @@ namespace excalibur
 
 	void syncedmem::to_gpu()
 	{
-		check_device();
+		//check_device();
 #ifdef USE_CUDA
 		switch (head_) {
 		case UNINITIALIZED:
@@ -151,7 +151,7 @@ namespace excalibur
 
 	const void* syncedmem::gpu_data()
 	{
-		check_device();
+		//check_device();
 #ifdef USE_CUDA
 		to_gpu();
 		return (const void*)gpu_ptr_;

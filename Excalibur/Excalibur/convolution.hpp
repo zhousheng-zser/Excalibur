@@ -3,6 +3,7 @@
 #define _CONVOLUTION_HPP_
 #include "tensor.hpp"
 #include "im2col.hpp"
+#include "math_functions.hpp"
 #include <memory>
 
 namespace excalibur

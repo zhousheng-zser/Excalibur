@@ -54,7 +54,7 @@ namespace excalibur
 				bias_multiplier_->mutable_cpu_data()[i] = 1.0f;
 			}
 		}
-		top.reset(new tensor(std::vector<int>{M_, N_/*, 1, 1*/}, device_));
+		top.reset(new tensor(std::vector<int>{M_, N_}, device_));
 		//
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = (top)->mutable_cpu_data();

@@ -17,11 +17,15 @@ namespace excalibur
 			const float alpha, const float* A, const float* B, const float beta,
 			float* C);
 
+		static void excalibur_copy(const int N, const float *X, float *Y, int device);
+
 #ifdef  USE_CUDA
 		static void gpu_sgemm(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,
 			const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 			const float alpha, const float* A, const float* B, const float beta,
 			float* C);
+
+		static void gpu_set(const int N, const float alpha, float* Y);
 #endif
 	};
 }

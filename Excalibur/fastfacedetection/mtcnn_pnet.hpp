@@ -39,20 +39,28 @@ namespace fastface
 		softmax *prob1;
 		//
 		std::shared_ptr<tensor> tensor_data = nullptr;
-		std::shared_ptr<tensor> conv1_top_data = nullptr;
+		/*std::shared_ptr<tensor> conv1_top_data = nullptr;
 		std::shared_ptr<tensor> pool1_top_data = nullptr;
 		std::shared_ptr<tensor> conv2_top_data = nullptr;
-		std::shared_ptr<tensor> conv3_top_data = nullptr;
-		//std::shared_ptr<tensor> conv4_1_top_data = nullptr;
+		std::shared_ptr<tensor> conv3_top_data = nullptr;*/
+		//Neuron_Name(tensor_data);
+		Neuron_Name(conv1);
+		Neuron_Name(pool1);
+		Neuron_Name(conv2);
+		Neuron_Name(conv3);
 		Neuron_Name(conv4_1);
 		std::shared_ptr<tensor> conv4_2_top_data = nullptr;
 		std::shared_ptr<tensor> prob1_top_data = nullptr;
 		//
-		void write(std::vector<float*> data, std::vector<int> length, std::vector<std::string> names);
+		int device_;
+		cublasHandle_t cublas_handle_ = nullptr;
 	public:
 		mtcnn_pnet();
 		~mtcnn_pnet();
 		void Forward_cpu(const std::shared_ptr<tensor> input_data);
+#ifdef USE_CUDA
+		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
+#endif
 		std::shared_ptr<tensor> get_prob1();
 		std::shared_ptr<tensor> get_conv4_2();
 	};
