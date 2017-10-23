@@ -1,41 +1,52 @@
 #include <iostream>
 #include "../Excalibur/io.hpp"
+#include "mtcnn.hpp"
+#include <filesystem>
 
 using namespace excalibur;
+using namespace fastface;
 
 void unittest()
 {
-	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_12_18.jpg");
+	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
 	//cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087_0.png");
 	/*cv::resize(image, image, cv::Size(12, 18));
 	cv::imwrite("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_12_18.jpg", image);*/
 	std::shared_ptr<tensor> tensor_data = nullptr;
 	//io::image2tensor(image, tensor_data/*, false, 1.0*/);
-	io::images2tensor(std::vector<cv::Mat>{image, image}, tensor_data/*, false, 1.0*/);
-	//mtcnn_pnet pnet = mtcnn_pnet();
+	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data/*, false, 1.0*/);
+	mtcnn_pnet pnet = mtcnn_pnet();
 	//mtcnn_rnet rnet = mtcnn_rnet();
 	//mtcnn_onet onet = mtcnn_onet();
 	//pnet.Forward_cpu(tensor_data);
-	/*for (int i = 0; i < 100; i++)
+	//pnet.Forward_cpu(tensor_data);
+	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+	for (int i = 0; i < 1000; i++)
+	{
+		pnet.Forward_cpu(tensor_data);
+	}
+	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+	std::cout << "forward time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;
+	/*for (int i = 0; i < 1000; i++)
 	{
 		pnet.Forward_cpu(tensor_data);
 	}*/
 	//delete[] tensor_data;
-	//auto a = pnet.get_conv4_1();
-	//const float* output = a->cpu_data();//rnet.get_prob1()->cpu_data();
-	//for (int i = 0; i<a->count()/1 ; i++)
-	//{
-	//	std::cout << output[i] << " "/* << output[i + a->count() / 2]<<" "*/;
-	//	if (i == a->count() / 2 - 1)
-	//	{
-	//		std::cout << std::endl;
-	//	}
-	//}
+	auto a = pnet.get_conv4_1();
+	const float* output = a->cpu_data();//rnet.get_prob1()->cpu_data();
+	for (int i = 0; i<a->count()/1 ; i++)
+	{
+		std::cout << output[i] << " "/* << output[i + a->count() / 2]<<" "*/;
+		if (i == a->count() / 2 - 1)
+		{
+			std::cout << std::endl;
+		}
+	}
 }
 
 void mtcnntset()
 {
-	/*cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087.png");
+	cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087.png");
 	mtcnn mt = mtcnn();
 	double threshold[3] = { 0.7, 0.7, 0.3 };
 	double factor = 0.709;
@@ -44,7 +55,7 @@ void mtcnntset()
 	mt.Detect(image, faceInfo, minSize, threshold, factor);
 	mtcnn::drawDectionResult(image, faceInfo);
 	imshow("final", image);
-	cv::waitKey(0);*/
+	cv::waitKey(0);
 }
 
 int main()

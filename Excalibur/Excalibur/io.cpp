@@ -28,9 +28,9 @@ namespace excalibur
 		float mean[3];
 		if (minus_mean)
 		{
-			mean[0] = 127.5f;//104.0f;
-			mean[1] = 127.5f;//117.0f;
-			mean[2] = 127.5f;//124.0f;
+			mean[0] = 104.0f;
+			mean[1] = 117.0f;
+			mean[2] = 124.0f;
 		}
 		else
 		{
@@ -79,9 +79,9 @@ namespace excalibur
 		float mean[3];
 		if (minus_mean)
 		{
-			mean[0] = 127.5f; //104.0f;
-			mean[1] = 127.5f; //117.0f;
-			mean[2] = 127.5f; //124.0f;
+			mean[0] = 104.0f;
+			mean[1] = 117.0f;
+			mean[2] = 124.0f;
 		}
 		else
 		{
@@ -89,23 +89,6 @@ namespace excalibur
 			mean[1] = 0.0f;
 			mean[2] = 0.0f;
 		}
-		//for (int w = 0; w < width; ++w)
-		//{
-		//	const uchar* ptr = image.ptr<uchar>(w);
-		//	//const float* float_ptr = image.ptr<float>(w);
-		//	int img_index = 0;
-		//	for (int h = 0; h < height; ++h)
-		//	{
-		//		for (int c = channel - 1; c >= 0; --c)
-		//		{
-		//			top_index = (c * height + h) * width + w;
-		//			float pixel = ptr[img_index];
-		//			img_index++;
-		//			transformed_data[top_index] =
-		//				(pixel - mean[c]) * scale;
-		//		}
-		//	}
-		//}
 		for (int rowI = 0; rowI < height; rowI++) {
 			for (int colK = 0; colK < width; colK++) {
 				*transformed_data = (image.at<cv::Vec3b>(rowI, colK)[0] - mean[0])*scale;

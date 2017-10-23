@@ -21,6 +21,21 @@
     <CudaCompile Include="convolution.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="im2col.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pooling.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="prelu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="inner_product.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="math_functions.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -65,6 +80,9 @@
     <ClInclude Include="tensor.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="math_functions.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -101,6 +119,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="tensor.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="accelerator.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="math_functions.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

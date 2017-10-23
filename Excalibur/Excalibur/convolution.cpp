@@ -47,6 +47,21 @@ namespace excalibur
 			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 	}
 
+#ifdef USE_CUDA
+	void convolution::conv_im2col_gpu(const float* data, float* col_buff)
+	{
+		im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff);
+	}
+
+	void convolution::conv_col2im_gpu(const float* col_buff, float* data)
+	{
+		col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
+	}
+
+#endif
+
 	void convolution::setup_internal_params()
 	{
 		kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
@@ -77,9 +92,46 @@ namespace excalibur
 			int N = out_spatial_dim_;
 			int K = 1;
 			cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
-				1.0f, bias_->cpu_data(), K, bias_multiplier_, N, 1.0f, output, N);
+				1.0f, bias_->cpu_data(), K, bias_multiplier_->cpu_data(), N, 1.0f, output, N);
 		}
 	}
+
+#ifdef USE_CUDA
+	void convolution::forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, float* output, bool skip_im2col)
+	{
+		const float* col_buff = input;
+		if (kernelSize_ != 1)
+		{
+			conv_im2col_gpu(input, col_buffer_->mutable_gpu_data());
+			col_buff = col_buffer_->gpu_data();
+		}
+		for (int g = 0; g < group_; ++g)
+		{
+			int M = output_Channel_ / group_;
+			int N = conv_out_spatial_dim_;
+			int K = kernel_dim_;
+			cublasOperation_t cuTransA = CUBLAS_OP_N;
+			cublasOperation_t cuTransB = CUBLAS_OP_N;
+			const float alpha = 1.0f;
+			const float beta = 0.0f;
+			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, col_buff + col_offset_ * g,
+				N, weights_->gpu_data() + weight_offset_ * g, K, &beta, output + output_offset_ * g, N));
+		}
+		if (bias_term_)
+		{
+			int M = output_Channel_;
+			int N = out_spatial_dim_;
+			int K = 1;
+			cublasOperation_t cuTransA = CUBLAS_OP_N;
+			cublasOperation_t cuTransB = CUBLAS_OP_N;
+			const float alpha = 1.0f;
+			const float beta = 1.0f;
+			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, bias_multiplier_->gpu_data(), 
+				N, bias_->gpu_data(),	K, &beta, output, N));
+		}
+	}
+
+#endif
 
 	void convolution::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
 	{
@@ -103,14 +155,14 @@ namespace excalibur
 		{
 			delete bias_multiplier_;
 		}
-		bias_multiplier_ = new float[output_dim_w_*output_dim_h_];
+		bias_multiplier_ = new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_);
 		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
 		output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
 		for (int i = 0; i < output_dim_w_*output_dim_h_; i++)
 		{
-			bias_multiplier_[i] = 1.0f;
+			bias_multiplier_->mutable_cpu_data()[i] = 1.0f;
 		}
 		//
 		int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];

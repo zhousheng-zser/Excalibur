@@ -7,26 +7,27 @@ namespace excalibur
 	prelu::prelu(int input_channel, bool isrelu, int device)
 	{
 		channel_ = input_channel;
-		slope_data_ = new float[input_channel];
+		slope_data_ = new tensor(std::vector<int>{input_channel}, device);
 		isrelu_ = isrelu;
 		device_ = device;
 	}
 
 	prelu::~prelu()
 	{
+		delete slope_data_;
 	}
 
 	void prelu::setslope(float* slope_data)
 	{
 		if (isrelu_)
 		{
-			memset(slope_data_, 0, channel_ * sizeof(float));
+			memset(slope_data_->mutable_cpu_data(), 0, channel_ * sizeof(float));
 		}
 		else
 		{
 			for (int i = 0; i < channel_; i++)
 			{
-				slope_data_[i] = slope_data[i];
+				slope_data_->mutable_cpu_data()[i] = slope_data[i];
 			}
 		}
 	}
@@ -40,7 +41,7 @@ namespace excalibur
 			CHECK_EQ(channel_, (bottom)->data_shape()[1]);
 			for (int j = 0; j < channel_; j++)
 			{
-				const float slop = slope_data_[j];
+				const float slop = slope_data_->cpu_data()[j];
 				int dim;
 				if (bottom->data_shape().size()<=2)
 				{

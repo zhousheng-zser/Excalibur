@@ -8,7 +8,7 @@ namespace excalibur
 {
 	class prelu
 	{
-		float* slope_data_;
+		tensor* slope_data_;
 		bool isrelu_;
 		int channel_;
 		int device_;
@@ -21,6 +21,9 @@ namespace excalibur
 		void setslope(float* slope_data);
 
 		void Forward_cpu(const std::shared_ptr<tensor>& bottom);
+#ifdef USE_CUDA
+		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom);
+#endif
 	};
 }
 
