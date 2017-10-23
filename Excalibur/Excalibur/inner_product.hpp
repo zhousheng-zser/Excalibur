@@ -2,7 +2,7 @@
 #ifndef _INNER_PRODUCT_HPP_
 #define _INNER_PRODUCT_HPP_
 #include "tensor.hpp"
-
+#include "math_functions.hpp"
 namespace excalibur
 {
 	class inner_product
@@ -11,7 +11,7 @@ namespace excalibur
 		int num_output_;
 		tensor* weights_;
 		tensor* bias_;
-		float* bias_multiplier_;
+		tensor* bias_multiplier_;
 		std::vector<int> input_shape_without_num_;
 		int K_;
 		int N_;
@@ -27,6 +27,9 @@ namespace excalibur
 		void set_bias(float* bias);
 
 		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#ifdef USE_CUDA
+		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#endif
 	};
 }
 

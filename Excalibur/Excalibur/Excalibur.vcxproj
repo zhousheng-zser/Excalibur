@@ -119,6 +119,8 @@
   <ItemGroup>
     <CudaCompile Include="convolution.cu" />
     <CudaCompile Include="im2col.cu" />
+    <CudaCompile Include="inner_product.cu" />
+    <CudaCompile Include="math_functions.cu" />
     <CudaCompile Include="pooling.cu" />
     <CudaCompile Include="prelu.cu" />
   </ItemGroup>
@@ -130,6 +132,7 @@
     <ClInclude Include="im2col.hpp" />
     <ClInclude Include="inner_product.hpp" />
     <ClInclude Include="io.hpp" />
+    <ClInclude Include="math_functions.hpp" />
     <ClInclude Include="pooling.hpp" />
     <ClInclude Include="prelu.hpp" />
     <ClInclude Include="slice.hpp" />
@@ -146,6 +149,7 @@
     <ClCompile Include="im2col.cpp" />
     <ClCompile Include="inner_product.cpp" />
     <ClCompile Include="io.cpp" />
+    <ClCompile Include="math_functions.cpp" />
     <ClCompile Include="pooling.cpp" />
     <ClCompile Include="prelu.cpp" />
     <ClCompile Include="slice.cpp" />
