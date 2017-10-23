@@ -1,0 +1,10 @@
+#pragma once
+#ifndef _SUPPORT_LAYERS_HPP_
+#define _SUPPORT_LAYERS_HPP_
+#include "convolution.hpp"
+#include "prelu.hpp"
+#include "pooling.hpp"
+#include "eltwise.hpp"
+#include "inner_product.hpp"
+#include "softmax.hpp"
+#endif //_SUPPORT_LAYERS_HPP_
