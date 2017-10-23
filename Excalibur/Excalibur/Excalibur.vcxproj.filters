@@ -24,6 +24,9 @@
     <CudaCompile Include="im2col.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="pooling.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">

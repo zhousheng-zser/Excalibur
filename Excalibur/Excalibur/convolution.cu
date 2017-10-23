@@ -1,6 +1,5 @@
-#include "accelerator.hpp"
-#ifdef USE_CUDA
 #include "convolution.hpp"
+#ifdef USE_CUDA
 
 namespace excalibur
 {

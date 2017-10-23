@@ -119,6 +119,7 @@
   <ItemGroup>
     <CudaCompile Include="convolution.cu" />
     <CudaCompile Include="im2col.cu" />
+    <CudaCompile Include="pooling.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp" />

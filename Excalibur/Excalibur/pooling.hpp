@@ -21,6 +21,10 @@ namespace excalibur
 		~pooling();
 
 		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+
+#ifdef USE_CUDA
+		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#endif
 	};
 }
 

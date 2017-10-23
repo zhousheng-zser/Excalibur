@@ -1,7 +1,7 @@
 #include "accelerator.hpp"
+#include "im2col.hpp"
 #ifdef USE_CUDA
 #include <algorithm>
-#include "im2col.hpp"
 
 namespace excalibur
 {
