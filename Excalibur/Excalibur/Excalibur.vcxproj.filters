@@ -85,9 +85,6 @@
     <ClCompile Include="io.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="pooling.cpp">
       <Filter>src</Filter>
     </ClCompile>

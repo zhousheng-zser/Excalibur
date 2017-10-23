@@ -14,4 +14,35 @@
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="mtcnn_onet.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mtcnn_pnet.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mtcnn_rnet.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="mtcnn.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mtcnn.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mtcnn_onet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mtcnn_pnet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="mtcnn_rnet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+  </ItemGroup>
 </Project>

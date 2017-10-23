@@ -1,8 +1,10 @@
 #pragma once
 #ifndef _MTCNN_ONET_HPP_
 #define _MTCNN_ONET_HPP_
-#include "io.hpp"
-#include "support_layers.hpp"
+#include "../Excalibur/io.hpp"
+#include "../Excalibur/support_layers.hpp"
+
+using namespace excalibur;
 
 namespace fastface
 {

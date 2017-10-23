@@ -1,8 +1,10 @@
 #pragma once
 #ifndef _MTCNN_RNET_HPP_
 #define _MTCNN_RNET_HPP_
-#include "io.hpp"
-#include "support_layers.hpp"
+#include "../Excalibur/io.hpp"
+#include "../Excalibur/support_layers.hpp"
+
+using namespace excalibur;
 
 namespace fastface
 {
