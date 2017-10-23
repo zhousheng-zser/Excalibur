@@ -27,6 +27,9 @@
     <CudaCompile Include="pooling.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="prelu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
