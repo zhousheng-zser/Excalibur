@@ -60,9 +60,11 @@ namespace excalibur
 		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
 #endif
 	private:
-		void forward_cpu_gemm(const float* input, float* output, bool skip_im2col = false);
+		void forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false);
+		void forward_cpu_bias(float* output, const float* bias);
 #ifdef USE_CUDA
-		void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, float* output, bool skip_im2col = false);
+		void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false);
+		void forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias);
 #endif
 	};
 }

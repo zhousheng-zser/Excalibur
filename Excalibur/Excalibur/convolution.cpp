@@ -1,6 +1,7 @@
 #include "convolution.hpp"
-#include "cblas.h"
+//#include "cblas.h"
 #include <iostream>
+#include <filesystem>
 
 namespace excalibur
 {
@@ -70,7 +71,7 @@ namespace excalibur
 	}
 
 
-	void convolution::forward_cpu_gemm(const float* input, float* output, bool skip_im2col)
+	void convolution::forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col)
 	{
 		const float* col_buff = input;
 		if (kernelSize_!=1)
@@ -78,26 +79,27 @@ namespace excalibur
 			conv_im2col_cpu(input, col_buffer_->mutable_cpu_data());
 			col_buff = col_buffer_->cpu_data();
 		}
+		//auto p0 = std::chrono::system_clock::now();
 		for (int g = 0; g < group_; ++g)
 		{
-			int M = output_Channel_ / group_;
-			int N = conv_out_spatial_dim_;
-			int K = kernel_dim_;
-			cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 
-				1.0f, weights_->cpu_data() + weight_offset_ * g, K, col_buff + col_offset_ * g, N, 0.0f, output + output_offset_ * g, N );
+			math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_ ,
+				conv_out_spatial_dim_, kernel_dim_, 1.0f,
+				weights + weight_offset_ * g, col_buff + col_offset_ * g, 0.0f, output + output_offset_ * g);
 		}
-		if (bias_term_)
-		{
-			int M = output_Channel_;
-			int N = out_spatial_dim_;
-			int K = 1;
-			cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
-				1.0f, bias_->cpu_data(), K, bias_multiplier_->cpu_data(), N, 1.0f, output, N);
-		}
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
+	void convolution::forward_cpu_bias(float* output, const float* bias)
+	{
+		math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
+			out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
+			1.0f, output);
+	}
+
+
 #ifdef USE_CUDA
-	void convolution::forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, float* output, bool skip_im2col)
+	void convolution::forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col)
 	{
 		const float* col_buff = input;
 		if (kernelSize_ != 1)
@@ -107,7 +109,10 @@ namespace excalibur
 		}
 		for (int g = 0; g < group_; ++g)
 		{
-			int M = output_Channel_ / group_;
+			math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
+				conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
+				0.0f, output + output_offset_ * g);
+			/*int M = output_Channel_ / group_;
 			int N = conv_out_spatial_dim_;
 			int K = kernel_dim_;
 			cublasOperation_t cuTransA = CUBLAS_OP_N;
@@ -115,9 +120,9 @@ namespace excalibur
 			const float alpha = 1.0f;
 			const float beta = 0.0f;
 			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, col_buff + col_offset_ * g,
-				N, weights_->gpu_data() + weight_offset_ * g, K, &beta, output + output_offset_ * g, N));
+				N, weights_->gpu_data() + weight_offset_ * g, K, &beta, output + output_offset_ * g, N));*/
 		}
-		if (bias_term_)
+		/*if (bias_term_)
 		{
 			int M = output_Channel_;
 			int N = out_spatial_dim_;
@@ -128,7 +133,13 @@ namespace excalibur
 			const float beta = 1.0f;
 			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, bias_multiplier_->gpu_data(), 
 				N, bias_->gpu_data(),	K, &beta, output, N));
-		}
+		}*/
+	}
+
+	void convolution::forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
+	{
+		math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_,
+			out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
 	}
 
 #endif
@@ -137,6 +148,8 @@ namespace excalibur
 	{
 		const int num = bottom->data_shape()[0];
 		const float* bottom_data = bottom->cpu_data();
+		const float* weights = weights_->cpu_data();
+		const float* bias = bias_->cpu_data();
 		//
 		intput_shape_.clear();
 		intput_shape_ = bottom->data_shape();
@@ -167,10 +180,17 @@ namespace excalibur
 		//
 		int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];
 		int top_dim = (top)->data_shape()[1] * (top)->data_shape()[2] * (top)->data_shape()[3];
+		//auto p0 = std::chrono::system_clock::now();
 		for (int n = 0; n < num; n++)
 		{
-			forward_cpu_gemm(bottom_data + n * bottom_dim_, top_data + n * top_dim);
+			forward_cpu_gemm(bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
+			if (bias_term_)
+			{
+				forward_cpu_bias(top_data + n * top_dim, bias);
+			}
 		}
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 }
