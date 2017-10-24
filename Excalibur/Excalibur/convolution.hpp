@@ -12,7 +12,7 @@ namespace excalibur
 	{
 		tensor* weights_;
 		tensor* bias_;
-		tensor* col_buffer_;
+	    std::shared_ptr<tensor> col_buffer_;
 		int device_;
 		/// parameters
 		int input_Channel_;
@@ -36,7 +36,7 @@ namespace excalibur
 		int kernel_dim_;
 		int col_offset_;
 		int output_offset_;
-		tensor* bias_multiplier_;
+		std::shared_ptr<tensor> bias_multiplier_;
 		///
 		inline void conv_im2col_cpu(const float* data, float* col_buff);
 		inline void conv_col2im_cpu(const float* col_buff, float* data);

@@ -1,8 +1,7 @@
 #pragma once
 #ifndef _MATH_FUNCTIONS_HPP_
 #define _MATH_FUNCTIONS_HPP_
-#include "accelerator.hpp"
-#include <cblas.h>
+#include "mkl_alternate.hpp"
 
 namespace excalibur
 {
@@ -18,6 +17,8 @@ namespace excalibur
 			float* C);
 
 		static void excalibur_copy(const int N, const float *X, float *Y, int device);
+
+		static void cpu_set(const int N, const float alpha, float* Y);
 
 #ifdef  USE_CUDA
 		static void gpu_sgemm(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,

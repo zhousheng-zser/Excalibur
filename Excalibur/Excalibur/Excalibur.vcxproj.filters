@@ -83,6 +83,9 @@
     <ClInclude Include="math_functions.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="mkl_alternate.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">

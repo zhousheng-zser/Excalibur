@@ -1,6 +1,5 @@
 #include "softmax.hpp"
 #include <algorithm>
-#include <cblas.h>
 
 namespace excalibur
 {

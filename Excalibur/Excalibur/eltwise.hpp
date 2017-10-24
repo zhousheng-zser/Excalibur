@@ -2,6 +2,7 @@
 #ifndef _ELTWISE_HPP_
 #define _ELTWISE_HPP_
 #include "tensor.hpp"
+#include "math_functions.hpp"
 
 namespace excalibur
 {

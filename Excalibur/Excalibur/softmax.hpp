@@ -2,6 +2,7 @@
 #ifndef _SOFTMAX_HPP_
 #define _SOFTMAX_HPP_
 #include "tensor.hpp"
+#include "math_functions.hpp"
 
 namespace excalibur
 {

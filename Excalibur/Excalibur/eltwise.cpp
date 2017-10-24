@@ -1,5 +1,4 @@
 #include "eltwise.hpp"
-#include <cblas.h>
 #include <algorithm>
 
 namespace excalibur

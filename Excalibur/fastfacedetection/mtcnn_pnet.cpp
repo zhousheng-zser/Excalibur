@@ -16,7 +16,7 @@ namespace fastface
 		int conv4_1_id = 12;
 		int conv4_2_id = 14;
 
-		device_ = -1;
+		device_ = 0;
 		if (device_>=0)
 		{
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
@@ -88,25 +88,26 @@ namespace fastface
 	}
 
 	void mtcnn_pnet::Forward_cpu(const std::shared_ptr<tensor> input_data)
-	{
-		
+	{		
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
-
-		auto p0 = std::chrono::system_clock::now();
+		//auto p0 = std::chrono::system_clock::now();
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
 		prelu1->Forward_cpu(conv1_top_data);
+		
+		
 		pool1->Forward_cpu(conv1_top_data, pool1_top_data);
 		conv2->Forward_cpu(pool1_top_data, conv2_top_data);
 		prelu2->Forward_cpu(conv2_top_data);
 		conv3->Forward_cpu(conv2_top_data, conv3_top_data);
 		prelu3->Forward_cpu(conv3_top_data);
+		
 		conv4_1->Forward_cpu(conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_cpu(conv3_top_data, conv4_2_top_data);
 		prob1->Forward_cpu(conv4_1_top_data, prob1_top_data);
-		auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward xx time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward xx time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 #ifdef USE_CUDA
@@ -116,7 +117,7 @@ namespace fastface
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		auto p0 = std::chrono::system_clock::now();
+		//auto p0 = std::chrono::system_clock::now();
 		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
 		
 		prelu1->Forward_native_gpu(conv1_top_data);
@@ -127,8 +128,8 @@ namespace fastface
 		prelu3->Forward_native_gpu(conv3_top_data);
 		conv4_1->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_2_top_data);
-		auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward conv1 time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward conv1 time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 #endif

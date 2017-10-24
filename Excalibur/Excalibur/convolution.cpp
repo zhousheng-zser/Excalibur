@@ -22,8 +22,8 @@ namespace excalibur
 	{
 		delete weights_;
 		delete bias_;
-		delete bias_multiplier_;
-		delete col_buffer_;
+		//delete bias_multiplier_;
+		//delete col_buffer_;
 	}
 
 	void convolution::set_bias(float* bias)
@@ -92,9 +92,12 @@ namespace excalibur
 
 	void convolution::forward_cpu_bias(float* output, const float* bias)
 	{
+		//auto p0 = std::chrono::system_clock::now();
 		math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
 			out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
 			1.0f, output);
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward bias time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 
@@ -112,28 +115,7 @@ namespace excalibur
 			math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
 				conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
 				0.0f, output + output_offset_ * g);
-			/*int M = output_Channel_ / group_;
-			int N = conv_out_spatial_dim_;
-			int K = kernel_dim_;
-			cublasOperation_t cuTransA = CUBLAS_OP_N;
-			cublasOperation_t cuTransB = CUBLAS_OP_N;
-			const float alpha = 1.0f;
-			const float beta = 0.0f;
-			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, col_buff + col_offset_ * g,
-				N, weights_->gpu_data() + weight_offset_ * g, K, &beta, output + output_offset_ * g, N));*/
 		}
-		/*if (bias_term_)
-		{
-			int M = output_Channel_;
-			int N = out_spatial_dim_;
-			int K = 1;
-			cublasOperation_t cuTransA = CUBLAS_OP_N;
-			cublasOperation_t cuTransB = CUBLAS_OP_N;
-			const float alpha = 1.0f;
-			const float beta = 1.0f;
-			CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransA, cuTransB, N, M, K, &alpha, bias_multiplier_->gpu_data(), 
-				N, bias_->gpu_data(),	K, &beta, output, N));
-		}*/
 	}
 
 	void convolution::forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
@@ -159,24 +141,13 @@ namespace excalibur
 		//
 
 		float* top_data = (top)->mutable_cpu_data();
-		if (col_buffer_ !=nullptr)
-		{
-			delete col_buffer_;
-		}
-		col_buffer_ = new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_);
-		if (bias_multiplier_!=nullptr)
-		{
-			delete bias_multiplier_;
-		}
-		bias_multiplier_ = new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_);
+		col_buffer_.reset(new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+		bias_multiplier_.reset(new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
 		output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
-		for (int i = 0; i < output_dim_w_*output_dim_h_; i++)
-		{
-			bias_multiplier_->mutable_cpu_data()[i] = 1.0f;
-		}
+		math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 		//
 		int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];
 		int top_dim = (top)->data_shape()[1] * (top)->data_shape()[2] * (top)->data_shape()[3];

@@ -16,24 +16,28 @@ void unittest()
 	std::shared_ptr<tensor> tensor_data = nullptr;
 	std::shared_ptr<tensor> tensor_data_ = nullptr;
 	//io::image2tensor(image, tensor_data/*, false, 1.0*/);
-	io::images2tensor(std::vector<cv::Mat>{image, image_}, tensor_data);
-	io::images2tensor(std::vector<cv::Mat>{image_, image}, tensor_data_);
+	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data);
+	io::images2tensor(std::vector<cv::Mat>{image_}, tensor_data_);
 	mtcnn_pnet pnet = mtcnn_pnet();
 	//mtcnn_rnet rnet = mtcnn_rnet();
 	//mtcnn_onet onet = mtcnn_onet();
 
-	pnet.Forward_cpu(tensor_data);
+	//pnet.Forward_cpu(tensor_data);
+	for (int i = 0; i < 10; i++)
+	{
+		pnet.Forward_native_gpu(tensor_data);
+	}
 	std::cout << std::endl;
 	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
-	for (int i = 0; i < 100; i++)
+	for (int i = 0; i < 1000; i++)
 	{
 		if (i%2==0)
 		{
-			pnet.Forward_cpu(tensor_data);
+			pnet.Forward_native_gpu(tensor_data);
 		}
 		else
 		{
-			pnet.Forward_cpu(tensor_data_);
+			pnet.Forward_native_gpu(tensor_data_);
 		}
 		//std::cout << std::endl;
 	}
@@ -67,7 +71,7 @@ void mtcnntset()
 
 int main()
 {
-	//unittest();
-	mtcnntset();
+	unittest();
+	//mtcnntset();
 	return 0;
 }

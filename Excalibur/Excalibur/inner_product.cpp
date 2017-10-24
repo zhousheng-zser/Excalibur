@@ -62,18 +62,10 @@ namespace excalibur
 		//
 		math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, M_, N_, K_, 1.0f,
 			bottom_data, weight, 0.0f, top_data);
-		/*int lda = K_;
-		int ldb = K_;
-		cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasTrans, M_, N_, K_,
-			1.0f, bottom_data, lda, weight, ldb, 0.0f, top_data, N_);*/
 		if (bias_term_)
 		{
 			math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, M_, N_, 1, 1.0f,
 				bias_multiplier_->cpu_data(), bias_->cpu_data(), 1.0f, top_data);
-			/*lda = 1;
-			ldb = N_;
-			cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M_, N_, 1,
-				1.0f, bias_multiplier_->cpu_data(), lda, bias_->cpu_data(), ldb, 1.0f, top_data, N_);*/
 		}
 	}
 

@@ -9,6 +9,7 @@
 
 
 #define USE_CUDA
+#define USE_MKL
 
 #ifdef USE_CUDA
 #include <cublas_v2.h>

@@ -22,17 +22,8 @@ namespace excalibur
 		float* top_data = (top)->mutable_gpu_data();
 		/*auto p1 = std::chrono::system_clock::now();
 		std::cout << "forward gpu gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
-		if (col_buffer_ != nullptr)
-		{
-			delete col_buffer_;
-		}
-
-		col_buffer_ = new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_);
-		if (bias_multiplier_ != nullptr)
-		{
-			delete bias_multiplier_;
-		}
-		bias_multiplier_ = new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_);
+		col_buffer_.reset(new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+		bias_multiplier_.reset(new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
