@@ -16,7 +16,7 @@ namespace fastface
 		int conv4_1_id = 12;
 		int conv4_2_id = 14;
 
-		device_ = 0;
+		device_ = -1;
 		if (device_>=0)
 		{
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {

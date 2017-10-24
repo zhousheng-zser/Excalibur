@@ -8,8 +8,8 @@ using namespace fastface;
 
 void unittest()
 {
-	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
-	cv::Mat image_ = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\1.jpg");
+	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_48.jpg");
+	cv::Mat image_ = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_48.jpg");
 	//cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087_0.png");
 	/*cv::resize(image, image, cv::Size(12, 18));
 	cv::imwrite("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_12_18.jpg", image);*/
@@ -18,14 +18,14 @@ void unittest()
 	//io::image2tensor(image, tensor_data/*, false, 1.0*/);
 	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data);
 	io::images2tensor(std::vector<cv::Mat>{image_}, tensor_data_);
-	mtcnn_pnet pnet = mtcnn_pnet();
+	//mtcnn_pnet pnet = mtcnn_pnet();
 	//mtcnn_rnet rnet = mtcnn_rnet();
-	//mtcnn_onet onet = mtcnn_onet();
+	mtcnn_onet onet = mtcnn_onet();
 
 	//pnet.Forward_cpu(tensor_data);
 	for (int i = 0; i < 10; i++)
 	{
-		pnet.Forward_native_gpu(tensor_data);
+		onet.Forward_cpu(tensor_data);
 	}
 	std::cout << std::endl;
 	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
@@ -33,17 +33,17 @@ void unittest()
 	{
 		if (i%2==0)
 		{
-			pnet.Forward_native_gpu(tensor_data);
+			onet.Forward_cpu(tensor_data);
 		}
 		else
 		{
-			pnet.Forward_native_gpu(tensor_data_);
+			onet.Forward_cpu(tensor_data_);
 		}
 		//std::cout << std::endl;
 	}
 	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
 	std::cout << "total forward time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;
-	auto a = pnet.get_prob1();
+	auto a = onet.get_prob1();
 	const float* output = a->cpu_data();
 	/*for (int i = 0; i<a->count()/1 ; i++)
 	{

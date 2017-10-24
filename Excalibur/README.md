@@ -32,6 +32,19 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
+  
+## Optimization Log
+### The average forward time(ms) on CPU(Intel i7-7700k)
+
+| Net(input size)     | Caffe |  mini-Caffe  |  Excalibur  |
+| :------: | :------:| :------: | :------: |
+| mtcnn-PNet(128*128)  |  5.013 |  3.391  |  4.316  |
+| mtcnn-RNet(24*24)  |  0.463 |  0.426  |  0.324  |
+| mtcnn-ONet(48*48)  |  1.071 |  0.838  |  0.764  |
+  
+## Known bugs
+  - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
+and similar to mini-caffe.
 
 ## Todo list
   * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.
