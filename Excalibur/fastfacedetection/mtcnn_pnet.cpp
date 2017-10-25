@@ -114,19 +114,23 @@ namespace fastface
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		//auto p0 = std::chrono::system_clock::now();
-		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
 		
+		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
+		//auto p0 = std::chrono::system_clock::now();
 		prelu1->Forward_native_gpu(conv1_top_data);
+		
 		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
+		
 		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward conv1 time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 		prelu2->Forward_native_gpu(conv2_top_data);
 		conv3->Forward_native_gpu(cublas_handle_, conv2_top_data, conv3_top_data);
 		prelu3->Forward_native_gpu(conv3_top_data);
 		conv4_1->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_2_top_data);
-		/*auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward conv1 time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
+		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
+		
 	}
 
 #endif

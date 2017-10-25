@@ -10,7 +10,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [Intel® MKL-DNN](https://github.com/01org/mkl-dnn)
 - [Intel® MPI](https://software.intel.com/en-us/intel-mpi-library)
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
-- [cuDNNv5.1](https://developer.nvidia.com/cudnn)
+- [cuDNNv6](https://developer.nvidia.com/cudnn)
 - [NCCL](https://github.com/NVIDIA/nccl)
 - [gemmlowp](https://github.com/inlmouse/gemmlowp)
 - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
@@ -21,26 +21,38 @@ As we described above, the implementation is able to be divided into 2 parts: CP
   * Faster implementation on Convolution and Inner-product with sparse model.
   * Half pricision(float16) support on x86(Intel only); fixed pricision(int8) support on x86 and ARM arch.
   
-## Currently support layers
-  - Convolution
-  - (P)ReLU
-  - Pooling
-  - Inner-product
-  - Elteise
-  - Softmax
-  - Slice
+## Implementation log
+
+|  Layers  |   BLAS  |   Native CUDA   | cuDNN | MKLDNN | NEON |
+| :------: | :------:| :------: | :------: | :------: | :------: |
+| Convolution | T |  T  |  T  |  F  |  F  |
+| (P)ReLU | T |  T  |  F  |  F  |  F  |
+| Pooling | T |  T  |  F  |  F  |  F  |
+| Inner-Product | T |  T  |  F  |  F  |  F  |
+| Softmax | T |  T  |  F  |  F  |  F  |
+| Eltwise | T |  F  |  F  |  F  |  F  |
+| Slice | T |  F  |  F  |  F  |  F  |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
   
-## Optimization Log
-### The average forward time(ms) on CPU(Intel i7-7700k)
+
+## Optimization log
+### The 1000 average forward time(ms) on CPU(Intel i7-7700k)
 
 | Net(input size)     | Caffe |  mini-Caffe  |  Excalibur  |
 | :------: | :------:| :------: | :------: |
 | mtcnn-PNet(128*128)  |  5.013 |  3.391  |  4.316  |
 | mtcnn-RNet(24*24)  |  0.463 |  0.426  |  0.324  |
 | mtcnn-ONet(48*48)  |  1.071 |  0.838  |  0.764  |
+
+### The 1000 average forward time(ms) on GPU(NVIDIA GTX1080-Ti) without cuDNN
+
+| Net(input size)     | Caffe |  mini-Caffe  |  Excalibur  |
+| :------: | :------:| :------: | :------: |
+| mtcnn-PNet(128*128)  |  -- |  --  |  --  |
+| mtcnn-RNet(24*24)  |  -- |  --  |  --  |
+| mtcnn-ONet(48*48)  |  -- |  --  |  --  |
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
