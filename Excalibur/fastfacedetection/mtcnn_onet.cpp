@@ -1,4 +1,5 @@
 #include "mtcnn_onet.hpp"
+#include <filesystem>
 
 namespace fastface
 {
@@ -105,6 +106,7 @@ namespace fastface
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
+		//auto p0 = std::chrono::system_clock::now();
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
 		prelu1->Forward_cpu(conv1_top_data);
 		pool1->Forward_cpu(conv1_top_data, pool1_top_data);
@@ -122,6 +124,8 @@ namespace fastface
 		ip6_2->Forward_cpu(ip5_top_data, ip6_2_top_data);
 		ip6_3->Forward_cpu(ip5_top_data, ip6_3_top_data);
 		prob1->Forward_cpu(ip6_1_top_data, prob1_top_data);
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 	std::shared_ptr<tensor> mtcnn_onet::get_prob1()

@@ -1,5 +1,7 @@
 #include "prelu.hpp"
 #ifdef USE_CUDA
+#include <filesystem>
+#include <iostream>
 namespace excalibur
 {
 	// CUDA kernele for forward
@@ -14,9 +16,12 @@ namespace excalibur
 
 	void prelu::Forward_native_gpu(const std::shared_ptr<tensor>& bottom)
 	{
+		//auto p0 = std::chrono::system_clock::now();
 		const float* bottom_data = bottom->gpu_data();
 		float* top_data = bottom->mutable_gpu_data();
 		const int count = bottom->count();
+		/*auto p1 = std::chrono::system_clock::now();
+		std::cout << "forward gpu prelu time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 		int dim;
 		if (bottom->data_shape().size()<=2)
 		{
@@ -29,6 +34,7 @@ namespace excalibur
 		const int channels = bottom->channels();
 		const float* slope_data = slope_data_->gpu_data();
 		const int div_factor = false ? channels : 1;
+		
 		// NOLINT_NEXT_LINE(whitespace/operators)
 		PReLUForward << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
 			count, channels, dim, bottom_data, top_data, slope_data, div_factor);

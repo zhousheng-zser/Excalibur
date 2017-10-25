@@ -1,6 +1,5 @@
 #include "softmax.hpp"
 #include <algorithm>
-#include <cblas.h>
 
 namespace excalibur
 {
@@ -19,25 +18,20 @@ namespace excalibur
 	softmax::~softmax()
 	{
 		delete sum_multiplier_;
-		delete scale_;
 	}
 
 	void softmax::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
 	{
 		outer_num_ = bottom->num();
-		if (scale_!=nullptr)
-		{
-			delete scale_;
-		}
 		if (bottom->data_shape().size()<=2)
 		{
 			inner_num_ = 1;
-			scale_ = new tensor(std::vector<int>{outer_num_, 1}, -1);
+			scale_.reset(new tensor(std::vector<int>{outer_num_, 1}, device_));
 		}
 		else
 		{
 			inner_num_ = bottom->height()*bottom->width();
-			scale_ = new tensor(std::vector<int>{outer_num_, 1, bottom->height(), bottom->width()}, -1);
+			scale_.reset(new tensor(std::vector<int>{outer_num_, 1, bottom->height(), bottom->width()}, device_));
 		}
 		
 		top.reset(new tensor(bottom->data_shape()/*std::vector<int>{outer_num_, bottom->channels()}*/, -1));

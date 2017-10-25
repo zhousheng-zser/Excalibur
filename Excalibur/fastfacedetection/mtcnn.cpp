@@ -180,7 +180,7 @@ namespace fastface
 	}
 
 	mtcnn::mtcnn() {
-		PNet_ = new mtcnn_pnet();
+		PNet_ = new mtcnn_pnet(-1);
 		RNet_ = new mtcnn_rnet();
 		ONet_ = new mtcnn_onet();
 	}
@@ -329,7 +329,7 @@ namespace fastface
 			// input data
 			std::shared_ptr<tensor> input_layer;
 			io::image2tensor(resized, input_layer);
-			PNet_->Forward_cpu(input_layer);
+			PNet_->Forward(input_layer);
 
 			// return result
 			std::shared_ptr<tensor> reg = PNet_->get_conv4_2();

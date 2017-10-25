@@ -170,7 +170,7 @@ namespace excalibur
 		}
 		cpu_ptr_ = data;
 		head_ = HEAD_AT_CPU;
-		own_cpu_data_ = false;
+		own_cpu_data_ = true;
 	}
 
 	void syncedmem::set_gpu_data(void* data)

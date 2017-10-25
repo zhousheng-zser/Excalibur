@@ -36,6 +36,12 @@
     <CudaCompile Include="math_functions.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="softmax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="cudnn_convolution.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -83,6 +89,18 @@
     <ClInclude Include="math_functions.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="mkl_alternate.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="mkldnn_alternate.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="cudnn.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="cudnn_convolution.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -125,6 +143,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="math_functions.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="cudnn.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="cudnn_convolution.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

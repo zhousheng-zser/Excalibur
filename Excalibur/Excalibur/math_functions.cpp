@@ -1,4 +1,6 @@
 #include "math_functions.hpp"
+#include <filesystem>
+#include <iostream>
 
 namespace excalibur
 {
@@ -16,8 +18,11 @@ namespace excalibur
 	{
 		int lda = (TransA == CblasNoTrans) ? K : M;
 		int ldb = (TransB == CblasNoTrans) ? N : K;
+		//std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
 		cblas_sgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
 			ldb, beta, C, N);
+		/*std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+		std::cout << "total blas_gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;*/
 	}
 
 	void math_functions::excalibur_copy(const int N, const float* X, float* Y, int device)
@@ -39,6 +44,18 @@ namespace excalibur
 			}
 		}
 	}
+
+	void math_functions::cpu_set(const int N, const float alpha, float* Y)
+	{
+		if (alpha == 0) {
+			memset(Y, 0, sizeof(float) * N);  
+			return;
+		}
+		for (int i = 0; i < N; ++i) {
+			Y[i] = alpha;
+		}
+	}
+
 
 }
 

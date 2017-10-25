@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SYNCEDMEM_HPP_
 #define _SYNCEDMEM_HPP_
-#include "accelerator.hpp"
+#include "math_functions.hpp"
 
 namespace excalibur
 {
