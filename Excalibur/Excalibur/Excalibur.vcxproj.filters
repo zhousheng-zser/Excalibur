@@ -36,6 +36,9 @@
     <CudaCompile Include="math_functions.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="softmax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -84,6 +87,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="mkl_alternate.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="mkldnn_alternate.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,6 +6,11 @@
 
 #include <mkl.h>
 
+#ifdef USE_MKLDNN
+
+//#include <mkl_dnn.h>
+
+#endif
 #else  // If use MKL, simply include the MKL header
 
 #ifdef USE_ACCELERATE

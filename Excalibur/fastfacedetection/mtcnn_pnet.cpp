@@ -3,7 +3,7 @@
 
 namespace fastface
 {
-	mtcnn_pnet::mtcnn_pnet()
+	mtcnn_pnet::mtcnn_pnet(int device)
 	{
 		NetParameter net1;
 		io::readcaffemodel("..\\model\\det1.caffemodel", net1);
@@ -16,20 +16,12 @@ namespace fastface
 		int conv4_1_id = 12;
 		int conv4_2_id = 14;
 
-		device_ = -1;
-		if (device_>=0)
-		{
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
+		device_ = device;
+#ifdef USE_CUDA
+		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
+			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 		}
-		//
-		/*std::string path = "..\\model\\pnet_data.hpp";
-		std::ofstream out(path, std::ios::app);
-		out << "#ifndef _PNET_DATA_HPP_" << std::endl;
-		out << "#define _PNET_DATA_HPP_" << std::endl;
-		out << std::endl << std::endl;
-		out << "static const float model_weights_PNet_[] = {" << std::endl;*/
+#endif
 		conv1_para = io::readdataformcaffemodel(net1, conv1_id);
 		prelu1_para = io::readdataformcaffemodel(net1, prelu1_id);
 		conv2_para = io::readdataformcaffemodel(net1, conv2_id);
@@ -38,8 +30,6 @@ namespace fastface
 		prelu3_para = io::readdataformcaffemodel(net1, prelu3_id);
 		conv4_1_para = io::readdataformcaffemodel(net1, conv4_1_id);
 		conv4_2_para = io::readdataformcaffemodel(net1, conv4_2_id);
-
-		//out << "#endif // _PNET_DATA_HPP_" << std::endl;
 		//
 		conv1 = new convolution(3, 10, 3, 1, 0, device_);
 		conv1->set_bias_term(true);
@@ -85,6 +75,12 @@ namespace fastface
 		delete conv4_1;
 		delete conv4_2;
 		delete prob1;
+#ifdef USE_CUDA
+		if (cublas_handle_)
+		{
+			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+		}
+#endif
 	}
 
 	void mtcnn_pnet::Forward_cpu(const std::shared_ptr<tensor> input_data)
@@ -110,6 +106,7 @@ namespace fastface
 		std::cout << "forward xx time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
+
 #ifdef USE_CUDA
 	void mtcnn_pnet::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
 	{
@@ -134,14 +131,19 @@ namespace fastface
 
 #endif
 
-	std::shared_ptr<tensor> mtcnn_pnet::get_prob1()
+	void mtcnn_pnet::Forward(const std::shared_ptr<tensor> input_data)
 	{
-		return prob1_top_data;
+		if (device_<0)
+		{
+			Forward_cpu(input_data);
+		}
+		else
+		{
+#ifdef USE_CUDA
+			Forward_native_gpu(input_data);
+#else
+			NO_GPU;
+#endif
+		}
 	}
-
-	std::shared_ptr<tensor> mtcnn_pnet::get_conv4_2()
-	{
-		return conv4_2_top_data;
-	}
-
 }

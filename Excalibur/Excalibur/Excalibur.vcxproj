@@ -133,6 +133,7 @@
     <CudaCompile Include="math_functions.cu" />
     <CudaCompile Include="pooling.cu" />
     <CudaCompile Include="prelu.cu" />
+    <CudaCompile Include="softmax.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp" />
@@ -143,6 +144,7 @@
     <ClInclude Include="inner_product.hpp" />
     <ClInclude Include="io.hpp" />
     <ClInclude Include="math_functions.hpp" />
+    <ClInclude Include="mkldnn_alternate.hpp" />
     <ClInclude Include="mkl_alternate.hpp" />
     <ClInclude Include="pooling.hpp" />
     <ClInclude Include="prelu.hpp" />
