@@ -6,19 +6,19 @@ namespace fastface
 {
 	mtcnn_pnet::mtcnn_pnet(int device)
 	{
-		COPY_PARAMS(conv1_weights, PNet);
-		COPY_PARAMS(conv1_bias, PNet);
-		COPY_PARAMS(prelu1_weights, PNet);
-		COPY_PARAMS(conv2_weights, PNet);
-		COPY_PARAMS(conv2_bias, PNet);
-		COPY_PARAMS(prelu2_weights, PNet);
-		COPY_PARAMS(conv3_weights, PNet);
-		COPY_PARAMS(conv3_bias, PNet);
-		COPY_PARAMS(prelu3_weights, PNet);
-		COPY_PARAMS(conv4_1_weights, PNet);
-		COPY_PARAMS(conv4_1_bias, PNet);
-		COPY_PARAMS(conv4_2_weights, PNet);
-		COPY_PARAMS(conv4_2_bias, PNet);
+		Copy_Params(conv1_weights, PNet);
+		Copy_Params(conv1_bias, PNet);
+		Copy_Params(prelu1_weights, PNet);
+		Copy_Params(conv2_weights, PNet);
+		Copy_Params(conv2_bias, PNet);
+		Copy_Params(prelu2_weights, PNet);
+		Copy_Params(conv3_weights, PNet);
+		Copy_Params(conv3_bias, PNet);
+		Copy_Params(prelu3_weights, PNet);
+		Copy_Params(conv4_1_weights, PNet);
+		Copy_Params(conv4_1_bias, PNet);
+		Copy_Params(conv4_2_weights, PNet);
+		Copy_Params(conv4_2_bias, PNet);
 
 		device_ = device;
 #ifdef USE_CUDA
@@ -28,29 +28,16 @@ namespace fastface
 #endif
 		
 		//
-		conv1 = new convolution(3, 10, 3, 1, 0, true, device_);
-		conv1->set_weights(conv1_weights);
-		conv1->set_bias(conv1_bias);
-		prelu1 = new prelu(10, false, device_);
-		prelu1->setslope(prelu1_weights);
-		pool1 = new pooling(2, 2, 0, 0, device_);
-		conv2 = new convolution(10, 16, 3, 1, 0, true, device_);
-		conv2->set_weights(conv2_weights);
-		conv2->set_bias(conv2_bias);
-		prelu2 = new prelu(16,false, device_);
-		prelu2->setslope(prelu2_weights);
-		conv3 = new convolution(16, 32, 3, 1, 0, true, device_);
-		conv3->set_weights(conv3_weights);
-		conv3->set_bias(conv3_bias);
-		prelu3 = new prelu(32, false, device_);
-		prelu3->setslope(prelu3_weights);
-		conv4_1 = new convolution(32, 2, 1, 1, 0, true, device_);
-		conv4_1->set_weights(conv4_1_weights);
-		conv4_1->set_bias(conv4_1_bias);
-		conv4_2 = new convolution(32, 4, 1, 1, 0, true, device_);
-		conv4_2->set_weights(conv4_2_weights);
-		conv4_2->set_bias(conv4_2_bias);
-		prob1 = new softmax(2, device_);
+		Declear_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
+		Declear_PReLU_Params(prelu1, 10, false);
+		Declear_Pooling_Params(pool1, 2, 2, 0, 0);
+		Declear_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
+		Declear_PReLU_Params(prelu2, 16, false);
+		Declear_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
+		Declear_PReLU_Params(prelu3, 32, false);
+		Declear_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
+		Declear_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
+		Declear_Softmax_Params(prob1, 2);
 		//
 	}
 

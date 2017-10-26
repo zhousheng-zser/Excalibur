@@ -66,7 +66,7 @@ void mtcnntset()
 
 int main()
 {
-	unittest();
-	//mtcnntset();
+	//unittest();
+	mtcnntset();
 	return 0;
 }

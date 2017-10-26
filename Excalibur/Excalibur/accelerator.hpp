@@ -9,7 +9,7 @@
 
 
 #define USE_CUDA
-#define USE_CUDNN
+//#define USE_CUDNN
 #define USE_MKL
 #define USE_MKLDNN
 
