@@ -5,13 +5,14 @@
 
 namespace excalibur
 {
-	convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, int device)
+	convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device)
 	{
 		input_Channel_ = input_Channel;
 		output_Channel_ = output_Channel;
 		kernelSize_ = kernelSize;
 		stride_ = stride;
 		pad_ = pad;
+		bias_term_ = bias_term;
 		device_ = device;
 		weights_ = new tensor(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_);
 		bias_ = new tensor(std::vector<int>{output_Channel_}, device_);
@@ -22,13 +23,14 @@ namespace excalibur
 	{
 		delete weights_;
 		delete bias_;
-		//delete bias_multiplier_;
-		//delete col_buffer_;
 	}
 
 	void convolution::set_bias(float* bias)
 	{
-		bias_->set_cpu_data(bias);
+		if (bias_term_)
+		{
+			bias_->set_cpu_data(bias);
+		}
 	}
 
 	void convolution::set_weights(float* weights)

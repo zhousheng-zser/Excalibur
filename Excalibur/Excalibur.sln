@@ -10,6 +10,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fastfacedetection", "fastfa
 		{E0AF50AC-048C-412F-BA26-13B4F408C96D} = {E0AF50AC-048C-412F-BA26-13B4F408C96D}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Longinus", "Longinus\Longinus.vcxproj", "{1CC44456-C9D8-42CF-82FC-C3740099F2A1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -34,6 +36,14 @@ Global
 		{678E0224-DB49-47DC-A5A5-8C5A61ABB711}.Release|x64.Build.0 = Release|x64
 		{678E0224-DB49-47DC-A5A5-8C5A61ABB711}.Release|x86.ActiveCfg = Release|Win32
 		{678E0224-DB49-47DC-A5A5-8C5A61ABB711}.Release|x86.Build.0 = Release|Win32
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Debug|x64.ActiveCfg = Debug|x64
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Debug|x64.Build.0 = Debug|x64
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Debug|x86.ActiveCfg = Debug|Win32
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Debug|x86.Build.0 = Debug|Win32
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Release|x64.ActiveCfg = Release|x64
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Release|x64.Build.0 = Release|x64
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Release|x86.ActiveCfg = Release|Win32
+		{1CC44456-C9D8-42CF-82FC-C3740099F2A1}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

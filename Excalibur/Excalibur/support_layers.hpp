@@ -2,6 +2,7 @@
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
 #include "convolution.hpp"
+#include "cudnn_convolution.hpp"
 #include "prelu.hpp"
 #include "pooling.hpp"
 #include "eltwise.hpp"

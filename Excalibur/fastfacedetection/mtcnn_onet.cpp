@@ -35,29 +35,26 @@ namespace fastface
 		ip6_2_para = io::readdataformcaffemodel(net3, ip6_2_id);
 		ip6_3_para = io::readdataformcaffemodel(net3, ip6_3_id);
 		//
-		conv1 = new convolution(3, 16, 3, 1, 0, -1);
-		conv1->set_bias_term(true);
+		
+		conv1 = new convolution(3, 16, 3, 1, 0, true, -1);
 		conv1->set_weights(conv1_para[0]);
 		conv1->set_bias(conv1_para[1]);
 		prelu1 = new prelu(16, false, -1);
 		prelu1->setslope(prelu1_para[0]);
 		pool1 = new pooling(3, 2, 0, 0, -1);
-		conv2 = new convolution(16, 32, 3, 1, 0, -1);
-		conv2->set_bias_term(true);
+		conv2 = new convolution(16, 32, 3, 1, 0, true, -1);
 		conv2->set_weights(conv2_para[0]);
 		conv2->set_bias(conv2_para[1]);
 		prelu2 = new prelu(32, false, -1);
 		prelu2->setslope(prelu2_para[0]);
 		pool2 = new pooling(3, 2, 0, 0, -1);
-		conv3 = new convolution(32, 32, 3, 1, 0, -1);
-		conv3->set_bias_term(true);
+		conv3 = new convolution(32, 32, 3, 1, 0, true, -1);
 		conv3->set_weights(conv3_para[0]);
 		conv3->set_bias(conv3_para[1]);
 		prelu3 = new prelu(32, false, -1);
 		prelu3->setslope(prelu3_para[0]);
 		pool3 = new pooling(2, 2, 0, 0, -1);
-		conv4 = new convolution(32, 64, 2, 1, 0, -1);
-		conv4->set_bias_term(true);
+		conv4 = new convolution(32, 64, 2, 1, 0, true, -1);
 		conv4->set_weights(conv4_para[0]);
 		conv4->set_bias(conv4_para[1]);
 		prelu4 = new prelu(64, false, -1);

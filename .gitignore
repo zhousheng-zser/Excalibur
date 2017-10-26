@@ -54,3 +54,4 @@
 *.db
 *.opendb
 *.suo
+*_data.hpp

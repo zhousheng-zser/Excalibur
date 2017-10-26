@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _MTCNN_PNET_HPP_
 #define _MTCNN_PNET_HPP_
-#include "../Excalibur/io.hpp"
+#include "mtcnn_pnet_data.hpp"
 #include "../Excalibur/support_layers.hpp"
 #define Neuron_Name(name) private: \
 std::shared_ptr<tensor> name##_top_data = nullptr;\
@@ -10,7 +10,17 @@ return name##_top_data;\
 }\
 private:
 
-#define  Declear_Opration(op, name) op *##name;
+#define  Declear_Opration(op, name) op##* name;
+
+#define Declear_PARAMS(layer_para) float* layer_para;
+
+#ifdef USE_MKL
+#define COPY_PARAMS(layer_para, netname) layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ?sizeof(netname##_##layer_para) :1, 64); \
+memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));
+#else
+#define COPY_PARAMS(layer_para, const_layer_param) layer_para =  (float*)malloc(sizeof(const_layer_param)); \
+memcpy(layer_para, const_layer_param, sizeof(const_layer_param));
+#endif
 
 using namespace excalibur;
 
@@ -18,25 +28,32 @@ namespace fastface
 {
 	class mtcnn_pnet
 	{
-		std::vector<float*> conv1_para;
-		std::vector<float*> prelu1_para;
-		std::vector<float*> conv2_para;
-		std::vector<float*> prelu2_para;
-		std::vector<float*> conv3_para;
-		std::vector<float*> prelu3_para;
-		std::vector<float*> conv4_1_para;
-		std::vector<float*> conv4_2_para;
+		Declear_PARAMS(conv1_weights);
+		Declear_PARAMS(conv1_bias);
+		Declear_PARAMS(prelu1_weights);
+		Declear_PARAMS(conv2_weights);
+		Declear_PARAMS(conv2_bias);
+		Declear_PARAMS(prelu2_weights);
+		Declear_PARAMS(conv3_weights);
+		Declear_PARAMS(conv3_bias);
+		Declear_PARAMS(prelu3_weights);
+		Declear_PARAMS(conv4_1_weights);
+		Declear_PARAMS(conv4_1_bias);
+		Declear_PARAMS(conv4_2_weights);
+		Declear_PARAMS(conv4_2_bias);
+
 		//
-		convolution* conv1;
-		prelu *prelu1;
-		pooling *pool1;
-		convolution *conv2;
-		prelu *prelu2;
-		convolution *conv3;
-		prelu *prelu3;
-		convolution *conv4_1;
-		convolution *conv4_2;
-		softmax *prob1;
+		Declear_Opration(convolution, conv1)
+		Declear_Opration(prelu, prelu1)
+		Declear_Opration(pooling, pool1)
+		Declear_Opration(convolution, conv2)
+		Declear_Opration(prelu, prelu2)
+		Declear_Opration(convolution, conv3)
+		Declear_Opration(prelu, prelu3)
+		Declear_Opration(convolution, conv4_1)
+		Declear_Opration(convolution, conv4_2)
+		Declear_Opration(softmax, prob1)
+		
 		//
 		std::shared_ptr<tensor> tensor_data = nullptr;
 		Neuron_Name(conv1)
@@ -52,6 +69,9 @@ namespace fastface
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_ = nullptr;
 		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
+#ifdef USE_CUDNN
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
+#endif 
 #endif
 		
 	public:

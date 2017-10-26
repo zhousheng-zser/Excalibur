@@ -9,7 +9,7 @@ namespace excalibur
 // Set to three for the benefit of the backward pass, which
 // can use separate streams for calculating the gradient w.r.t.
 // bias, filter weights, and bottom data for each group independently
-#define CUDNN_STREAMS_PER_GROUP 3
+#define CUDNN_STREAMS_PER_GROUP 1
 	class cudnn_convolution
 	{
 		bool handles_setup_;
@@ -58,7 +58,8 @@ namespace excalibur
 		cudnn_convolution(int input_Channel, int output_Channel, int kernelSize,
 			int stride, int pad, bool bias_term, int device);
 		~cudnn_convolution();
-
+		void set_weights(float* weights);
+		void set_bias(float* bias);
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
 	};
 }
