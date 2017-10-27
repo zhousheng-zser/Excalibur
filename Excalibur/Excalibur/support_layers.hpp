@@ -31,19 +31,27 @@ layer_para =  (float*)malloc(sizeof(const_layer_param)); \
 memcpy(layer_para, const_layer_param, sizeof(const_layer_param));
 #endif
 
-#define Declear_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+#define Init_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
 conv_name = new convolution(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
 conv_name->set_weights(conv_name##_##weights);\
 conv_name->set_bias(conv_name##_##bias);\
 
-#define Declear_PReLU_Params(prelu_name, input_channel, isrelu)\
+#define Init_PReLU_Params(prelu_name, input_channel, isrelu)\
 prelu_name = new prelu(input_channel, isrelu, device_);\
 prelu_name->setslope(prelu_name##_##weights);
 
-#define Declear_Pooling_Params(pooling_name, kernel, stride, pad, type)\
+#define Init_Pooling_Params(pooling_name, kernel, stride, pad, type)\
 pooling_name = new pooling(kernel, stride, pad, type, device_);
 
-#define Declear_Softmax_Params(softmax_name, input_channel)\
+#define Init_Softmax_Params(softmax_name, input_channel)\
 softmax_name = new softmax(input_channel, device_);
+
+#define Init_Eltwise_Params(eltwise_name, type)\
+eltwise_name = new eltwise(type, device_);
+
+#define Init_InnerProduct_Params(ip_name, input_channel, input_height, input_width, num_output, bias_term)\
+ip_name = new inner_product(std::vector<int>{1, input_channel, input_height, input_width}, num_output, bias_term, device_);\
+ip_name->set_weights(ip_name##_##weights);\
+ip_name->set_bias(ip_name##_##bias);
 
 #endif //_SUPPORT_LAYERS_HPP_

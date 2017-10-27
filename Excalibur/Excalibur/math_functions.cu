@@ -34,5 +34,10 @@ namespace excalibur
 		CUBLAS_CHECK(cublasSgemm(cublas_handle_, cuTransB, cuTransA,
 			N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 	}
+
+	void math_functions::gpu_saxpy(cublasHandle_t cublas_handle_, const int N, const float alpha, const float* X, float* Y)
+	{
+		CUBLAS_CHECK(cublasSaxpy(cublas_handle_, N, &alpha, X, 1, Y, 1));
+	}
 }
 #endif

@@ -26,6 +26,8 @@ namespace excalibur
 			const float alpha, const float* A, const float* B, const float beta,
 			float* C);
 
+		static void gpu_saxpy(cublasHandle_t cublas_handle_, const int N, const float alpha, const float* X, float* Y);
+
 		static void gpu_set(const int N, const float alpha, float* Y);
 #endif
 	};

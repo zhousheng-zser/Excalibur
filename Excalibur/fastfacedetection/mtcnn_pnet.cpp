@@ -28,16 +28,16 @@ namespace fastface
 #endif
 		
 		//
-		Declear_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
-		Declear_PReLU_Params(prelu1, 10, false);
-		Declear_Pooling_Params(pool1, 2, 2, 0, 0);
-		Declear_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
-		Declear_PReLU_Params(prelu2, 16, false);
-		Declear_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
-		Declear_PReLU_Params(prelu3, 32, false);
-		Declear_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
-		Declear_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
-		Declear_Softmax_Params(prob1, 2);
+		Init_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
+		Init_PReLU_Params(prelu1, 10, false);
+		Init_Pooling_Params(pool1, 2, 2, 0, 0);
+		Init_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
+		Init_PReLU_Params(prelu2, 16, false);
+		Init_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
+		Init_PReLU_Params(prelu3, 32, false);
+		Init_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
+		Init_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
+		Init_Softmax_Params(prob1, 2);
 		//
 	}
 
@@ -67,22 +67,16 @@ namespace fastface
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
-		//auto p0 = std::chrono::system_clock::now();
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
 		prelu1->Forward_cpu(conv1_top_data);
-		
-		
 		pool1->Forward_cpu(conv1_top_data, pool1_top_data);
 		conv2->Forward_cpu(pool1_top_data, conv2_top_data);
 		prelu2->Forward_cpu(conv2_top_data);
 		conv3->Forward_cpu(conv2_top_data, conv3_top_data);
 		prelu3->Forward_cpu(conv3_top_data);
-		
 		conv4_1->Forward_cpu(conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_cpu(conv3_top_data, conv4_2_top_data);
 		prob1->Forward_cpu(conv4_1_top_data, prob1_top_data);
-		/*auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward xx time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 	}
 
 
