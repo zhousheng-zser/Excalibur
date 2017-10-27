@@ -11,7 +11,7 @@ namespace excalibur
 		int num_output_;
 		tensor* weights_;
 		tensor* bias_;
-		tensor* bias_multiplier_;
+		std::shared_ptr<tensor> bias_multiplier_;
 		std::vector<int> input_shape_without_num_;
 		int K_;
 		int N_;

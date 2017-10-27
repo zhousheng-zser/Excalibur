@@ -179,10 +179,11 @@ namespace fastface
 		}
 	}
 
-	mtcnn::mtcnn() {
-		PNet_ = new mtcnn_pnet(-1);
-		RNet_ = new mtcnn_rnet();
-		ONet_ = new mtcnn_onet();
+	mtcnn::mtcnn(int device) {
+		device_ = device;
+		PNet_ = new mtcnn_pnet(device_);
+		RNet_ = new mtcnn_rnet(device_);
+		ONet_ = new mtcnn_onet(device_);
 	}
 
 
@@ -227,14 +228,14 @@ namespace fastface
 		std::shared_ptr<tensor> reg;
 		if (net_id == 1)
 		{
-			RNet_->Forward_cpu(input_tensor);
-			reg = RNet_->get_ip5_2();
+			RNet_->Forward(input_tensor);
+			reg = RNet_->get_conv5_2();
 			confidence = RNet_->get_prob1();
 		}
 		if (net_id == 2)
 		{
-			ONet_->Forward_cpu(input_tensor);
-			reg = ONet_->get_ip6_2();
+			ONet_->Forward(input_tensor);
+			reg = ONet_->get_conv6_2();
 			confidence = ONet_->get_prob1();
 		}
 		//  CHECK(reinterpret_cast<float*>(crop_img_set.at(0).data) == net->input_blobs()[0]->cpu_data())
@@ -248,7 +249,7 @@ namespace fastface
 		const float* points_data = nullptr;
 		if (netName == 'o')
 		{
-			const std::shared_ptr<tensor> points_offset = ONet_->get_ip6_3();
+			const std::shared_ptr<tensor> points_offset = ONet_->get_conv6_3();
 			points_data = points_offset->cpu_data();
 		}
 

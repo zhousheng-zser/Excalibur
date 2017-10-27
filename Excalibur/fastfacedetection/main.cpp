@@ -53,7 +53,7 @@ void mtcnntset()
 {
 	cv::Mat image = cv::imread("C:\\Users\\bj12\\Desktop\\WeChat Image_20171026153606.jpg");
 	cv::resize(image, image, cv::Size(750, 1000));
-	mtcnn mt = mtcnn();
+	mtcnn mt = mtcnn(0);
 	double threshold[3] = { 0.7, 0.7, 0.7 };
 	double factor = 0.709;
 	int minSize = 48;

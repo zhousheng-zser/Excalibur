@@ -1,10 +1,5 @@
 #include "io.hpp"
 
-//#ifdef _WIN64
-//#define _CRT_SECURE_NO_WARNINGS
-//#define _SCL_SECURE_NO_WARNINGS
-//#endif
-
 namespace excalibur
 {
 	io::io()
@@ -100,7 +95,7 @@ namespace excalibur
 		return;
 	}
 
-
+#ifdef CAFFEMODEL_SOPPORT
 	void io::WriteProtoToTextFile(const Message& proto, const char* filename)
 	{
 		int fd = _open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
@@ -155,4 +150,5 @@ namespace excalibur
 		}
 		return output;
 	}
+#endif
 }

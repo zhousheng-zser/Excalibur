@@ -7,15 +7,8 @@ namespace excalibur
 		M_ = bottom->num();
 		if (bias_term_)
 		{
-			if (bias_multiplier_ != nullptr)
-			{
-				delete bias_multiplier_;
-			}
-			bias_multiplier_ = new tensor(std::vector<int>{M_}, device_);
-			for (int i = 0; i < M_; i++)
-			{
-				bias_multiplier_->mutable_gpu_data()[i] = 1.0f;
-			}
+			bias_multiplier_.reset(new tensor(std::vector<int>{M_}, device_));
+			math_functions::gpu_set(M_, 1.0f, bias_multiplier_->mutable_gpu_data());
 		}
 		top.reset(new tensor(std::vector<int>{M_, N_}, device_));
 		//

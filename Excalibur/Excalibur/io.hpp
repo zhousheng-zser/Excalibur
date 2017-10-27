@@ -4,17 +4,19 @@
 #include <io.h>
 #include <fcntl.h>
 #include <stdio.h>
+#ifdef CAFFEMODEL_SOPPORT
 #include "caffe.pb.h"
 #include <fstream>  // NOLINT(readability/streams)
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 #include <google/protobuf/io/gzip_stream.h>
 #include <google/protobuf/text_format.h>
+#endif
 #include <iostream>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include "tensor.hpp"
-
+#ifdef CAFFEMODEL_SOPPORT
 using namespace caffe;
 
 using google::protobuf::io::FileInputStream;
@@ -25,17 +27,19 @@ using google::protobuf::io::ZeroCopyOutputStream;
 using google::protobuf::io::CodedOutputStream;
 using google::protobuf::io::GzipOutputStream;
 using google::protobuf::Message;
-
+#endif
 
 
 namespace excalibur
 {
 	class io
 	{
+
+#ifdef CAFFEMODEL_SOPPORT
 		static bool ReadProtoFromBinaryFile(const char* file, Message* net);
 
 		static void WriteProtoToTextFile(const Message& proto, const char* filename);
-
+#endif
 	public:
 		io();
 		~io();
@@ -44,9 +48,11 @@ namespace excalibur
 
 		static void image2tensor(const cv::Mat image, std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 
+#ifdef CAFFEMODEL_SOPPORT
 		static bool readcaffemodel(const std::string modelpath, NetParameter& net);
 
 		static std::vector<float*> readdataformcaffemodel(NetParameter net1, int id);
+#endif
 	};
 }
 #endif // _IO_HPP_
