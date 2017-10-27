@@ -91,7 +91,7 @@
       <AdditionalOptions>/ignore:4006  /ignore:4221 /ignore:4009 /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30;</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50;</CodeGeneration>
       <TargetMachinePlatform>64</TargetMachinePlatform>
     </CudaCompile>
   </ItemDefinitionGroup>
@@ -125,12 +125,13 @@
     </Link>
     <CudaCompile>
       <TargetMachinePlatform>64</TargetMachinePlatform>
-      <CodeGeneration>compute_30,sm_30;%(CodeGeneration)</CodeGeneration>
+      <CodeGeneration>compute_50,sm_50;%(CodeGeneration)</CodeGeneration>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="convolution.cu" />
     <CudaCompile Include="cudnn_convolution.cu" />
+    <CudaCompile Include="eltwise.cu" />
     <CudaCompile Include="im2col.cu" />
     <CudaCompile Include="inner_product.cu" />
     <CudaCompile Include="math_functions.cu" />

@@ -42,6 +42,9 @@
     <CudaCompile Include="cudnn_convolution.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="eltwise.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">

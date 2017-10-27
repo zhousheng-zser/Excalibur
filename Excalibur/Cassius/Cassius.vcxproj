@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{678E0224-DB49-47DC-A5A5-8C5A61ABB711}</ProjectGuid>
-    <RootNamespace>fastfacedetection</RootNamespace>
+    <ProjectGuid>{8432FA67-F974-46C7-A792-DCFB77624F35}</ProjectGuid>
+    <RootNamespace>Cassius</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -120,23 +120,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
-      <Project>{e0af50ac-048c-412f-ba26-13b4f408c96d}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="mtcnn.hpp" />
-    <ClInclude Include="mtcnn_onet.hpp" />
-    <ClInclude Include="mtcnn_pnet.hpp" />
-    <ClInclude Include="mtcnn_pnet_data.hpp" />
-    <ClInclude Include="mtcnn_rnet.hpp" />
+    <ClInclude Include="unicorn_net.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="mtcnn.cpp" />
-    <ClCompile Include="mtcnn_onet.cpp" />
-    <ClCompile Include="mtcnn_pnet.cpp" />
-    <ClCompile Include="mtcnn_rnet.cpp" />
+    <ClCompile Include="unicorn_net.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
+      <Project>{e0af50ac-048c-412f-ba26-13b4f408c96d}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

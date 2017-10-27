@@ -16,12 +16,9 @@ namespace excalibur
 
 	void prelu::Forward_native_gpu(const std::shared_ptr<tensor>& bottom)
 	{
-		//auto p0 = std::chrono::system_clock::now();
 		const float* bottom_data = bottom->gpu_data();
 		float* top_data = bottom->mutable_gpu_data();
 		const int count = bottom->count();
-		/*auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward gpu prelu time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
 		int dim;
 		if (bottom->data_shape().size()<=2)
 		{

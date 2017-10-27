@@ -187,7 +187,7 @@ namespace excalibur
 		}
 		gpu_ptr_ = data;
 		head_ = HEAD_AT_GPU;
-		own_gpu_data_ = false;
+		own_gpu_data_ = true;
 #else
 		NO_GPU;
 #endif

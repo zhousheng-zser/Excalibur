@@ -29,7 +29,10 @@ namespace excalibur
 
 	void inner_product::set_bias(float* bias)
 	{
-		bias_->set_cpu_data(bias);
+		if (bias_term_)
+		{
+			bias_->set_cpu_data(bias);
+		}
 	}
 
 	inner_product::~inner_product()

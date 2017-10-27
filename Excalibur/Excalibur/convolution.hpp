@@ -27,6 +27,10 @@ namespace excalibur
 		int out_spatial_dim_;
 		int weight_offset_;
 		bool bias_term_;
+		bool isfirst;
+		int last_height;
+		int last_width;
+		float* gpu_temp_col_buffer_;
 		///
 		int num_kernels_im2col_;
 		int num_kernels_col2im_;
@@ -47,14 +51,10 @@ namespace excalibur
 		void setup_internal_params();
 	public:
 		convolution(int input_Channel, int output_Channel, int kernelSize,
-			int stride, int pad, int device);
+			int stride, int pad, bool bias_term,  int device);
 		~convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
-		void set_bias_term(bool bias_term)
-		{
-			bias_term_ = bias_term;
-		}
 		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
 #ifdef USE_CUDA
 		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);

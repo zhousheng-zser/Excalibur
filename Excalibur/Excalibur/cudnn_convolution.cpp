@@ -20,6 +20,9 @@ namespace excalibur
 		bias_term_ = bias_term;
 		device_ = device;
 
+		weights_ = new tensor(std::vector<int>{num_input_*num_output_*kernel_size_*kernel_size_}, device_);
+		bias_ = new tensor(std::vector<int>{num_output_}, device_);
+
 		// Initialize CUDA streams and cuDNN.
 		stream_ = new cudaStream_t[this->group_ * CUDNN_STREAMS_PER_GROUP];
 		handle_ = new cudnnHandle_t[this->group_ * CUDNN_STREAMS_PER_GROUP];
@@ -107,13 +110,25 @@ namespace excalibur
 		delete[] workspace_fwd_sizes_;
 	}
 
+	void cudnn_convolution::set_weights(float* weights)
+	{
+		weights_->set_gpu_data(weights);
+	}
+
+	void cudnn_convolution::set_bias(float* bias)
+	{
+		bias_->set_gpu_data(bias);
+	}
+
+
 	void cudnn_convolution::pre_Forward_cudnn_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
 	{
 		// calcu output parms
-		int height_out = (bottom->data_shape()[2] + 2 * pad_ - kernel_size_) / stride_ + 1;
-		int width_out = (bottom->data_shape()[3] + 2 * pad_ - kernel_size_) / stride_ + 1;
 		const int height = bottom->height();
 		const int width = bottom->width();
+		int height_out = (height + 2 * pad_ - kernel_size_) / stride_ + 1;
+		int width_out = (width + 2 * pad_ - kernel_size_) / stride_ + 1;
+		
 		this->num_ = bottom->num();
 		out_spatial_dim_ = width_out*height_out;
 
@@ -125,7 +140,7 @@ namespace excalibur
 		kernel_dim_ = num_input_*kernel_size_*kernel_size_;
 		weight_offset_ = num_output_*kernel_dim_ / group_;
 		// Specify workspace limit for kernels directly until we have a
-		// planning strategy and a rewrite of Caffe's GPU memory mangagement
+		// planning strategy and a rewrite of Excalibur's GPU memory mangagement
 		size_t workspace_limit_bytes = 8 * 1024 * 1024;
 
 		for (int i = 0; i < 1; i++) {
@@ -143,16 +158,16 @@ namespace excalibur
 				filter_desc_, pad_, pad_,
 				stride_, stride_);
 
-			// choose forward and backward algorithms + workspace(s)
+			// choose forward algorithms + workspace(s)
 			CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(handle_[0],
 				bottom_descs_[i],
 				filter_desc_,
 				conv_descs_[i],
 				top_descs_[i],
-				CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
+				CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
 				workspace_limit_bytes,
 				&fwd_algo_[i]));
-
+			
 			CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(handle_[0],
 				bottom_descs_[i],
 				filter_desc_,
@@ -160,6 +175,7 @@ namespace excalibur
 				top_descs_[i],
 				fwd_algo_[i],
 				&(workspace_fwd_sizes_[i])));
+			
 		}
 
 		// reduce over all workspace sizes to get a maximum to allocate / reallocate

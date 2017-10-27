@@ -13,7 +13,7 @@ namespace excalibur
 	{
 	}
 
-	void eltwise::Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor> top)
+	void eltwise::Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top)
 	{
 		coeffs_ = std::vector<float>(bottom.size(), 1);
 		for (int i = 1; i < bottom.size(); ++i) {
