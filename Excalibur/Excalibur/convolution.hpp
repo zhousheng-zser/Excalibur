@@ -27,6 +27,10 @@ namespace excalibur
 		int out_spatial_dim_;
 		int weight_offset_;
 		bool bias_term_;
+		bool isfirst;
+		int last_height;
+		int last_width;
+		float* gpu_temp_col_buffer_;
 		///
 		int num_kernels_im2col_;
 		int num_kernels_col2im_;

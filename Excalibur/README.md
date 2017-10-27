@@ -54,11 +54,13 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 | mtcnn-PNet(128*128)  |  --/-- |  --/--  |  --/--  |
 | mtcnn-RNet(24*24)  |  --/-- |  --/--  |  --/--  |
 | mtcnn-ONet(48*48)  |  --/-- |  --/--  |  --/--  |
-| Unicorn(128*128)  |  7.145/-- |  --/--  |  --/21.792  |
+| Unicorn(128*128)  |  7.145/-- |  8.309/--  |  --/6.424  |
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
 and similar to mini-caffe.
+  - When accessing the col buffer in convolution layer(std::shared_ptr<tensor> col_buffer_) on GPU, it takes plenty of time. We tried to fix it by using a global buffer,
+however, this problem will also be exposed while confronted with variable input size(FCN), Such as the PNet in MTCNN.
 
 ## Todo list
   * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.

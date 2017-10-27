@@ -71,10 +71,10 @@ namespace excalibur
 
 	void pooling::Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
 	{
-		int num = bottom->data_shape()[0];
-		channels_ = bottom->data_shape()[1];
-		height_ = bottom->data_shape()[2];
-		width_ = bottom->data_shape()[3];
+		int num = bottom->num();
+		channels_ = bottom->channels();
+		height_ = bottom->height();
+		width_ = bottom->width();
 		pooled_height_ = static_cast<int>(ceil(static_cast<float>(
 			height_ + 2 * pad_ - kernel_) / stride_)) + 1;
 		pooled_width_ = static_cast<int>(ceil(static_cast<float>(
