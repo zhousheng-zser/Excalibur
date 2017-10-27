@@ -17,10 +17,10 @@ namespace excalibur
 
 		~eltwise();
 
-		void Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor> top);
+		void Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top);
 
 #ifdef USE_CUDA
-		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor> top);
+		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top);
 #endif
 	};
 }

@@ -30,7 +30,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 | Pooling | T |  T  |  F  |  F  |  F  |
 | Inner-Product | T |  T  |  F  |  F  |  F  |
 | Softmax | T |  T  |  F  |  F  |  F  |
-| Eltwise | T |  F  |  F  |  F  |  F  |
+| Eltwise | T |  T  |  F  |  F  |  F  |
 | Slice | T |  F  |  F  |  F  |  F  |
 
 ## How to use
@@ -45,14 +45,16 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 | mtcnn-PNet(128*128)  |  5.013 |  3.391  |  4.316  |
 | mtcnn-RNet(24*24)  |  0.463 |  0.426  |  0.324  |
 | mtcnn-ONet(48*48)  |  1.071 |  0.838  |  0.764  |
+| Unicorn(128*128)  |  98.820 |  70.379  |  90.619  |
 
-### The 1000 average forward time(ms) on GPU(NVIDIA GTX1080-Ti) without cuDNN
+### The 1000 average forward time(ms) on GPU(NVIDIA GTX1080-Ti) with/without cuDNN
 
 | Net(input size)     | Caffe |  mini-Caffe  |  Excalibur  |
 | :------: | :------:| :------: | :------: |
-| mtcnn-PNet(128*128)  |  -- |  --  |  --  |
-| mtcnn-RNet(24*24)  |  -- |  --  |  --  |
-| mtcnn-ONet(48*48)  |  -- |  --  |  --  |
+| mtcnn-PNet(128*128)  |  --/-- |  --/--  |  --/--  |
+| mtcnn-RNet(24*24)  |  --/-- |  --/--  |  --/--  |
+| mtcnn-ONet(48*48)  |  --/-- |  --/--  |  --/--  |
+| Unicorn(128*128)  |  7.145/-- |  --/--  |  --/21.792  |
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
