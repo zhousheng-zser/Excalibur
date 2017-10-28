@@ -32,6 +32,9 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 | Softmax | T |  T  |  F  |  F  |  F  |
 | Eltwise | T |  T  |  F  |  F  |  F  |
 | Slice | T |  F  |  F  |  F  |  F  |
+| Flip | T |  T  |  F  |  F  |  F  |
+| Concat | T |  T  |  F  |  F  |  F  |
+| Normalize | T |  T  |  F  |  F  |  F  |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.

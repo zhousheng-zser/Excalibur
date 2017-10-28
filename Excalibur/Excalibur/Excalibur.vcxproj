@@ -129,12 +129,15 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CudaCompile Include="concat.cu" />
     <CudaCompile Include="convolution.cu" />
     <CudaCompile Include="cudnn_convolution.cu" />
     <CudaCompile Include="eltwise.cu" />
+    <CudaCompile Include="flip.cu" />
     <CudaCompile Include="im2col.cu" />
     <CudaCompile Include="inner_product.cu" />
     <CudaCompile Include="math_functions.cu" />
+    <CudaCompile Include="normalize.cu" />
     <CudaCompile Include="pooling.cu" />
     <CudaCompile Include="prelu.cu" />
     <CudaCompile Include="softmax.cu" />
@@ -142,16 +145,19 @@
   <ItemGroup>
     <ClInclude Include="accelerator.hpp" />
     <ClInclude Include="caffe.pb.h" />
+    <ClInclude Include="concat.hpp" />
     <ClInclude Include="convolution.hpp" />
     <ClInclude Include="cudnn.hpp" />
     <ClInclude Include="cudnn_convolution.hpp" />
     <ClInclude Include="eltwise.hpp" />
+    <ClInclude Include="flip.hpp" />
     <ClInclude Include="im2col.hpp" />
     <ClInclude Include="inner_product.hpp" />
     <ClInclude Include="io.hpp" />
     <ClInclude Include="math_functions.hpp" />
     <ClInclude Include="mkldnn_alternate.hpp" />
     <ClInclude Include="mkl_alternate.hpp" />
+    <ClInclude Include="normalize.hpp" />
     <ClInclude Include="pooling.hpp" />
     <ClInclude Include="prelu.hpp" />
     <ClInclude Include="slice.hpp" />
@@ -163,14 +169,17 @@
   <ItemGroup>
     <ClCompile Include="accelerator.cpp" />
     <ClCompile Include="caffe.pb.cc" />
+    <ClCompile Include="concat.cpp" />
     <ClCompile Include="convolution.cpp" />
     <ClCompile Include="cudnn.cpp" />
     <ClCompile Include="cudnn_convolution.cpp" />
     <ClCompile Include="eltwise.cpp" />
+    <ClCompile Include="flip.cpp" />
     <ClCompile Include="im2col.cpp" />
     <ClCompile Include="inner_product.cpp" />
     <ClCompile Include="io.cpp" />
     <ClCompile Include="math_functions.cpp" />
+    <ClCompile Include="normalize.cpp" />
     <ClCompile Include="pooling.cpp" />
     <ClCompile Include="prelu.cpp" />
     <ClCompile Include="slice.cpp" />
