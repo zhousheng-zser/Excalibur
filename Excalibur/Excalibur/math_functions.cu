@@ -19,6 +19,31 @@ namespace excalibur
 			N, alpha, Y);
 	}
 
+	__global__ void powx_kernel(const int n, const float* a,
+		const float alpha, float* y) {
+		CUDA_KERNEL_LOOP(index, n) {
+			y[index] = pow(a[index], alpha);
+		}
+	}
+
+	void math_functions::gpu_powx(const int N, const float* a, const float alpha, float* y)
+	{
+		powx_kernel << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> >(
+			N, a, alpha, y);
+	}
+
+	__global__ void abs_kernel(const int n, const float* a, float* y) {
+		CUDA_KERNEL_LOOP(index, n) {
+			y[index] = abs(a[index]);
+		}
+	}
+
+	void math_functions::gpu_abs(const int N, const float* a, float* y)
+	{
+		abs_kernel << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> >(
+			N, a, y);
+	}
+
 	void math_functions::gpu_sgemm(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,
 		const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 		const float alpha, const float* A, const float* B, const float beta,

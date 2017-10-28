@@ -45,6 +45,15 @@
     <CudaCompile Include="eltwise.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="flip.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="concat.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="normalize.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -104,6 +113,15 @@
     <ClInclude Include="cudnn_convolution.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="flip.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="concat.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="normalize.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -152,6 +170,15 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="cudnn_convolution.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="flip.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="concat.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="normalize.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

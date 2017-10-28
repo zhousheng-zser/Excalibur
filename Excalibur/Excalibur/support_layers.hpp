@@ -8,6 +8,9 @@
 #include "eltwise.hpp"
 #include "inner_product.hpp"
 #include "softmax.hpp"
+#include "flip.hpp"
+#include "concat.hpp"
+#include "normalize.hpp"
 
 
 #define Neuron_Name(name) private: \
