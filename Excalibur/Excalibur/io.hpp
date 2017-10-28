@@ -1,6 +1,7 @@
 #pragma once
 #ifndef _IO_HPP_
 #define _IO_HPP_
+#include "tensor.hpp"
 #include <io.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -14,8 +15,9 @@
 #endif
 #include <iostream>
 #include <string>
+#ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
-#include "tensor.hpp"
+#endif
 #ifdef CAFFEMODEL_SOPPORT
 using namespace caffe;
 
@@ -43,11 +45,15 @@ namespace excalibur
 	public:
 		io();
 		~io();
-
+		static void bytes2tensor(const unsigned char* bytes, int num, int channel, int height, int width,
+			std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+		static void bytes2tensor(const char* bytes, int num, int channel, int height, int width,
+			std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+#ifdef USE_OPENCV
 		static void images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 
 		static void image2tensor(const cv::Mat image, std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
-
+#endif
 #ifdef CAFFEMODEL_SOPPORT
 		static bool readcaffemodel(const std::string modelpath, NetParameter& net);
 

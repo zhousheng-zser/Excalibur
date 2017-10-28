@@ -11,6 +11,85 @@ namespace excalibur
 	{
 	}
 
+	void io::bytes2tensor(const unsigned char* bytes, int num, int channel, int height, int width, 
+		std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+	{
+		tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+		float* float_data = tensor_data->mutable_cpu_data();
+		int n_offset = channel * height * width;
+		int c_offset = height * width;
+		float mean[] = { 0.0f, 0.0f, 0.0f };
+		if (minus_mean)
+		{
+			if (channel == 3)
+			{
+				mean[0] = 104.0f;
+				mean[1] = 117.0f;
+				mean[2] = 124.0f;
+			}
+			if (channel == 1)
+			{
+				mean[0] = 127.5f;
+			}
+		}
+		// Lazily traverse, optimization required.
+		for (int n = 0; n < num; n++)
+		{
+			for (int h = 0; h < height; h++)
+			{
+				for (int w = 0; w < width; w++)
+				{
+					for (int c = 0; c < channel; c++)
+					{
+						float_data[n*n_offset + c*c_offset + h*width + w] =
+							(static_cast<float>(bytes[n*n_offset + c*c_offset + h*width + w]) - mean[c]) * scale;
+					}
+				}
+			}
+		}
+	}
+
+
+	void io::bytes2tensor(const char* bytes, int num, int channel, int height, int width, 
+		std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+	{
+		tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+		float* float_data = tensor_data->mutable_cpu_data();
+		int n_offset = channel * height * width;
+		int c_offset = height * width;
+		float mean[] = { 0.0f, 0.0f, 0.0f };
+		if (minus_mean)
+		{
+			if (channel==3)
+			{
+				mean[0] = 104.0f;
+				mean[1] = 117.0f;
+				mean[2] = 124.0f;
+			}
+			if (channel == 1)
+			{
+				mean[0] = 127.5f;
+			}
+		}
+		// Lazily traverse, optimization required.
+		for (int n = 0; n < num; n++)
+		{
+			for (int h = 0; h < height; h++)
+			{
+				for (int w = 0; w < width; w++)
+				{
+					for (int c = 0; c < channel; c++)
+					{
+						float_data[n*n_offset + c*c_offset + h*width + w] =
+							(static_cast<float>(static_cast<unsigned char>(bytes[n*n_offset + c*c_offset + h*width + w])) - mean[c]) * scale;
+					}
+				}
+			}
+		}
+	}
+
+
+#ifdef USE_OPENCV
 	void io::images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
 	{
 		int num = images.size();
@@ -94,6 +173,7 @@ namespace excalibur
 		}
 		return;
 	}
+#endif
 
 #ifdef CAFFEMODEL_SOPPORT
 	void io::WriteProtoToTextFile(const Message& proto, const char* filename)

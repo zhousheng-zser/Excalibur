@@ -262,7 +262,7 @@ namespace fastface
 			else
 			{
 				temp = *(confidence_data + i * 2);
-				std::cout << temp << std::endl;
+				//std::cout << temp << std::endl;
 			}
 			if (temp > thresh) {
 				FaceRect faceRect;
