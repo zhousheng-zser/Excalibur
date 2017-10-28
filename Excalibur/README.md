@@ -3,7 +3,8 @@ A thread safe implementation of **CNN** forward propagation part.
 
 This implementation, has been specifically optimized in response to **Intel CPU**, **Nvidia GPU** and **ARM** situation.
 
-## Overview
+## Overview and Components
+
 As we described above, the implementation is able to be divided into 2 parts: CPU and GPU. In order to accelerate the forward propagation, the following frameworks and libraries will be used in the project:
 - [Intel® TBB](https://www.threadingbuildingblocks.org/)
 - [Intel® Math Kernel Library](https://software.intel.com/en-us/intel-mkl)
@@ -15,8 +16,28 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [gemmlowp](https://github.com/inlmouse/gemmlowp)
 - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
 
+### Excalibur
+
+Core component of Excalibur. Mainly math, IO and CNN topology operations.
+
+### Cassius
+
+A C++/CLI wrapper of Unicorn Net.
+
+### Longinus
+
+A C++/CLI wrapper of IPBBox_v2 and 5IPTs_v2 Net.
+
+### fastfacedetection
+
+A Excalibur based MTCNN implementation.
+
+### PersonalReality
+
+A tool of transfering prototxt and caffemodel into hpp and cpp. The last preparatory step to build a CNN with Excalibur.
+
 ## Features
-  * Suppoert caffemodel directly without any change.
+  * Hard code your model into executable file in binary.
   * Faster implementation on CPU with MKL(specifically, with sgemm_batch() function).
   * Faster implementation on Convolution and Inner-product with sparse model.
   * Half pricision(float16) support on x86(Intel only); fixed pricision(int8) support on x86 and ARM arch.
@@ -71,5 +92,4 @@ however, this problem will also be exposed while confronted with variable input 
   * Add ARM NEON support.
   * Support multi-machine, multi-uint(CPU) and multi-card(GPU)
   * Compress the model file.
-  * More secure model encryption.
   * [ONNX](https://github.com/onnx/onnx) support.
