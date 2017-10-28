@@ -23,7 +23,7 @@
     <ClCompile Include="unicorn_net.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="unicorn.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

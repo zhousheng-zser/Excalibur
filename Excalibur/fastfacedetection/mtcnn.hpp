@@ -29,7 +29,7 @@ namespace fastface
 	} FaceInfo;
 	class mtcnn {
 	public:
-		mtcnn();
+		mtcnn(int device);
 		void Detect(const cv::Mat& img, std::vector<FaceInfo> &faceInfo, int minSize, double* threshold, double factor);
 		static void drawDectionResult(cv::Mat &frame, std::vector<FaceInfo> &faceInfo);
 	private:
@@ -57,6 +57,8 @@ namespace fastface
 		int curr_feature_map_w_;
 		int curr_feature_map_h_;
 		int num_channels_;
+
+		int device_;
 	};
 }
 

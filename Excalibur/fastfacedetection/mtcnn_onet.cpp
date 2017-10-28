@@ -1,79 +1,55 @@
 #include "mtcnn_onet.hpp"
-#include <filesystem>
 
 namespace fastface
 {
-	mtcnn_onet::mtcnn_onet()
+	mtcnn_onet::mtcnn_onet(int device)
 	{
-		NetParameter net3;
-		io::readcaffemodel("..\\model\\det3-half.caffemodel", net3);
-		int conv1_id = 7;
-		int prelu1_id = 8;
-		int conv2_id = 10;
-		int prelu2_id = 11;
-		int conv3_id = 13;
-		int prelu3_id = 14;
-		int conv4_id = 16;
-		int prelu4_id = 17;
-		int ip5_id = 18;
-		int prelu5_id = 19;
-		int ip6_1_id = 21;
-		int ip6_2_id = 22;
-		int ip6_3_id = 23;
+		Copy_Params(conv1_weights, ONet);
+		Copy_Params(conv1_bias, ONet);
+		Copy_Params(prelu1_weights, ONet);
+		Copy_Params(conv2_weights, ONet);
+		Copy_Params(conv2_bias, ONet);
+		Copy_Params(prelu2_weights, ONet);
+		Copy_Params(conv3_weights, ONet);
+		Copy_Params(conv3_bias, ONet);
+		Copy_Params(prelu3_weights, ONet);
+		Copy_Params(conv4_weights, ONet);
+		Copy_Params(conv4_bias, ONet);
+		Copy_Params(prelu4_weights, ONet);
+		Copy_Params(conv5_weights, ONet);
+		Copy_Params(conv5_bias, ONet);
+		Copy_Params(prelu5_weights, ONet);
+		Copy_Params(conv6_1_weights, ONet);
+		Copy_Params(conv6_1_bias, ONet);
+		Copy_Params(conv6_2_weights, ONet);
+		Copy_Params(conv6_2_bias, ONet);
+		Copy_Params(conv6_3_weights, ONet);
+		Copy_Params(conv6_3_bias, ONet);
 		//
-		conv1_para = io::readdataformcaffemodel(net3, conv1_id);
-		prelu1_para = io::readdataformcaffemodel(net3, prelu1_id);
-		conv2_para = io::readdataformcaffemodel(net3, conv2_id);
-		prelu2_para = io::readdataformcaffemodel(net3, prelu2_id);
-		conv3_para = io::readdataformcaffemodel(net3, conv3_id);
-		prelu3_para = io::readdataformcaffemodel(net3, prelu3_id);
-		conv4_para = io::readdataformcaffemodel(net3, conv4_id);
-		prelu4_para = io::readdataformcaffemodel(net3, prelu4_id);
-		ip5_para = io::readdataformcaffemodel(net3, ip5_id);
-		prelu5_para = io::readdataformcaffemodel(net3, prelu5_id);
-		ip6_1_para = io::readdataformcaffemodel(net3, ip6_1_id);
-		ip6_2_para = io::readdataformcaffemodel(net3, ip6_2_id);
-		ip6_3_para = io::readdataformcaffemodel(net3, ip6_3_id);
+		device_ = device;
+#ifdef USE_CUDA
+		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
+			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
+		}
+#endif
 		//
-		
-		conv1 = new convolution(3, 16, 3, 1, 0, true, -1);
-		conv1->set_weights(conv1_para[0]);
-		conv1->set_bias(conv1_para[1]);
-		prelu1 = new prelu(16, false, -1);
-		prelu1->setslope(prelu1_para[0]);
-		pool1 = new pooling(3, 2, 0, 0, -1);
-		conv2 = new convolution(16, 32, 3, 1, 0, true, -1);
-		conv2->set_weights(conv2_para[0]);
-		conv2->set_bias(conv2_para[1]);
-		prelu2 = new prelu(32, false, -1);
-		prelu2->setslope(prelu2_para[0]);
-		pool2 = new pooling(3, 2, 0, 0, -1);
-		conv3 = new convolution(32, 32, 3, 1, 0, true, -1);
-		conv3->set_weights(conv3_para[0]);
-		conv3->set_bias(conv3_para[1]);
-		prelu3 = new prelu(32, false, -1);
-		prelu3->setslope(prelu3_para[0]);
-		pool3 = new pooling(2, 2, 0, 0, -1);
-		conv4 = new convolution(32, 64, 2, 1, 0, true, -1);
-		conv4->set_weights(conv4_para[0]);
-		conv4->set_bias(conv4_para[1]);
-		prelu4 = new prelu(64, false, -1);
-		prelu4->setslope(prelu4_para[0]);
-		ip5 = new inner_product(std::vector<int>{1, 64, 3, 3}, 128, true, -1);
-		ip5->set_weights(ip5_para[0]);
-		ip5->set_bias(ip5_para[1]);
-		prelu5 = new prelu(128, false, -1);
-		prelu5->setslope(prelu5_para[0]);
-		ip6_1 = new inner_product(std::vector<int>{1, 128, 1, 1}, 2, true, -1);
-		ip6_1->set_weights(ip6_1_para[0]);
-		ip6_1->set_bias(ip6_1_para[1]);
-		ip6_2 = new inner_product(std::vector<int>{1, 128, 1, 1}, 4, true, -1);
-		ip6_2->set_weights(ip6_2_para[0]);
-		ip6_2->set_bias(ip6_2_para[1]);
-		ip6_3 = new inner_product(std::vector<int>{1, 128, 1, 1}, 10, true, -1);
-		ip6_3->set_weights(ip6_3_para[0]);
-		ip6_3->set_bias(ip6_3_para[1]);
-		prob1 = new softmax(2, -1);
+		Init_Conv_Params(conv1, 3, 16, 3, 1, 0, true);
+		Init_PReLU_Params(prelu1, 16, false);
+		Init_Pooling_Params(pool1, 3, 2, 0, 0);
+		Init_Conv_Params(conv2, 16, 32, 3, 1, 0, true);
+		Init_PReLU_Params(prelu2, 32, false);
+		Init_Pooling_Params(pool2, 3, 2, 0, 0);
+		Init_Conv_Params(conv3, 32, 32, 3, 1, 0, true);
+		Init_PReLU_Params(prelu3, 32, false);
+		Init_Pooling_Params(pool3, 2, 2, 0, 0);
+		Init_Conv_Params(conv4, 32, 64, 2, 1, 0, true);
+		Init_PReLU_Params(prelu4, 64, false);
+		Init_InnerProduct_Params(conv5, 64, 3, 3, 128, true);
+		Init_PReLU_Params(prelu5, 128, false);
+		Init_InnerProduct_Params(conv6_1, 128, 1, 1, 2, true);
+		Init_InnerProduct_Params(conv6_2, 128, 1, 1, 4, true);
+		Init_InnerProduct_Params(conv6_3, 128, 1, 1, 10, true);
+		Init_Softmax_Params(prob1, 2);
 	}
 
 
@@ -90,12 +66,18 @@ namespace fastface
 		delete pool3;
 		delete conv4;
 		delete prelu4;
-		delete ip5;
+		delete conv5;
 		delete prelu5;
-		delete ip6_1;
-		delete ip6_2;
-		delete ip6_3;
+		delete conv6_1;
+		delete conv6_2;
+		delete conv6_3;
 		delete prob1;
+#ifdef USE_CUDA
+		if (cublas_handle_)
+		{
+			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+		}
+#endif
 	}
 
 	void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor> input_data)
@@ -103,7 +85,6 @@ namespace fastface
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
-		//auto p0 = std::chrono::system_clock::now();
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
 		prelu1->Forward_cpu(conv1_top_data);
 		pool1->Forward_cpu(conv1_top_data, pool1_top_data);
@@ -115,29 +96,55 @@ namespace fastface
 		pool3->Forward_cpu(conv3_top_data, pool3_top_data);
 		conv4->Forward_cpu(pool3_top_data, conv4_top_data);
 		prelu4->Forward_cpu(conv4_top_data);
-		ip5->Forward_cpu(conv4_top_data, ip5_top_data);
-		prelu5->Forward_cpu(ip5_top_data);
-		ip6_1->Forward_cpu(ip5_top_data, ip6_1_top_data);
-		ip6_2->Forward_cpu(ip5_top_data, ip6_2_top_data);
-		ip6_3->Forward_cpu(ip5_top_data, ip6_3_top_data);
-		prob1->Forward_cpu(ip6_1_top_data, prob1_top_data);
-		/*auto p1 = std::chrono::system_clock::now();
-		std::cout << "forward gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl;*/
+		conv5->Forward_cpu(conv4_top_data, conv5_top_data);
+		prelu5->Forward_cpu(conv5_top_data);
+		conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
+		conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
+		conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
+		prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
 	}
 
-	std::shared_ptr<tensor> mtcnn_onet::get_prob1()
+#ifdef USE_CUDA
+	void mtcnn_onet::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
 	{
-		return prob1_top_data;
+		tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		float* temp = tensor_data->mutable_gpu_data();
+		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
+		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
+		prelu1->Forward_native_gpu(conv1_top_data);
+		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
+		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
+		prelu2->Forward_native_gpu(conv2_top_data);
+		pool2->Forward_native_gpu(conv2_top_data, pool2_top_data);
+		conv3->Forward_native_gpu(cublas_handle_, pool2_top_data, conv3_top_data);
+		prelu3->Forward_native_gpu(conv3_top_data);
+		pool3->Forward_native_gpu(conv3_top_data, pool3_top_data);
+		conv4->Forward_native_gpu(cublas_handle_, pool3_top_data, conv4_top_data);
+		prelu4->Forward_native_gpu(conv4_top_data);
+		conv5->Forward_native_gpu(cublas_handle_, conv4_top_data, conv5_top_data);
+		prelu5->Forward_native_gpu(conv5_top_data);
+		conv6_1->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_1_top_data);
+		conv6_2->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_2_top_data);
+		conv6_3->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_3_top_data);
+		prob1->Forward_native_gpu(conv6_1_top_data, prob1_top_data);
 	}
 
-	std::shared_ptr<tensor> mtcnn_onet::get_ip6_2()
-	{
-		return ip6_2_top_data;
-	}
+#endif
 
-	std::shared_ptr<tensor> mtcnn_onet::get_ip6_3()
+	void mtcnn_onet::Forward(const std::shared_ptr<tensor> input_data)
 	{
-		return ip6_3_top_data;
+		if (device_<0)
+		{
+			Forward_cpu(input_data);
+		}
+		else
+		{
+#ifdef USE_CUDA
+			Forward_native_gpu(input_data);
+#else
+			NO_GPU;
+#endif
+		}
 	}
 
 }

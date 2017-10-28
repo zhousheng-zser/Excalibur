@@ -127,9 +127,11 @@
   <ItemGroup>
     <ClInclude Include="mtcnn.hpp" />
     <ClInclude Include="mtcnn_onet.hpp" />
+    <ClInclude Include="mtcnn_onet_data.hpp" />
     <ClInclude Include="mtcnn_pnet.hpp" />
     <ClInclude Include="mtcnn_pnet_data.hpp" />
     <ClInclude Include="mtcnn_rnet.hpp" />
+    <ClInclude Include="mtcnn_rnet_data.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

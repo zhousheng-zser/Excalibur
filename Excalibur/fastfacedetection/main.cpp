@@ -52,13 +52,20 @@ void unittest()
 void mtcnntset()
 {
 	cv::Mat image = cv::imread("C:\\Users\\bj12\\Desktop\\WeChat Image_20171026153606.jpg");
-	cv::resize(image, image, cv::Size(750, 1000));
-	mtcnn mt = mtcnn();
+	cv::resize(image, image, cv::Size(375, 500));
+	mtcnn mt = mtcnn(0);
 	double threshold[3] = { 0.7, 0.7, 0.7 };
 	double factor = 0.709;
 	int minSize = 48;
 	std::vector<FaceInfo> faceInfo;
 	mt.Detect(image, faceInfo, minSize, threshold, factor);
+	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+	for (int i = 0; i < 10; i++)
+	{
+		mt.Detect(image, faceInfo, minSize, threshold, factor);
+	}
+	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+	std::cout << "total forward time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;
 	mtcnn::drawDectionResult(image, faceInfo);
 	imshow("final", image);
 	cv::waitKey(0);

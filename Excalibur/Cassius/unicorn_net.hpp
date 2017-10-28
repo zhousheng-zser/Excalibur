@@ -257,6 +257,21 @@ namespace glasssix
 		~unicorn_net();
 
 		void Forward(const std::shared_ptr<tensor> input_data);
+
+		static int get_input_channel()
+		{
+			return 3;
+		}
+
+		static int get_input_width()
+		{
+			return 128;
+		}
+
+		static int get_input_height()
+		{
+			return 128;
+		}
 	};
 }
 
