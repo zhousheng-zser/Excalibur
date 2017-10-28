@@ -56,6 +56,16 @@ namespace excalibur
 		}
 	}
 
+	void math_functions::cpu_sqr(const int N, const float* a, float* y)
+	{
+		vsSqr(N, a, y);
+	}
+
+
+	void math_functions::cpu_abs(const int N, const float* a, float* y)
+	{
+		vsAbs(N, a, y);
+	}
 
 }
 

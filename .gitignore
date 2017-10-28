@@ -55,3 +55,5 @@
 *.opendb
 *.suo
 *_data.hpp
+*.pb.cc
+*.pb.h
