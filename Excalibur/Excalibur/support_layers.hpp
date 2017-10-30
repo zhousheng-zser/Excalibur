@@ -8,6 +8,7 @@
 #include "eltwise.hpp"
 #include "inner_product.hpp"
 #include "softmax.hpp"
+#include "slice.hpp"
 #include "flip.hpp"
 #include "concat.hpp"
 #include "normalize.hpp"
@@ -56,5 +57,17 @@ eltwise_name = new eltwise(type, device_);
 ip_name = new inner_product(std::vector<int>{1, input_channel, input_height, input_width}, num_output, bias_term, device_);\
 ip_name->set_weights(ip_name##_##weights);\
 ip_name->set_bias(ip_name##_##bias);
+
+#define Init_Flip_Params(fliper_name, flip_height, flip_width)\
+fliper_name = new flip(flip_height, flip_width, device_);
+
+#define Init_Concat_Params(concat_name, concat_axis)\
+concat_name = new concat(concat_axis, device_);
+
+#define Init_Slice_Params(slice_name, slice_axis)\
+slice_name = new slice(slice_axis, device_);
+
+#define Init_Normalize_Params(norm_name, type, rescale)\
+norm_name = new normalize(type, rescale, device_);
 
 #endif //_SUPPORT_LAYERS_HPP_

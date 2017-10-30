@@ -1,7 +1,9 @@
 #pragma once
 #ifndef _SLICE_HPP_
 #define _SLICE_HPP_
+
 #include "tensor.hpp"
+#include "math_functions.hpp"
 
 namespace excalibur
 {
@@ -19,7 +21,12 @@ namespace excalibur
 
 		~slice();
 
-		void Forward_cpu(const tensor* bottom, std::vector<tensor*>& top);
+		void Forward_cpu(const std::shared_ptr<tensor> bottom, std::vector<std::shared_ptr<tensor>>& top);
+
+		void Forward_cpu(const std::shared_ptr<tensor> bottom, std::shared_ptr<tensor>& top1, std::shared_ptr<tensor>& top2);
+#ifdef USE_CUDA
+		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::vector<std::shared_ptr<tensor>>& top);
+#endif
 	};
 }
 
