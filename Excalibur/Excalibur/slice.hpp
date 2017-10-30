@@ -21,7 +21,9 @@ namespace excalibur
 
 		~slice();
 
-		void Forward_cpu(const tensor* bottom, std::vector<std::shared_ptr<tensor>>& top);
+		void Forward_cpu(const std::shared_ptr<tensor> bottom, std::vector<std::shared_ptr<tensor>>& top);
+
+		void Forward_cpu(const std::shared_ptr<tensor> bottom, std::shared_ptr<tensor>& top1, std::shared_ptr<tensor>& top2);
 #ifdef USE_CUDA
 		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::vector<std::shared_ptr<tensor>>& top);
 #endif
