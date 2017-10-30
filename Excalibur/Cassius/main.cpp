@@ -12,10 +12,10 @@ int main()
 	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
 	std::shared_ptr<tensor> tensor_data = nullptr;
 	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data);
-	unicorn_net unicorn = unicorn_net(0);
+	unicorn_net unicorn = unicorn_net(-1);
 	unicorn.Forward(tensor_data);
 	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
-	for (size_t i = 0; i < 1000; i++)
+	for (size_t i = 0; i < 10; i++)
 	{
 		unicorn.Forward(tensor_data);
 	}

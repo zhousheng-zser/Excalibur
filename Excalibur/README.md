@@ -46,16 +46,23 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 
 |  Layers  |   BLAS  |   Native CUDA   | cuDNN | MKLDNN | NEON |
 | :------: | :------:| :------: | :------: | :------: | :------: |
-| Convolution | T |  T  |  T  |  F  |  F  |
-| (P)ReLU | T |  T  |  F  |  F  |  F  |
-| Pooling | T |  T  |  F  |  F  |  F  |
-| Inner-Product | T |  T  |  F  |  F  |  F  |
-| Softmax | T |  T  |  F  |  F  |  F  |
-| Eltwise | T |  T  |  F  |  F  |  F  |
-| Slice | T |  F  |  F  |  F  |  F  |
-| Flip | T |  T  |  F  |  F  |  F  |
-| Concat | T |  T  |  F  |  F  |  F  |
-| Normalize | T |  T  |  F  |  F  |  F  |
+| Convolution | TP |  TP  |  TE  |  F  |  F  |
+| (P)ReLU | TP |  TP  |  F  |  F  |  F  |
+| Pooling | TP |  TP  |  F  |  F  |  F  |
+| Inner-Product | TP |  TP  |  F  |  F  |  F  |
+| Softmax | TP |  TP  |  F  |  F  |  F  |
+| Eltwise | TP |  TP  |  --  |  --  |  F  |
+| Slice | TE |  TE  |  --  |  --  |  F  |
+| Flip | TP |  NT  |  --  |  --  |  F  |
+| Concat | TP |  NT  |  --  |  --  |  F  |
+| Normalize | NT |  NT  |  --  |  --  |  F  |
+| PCA | NT |  NT  |  --  |  --  |  F  |
+
+  - TP: Implementated and test passed;
+  - F: Not implementated;
+  - TE: Implementated but error exists;
+  - --: No implementation;
+  - NT: Implementated but no test yet;
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
@@ -85,6 +92,8 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 and similar to mini-caffe.
   - When accessing the col buffer in convolution layer(std::shared_ptr<tensor> col_buffer_) on GPU, it takes plenty of time. We tried to fix it by using a global buffer,
 however, this problem will also be exposed while confronted with variable input size(FCN), Such as the PNet in MTCNN.
+  - An unknown heap corruption will occur when using Slice Forward_cpu operation. The mirror face trick should be implementated in another way.
+  - The *cudnnGetConvolutionForwardAlgorithm* function in cuDNN does not get the correct workspace.
 
 ## Todo list
   * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.
