@@ -11,10 +11,9 @@ namespace excalibur
 	void math_functions::gpu_set(const int N, const float alpha, float* Y)
 	{
 		if (alpha == 0) {
-			CUDA_CHECK(cudaMemset(Y, 0, sizeof(float) * N));  // NOLINT(caffe/alt_fn)
+			CUDA_CHECK(cudaMemset(Y, 0, sizeof(float) * N));  
 			return;
 		}
-		// NOLINT_NEXT_LINE(whitespace/operators)
 		set_kernel << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> >(
 			N, alpha, Y);
 	}
