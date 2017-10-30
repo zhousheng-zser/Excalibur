@@ -54,6 +54,9 @@
     <CudaCompile Include="normalize.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="pca.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -122,6 +125,9 @@
     <ClInclude Include="normalize.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="pca.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -179,6 +185,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="normalize.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="pca.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

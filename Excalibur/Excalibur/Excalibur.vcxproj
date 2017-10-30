@@ -138,6 +138,7 @@
     <CudaCompile Include="inner_product.cu" />
     <CudaCompile Include="math_functions.cu" />
     <CudaCompile Include="normalize.cu" />
+    <CudaCompile Include="pca.cu" />
     <CudaCompile Include="pooling.cu" />
     <CudaCompile Include="prelu.cu" />
     <CudaCompile Include="softmax.cu" />
@@ -158,6 +159,7 @@
     <ClInclude Include="mkldnn_alternate.hpp" />
     <ClInclude Include="mkl_alternate.hpp" />
     <ClInclude Include="normalize.hpp" />
+    <ClInclude Include="pca.hpp" />
     <ClInclude Include="pooling.hpp" />
     <ClInclude Include="prelu.hpp" />
     <ClInclude Include="slice.hpp" />
@@ -180,6 +182,7 @@
     <ClCompile Include="io.cpp" />
     <ClCompile Include="math_functions.cpp" />
     <ClCompile Include="normalize.cpp" />
+    <ClCompile Include="pca.cpp" />
     <ClCompile Include="pooling.cpp" />
     <ClCompile Include="prelu.cpp" />
     <ClCompile Include="slice.cpp" />
