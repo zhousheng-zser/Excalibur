@@ -137,6 +137,7 @@
     <CudaCompile Include="im2col.cu" />
     <CudaCompile Include="inner_product.cu" />
     <CudaCompile Include="math_functions.cu" />
+    <CudaCompile Include="mirrormax.cu" />
     <CudaCompile Include="normalize.cu" />
     <CudaCompile Include="pca.cu" />
     <CudaCompile Include="pooling.cu" />
@@ -157,6 +158,7 @@
     <ClInclude Include="inner_product.hpp" />
     <ClInclude Include="io.hpp" />
     <ClInclude Include="math_functions.hpp" />
+    <ClInclude Include="mirrormax.hpp" />
     <ClInclude Include="mkldnn_alternate.hpp" />
     <ClInclude Include="mkl_alternate.hpp" />
     <ClInclude Include="normalize.hpp" />
@@ -182,6 +184,7 @@
     <ClCompile Include="inner_product.cpp" />
     <ClCompile Include="io.cpp" />
     <ClCompile Include="math_functions.cpp" />
+    <ClCompile Include="mirrormax.cpp" />
     <ClCompile Include="normalize.cpp" />
     <ClCompile Include="pca.cpp" />
     <ClCompile Include="pooling.cpp" />
