@@ -57,6 +57,9 @@
     <CudaCompile Include="pca.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="slice.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">

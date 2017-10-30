@@ -141,6 +141,7 @@
     <CudaCompile Include="pca.cu" />
     <CudaCompile Include="pooling.cu" />
     <CudaCompile Include="prelu.cu" />
+    <CudaCompile Include="slice.cu" />
     <CudaCompile Include="softmax.cu" />
   </ItemGroup>
   <ItemGroup>
