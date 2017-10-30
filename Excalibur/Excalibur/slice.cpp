@@ -13,7 +13,7 @@ namespace excalibur
 	{
 	}
 
-	void slice::Forward_cpu(const tensor* bottom, std::vector<tensor*>& top)
+	void slice::Forward_cpu(const tensor* bottom, std::vector<std::shared_ptr<tensor>>& top)
 	{
 		std::vector<int> top_shape = bottom->data_shape();
 		const int bottom_slice_axis = bottom->data_shape()[slice_axis_];
@@ -24,7 +24,7 @@ namespace excalibur
 		{
 			top_shape[slice_axis_] = bottom_slice_axis / top.size();
 			for (int i = 0; i < top.size(); ++i) {
-				top[i] = new tensor(top_shape, device_);
+				top[i].reset(new tensor(top_shape, device_));
 				count += top[i]->count(0, top[i]->data_shape().size());
 			}
 		}
@@ -36,7 +36,6 @@ namespace excalibur
 		}
 		int offset_slice_axis = 0;
 		const float* bottom_data = bottom->cpu_data();
-		//const int bottom_slice_axis = bottom->data_shape()[slice_axis_];
 		for (int i = 0; i < top.size(); ++i)
 		{
 			float* top_data = top[i]->mutable_cpu_data();
@@ -46,7 +45,8 @@ namespace excalibur
 				const int top_offset = n * top_slice_axis * slice_size_;
 				const int bottom_offset =
 					(n * bottom_slice_axis + offset_slice_axis) * slice_size_;
-				memcpy(top_data + top_offset, bottom_data + bottom_offset, top_slice_axis * slice_size_ * sizeof(float));
+				math_functions::excalibur_copy(top_slice_axis * slice_size_ * sizeof(float), 
+					bottom_data + bottom_offset, top_data + top_offset, device_);
 			}
 			offset_slice_axis += top_slice_axis;
 		}

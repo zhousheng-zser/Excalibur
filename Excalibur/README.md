@@ -51,11 +51,12 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 | Pooling | T |  T  |  F  |  F  |  F  |
 | Inner-Product | T |  T  |  F  |  F  |  F  |
 | Softmax | T |  T  |  F  |  F  |  F  |
-| Eltwise | T |  T  |  F  |  F  |  F  |
-| Slice | T |  F  |  F  |  F  |  F  |
-| Flip | T |  T  |  F  |  F  |  F  |
-| Concat | T |  T  |  F  |  F  |  F  |
-| Normalize | T |  T  |  F  |  F  |  F  |
+| Eltwise | T |  T  |  --  |  --  |  F  |
+| Slice | T |  T  |  --  |  --  |  F  |
+| Flip | T |  T  |  --  |  --  |  F  |
+| Concat | T |  T  |  --  |  --  |  F  |
+| Normalize | T |  T  |  --  |  --  |  F  |
+| PCA | T |  T  |  --  |  --  |  F  |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
