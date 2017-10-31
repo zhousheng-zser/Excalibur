@@ -12,6 +12,7 @@
 #include "flip.hpp"
 #include "concat.hpp"
 #include "normalize.hpp"
+#include "mirrormax.hpp"
 
 
 #define Neuron_Name(name) private: \
@@ -69,5 +70,8 @@ slice_name = new slice(slice_axis, device_);
 
 #define Init_Normalize_Params(norm_name, type, rescale)\
 norm_name = new normalize(type, rescale, device_);
+
+#define Init_MirrorMax_Param(mm_name, mirror_axis)\
+mm_name = new mirrormax(mirror_axis, device_);
 
 #endif //_SUPPORT_LAYERS_HPP_

@@ -96,8 +96,8 @@ namespace glasssix
 		}
 #endif
 		//
-		/*Init_Flip_Params(fliper, false, true);
-		Init_Concat_Params(concator, 0);*/
+		Init_Flip_Params(fliper, false, true);
+		Init_Concat_Params(concator, 0);
 		Init_Conv_Params(conv1a, 3, 32, 3, 1, 0, true);
 		Init_PReLU_Params(relu1a, 32, false);
 		Init_Conv_Params(conv1b, 32, 64, 3, 1, 0, true);
@@ -170,9 +170,8 @@ namespace glasssix
 		Init_Conv_Params(conv5, 512, 512, 3, 1, 0, true);
 		Init_PReLU_Params(relu5, 512, false);
 		Init_Pooling_Params(pool5, 4, 4, 0, 1);
-		/*Init_Slice_Params(slicer, 0);
-		Init_Eltwise_Params(eltwiser, 1);
-		Init_Normalize_Params(normalizer, 1, false);*/
+		Init_MirrorMax_Param(mirrmax, 0);
+		Init_Normalize_Params(normalizer, 1, false);
 	}
 
 
@@ -252,9 +251,8 @@ namespace glasssix
 		delete conv5;
 		delete relu5;
 		delete pool5;
-		/*delete slicer;
-		delete eltwiser;
-		delete normalizer;*/
+		delete mirrmax;
+		delete normalizer;
 
 #ifdef USE_CUDA
 		if (cublas_handle_)
@@ -269,9 +267,9 @@ namespace glasssix
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
-		/*fliper->Forward_cpu(tensor_data, flip_top_data);
-		concator->Forward_cpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);*/
-		conv1a->Forward_cpu(tensor_data, conv1a_top_data);
+		fliper->Forward_cpu(tensor_data, flip_top_data);
+		concator->Forward_cpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
+		conv1a->Forward_cpu(concat_top_data, conv1a_top_data);
 		relu1a->Forward_cpu(conv1a_top_data);
 		conv1b->Forward_cpu(conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_cpu(conv1b_top_data);
@@ -343,10 +341,8 @@ namespace glasssix
 		conv5->Forward_cpu(res5_6_top_data, conv5_top_data);
 		relu5->Forward_cpu(conv5_top_data);
 		pool5->Forward_cpu(conv5_top_data, pool5_top_data);
-		//slicer->Forward_cpu(pool5_top_data, slice_ori_top_data, slice_mirror_top_data);
-		/*eltwiser->Forward_cpu(slice_vector_top_data, feature_top_data);*/
-		//normalizer->Forward_cpu(feature_top_data);
-		//slice_vector_top_data.clear();
+		mirrmax->Forward_cpu(pool5_top_data, feature_top_data);
+		normalizer->Forward_cpu(feature_top_data);
 	}
 	
 	void unicorn_net::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
@@ -354,7 +350,9 @@ namespace glasssix
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1a->Forward_native_gpu(cublas_handle_, tensor_data, conv1a_top_data);
+		fliper->Forward_native_gpu(tensor_data, flip_top_data);
+		concator->Forward_native_gpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
+		conv1a->Forward_native_gpu(cublas_handle_, concat_top_data, conv1a_top_data);
 		relu1a->Forward_native_gpu(conv1a_top_data);
 		conv1b->Forward_native_gpu(cublas_handle_, conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_native_gpu(conv1b_top_data);
@@ -426,6 +424,8 @@ namespace glasssix
 		conv5->Forward_native_gpu(cublas_handle_, res5_6_top_data, conv5_top_data);
 		relu5->Forward_native_gpu(conv5_top_data);
 		pool5->Forward_native_gpu(conv5_top_data, pool5_top_data);
+		mirrmax->Forward_native_gpu(pool5_top_data, feature_top_data);
+		normalizer->Forward_native_gpu(feature_top_data);
 	}
 	
 	void unicorn_net::Forward(const std::shared_ptr<tensor> input_data)

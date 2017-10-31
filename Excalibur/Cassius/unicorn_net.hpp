@@ -99,10 +99,10 @@ namespace glasssix
 		int device_;
 		std::shared_ptr<tensor> tensor_data = nullptr;
 		//
-		/*Declear_Opration(flip, fliper);
+		Declear_Opration(flip, fliper);
 		Neuron_Name(flip);
 		Declear_Opration(concat, concator);
-		Neuron_Name(concat);*/
+		Neuron_Name(concat);
 		Declear_Opration(convolution, conv1a);
 		Neuron_Name(conv1a);
 		Declear_Opration(prelu, relu1a);
@@ -247,12 +247,9 @@ namespace glasssix
 		Neuron_Name(relu5);
 		Declear_Opration(pooling, pool5);
 		Neuron_Name(pool5);
-		/*Declear_Opration(slice, slicer);
-		Neuron_Name(slice_ori);
-		Neuron_Name(slice_mirror);
-		Declear_Opration(eltwise, eltwiser);
+		Declear_Opration(mirrormax, mirrmax);
 		Neuron_Name(feature);
-		Declear_Opration(normalize, normalizer);*/
+		Declear_Opration(normalize, normalizer);
 		
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_ = nullptr;
