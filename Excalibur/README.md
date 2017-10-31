@@ -53,9 +53,10 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 | Softmax | TP |  TP  |  F  |  F  |  F  |
 | Eltwise | TP |  TP  |  --  |  --  |  F  |
 | Slice | TE |  TE  |  --  |  --  |  F  |
-| Flip | TP |  NT  |  --  |  --  |  F  |
-| Concat | TP |  NT  |  --  |  --  |  F  |
-| Normalize | NT |  NT  |  --  |  --  |  F  |
+| Flip | TP |  TP  |  --  |  --  |  F  |
+| Concat | TP |  TP  |  --  |  --  |  F  |
+| Normalize | TP |  TP  |  --  |  --  |  F  |
+| MirrorMax | TP |  TP  |  --  |  --  |  F  |
 | PCA | NT |  NT  |  --  |  --  |  F  |
 
   - TP: Implementated and test passed;
@@ -77,6 +78,7 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 | mtcnn-RNet(24*24)  |  0.463 |  0.426  |  0.324  |
 | mtcnn-ONet(48*48)  |  1.071 |  0.838  |  0.764  |
 | Unicorn(128*128)  |  98.820 |  70.379  |  90.619  |
+| Unicorn_with_MirrorFace(128*128)  |  201.603 |  --  |  160.554  |
 
 ### The 1000 average forward time(ms) on GPU(NVIDIA GTX1080-Ti) with/without cuDNN
 
@@ -86,6 +88,7 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 | mtcnn-RNet(24*24)  |  --/-- |  --/--  |  --/--  |
 | mtcnn-ONet(48*48)  |  --/-- |  --/--  |  --/--  |
 | Unicorn(128*128)  |  7.145/-- |  8.309/--  |  --/6.424  |
+| Unicorn_with_MirrorFace(128*128)  |  8.347/-- |  --/--  |  --/12.880  |
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
