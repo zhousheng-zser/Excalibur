@@ -44,8 +44,8 @@ namespace glasssix
 			std::shared_ptr<tensor> tensor_data = nullptr;
 			bitmaps2tensor(imgDatas, tensor_data);
 			net_->Forward(tensor_data);
-			const float* intermediate = net_->get_pool5()->cpu_data();
-			int output_size = net_->get_pool5()->count();
+			const float* intermediate = net_->get_feature()->cpu_data();
+			int output_size = net_->get_feature()->count();
 			MARSHAL_ARRAY(intermediate, outputs, output_size);
 			return outputs;
 		}
