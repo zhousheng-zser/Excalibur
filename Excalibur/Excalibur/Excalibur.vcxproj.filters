@@ -60,6 +60,9 @@
     <CudaCompile Include="slice.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="mirrormax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accelerator.hpp">
@@ -131,6 +134,9 @@
     <ClInclude Include="pca.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="mirrormax.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -191,6 +197,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="pca.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="mirrormax.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

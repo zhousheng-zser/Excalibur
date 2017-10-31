@@ -1,0 +1,25 @@
+#pragma once
+#ifndef _MIRRORMAX_HPP_
+#define _MIRRORMAX_HPP_
+#include "tensor.hpp"
+#include "math_functions.hpp"
+
+namespace excalibur
+{
+	class mirrormax
+	{
+		int mirror_axis_;
+		int device_;
+
+	public:
+		mirrormax(int mirror_axis, int device);
+		~mirrormax();
+
+		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#ifdef USE_CUDA
+		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+#endif
+	};
+}
+
+#endif
