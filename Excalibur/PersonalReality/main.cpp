@@ -1,19 +1,13 @@
-//#include "datafile.hpp"
+#include "datafile.hpp"
 #include "prototxt2class.hpp"
 int main()
 {
-	/*datafile* df = new datafile("D:\\Research\\fastfacedetection\\model\\mtcnn_onet_data.hpp");
-	df->writedatahpp("D:\\Research\\fastfacedetection\\model\\det3-half.caffemodel", "ONet", "fastface");*/
-	/*NetParameter param;
-	ReadProtoFromTextFile("E:\\rec-bench\\model\\suffiver_deploy.prototxt", &param);
-	for (int i = 1; i < param.layer_size(); i++)
-	{
-		LayerParameter& layer_param = *param.mutable_layer(i);
-		std::cout << layer_param.name() << ", " << layer_param.bottom(0) << std::endl;
-	}*/
-	prototxt2class* pc = new prototxt2class("D:\\Research\\fastfacedetection\\model", "ONet");
-	std::string prototxt = "D:\\Research\\fastfacedetection\\model\\det3-half_memory.prototxt";
-	pc->declear_params("D:\\Research\\fastfacedetection\\model\\det3-half.caffemodel", "ONet");
+	datafile* df = new datafile("D:\\Research\\MCL_Forward\\Excalibur\\model\\ipts_v2_data.hpp");
+	df->writedatahpp("D:\\Research\\MCL_Forward\\Excalibur\\model\\5IPTs_v2.caffemodel", "IPTs_v2", "glasssix");
+	
+	prototxt2class* pc = new prototxt2class("D:\\Research\\MCL_Forward\\Excalibur\\model", "IPTs_v2");
+	std::string prototxt = "D:\\Research\\MCL_Forward\\Excalibur\\model\\5IPTs_v2_deploy.prototxt";
+	pc->declear_params("D:\\Research\\MCL_Forward\\Excalibur\\model\\5IPTs_v2.caffemodel", "IPTs_v2");
 	pc->declear_operation_neuron(prototxt);
 	pc->delete_operation(prototxt);
 	pc->build_net_dag(prototxt);
