@@ -15,16 +15,37 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="unicorn_net.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
+    <ClCompile Include="gemm_opt1.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gemm_no_opt.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gemm_target_opt.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="copy_matrix.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="print_matrix.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="random_matrix.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="compare_matrices.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="gemm_target_opt_mkl.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="unicorn_net.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="cassius.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
+    <ClInclude Include="parameters.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
