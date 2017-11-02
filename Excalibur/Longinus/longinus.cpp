@@ -39,7 +39,7 @@ namespace glasssix
 			this->!ipbbox();
 		}
 
-		array<array<float>^>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas, array<String^>^ layerNames, int DeviceId)
+		array<array<float>^>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas, int DeviceId)
 		{
 			std::shared_ptr<tensor> tensor_data = nullptr;
 			bitmaps2tensor(imgDatas, tensor_data);
