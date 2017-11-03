@@ -177,8 +177,8 @@ namespace glasssix
 
 	unicorn_net::~unicorn_net()
 	{
-		/*delete fliper;
-		delete concator;*/
+		delete fliper;
+		delete concator;
 		delete conv1a;
 		delete relu1a;
 		delete conv1b;
