@@ -13,14 +13,23 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="cu">
+      <UniqueIdentifier>{a08eef26-6e36-4095-be05-5dea57295657}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphic.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="resize.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="graphic.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="resize.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
