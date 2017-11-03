@@ -1,3 +1,5 @@
+#ifndef _READ_CAFFEMODEL_HPP_
+#define _READ_CAFFEMODEL_HPP_
 #include <fcntl.h>
 #include <stdio.h>
 #include "caffe.pb.h"
@@ -47,3 +49,4 @@ static bool ReadProtoFromTextFile(const char* filename, Message* proto) {
 	return success;
 }
 
+#endif

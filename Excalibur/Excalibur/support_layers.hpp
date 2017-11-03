@@ -45,6 +45,9 @@ conv_name->set_bias(conv_name##_##bias);\
 prelu_name = new prelu(input_channel, isrelu, device_);\
 prelu_name->setslope(prelu_name##_##weights);
 
+#define Init_ReLU_Params(prelu_name, input_channel, isrelu)\
+prelu_name = new prelu(input_channel, isrelu, device_);
+
 #define Init_Pooling_Params(pooling_name, kernel, stride, pad, type)\
 pooling_name = new pooling(kernel, stride, pad, type, device_);
 

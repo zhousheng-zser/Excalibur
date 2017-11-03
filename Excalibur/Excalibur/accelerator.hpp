@@ -6,7 +6,7 @@
 // is executed we will see a fatal log.
 #define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet"
 #define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Excalibur: check mode."
-
+#define X86
 #define USE_OPENCV
 #define USE_CUDA
 //#define USE_CUDNN
