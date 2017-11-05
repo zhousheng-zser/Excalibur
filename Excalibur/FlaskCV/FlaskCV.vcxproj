@@ -124,11 +124,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="graphic.hpp" />
-    <ClInclude Include="resize.hpp" />
+    <ClInclude Include="graphicoperations.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="graphic.cpp" />
-    <ClCompile Include="resize.cpp" />
+    <ClCompile Include="graphicoperations.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

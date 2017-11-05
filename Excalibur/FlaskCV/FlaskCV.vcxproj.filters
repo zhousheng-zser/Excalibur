@@ -21,7 +21,7 @@
     <ClInclude Include="graphic.hpp">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="resize.hpp">
+    <ClInclude Include="graphicoperations.hpp">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -29,7 +29,7 @@
     <ClCompile Include="graphic.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="resize.cpp">
+    <ClCompile Include="graphicoperations.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

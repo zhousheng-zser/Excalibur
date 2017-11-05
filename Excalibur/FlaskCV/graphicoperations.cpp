@@ -1,19 +1,19 @@
-#include "resize.hpp"
+#include "graphicoperations.hpp"
 
 #define get_index(x, y, offset) (y*offset+x) 
 
 namespace flaskcv
 {
-	resize::resize()
+	graphicoperations::graphicoperations()
 	{
 	}
 
 
-	resize::~resize()
+	graphicoperations::~graphicoperations()
 	{
 	}
 
-	void resize::bilinear_resize(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int new_height, int new_width)
+	void graphicoperations::bilinear_resize_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int new_height, int new_width)
 	{
 		int old_height = src->height();
 		int old_width = src->width();
@@ -45,6 +45,11 @@ namespace flaskcv
 				}
 			}
 		}
+	}
+
+	void graphicoperations::flip_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, bool flip_height, bool flip_width)
+	{
+		
 	}
 
 }
