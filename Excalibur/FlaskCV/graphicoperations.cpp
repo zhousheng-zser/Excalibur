@@ -49,7 +49,45 @@ namespace flaskcv
 
 	void graphicoperations::flip_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, bool flip_height, bool flip_width)
 	{
-		
+		int channels = src->channel();
+		int height = src->height();
+		int width = src->width();
+		dst.reset(new graphic(channels, height, width));
+		const float* src_data = src->cpu_data();
+		float* dst_data = dst->mutable_cpu_data();
+		for (int c = 0; c < channels; c++) {
+			for (int h = 0; h < height; h++) {
+				for (int w = 0; w < width; w++) {
+					dst_data[((c * height + h) * width) + w] =
+						src_data[((c * height + (flip_height ? (height - 1 - h) : h)) * width) + (flip_width ? (width - 1 - w) : w)];
+				}
+			}
+		}
 	}
+
+	void graphicoperations::rgb2gray_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst)
+	{
+		if (src->channel()!=3)
+		{
+			return;
+		}
+		else
+		{
+			int height = src->height();
+			int width = src->width();
+			dst.reset(new graphic(1, height, width));
+			int channel_offset = height*width;
+			const float* src_data = src->cpu_data();
+			float* dst_data = dst->mutable_cpu_data();
+			for (int i = 0; i < height; i++)
+			{
+				for (int j = 0; j < width; j++)
+				{
+					dst_data[i*width + j] = (src_data[channel_offset * 0 + i*width + j] + src_data[channel_offset * 1 + i*width + j] + src_data[channel_offset * 2 + i*width + j]) / 3;
+				}
+			}
+		}
+	}
+
 
 }
