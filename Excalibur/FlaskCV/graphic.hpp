@@ -13,9 +13,10 @@ namespace flaskcv
 		// pointer to the data
 		syncedmem* data_;
 
-		int w_;
-		int h_;
+
 		int c_;
+		int h_;
+		int w_;
 		int device_;
 
 
@@ -44,6 +45,19 @@ namespace flaskcv
 		void fill(float x);
 		// deep copy
 		graphic clone() const;
+		//
+		bool empty() const;
+		int count() const;
+		int channel() const;
+		int height() const;
+		int width() const;
+		//
+		const float* cpu_data() const;
+		float* mutable_cpu_data() const;
+#ifdef USE_CUDA
+		const float* gpu_data() const;
+		float* mutable_gpu_data() const;
+#endif
 	};
 }
 
