@@ -3,6 +3,7 @@
 #define _GRAPHICOPERATIONS_HPP_
 
 #include "graphic.hpp"
+#include "rect.hpp"
 
 namespace flaskcv
 {
@@ -13,6 +14,8 @@ namespace flaskcv
 		static void flip_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, bool flip_height, bool flip_width);
 
 		static void rgb2gray_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst);
+
+		static void roi_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, rect roi_rect);
 	public:
 		graphicoperations();
 		~graphicoperations();
