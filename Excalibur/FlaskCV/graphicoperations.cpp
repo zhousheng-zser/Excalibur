@@ -89,5 +89,9 @@ namespace flaskcv
 		}
 	}
 
+	void graphicoperations::roi_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, rect roi_rect)
+	{
+		
+	}
 
 }
