@@ -15,7 +15,15 @@ namespace flaskcv
 
 		static void rgb2gray_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst);
 
-		static void roi_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, rect roi_rect);
+		static void copy_make_border_image_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int top, int left, int type, float v);
+
+		static void copy_make_border_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int top, int bottom, int left, int right, int type, float v);
+
+		static void copy_cut_border_image_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int top, int left);
+
+		static void copy_cut_border_cpu(std::shared_ptr<graphic> src, std::shared_ptr<graphic>& dst, int top, int bottom, int left, int right);
+
+		enum bordertype{ BORDER_CONSTANT , BORDER_REPLICATE};
 	public:
 		graphicoperations();
 		~graphicoperations();

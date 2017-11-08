@@ -116,6 +116,12 @@ namespace flaskcv
 		return w_;
 	}
 
+	graphic graphic::channel_graphic_ptr(int c)
+	{
+		return graphic(h_, w_, this->mutable_cpu_data() + h_ * w_ * c);
+	}
+
+
 	const float* graphic::cpu_data() const
 	{
 		return static_cast<const float*>(data_->cpu_data());
