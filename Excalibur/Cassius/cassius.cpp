@@ -13,6 +13,7 @@ using namespace System::Drawing::Imaging;
   pin_ptr<float> pma = &m_array[0]; \
   memcpy(pma, n_array, n_array_size * sizeof(float));
 
+#define MODEL_VERSION "9583"
 
 namespace glasssix
 {
@@ -37,6 +38,11 @@ namespace glasssix
 		~unicorn()
 		{
 			this->!unicorn();
+		}
+
+		static String^ GetModelVersion()
+		{
+			return gcnew String(MODEL_VERSION);
 		}
 
 		array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas, int DeviceId)
