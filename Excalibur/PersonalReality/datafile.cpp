@@ -13,36 +13,116 @@ datafile::~datafile()
 {
 }
 
-
-void datafile::writedata(const float* data, int len)
+// convert float to half precision floating point
+unsigned short datafile::float2half(float value)
 {
-	for (int i = 0; i < len; ++i, ++pos) {
-		if (i == len - 1)
+	// 1 : 8 : 23
+	union
+	{
+		unsigned int u;
+		float f;
+	} tmp;
+
+	tmp.f = value;
+
+	// 1 : 8 : 23
+	unsigned short sign = (tmp.u & 0x80000000) >> 31;
+	unsigned short exponent = (tmp.u & 0x7F800000) >> 23;
+	unsigned int significand = tmp.u & 0x7FFFFF;
+
+	//     fprintf(stderr, "%d %d %d\n", sign, exponent, significand);
+
+	// 1 : 5 : 10
+	unsigned short fp16;
+	if (exponent == 0)
+	{
+		// zero or denormal, always underflow
+		fp16 = (sign << 15) | (0x00 << 10) | 0x00;
+	}
+	else if (exponent == 0xFF)
+	{
+		// infinity or NaN
+		fp16 = (sign << 15) | (0x1F << 10) | (significand ? 0x200 : 0x00);
+	}
+	else
+	{
+		// normalized
+		short newexp = exponent + (-127 + 15);
+		if (newexp >= 31)
 		{
-			if (data[i]==0.0f)
+			// overflow, return infinity
+			fp16 = (sign << 15) | (0x1F << 10) | 0x00;
+		}
+		else if (newexp <= 0)
+		{
+			// underflow
+			if (newexp >= -10)
 			{
-				out << "0.0f";
+				// denormal half-precision
+				unsigned short sig = (significand | 0x800000) >> (14 - newexp);
+				fp16 = (sign << 15) | (0x00 << 10) | sig;
 			}
 			else
 			{
-				out << data[i] << "f";
+				// underflow
+				fp16 = (sign << 15) | (0x00 << 10) | 0x00;
 			}
-			
 		}
 		else
 		{
-			if (data[i]==0.0f)
+			fp16 = (sign << 15) | (newexp << 10) | (significand >> 13);
+		}
+	}
+
+	return fp16;
+}
+
+void datafile::writedata(const float* data, int len, std::string datatype)
+{
+	if (datatype == "float")
+	{
+		for (int i = 0; i < len; ++i, ++pos) {
+			if (i == len - 1)
 			{
-				out << "0.0f, ";
+				if (data[i] == 0.0f)
+				{
+					out << "0.0f";
+				}
+				else
+				{
+					out << data[i] << "f";
+				}
+
 			}
 			else
 			{
-				out << data[i] << "f, ";
+				if (data[i] == 0.0f)
+				{
+					out << "0.0f, ";
+				}
+				else
+				{
+					out << data[i] << "f, ";
+				}
+			}
+			if (pos >= 15) {
+				pos = 0;
+				out << std::endl;
 			}
 		}
-		if (pos >= 15) {
-			pos = 0;
-			out << std::endl;
+	}
+	if (datatype == "unsigned short")
+	{
+		for (int i = 0; i < len; ++i, ++pos)
+		{
+			if (i == len - 1)
+				out << float2half(data[i]);
+			else
+				out << float2half(data[i]) << ", ";
+			if (pos >= 15) {
+				pos = 0;
+				out << std::endl;
+			}
 		}
 	}
 }
@@ -53,9 +133,9 @@ void datafile::writedataend()
 	pos = 0;
 }
 
-void datafile::writedatahead(std::string netname, std::string layername)
+void datafile::writedatahead(std::string netname, std::string layername, std::string datatype)
 {
-	out << "static const float " + netname + "_" + layername + "[] = {" << std::endl;
+	out << "static const " + datatype + " " + netname + "_" + layername + "[] = {" << std::endl;
 }
 
 void datafile::writedatafileend()
@@ -86,15 +166,15 @@ void datafile::writedatahpp(std::string netpath, std::string netname, std::strin
 		{
 			std::string layer_name = layer_param.name();
 			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-			writedatahead(netname, layer_name + "_weights");
+			writedatahead(netname, layer_name + "_weights", "unsigned short");
 			const BlobProto& blob = layer_param.blobs(0);
-			writedata(blob.data().data(), blob.data_size());
+			writedata(blob.data().data(), blob.data_size(), "unsigned short");
 			writedataend();
 			if (n>1)
 			{
-				writedatahead(netname, layer_name + "_bias");
+				writedatahead(netname, layer_name + "_bias", "unsigned short");
 				const BlobProto& bias = layer_param.blobs(1);
-				writedata(bias.data().data(), bias.data_size());
+				writedata(bias.data().data(), bias.data_size(), "unsigned short");
 				writedataend();
 			}
 		}

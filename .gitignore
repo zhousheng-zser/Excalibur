@@ -58,3 +58,4 @@
 *.pb.cc
 *.pb.h
 *.asv
+*_halfdata.hpp

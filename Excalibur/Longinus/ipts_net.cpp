@@ -4,20 +4,20 @@ namespace glasssix
 {
 	ipts_net::ipts_net(int device)
 	{
-		Copy_Params(conv1_weights, IPTs_v2);
-		Copy_Params(conv1_bias, IPTs_v2);
-		Copy_Params(prelu1_weights, IPTs_v2);
-		Copy_Params(conv2_weights, IPTs_v2);
-		Copy_Params(conv2_bias, IPTs_v2);
-		Copy_Params(prelu2_weights, IPTs_v2);
-		Copy_Params(conv3_weights, IPTs_v2);
-		Copy_Params(conv3_bias, IPTs_v2);
-		Copy_Params(prelu3_weights, IPTs_v2);
-		Copy_Params(conv4_weights, IPTs_v2);
-		Copy_Params(conv4_bias, IPTs_v2);
-		Copy_Params(prelu4_weights, IPTs_v2);
-		Copy_Params(fc2_weights, IPTs_v2);
-		Copy_Params(fc2_bias, IPTs_v2);
+		Copy_Params(conv1_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv1_bias, IPTs_v2, 2147483647);
+		Copy_Params(prelu1_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv2_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv2_bias, IPTs_v2, 2147483647);
+		Copy_Params(prelu2_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv3_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv3_bias, IPTs_v2, 2147483647);
+		Copy_Params(prelu3_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv4_weights, IPTs_v2, 2147483647);
+		Copy_Params(conv4_bias, IPTs_v2, 2147483647);
+		Copy_Params(prelu4_weights, IPTs_v2, 2147483647);
+		Copy_Params(fc2_weights, IPTs_v2, 2147483647);
+		Copy_Params(fc2_bias, IPTs_v2, 2147483647);
 		//
 		device_ = device;
 #ifdef USE_CUDA
