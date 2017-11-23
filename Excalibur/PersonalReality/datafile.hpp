@@ -11,12 +11,13 @@ class datafile
 
 	void writedatafileend();
 
-	void writedatahead(std::string netname, std::string layername);
+	void writedatahead(std::string netname, std::string layername, std::string datatype = "float");
 
 	void writedataend();
 
-	void writedata(const float* data, int len);
+	void writedata(const float* data, int len, std::string datatype = "float");
 	
+	static unsigned short float2half(float value);
 public:
 	datafile();
 	explicit datafile(std::string outpath);

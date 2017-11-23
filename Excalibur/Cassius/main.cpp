@@ -9,7 +9,7 @@ using namespace glasssix;
 
 int main()
 {
-	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
+	cv::Mat image = cv::imread("E:\\rec-bench\\uofw\\re_equalized_backup\\Correct\\0\\0.jpg");
 	std::shared_ptr<tensor> tensor_data = nullptr;
 	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data);
 	unicorn_net unicorn = unicorn_net(0);
