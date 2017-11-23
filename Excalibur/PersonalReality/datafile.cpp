@@ -77,6 +77,57 @@ unsigned short datafile::float2half(float value)
 	return fp16;
 }
 
+bool datafile::quantize_weight(float *data, size_t data_length, int quantize_level, std::vector<float> &quantize_table, std::vector<unsigned char> &quantize_index)
+{
+	assert(quantize_level != 0);
+	assert(data != NULL);
+	assert(data_length > 0);
+
+	if (data_length < static_cast<size_t>(quantize_level)) {
+		fprintf(stderr, "No need quantize,because: data_length < quantize_level");
+		return false;
+	}
+
+	quantize_table.reserve(quantize_level);
+	quantize_index.reserve(data_length);
+
+	// 1. Find min and max value
+	float max_value = std::numeric_limits<float>::min();
+	float min_value = std::numeric_limits<float>::max();
+
+	for (size_t i = 0; i < data_length; ++i)
+	{
+		if (max_value < data[i]) max_value = data[i];
+		if (min_value > data[i]) min_value = data[i];
+	}
+	float strides = (max_value - min_value) / quantize_level;
+
+	// 2. Generate quantize table
+	for (int i = 0; i < quantize_level; ++i)
+	{
+		quantize_table.push_back(min_value + i * strides);
+	}
+
+	// 3. Align data to the quantized value
+	for (size_t i = 0; i < data_length; ++i)
+	{
+		size_t table_index = int((data[i] - min_value) / strides);
+		table_index = std::min<float>(table_index, quantize_level - 1);
+
+		float low_value = quantize_table[table_index];
+		float high_value = low_value + strides;
+
+		// find a nearest value between low and high value.
+		float targetValue = data[i] - low_value < high_value - data[i] ? low_value : high_value;
+
+		table_index = int((targetValue - min_value) / strides);
+		table_index = std::min<float>(table_index, quantize_level - 1);
+		quantize_index.push_back(table_index);
+	}
+
+	return true;
+}
+
 void datafile::writedata(const float* data, int len, std::string datatype)
 {
 	if (datatype == "float")

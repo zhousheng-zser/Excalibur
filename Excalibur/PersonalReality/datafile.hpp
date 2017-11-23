@@ -18,6 +18,7 @@ class datafile
 	void writedata(const float* data, int len, std::string datatype = "float");
 	
 	static unsigned short float2half(float value);
+	static bool quantize_weight(float *data, size_t data_length, int quantize_level, std::vector<float> &quantize_table, std::vector<unsigned char> &quantize_index);
 public:
 	datafile();
 	explicit datafile(std::string outpath);
