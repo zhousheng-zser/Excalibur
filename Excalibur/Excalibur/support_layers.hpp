@@ -14,6 +14,60 @@
 #include "normalize.hpp"
 #include "mirrormax.hpp"
 
+namespace excalibur
+{
+	// convert half precision floating point to float
+	static float half2float(unsigned short value)
+	{
+		// 1 : 5 : 10
+		unsigned short sign = (value & 0x8000) >> 15;
+		unsigned short exponent = (value & 0x7c00) >> 10;
+		unsigned short significand = value & 0x03FF;
+
+		//     fprintf(stderr, "%d %d %d\n", sign, exponent, significand);
+
+		// 1 : 8 : 23
+		union
+		{
+			unsigned int u;
+			float f;
+		} tmp;
+		if (exponent == 0)
+		{
+			if (significand == 0)
+			{
+				// zero
+				tmp.u = (sign << 31);
+			}
+			else
+			{
+				// denormal
+				exponent = 0;
+				// find non-zero bit
+				while ((significand & 0x200) == 0)
+				{
+					significand <<= 1;
+					exponent++;
+				}
+				significand <<= 1;
+				significand &= 0x3FF;
+				tmp.u = (sign << 31) | ((-exponent + (-15 + 127)) << 23) | (significand << 13);
+			}
+		}
+		else if (exponent == 0x1F)
+		{
+			// infinity or NaN
+			tmp.u = (sign << 31) | (0xFF << 23) | (significand << 13);
+		}
+		else
+		{
+			// normalized
+			tmp.u = (sign << 31) | ((exponent + (-15 + 127)) << 23) | (significand << 13);
+		}
+
+		return tmp.f;
+	}
+}
 
 #define Neuron_Name(name) private: \
 std::shared_ptr<tensor> name##_top_data = nullptr;\
@@ -27,13 +81,23 @@ private:
 #define Declear_Params(layer_para) float* layer_para;
 
 #ifdef USE_MKL
-#define Copy_Params(layer_para, netname)\
-layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ?sizeof(netname##_##layer_para) :1, 64); \
-memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));
+#define Copy_Params(layer_para, netname, datatype)\
+if(datatype == 2147483647){\
+layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ? sizeof(netname##_##layer_para) :1, 64); \
+memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
+if(datatype == 65536){\
+layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ? sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float) :1, 64); \
+for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++){\
+layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #else
-#define COPY_PARAMS(layer_para, const_layer_param)\
-layer_para =  (float*)malloc(sizeof(const_layer_param)); \
-memcpy(layer_para, const_layer_param, sizeof(const_layer_param));
+#define Copy_Params(layer_para, netname, datatype)\
+if(datatype == 2147483647){\
+layer_para =  (float*)malloc(sizeof(netname##_##layer_para)); \
+memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
+if (datatype == 65536) {\
+layer_para =  (float*)malloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float)); \
+for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++) {\
+layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #endif
 
 #define Init_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \

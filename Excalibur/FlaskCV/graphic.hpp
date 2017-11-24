@@ -51,6 +51,8 @@ namespace flaskcv
 		int channel() const;
 		int height() const;
 		int width() const;
+
+		graphic channel_graphic_ptr(int c);
 		//
 		const float* cpu_data() const;
 		float* mutable_cpu_data() const;

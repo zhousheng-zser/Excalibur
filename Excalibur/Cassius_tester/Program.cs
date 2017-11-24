@@ -15,12 +15,12 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            ipbbox ipb = new ipbbox(-1);
-            ipts ipts = new ipts(0);
-            //unicorn uc1 = new unicorn(0);
+            //ipbbox ipb = new ipbbox(-1);
+            //ipts ipts = new ipts(0);
+            unicorn uc1 = new unicorn(-1);
             //unicorn uc2 = new unicorn(0);
-            bmp1 = new Bitmap("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
-            float[] a = ipts.ExtractBitmapOutputs(new[] {bmp1, bmp1}, -1);
+            bmp1 = new Bitmap("E:\\rec-bench\\uofw\\re_equalized_backup\\Correct\\0\\0.jpg");
+            float[] a = uc1.ExtractBitmapOutputs(new[] {bmp1, bmp1}, -1);
             for (int i = 0; i < a.Length; i++)
             {
                 Console.WriteLine(a[i]);

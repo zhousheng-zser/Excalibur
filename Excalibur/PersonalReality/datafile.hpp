@@ -11,12 +11,14 @@ class datafile
 
 	void writedatafileend();
 
-	void writedatahead(std::string netname, std::string layername);
+	void writedatahead(std::string netname, std::string layername, std::string datatype = "float");
 
 	void writedataend();
 
-	void writedata(const float* data, int len);
+	void writedata(const float* data, int len, std::string datatype = "float");
 	
+	static unsigned short float2half(float value);
+	static bool quantize_weight(float *data, size_t data_length, int quantize_level, std::vector<float> &quantize_table, std::vector<unsigned char> &quantize_index);
 public:
 	datafile();
 	explicit datafile(std::string outpath);

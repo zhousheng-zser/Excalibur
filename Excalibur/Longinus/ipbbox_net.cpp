@@ -4,24 +4,25 @@ namespace glasssix
 {
 	ipbbox_net::ipbbox_net(int device)
 	{
-		Copy_Params(conv1_weights, IPBBox_v2);
-		Copy_Params(conv1_bias, IPBBox_v2);
-		Copy_Params(prelu1_weights, IPBBox_v2);
-		Copy_Params(conv2_weights, IPBBox_v2);
-		Copy_Params(conv2_bias, IPBBox_v2);
-		Copy_Params(prelu2_weights, IPBBox_v2);
-		Copy_Params(conv3_weights, IPBBox_v2);
-		Copy_Params(conv3_bias, IPBBox_v2);
-		Copy_Params(prelu3_weights, IPBBox_v2);
-		Copy_Params(conv4_weights, IPBBox_v2);
-		Copy_Params(conv4_bias, IPBBox_v2);
-		Copy_Params(prelu4_weights, IPBBox_v2);
-		Copy_Params(fc1_weights, IPBBox_v2);
-		Copy_Params(fc1_bias, IPBBox_v2);
-		Copy_Params(fc2_weights, IPBBox_v2);
-		Copy_Params(fc2_bias, IPBBox_v2);
-		Copy_Params(fc3_weights, IPBBox_v2);
-		Copy_Params(fc3_bias, IPBBox_v2);
+		float quantize_level = 2147483647;
+		Copy_Params(conv1_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv1_bias, IPBBox_v2, quantize_level);
+		Copy_Params(prelu1_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv2_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv2_bias, IPBBox_v2, quantize_level);
+		Copy_Params(prelu2_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv3_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv3_bias, IPBBox_v2, quantize_level);
+		Copy_Params(prelu3_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv4_weights, IPBBox_v2, quantize_level);
+		Copy_Params(conv4_bias, IPBBox_v2, quantize_level);
+		Copy_Params(prelu4_weights, IPBBox_v2, quantize_level);
+		Copy_Params(fc1_weights, IPBBox_v2, quantize_level);
+		Copy_Params(fc1_bias, IPBBox_v2, quantize_level);
+		Copy_Params(fc2_weights, IPBBox_v2, quantize_level);
+		Copy_Params(fc2_bias, IPBBox_v2, quantize_level);
+		Copy_Params(fc3_weights, IPBBox_v2, quantize_level);
+		Copy_Params(fc3_bias, IPBBox_v2, quantize_level);
 		//
 		device_ = device;
 #ifdef USE_CUDA
