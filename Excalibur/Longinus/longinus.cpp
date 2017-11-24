@@ -65,38 +65,6 @@ namespace glasssix
 			return outputs;
 		}
 
-		static float CosineDistanceProb(array<float>^ feature1, array<float>^ feature2)
-		{
-			float output = 0;
-			if (feature1->Length != feature2->Length)
-			{
-				output = -1;
-			}
-			else
-			{
-				output = innerproduct(feature1, feature2)
-					/ Math::Sqrt(innerproduct(feature1, feature1)*innerproduct(feature2, feature2));
-			}
-			return output;
-		}
-
-		static float EuclideanDistanceProb(array<float>^ feature1, array<float>^ feature2)
-		{
-			float output = 0;
-			if (feature1->Length != feature2->Length)
-			{
-				output = -1;
-			}
-			else
-			{
-				for (int i = 0; i < feature1->Length; i++)
-				{
-					output += (feature1[i] - feature2[i])*(feature1[i] - feature2[i]);
-				}
-			}
-			return Math::Sqrt(output*1.0f);
-		}
-
 	private:
 		static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
 		{
@@ -149,18 +117,7 @@ namespace glasssix
 				resize_bitmap->UnlockBits(bmpData);
 			}
 		}
-
-		static double innerproduct(array<float>^ feature1, array<float>^ feature2)
-		{
-			double output = 0;
-			for (int i = 0; i < feature1->Length; i++)
-			{
-				output += feature1[i] * feature2[i];
-			}
-			return output;
-		}
 	};
-
 
 	public ref class ipts
 	{
@@ -196,38 +153,6 @@ namespace glasssix
 			return outputs;
 		}
 
-		static float CosineDistanceProb(array<float>^ feature1, array<float>^ feature2)
-		{
-			float output = 0;
-			if (feature1->Length != feature2->Length)
-			{
-				output = -1;
-			}
-			else
-			{
-				output = innerproduct(feature1, feature2)
-					/ Math::Sqrt(innerproduct(feature1, feature1)*innerproduct(feature2, feature2));
-			}
-			return output;
-		}
-
-		static float EuclideanDistanceProb(array<float>^ feature1, array<float>^ feature2)
-		{
-			float output = 0;
-			if (feature1->Length != feature2->Length)
-			{
-				output = -1;
-			}
-			else
-			{
-				for (int i = 0; i < feature1->Length; i++)
-				{
-					output += (feature1[i] - feature2[i])*(feature1[i] - feature2[i]);
-				}
-			}
-			return Math::Sqrt(output*1.0f);
-		}
-
 	private:
 		static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
 		{
@@ -281,14 +206,5 @@ namespace glasssix
 			}
 		}
 
-		static double innerproduct(array<float>^ feature1, array<float>^ feature2)
-		{
-			double output = 0;
-			for (int i = 0; i < feature1->Length; i++)
-			{
-				output += feature1[i] * feature2[i];
-			}
-			return output;
-		}
 	};
 }
