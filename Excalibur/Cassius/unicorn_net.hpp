@@ -2,7 +2,7 @@
 #ifndef _UNICORN_NET_HPP_
 #define _UNICORN_NET_HPP_
 
-#include "unicorn_data.hpp"
+#include "unicorn_halfdata.hpp"
 #include "../Excalibur/support_layers.hpp"
 
 using namespace excalibur;
