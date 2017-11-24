@@ -54,20 +54,19 @@ namespace glasssix
 		Declear_Opration(inner_product, fc2);
 		Neuron_Name(fc2);
 
+	public:
 #ifdef USE_CUDA
-		cublasHandle_t cublas_handle_ = nullptr;
-		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
+		//cublasHandle_t cublas_handle_ = nullptr;
+		void Forward_native_gpu(const std::shared_ptr<tensor> input_data, cublasHandle_t cublas_handle_);
 #ifdef USE_CUDNN
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
 #endif 
 #endif
 		void Forward_cpu(const std::shared_ptr<tensor> input_data);
 
-	public:
+	
 		ipts_net(int device);
 		~ipts_net();
-		
-		void Forward(const std::shared_ptr<tensor> input_data);
 
 		static int get_input_channel()
 		{
