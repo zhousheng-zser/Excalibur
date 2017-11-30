@@ -31,9 +31,9 @@ private:
 layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ?sizeof(netname##_##layer_para) :1, 64); \
 memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));
 #else
-#define COPY_PARAMS(layer_para, const_layer_param)\
-layer_para =  (float*)malloc(sizeof(const_layer_param)); \
-memcpy(layer_para, const_layer_param, sizeof(const_layer_param));
+#define Copy_Params(layer_para, netname)\
+layer_para =  (float*)malloc(sizeof(netname##_##layer_para)); \
+memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));
 #endif
 
 #define Init_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
