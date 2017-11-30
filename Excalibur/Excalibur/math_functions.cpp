@@ -35,7 +35,7 @@ namespace excalibur
 				cudaSetDevice(device);
 				CUDA_CHECK(cudaMemcpy(Y, X, sizeof(float) * N, cudaMemcpyDefault));
 #else
-				NO_GPU
+				NO_GPU;
 #endif
 			}
 			else
