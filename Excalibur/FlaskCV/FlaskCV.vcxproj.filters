@@ -24,12 +24,18 @@
     <ClInclude Include="graphicoperations.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="rect.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="graphic.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="graphicoperations.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="rect.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
