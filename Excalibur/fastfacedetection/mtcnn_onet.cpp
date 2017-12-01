@@ -4,27 +4,28 @@ namespace fastface
 {
 	mtcnn_onet::mtcnn_onet(int device)
 	{
-		Copy_Params(conv1_weights, ONet);
-		Copy_Params(conv1_bias, ONet);
-		Copy_Params(prelu1_weights, ONet);
-		Copy_Params(conv2_weights, ONet);
-		Copy_Params(conv2_bias, ONet);
-		Copy_Params(prelu2_weights, ONet);
-		Copy_Params(conv3_weights, ONet);
-		Copy_Params(conv3_bias, ONet);
-		Copy_Params(prelu3_weights, ONet);
-		Copy_Params(conv4_weights, ONet);
-		Copy_Params(conv4_bias, ONet);
-		Copy_Params(prelu4_weights, ONet);
-		Copy_Params(conv5_weights, ONet);
-		Copy_Params(conv5_bias, ONet);
-		Copy_Params(prelu5_weights, ONet);
-		Copy_Params(conv6_1_weights, ONet);
-		Copy_Params(conv6_1_bias, ONet);
-		Copy_Params(conv6_2_weights, ONet);
-		Copy_Params(conv6_2_bias, ONet);
-		Copy_Params(conv6_3_weights, ONet);
-		Copy_Params(conv6_3_bias, ONet);
+		float quantize_level = INT_MAX;
+		Copy_Params(conv1_weights, ONet, quantize_level);
+		Copy_Params(conv1_bias, ONet, quantize_level);
+		Copy_Params(prelu1_weights, ONet, quantize_level);
+		Copy_Params(conv2_weights, ONet, quantize_level);
+		Copy_Params(conv2_bias, ONet, quantize_level);
+		Copy_Params(prelu2_weights, ONet, quantize_level);
+		Copy_Params(conv3_weights, ONet, quantize_level);
+		Copy_Params(conv3_bias, ONet, quantize_level);
+		Copy_Params(prelu3_weights, ONet, quantize_level);
+		Copy_Params(conv4_weights, ONet, quantize_level);
+		Copy_Params(conv4_bias, ONet, quantize_level);
+		Copy_Params(prelu4_weights, ONet, quantize_level);
+		Copy_Params(conv5_weights, ONet, quantize_level);
+		Copy_Params(conv5_bias, ONet, quantize_level);
+		Copy_Params(prelu5_weights, ONet, quantize_level);
+		Copy_Params(conv6_1_weights, ONet, quantize_level);
+		Copy_Params(conv6_1_bias, ONet, quantize_level);
+		Copy_Params(conv6_2_weights, ONet, quantize_level);
+		Copy_Params(conv6_2_bias, ONet, quantize_level);
+		Copy_Params(conv6_3_weights, ONet, quantize_level);
+		Copy_Params(conv6_3_bias, ONet, quantize_level);
 		//
 		device_ = device;
 #ifdef USE_CUDA

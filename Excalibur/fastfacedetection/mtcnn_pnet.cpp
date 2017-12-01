@@ -6,19 +6,20 @@ namespace fastface
 {
 	mtcnn_pnet::mtcnn_pnet(int device)
 	{
-		Copy_Params(conv1_weights, PNet);
-		Copy_Params(conv1_bias, PNet);
-		Copy_Params(prelu1_weights, PNet);
-		Copy_Params(conv2_weights, PNet);
-		Copy_Params(conv2_bias, PNet);
-		Copy_Params(prelu2_weights, PNet);
-		Copy_Params(conv3_weights, PNet);
-		Copy_Params(conv3_bias, PNet);
-		Copy_Params(prelu3_weights, PNet);
-		Copy_Params(conv4_1_weights, PNet);
-		Copy_Params(conv4_1_bias, PNet);
-		Copy_Params(conv4_2_weights, PNet);
-		Copy_Params(conv4_2_bias, PNet);
+		float quantize_level = INT_MAX;
+		Copy_Params(conv1_weights, PNet, quantize_level);
+		Copy_Params(conv1_bias, PNet, quantize_level);
+		Copy_Params(prelu1_weights, PNet, quantize_level);
+		Copy_Params(conv2_weights, PNet, quantize_level);
+		Copy_Params(conv2_bias, PNet, quantize_level);
+		Copy_Params(prelu2_weights, PNet, quantize_level);
+		Copy_Params(conv3_weights, PNet, quantize_level);
+		Copy_Params(conv3_bias, PNet, quantize_level);
+		Copy_Params(prelu3_weights, PNet, quantize_level);
+		Copy_Params(conv4_1_weights, PNet, quantize_level);
+		Copy_Params(conv4_1_bias, PNet, quantize_level);
+		Copy_Params(conv4_2_weights, PNet, quantize_level);
+		Copy_Params(conv4_2_bias, PNet, quantize_level);
 
 		device_ = device;
 #ifdef USE_CUDA
