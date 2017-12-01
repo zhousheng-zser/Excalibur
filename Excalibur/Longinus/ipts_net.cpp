@@ -4,7 +4,7 @@ namespace glasssix
 {
 	ipts_net::ipts_net(int device)
 	{
-		float quantize_level = 2147483647;
+		float quantize_level = INT_MAX;
 		Copy_Params(conv1_weights, IPTs_v2, quantize_level);
 		Copy_Params(conv1_bias, IPTs_v2, quantize_level);
 		Copy_Params(prelu1_weights, IPTs_v2, quantize_level);
