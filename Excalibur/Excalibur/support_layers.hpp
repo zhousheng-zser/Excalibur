@@ -82,19 +82,19 @@ private:
 
 #ifdef USE_MKL
 #define Copy_Params(layer_para, netname, datatype)\
-if(datatype == 2147483647){\
+if(datatype == INT_MAX){\
 layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ? sizeof(netname##_##layer_para) :1, 64); \
 memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
-if(datatype == 65536){\
+if(datatype == USHRT_MAX){\
 layer_para =  (float*)mkl_malloc(sizeof(netname##_##layer_para) ? sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float) :1, 64); \
 for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++){\
 layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #else
 #define Copy_Params(layer_para, netname, datatype)\
-if(datatype == 2147483647){\
+if(datatype == INT_MAX){\
 layer_para =  (float*)malloc(sizeof(netname##_##layer_para)); \
 memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
-if (datatype == 65536) {\
+if (datatype == USHRT_MAX) {\
 layer_para =  (float*)malloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float)); \
 for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++) {\
 layer_para[i] = half2float(netname##_##layer_para[i]);}}

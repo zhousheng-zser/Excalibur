@@ -5,24 +5,34 @@ namespace excalibur
 	syncedmem::syncedmem() 
 		: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(0), head_(UNINITIALIZED),
 		own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false), device_(-1){
+		if (device_ >= 0)
+		{
 #ifdef USE_CUDA
+			CUDA_CHECK(cudaSetDevice(device_));
 #ifdef _DEBUG
-		if (device_ >= 0) {
 			CUDA_CHECK(cudaGetDevice(&device_));
-		}
 #endif
+		}
+#else
+			NO_GPU;
+		}
 #endif
 	}
 
 	syncedmem::syncedmem(size_t size)
 		: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(size), head_(UNINITIALIZED),
 		own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false), device_(-1) {
+		if (device_ >= 0)
+		{
 #ifdef USE_CUDA
+			CUDA_CHECK(cudaSetDevice(device_));
 #ifdef _DEBUG
-		if (device_ >= 0) {
 			CUDA_CHECK(cudaGetDevice(&device_));
-		}
 #endif
+		}
+#else
+			NO_GPU;
+		}
 #endif
 	}
 
@@ -30,12 +40,17 @@ namespace excalibur
 	syncedmem::syncedmem(size_t size, int device)
 		: cpu_ptr_(NULL), gpu_ptr_(NULL), size_(size), head_(UNINITIALIZED),
 		own_cpu_data_(false), cpu_malloc_use_cuda_(false), own_gpu_data_(false), device_(device){
+		if (device_ >= 0)
+		{
 #ifdef USE_CUDA
+			CUDA_CHECK(cudaSetDevice(device_));
 #ifdef _DEBUG
-		if (device_>=0){
 			CUDA_CHECK(cudaGetDevice(&device_));
-		}
 #endif
+		}
+#else
+			NO_GPU;
+		}
 #endif
 	}
 

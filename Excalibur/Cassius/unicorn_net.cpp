@@ -4,7 +4,7 @@ namespace glasssix
 {
 	unicorn_net::unicorn_net(int device)
 	{
-		float quantize_level = 65536;
+		float quantize_level = USHRT_MAX;
 		Copy_Params(conv1a_weights, Unicorn, quantize_level);
 		Copy_Params(conv1a_bias, Unicorn, quantize_level);
 		Copy_Params(relu1a_weights, Unicorn, quantize_level);
@@ -346,6 +346,7 @@ namespace glasssix
 		normalizer->Forward_cpu(feature_top_data);
 	}
 	
+#ifdef USE_CUDA
 	void unicorn_net::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
 	{
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
@@ -428,7 +429,8 @@ namespace glasssix
 		mirrmax->Forward_native_gpu(pool5_top_data, feature_top_data);
 		normalizer->Forward_native_gpu(feature_top_data);
 	}
-	
+#endif
+
 	void unicorn_net::Forward(const std::shared_ptr<tensor> input_data)
 	{
 		if (device_<0)
