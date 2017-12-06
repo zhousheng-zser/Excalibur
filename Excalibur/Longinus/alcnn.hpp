@@ -4,9 +4,7 @@
 
 #include "ipts_net.hpp"
 #include "ipbbox_net.hpp"
-#ifdef USE_OPENCV
-#include <opencv2/opencv.hpp>
-#endif
+
 using namespace excalibur;
 
 namespace glasssix
@@ -22,20 +20,42 @@ namespace glasssix
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_ = nullptr;
 #endif
-#ifdef USE_OPENCV
-		cv::Mat safetycut(cv::Mat ori, cv::Rect rect);
-		void alignface_opencv(cv::Mat& img, cv::Mat& aligned);
-#endif
-		//prepare for public
-#ifdef USE_OPENCV
-		std::shared_ptr<tensor> alignface(cv::Mat& img);
-#else
-		void alignface(std::shared_ptr<tensor>& img, std::shared_ptr<tensor>& aligned);
-#endif
+
 	public:
 		alcnn(int device);
 		~alcnn();
+		void Forward_IPBbox(const std::shared_ptr<tensor> input_data);
+		void Forward_IPTs(const std::shared_ptr<tensor> input_data);
 
+		const float* get_IPBbox_fc2_data() const
+		{
+			return ipbbox->get_fc2()->cpu_data();
+		}
+
+		const float* get_IPBbox_fc3_data() const
+		{
+			return ipbbox->get_fc3()->cpu_data();
+		}
+
+		int get_IPBbox_fc2_count() const
+		{
+			return ipbbox->get_fc2()->count();
+		}
+
+		int get_IPBbox_fc3_count() const
+		{
+			return ipbbox->get_fc3()->count();
+		}
+
+		const float* get_IPTs_fc2_data() const
+		{
+			return ipts->get_fc2()->cpu_data();
+		}
+
+		int get_IPTs_fc2_count() const
+		{
+			return ipts->get_fc2()->count();
+		}
 	};
 }
 
