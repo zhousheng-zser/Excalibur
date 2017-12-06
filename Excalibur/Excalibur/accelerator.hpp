@@ -8,10 +8,15 @@
 #define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Excalibur: check mode."
 #define X86
 #define USE_OPENCV
-//#define USE_CUDA
+
+#ifdef X86
+#define USE_CUDA
 //#define USE_CUDNN
-//#define USE_MKL
-//#define USE_MKLDNN
+#ifdef Parallel
+#define USE_MKL
+#define USE_MKLDNN
+#endif
+#endif
 
 #ifdef USE_CUDA
 #include <cublas_v2.h>
