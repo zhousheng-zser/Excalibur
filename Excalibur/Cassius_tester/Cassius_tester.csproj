@@ -71,6 +71,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Atalanta\Atalanta.vcxproj">
+      <Project>{15566548-faf3-4321-8378-67f573b1b109}</Project>
+      <Name>Atalanta</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Cassius\Cassius.vcxproj">
       <Project>{8432fa67-f974-46c7-a792-dcfb77624f35}</Project>
       <Name>Cassius</Name>

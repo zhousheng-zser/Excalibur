@@ -15,6 +15,15 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
+            Console.WriteLine("Device Count: " + atalanta.GetDeviceCount());
+            Console.WriteLine("Device 0 Name: " + atalanta.GetDeviceName(0));
+            Console.WriteLine("Device 0 DriverVersion: " + atalanta.GetDeviceDriverVersion(0));
+            Console.WriteLine("Device 0 RuntimeVersion: " + atalanta.GetDeviceRuntimeVersion(0));
+            Console.WriteLine("Device 0 Capability: " + atalanta.GetDeviceCapability(0));
+            Console.WriteLine("Device 0 CUDACoreNum: " + atalanta.GetDeviceCUDACoreNum(0));
+            var mem = atalanta.GetDeviceMemory(0);
+            Console.WriteLine("Device 0 TotalMem: " + mem[0] + " MB");
+            Console.WriteLine("Device 0 FreeMem: " + mem[1] + " MB");
             //ipbbox ipb = new ipbbox(-1);
             //ipts ipts = new ipts(0);
             unicorn uc1 = new unicorn(-1);
