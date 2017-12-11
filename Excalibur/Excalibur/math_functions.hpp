@@ -16,7 +16,8 @@ namespace excalibur
 			const float alpha, const float* A, const float* B, const float beta,
 			float* C);
 
-		static void excalibur_copy(const int N, const float *X, float *Y, int device);
+		template <typename Dtype>
+		static void excalibur_copy(const int N, const Dtype *X, Dtype *Y, int device);
 
 		static void cpu_set(const int N, const float alpha, float* Y);
 
