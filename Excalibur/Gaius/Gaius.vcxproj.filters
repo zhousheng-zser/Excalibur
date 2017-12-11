@@ -36,6 +36,18 @@
     <ClInclude Include="Classifier.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="LABBaseClassifier.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LABBoostedClassifier.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="ModelReader.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LABBoostModelReader.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageTensor.cpp">
@@ -48,6 +60,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="LABFeatureMap.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LABBoostedClassifier.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LABBoostModelReader.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
