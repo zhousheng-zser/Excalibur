@@ -21,12 +21,33 @@
     <ClInclude Include="ImagePyramid.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="utils.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FeatureMap.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="LABFeatureMap.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="math_helper.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Classifier.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageTensor.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="ImagePyramid.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="LABFeatureMap.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
