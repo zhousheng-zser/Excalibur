@@ -120,11 +120,17 @@
     <ClInclude Include="FeatureMap.hpp" />
     <ClInclude Include="ImagePyramid.hpp" />
     <ClInclude Include="ImageTensor.hpp" />
+    <ClInclude Include="LABBaseClassifier.hpp" />
+    <ClInclude Include="LABBoostedClassifier.hpp" />
+    <ClInclude Include="LABBoostModelReader.hpp" />
     <ClInclude Include="LABFeatureMap.hpp" />
     <ClInclude Include="math_helper.hpp" />
+    <ClInclude Include="ModelReader.hpp" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="LABBoostedClassifier.cpp" />
+    <ClCompile Include="LABBoostModelReader.cpp" />
     <ClCompile Include="LABFeatureMap.cpp" />
     <ClCompile Include="ImagePyramid.cpp" />
     <ClCompile Include="ImageTensor.cpp" />
