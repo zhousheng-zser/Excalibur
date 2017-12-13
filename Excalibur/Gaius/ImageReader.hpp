@@ -21,6 +21,8 @@ namespace excalibur
 		static void image2tensor(const cv::Mat image, std::shared_ptr<ImageTensor<unsigned char>>& tensor_data);
 
 		static void tensor2image(const std::shared_ptr<ImageTensor<unsigned char>> tensor_data, cv::Mat& image);
+
+		static void tensor2images(const std::shared_ptr<ImageTensor<unsigned char>> tensor_data, std::vector<cv::Mat>& images);
 #endif
 	};
 }
