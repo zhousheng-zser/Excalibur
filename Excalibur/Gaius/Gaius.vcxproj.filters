@@ -81,4 +81,9 @@
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ImagePyramid.cu">
+      <Filter>cu</Filter>
+    </None>
+  </ItemGroup>
 </Project>

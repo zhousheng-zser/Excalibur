@@ -9,13 +9,6 @@ int main()
 	std::shared_ptr<ImagePyramid> img_pyramid = std::make_shared<ImagePyramid>(-1);
 	std::shared_ptr<ImageTensor<unsigned char>> mat_data = nullptr;
 	ImageReader::image2tensor(mat, mat_data);
-	/*std::shared_ptr<ImageTensor<unsigned char>> remat_data = std::make_shared<ImageTensor<unsigned char>>(0.8 * mat_data->width(), 0.8 * mat_data->height(), 1, -1);
-	ResizeImageCPU(mat_data, remat_data);
-	cv::Mat imshow;
-	ImageReader::tensor2image(remat_data, imshow);
-	cv::imshow("test", imshow);
-	cv::waitKey();*/
-	//
 	int32_t min_img_size = mat_data->height() <= mat_data->width() ? mat_data->height() : mat_data->width();
 	min_img_size = (0 > 0 ?
 		(min_img_size >= 0 ? 0 : min_img_size) :
@@ -24,20 +17,17 @@ int main()
 	img_pyramid->SetMinScale(40.f / min_img_size);
 	float scale_factor = 0.0;
 	std::shared_ptr<ImageTensor<unsigned char>> img_scaled = img_pyramid->GetNextScaleImage(&scale_factor);
-	/*const unsigned char* remp = img_scaled->cpu_data();
-	for (int i = 0; i < 100; i++)
-	{
-		std::cout << (int)remp[i] << " ";
-	}*/
 	while (img_scaled != nullptr)
 	{
-
 		img_scaled = img_pyramid->GetNextScaleImage(&scale_factor);
-		cv::Mat imshow;
-		ImageReader::tensor2image(img_scaled, imshow);
-		cv::imshow("test", imshow);
-		cv::waitKey();
-		imshow.release();
+		if (img_scaled!=nullptr)
+		{
+			cv::Mat imshow;
+			ImageReader::tensor2image(img_scaled, imshow);
+			cv::imshow("test", imshow);
+			cv::waitKey();
+			imshow.release();
+		}
 	}
 	return 0;
 }
