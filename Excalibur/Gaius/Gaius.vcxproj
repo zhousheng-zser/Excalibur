@@ -38,13 +38,13 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -119,6 +119,7 @@
     <ClInclude Include="Classifier.hpp" />
     <ClInclude Include="FeatureMap.hpp" />
     <ClInclude Include="ImagePyramid.hpp" />
+    <ClInclude Include="ImageReader.hpp" />
     <ClInclude Include="ImageTensor.hpp" />
     <ClInclude Include="LABBaseClassifier.hpp" />
     <ClInclude Include="LABBoostedClassifier.hpp" />
@@ -129,11 +130,13 @@
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ImageReader.cpp" />
     <ClCompile Include="LABBoostedClassifier.cpp" />
     <ClCompile Include="LABBoostModelReader.cpp" />
     <ClCompile Include="LABFeatureMap.cpp" />
     <ClCompile Include="ImagePyramid.cpp" />
     <ClCompile Include="ImageTensor.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
