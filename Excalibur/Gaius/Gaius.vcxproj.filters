@@ -86,4 +86,9 @@
       <Filter>cu</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="math_helper.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+  </ItemGroup>
 </Project>

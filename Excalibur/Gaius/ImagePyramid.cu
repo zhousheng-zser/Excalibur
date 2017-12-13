@@ -25,7 +25,7 @@ namespace excalibur
 	}
 
 
-	void ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest)
+	void ImagePyramid::ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest)
 	{
 		int src_width = src->width();
 		int src_height = src->height();
