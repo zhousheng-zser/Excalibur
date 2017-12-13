@@ -2,6 +2,8 @@
 #ifndef _MATH_HELPER_HPP_
 #define _MATH_HELPER_HPP_
 
+#include "../Excalibur/accelerator.hpp"
+
 #ifdef USE_SSE
 #include <immintrin.h>
 #endif
@@ -12,13 +14,13 @@ namespace excalibur
 	class MathHelper
 	{
 	public:
-		static inline void UInt8ToInt32CPU(const uint8_t* src, int32_t* dest,
+		static void UInt8ToInt32CPU(const uint8_t* src, int32_t* dest,
 			int32_t len) {
 			for (int32_t i = 0; i < len; i++)
 				*(dest++) = static_cast<int32_t>(*(src++));
 		}
 
-		static inline void VectorAddCPU(const int32_t* x, const int32_t* y, int32_t* z,
+		static void VectorAddCPU(const int32_t* x, const int32_t* y, int32_t* z,
 			int32_t len) {
 			int32_t i;
 #ifdef USE_SSE
@@ -41,7 +43,7 @@ namespace excalibur
 #endif
 		}
 
-		static inline void VectorSubCPU(const int32_t* x, const int32_t* y, int32_t* z,
+		static void VectorSubCPU(const int32_t* x, const int32_t* y, int32_t* z,
 			int32_t len) {
 			int32_t i;
 #ifdef USE_SSE
@@ -65,7 +67,7 @@ namespace excalibur
 #endif
 		}
 
-		static inline void VectorAbsCPU(const int32_t* src, int32_t* dest, int32_t len) {
+		static void VectorAbsCPU(const int32_t* src, int32_t* dest, int32_t len) {
 			int32_t i;
 #ifdef USE_SSE
 			__m128i val;
@@ -86,7 +88,7 @@ namespace excalibur
 #endif
 		}
 
-		static inline void SquareCPU(const int32_t* src, uint32_t* dest, int32_t len) {
+		static void SquareCPU(const int32_t* src, uint32_t* dest, int32_t len) {
 			int32_t i;
 #ifdef USE_SSE
 			__m128i x1;
@@ -105,7 +107,7 @@ namespace excalibur
 #endif
 		}
 
-		static inline float VectorInnerProductCPU(const float* x, const float* y,
+		static float VectorInnerProductCPU(const float* x, const float* y,
 			int32_t len) {
 			float prod = 0;
 			int32_t i;
@@ -130,6 +132,27 @@ namespace excalibur
 #endif
 			return prod;
 		}
+
+#ifdef USE_CUDA
+		static void UInt8ToInt32GPU(const unsigned char* src, int* dest, int len);
+
+		static void VectorAddGPU(const int* x, const int* y, int* z, int len);
+
+		static void VectorSubGPU(const int* x, const int* y, int* z, int len);
+
+		static void VectorAbsGPU(const int* src, int* dest, int len);
+
+		static void SquareGPU(const int* src, int* dest, int len);
+
+		static float VectorInnerProductGPU(cublasHandle_t cublas_handle_, const float* x, const float* y, int len)
+		{
+			float *h_result = new float[1];
+			CUBLAS_CHECK(cublasSdot(cublas_handle_, len, x, 1, y, 1, h_result));
+			float output = h_result[0];
+			delete h_result;
+			return output;
+		}
+#endif
 	};
 }
 

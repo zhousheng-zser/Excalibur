@@ -14,8 +14,11 @@ namespace excalibur
 			img_scaled_.reset(new ImageTensor<unsigned char>(width_scaled_, height_scaled_, 1, device_));
 			if (device_>=0) // gpu code
 			{
-				NOT_IMPLEMENTED;
-				//ResizeImageGPU(img_ori_, img_scaled_);
+#ifdef USE_CUDA
+				ResizeImageGPU(img_ori_, img_scaled_);
+#else
+				NO_GPU;
+#endif
 			}
 			else // cpu code
 			{
