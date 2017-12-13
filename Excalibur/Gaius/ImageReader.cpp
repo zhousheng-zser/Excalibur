@@ -65,9 +65,25 @@ namespace excalibur
 
 	void ImageReader::tensor2image(const std::shared_ptr<ImageTensor<unsigned char>> tensor_data, cv::Mat& image)
 	{
+		CHECK_EQ(tensor_data->channels(), 1);
 		image = cv::Mat(tensor_data->height(), tensor_data->width(), CV_8UC1, (unsigned char *)tensor_data->cpu_data());
 		return;
 	}
+
+	void ImageReader::tensor2images(const std::shared_ptr<ImageTensor<unsigned char>> tensor_data, std::vector<cv::Mat>& images)
+	{
+		CHECK_EQ(tensor_data->channels(), 1);
+		images = std::vector<cv::Mat>(tensor_data->num());
+		int width = tensor_data->width();
+		int height = tensor_data->height();
+		int offset = width * height;
+		for (int i = 0; i < images.size(); i++)
+		{
+			images[i] = cv::Mat(height, width, CV_8UC1, (unsigned char *)(tensor_data->cpu_data() + offset * i));
+		}
+		return;
+	}
+
 
 #endif
 }
