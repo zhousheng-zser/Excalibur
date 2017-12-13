@@ -1,4 +1,5 @@
 #include "ImagePyramid.hpp"
+#include <iostream>
 
 namespace excalibur
 {
@@ -22,13 +23,12 @@ namespace excalibur
 			}
 			else // cpu code
 			{
-				cpu_buf_img_ = src_img->mutable_cpu_data();
-				cpu_buf_img_scaled_ = dest_img->mutable_cpu_data();
+				src_img->set_cpu_data(cpu_buf_img_);
+				dest_img->set_cpu_data(cpu_buf_img_scaled_);
 				ResizeImageCPU(src_img, dest_img);
-				img_scaled_.reset(new ImageTensor<unsigned char>(width_scaled_, height_scaled_, 1, device_));
-				img_scaled_->set_cpu_data(cpu_buf_img_scaled_);
+				scale_factor_ *= scale_step_;
 			}
-			return img_scaled_;
+			return dest_img;
 		}
 		else
 		{
