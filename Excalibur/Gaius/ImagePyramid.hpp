@@ -7,8 +7,6 @@
 
 namespace excalibur
 {
-
-
 	class ImagePyramid
 	{
 		float max_scale_;

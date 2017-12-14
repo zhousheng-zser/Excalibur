@@ -15,6 +15,8 @@ namespace excalibur
 		ComputeFeatureMapCPU();
 	}
 
+	
+
 	float LABFeatureMap::GetStdDev() const {
 		double mean;
 		double m2;

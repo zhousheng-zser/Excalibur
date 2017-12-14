@@ -118,7 +118,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Classifier.hpp" />
+    <ClInclude Include="Detector.hpp" />
     <ClInclude Include="FeatureMap.hpp" />
+    <ClInclude Include="FUSTDetector.hpp" />
     <ClInclude Include="ImagePyramid.hpp" />
     <ClInclude Include="ImageReader.hpp" />
     <ClInclude Include="ImageTensor.hpp" />
@@ -131,6 +133,7 @@
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FUSTDetector.cpp" />
     <ClCompile Include="ImageReader.cpp" />
     <ClCompile Include="LABBoostedClassifier.cpp" />
     <ClCompile Include="LABBoostModelReader.cpp" />
