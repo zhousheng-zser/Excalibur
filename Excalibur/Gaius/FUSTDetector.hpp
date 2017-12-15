@@ -47,7 +47,7 @@ namespace excalibur
 		~FUSTDtector(){};
 
 		virtual bool LoadModel(const std::string & model_path);
-		virtual std::vector<FaceInfo> Detect(ImagePyramid* img_pyramid);
+		virtual std::vector<FaceInfo> Detect(std::shared_ptr<ImagePyramid> img_pyramid);
 
 		inline virtual void SetWindowSize(int32_t size) {
 			if (size >= 20)

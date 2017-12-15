@@ -6,6 +6,8 @@
 #include "LABBoostModelReader.hpp"
 #include "FUSTDetector.hpp"
 #include "utils.hpp"
+#include "SURFMLPModelReader.hpp"
+#include "SURFMLP.hpp"
 
 
 namespace excalibur
@@ -81,7 +83,7 @@ namespace excalibur
 		return is_loaded;
 	}
 
-	std::vector<FaceInfo> FUSTDtector::Detect(ImagePyramid* img_pyramid)
+	std::vector<FaceInfo> FUSTDtector::Detect(std::shared_ptr<ImagePyramid> img_pyramid)
 	{
 		float score;
 		FaceInfo wnd_info;
@@ -230,7 +232,7 @@ namespace excalibur
 			reader.reset(new LABBoostModelReader());
 			break;
 		case ClassifierType::SURF_MLP:
-			//reader.reset(new SURFMLPModelReader());
+			reader.reset(new SURFMLPModelReader());
 			break;
 		default:
 			break;
@@ -246,7 +248,7 @@ namespace excalibur
 			classifier.reset(new LABBoostedClassifier());
 			break;
 		case ClassifierType::SURF_MLP:
-			//classifier.reset(new SURFMLP());
+			classifier.reset(new SURFMLP());
 			break;
 		default:
 			break;
@@ -262,7 +264,7 @@ namespace excalibur
 			feat_map.reset(new LABFeatureMap());
 			break;
 		case ClassifierType::SURF_MLP:
-			//feat_map.reset(new SURFFeatureMap());
+			feat_map.reset(new SURFFeatureMap());
 			break;
 		default:
 			break;

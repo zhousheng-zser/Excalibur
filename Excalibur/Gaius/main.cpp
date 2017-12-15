@@ -1,6 +1,8 @@
 #include "ImageReader.hpp"
 #include "ImagePyramid.hpp"
 #include "FUSTDetector.hpp"
+#include <filesystem>
+
 using namespace excalibur;
 
 int main()
@@ -17,7 +19,17 @@ int main()
 		min_img_size);
 	img_pyramid->SetImage1x(mat.data, mat.cols, mat.rows);
 	img_pyramid->SetMinScale(40.f / min_img_size);
-	float scale_factor = 0.0;
+	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+	auto res = FD.Detect(img_pyramid);
+	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+	std::cout << "total detection time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000  << "ms" << std::endl << std::endl;
+	for (int i = 0; i < res.size(); i++)
+	{
+		cv::rectangle(mat, cv::Rect(res[i].bbox.x, res[i].bbox.y, res[i].bbox.width, res[i].bbox.height), cv::Scalar(0, 0, 255), 2);
+	}
+	cv::imshow("propose", mat);
+	cv::waitKey();
+	/*float scale_factor = 0.0;
 	std::shared_ptr<ImageTensor<unsigned char>> img_scaled = img_pyramid->GetNextScaleImage(&scale_factor);
 	while (img_scaled != nullptr)
 	{
@@ -30,6 +42,6 @@ int main()
 			cv::waitKey();
 			imshow.release();
 		}
-	}
+	}*/
 	return 0;
 }
