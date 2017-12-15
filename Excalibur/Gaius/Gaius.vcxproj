@@ -129,7 +129,12 @@
     <ClInclude Include="LABBoostModelReader.hpp" />
     <ClInclude Include="LABFeatureMap.hpp" />
     <ClInclude Include="math_helper.hpp" />
+    <ClInclude Include="MLP.hpp" />
+    <ClInclude Include="MLPLayer.hpp" />
     <ClInclude Include="ModelReader.hpp" />
+    <ClInclude Include="SURFFeatureMap.hpp" />
+    <ClInclude Include="SURFMLP.hpp" />
+    <ClInclude Include="SURFMLPModelReader.hpp" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -141,6 +146,8 @@
     <ClCompile Include="ImagePyramid.cpp" />
     <ClCompile Include="ImageTensor.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="MLP.cpp" />
+    <ClCompile Include="SURFFeatureMap.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>

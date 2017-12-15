@@ -44,7 +44,7 @@ namespace excalibur
 			wnd_data_.resize(wnd_size_ * wnd_size_);
 		}
 
-		~FUSTDtector();
+		~FUSTDtector(){};
 
 		virtual bool LoadModel(const std::string & model_path);
 		virtual std::vector<FaceInfo> Detect(ImagePyramid* img_pyramid);
