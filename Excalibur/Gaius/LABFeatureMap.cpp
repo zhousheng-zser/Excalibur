@@ -15,6 +15,8 @@ namespace excalibur
 		ComputeFeatureMapCPU();
 	}
 
+	
+
 	float LABFeatureMap::GetStdDev() const {
 		double mean;
 		double m2;
@@ -94,7 +96,7 @@ namespace excalibur
 			rect_width_, int_img + (rect_height_ - 1) * width_, rect_sum + 1, width);
 
 #ifdef _OPENMP
-#pragma omp parallel num_threads(SEETA_NUM_THREADS)
+#pragma omp parallel num_threads(OMP_NUM_THREADS)
 		{
 #pragma omp for nowait
 #endif
@@ -122,7 +124,7 @@ namespace excalibur
 		uint8_t* feat_map = feat_map_.data();
 
 #ifdef _OPENMP
-#pragma omp parallel num_threads(SEETA_NUM_THREADS)
+#pragma omp parallel num_threads(OMP_NUM_THREADS)
 		{
 #pragma omp for nowait
 #endif

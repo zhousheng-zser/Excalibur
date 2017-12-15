@@ -90,6 +90,7 @@ namespace excalibur
 
 	template class ImageTensor<float>;
 	template class ImageTensor<int>;
+	template class ImageTensor<unsigned int>;
 	template class ImageTensor<unsigned char>;
 }
 

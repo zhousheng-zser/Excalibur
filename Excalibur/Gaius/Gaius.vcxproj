@@ -38,13 +38,13 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -52,6 +52,7 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -117,23 +118,38 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Classifier.hpp" />
+    <ClInclude Include="Detector.hpp" />
     <ClInclude Include="FeatureMap.hpp" />
+    <ClInclude Include="FUSTDetector.hpp" />
     <ClInclude Include="ImagePyramid.hpp" />
+    <ClInclude Include="ImageReader.hpp" />
     <ClInclude Include="ImageTensor.hpp" />
     <ClInclude Include="LABBaseClassifier.hpp" />
     <ClInclude Include="LABBoostedClassifier.hpp" />
     <ClInclude Include="LABBoostModelReader.hpp" />
     <ClInclude Include="LABFeatureMap.hpp" />
     <ClInclude Include="math_helper.hpp" />
+    <ClInclude Include="MLP.hpp" />
+    <ClInclude Include="MLPLayer.hpp" />
     <ClInclude Include="ModelReader.hpp" />
+    <ClInclude Include="SURFFeatureMap.hpp" />
+    <ClInclude Include="SURFMLP.hpp" />
+    <ClInclude Include="SURFMLPModelReader.hpp" />
     <ClInclude Include="utils.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FUSTDetector.cpp" />
+    <ClCompile Include="ImageReader.cpp" />
     <ClCompile Include="LABBoostedClassifier.cpp" />
     <ClCompile Include="LABBoostModelReader.cpp" />
     <ClCompile Include="LABFeatureMap.cpp" />
     <ClCompile Include="ImagePyramid.cpp" />
     <ClCompile Include="ImageTensor.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="MLP.cpp" />
+    <ClCompile Include="SURFFeatureMap.cpp" />
+    <ClCompile Include="SURFMLP.cpp" />
+    <ClCompile Include="SURFMLPModelReader.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -141,7 +157,21 @@
       <Project>{e0af50ac-048c-412f-ba26-13b4f408c96d}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="ImagePyramid.cu">
+      <FileType>Document</FileType>
+      <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">64</TargetMachinePlatform>
+      <TargetMachinePlatform Condition="'$(Configuration)|$(Platform)'=='Release|x64'">64</TargetMachinePlatform>
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50</CodeGeneration>
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50</CodeGeneration>
+    </CudaCompile>
+    <CudaCompile Include="math_helper.cu">
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">compute_50,sm_50</CodeGeneration>
+      <CodeGeneration Condition="'$(Configuration)|$(Platform)'=='Release|x64'">compute_50,sm_50</CodeGeneration>
+    </CudaCompile>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 8.0.targets" />
   </ImportGroup>
 </Project>
