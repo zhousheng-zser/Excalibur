@@ -148,6 +148,8 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="MLP.cpp" />
     <ClCompile Include="SURFFeatureMap.cpp" />
+    <ClCompile Include="SURFMLP.cpp" />
+    <ClCompile Include="SURFMLPModelReader.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
   <ItemGroup>

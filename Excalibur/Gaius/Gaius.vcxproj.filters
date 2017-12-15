@@ -110,6 +110,12 @@
     <ClCompile Include="MLP.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="SURFMLP.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="SURFMLPModelReader.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="ImagePyramid.cu">

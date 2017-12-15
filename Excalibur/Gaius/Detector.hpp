@@ -12,7 +12,7 @@ namespace excalibur
 		virtual ~Detector() {}
 
 		virtual bool LoadModel(const std::string & model_path) = 0;
-		virtual std::vector<FaceInfo> Detect(ImagePyramid* img_pyramid) = 0;
+		virtual std::vector<FaceInfo> Detect(std::shared_ptr<ImagePyramid> img_pyramid) = 0;
 
 		virtual void SetWindowSize(int size) {}
 		virtual void SetSlideWindowStep(int step_x, int step_y) {}
