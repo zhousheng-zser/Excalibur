@@ -23,7 +23,7 @@ namespace excalibur
 
 		virtual void ComputeGPU(const uint8_t* input, int32_t width, int32_t height) = 0;
 
-		inline virtual void SetROI(const Rect & roi) {roi_ = roi;}
+		virtual void SetROI(const Rect & roi) {roi_ = roi;}
 
 	protected:
 		int32_t width_;
