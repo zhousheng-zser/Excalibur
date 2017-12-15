@@ -60,6 +60,21 @@
     <ClInclude Include="FUSTDetector.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="MLPLayer.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="MLP.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="SURFFeatureMap.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="SURFMLP.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="SURFMLPModelReader.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ImageTensor.cpp">
@@ -87,6 +102,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="FUSTDetector.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="SURFFeatureMap.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="MLP.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,10 +1,12 @@
 #include "ImageReader.hpp"
 #include "ImagePyramid.hpp"
-
+#include "FUSTDetector.hpp"
 using namespace excalibur;
 
 int main()
 {
+	FUSTDtector FD = FUSTDtector();
+	FD.LoadModel("D:\\Research\\MCL_Forward\\Excalibur\\model\\gaius_frontal.bin");
 	cv::Mat mat = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_003.png", cv::IMREAD_GRAYSCALE);
 	std::shared_ptr<ImagePyramid> img_pyramid = std::make_shared<ImagePyramid>(-1);
 	std::shared_ptr<ImageTensor<unsigned char>> mat_data = nullptr;
