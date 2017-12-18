@@ -11,14 +11,42 @@ namespace excalibur
 		Reshape(width, height);
 		ComputeIntegralImagesCPU(input);
 		ComputeRectSumCPU();
+		
 		rect_sum_data = rect_sum_->cpu_data();
 		feat_map_data = feat_map_->mutable_cpu_data();
 		ComputeFeatureMapCPU();
 
 		int_img_data = int_img_->cpu_data();
 		square_int_img_data = square_int_img_->cpu_data();
+		feat_map_cpu_data = feat_map_->cpu_data();
 	}
 
+	template<typename Dtype>
+	void LABFeatureMap::IntegralCPU(std::shared_ptr<ImageTensor<Dtype>> data)
+	{
+		const Dtype* src = data->cpu_data();
+		Dtype* dest = data->mutable_cpu_data();
+		const Dtype* dest_above = dest;
+		*dest = *(src++);
+
+		for (int32_t c = 1; c < width_; c++, src++, dest++)
+		{
+			*(dest + 1) = (*dest) + (*src);
+		}
+		dest++;
+		for (int32_t r = 1; r < height_; r++) {
+			for (int32_t c = 0, s = 0; c < width_; c++, src++, dest++, dest_above++) {
+				s += (*src);
+				*dest = *dest_above + s;
+			}
+		}
+	}
+
+	template
+	void LABFeatureMap::IntegralCPU(std::shared_ptr<ImageTensor<int>> data);
+
+	template
+	void LABFeatureMap::IntegralCPU(std::shared_ptr<ImageTensor<unsigned int>> data);
 	
 
 	float LABFeatureMap::GetStdDev() const {
@@ -94,11 +122,10 @@ namespace excalibur
 		int32_t height = height_ - rect_height_;
 		const int32_t* int_img = int_img_->cpu_data();
 		int32_t* rect_sum = rect_sum_->mutable_cpu_data();
-
 		*rect_sum = *(int_img + (rect_height_ - 1) * width_ + rect_width_ - 1);
 		MathHelper::VectorSubCPU(int_img + (rect_height_ - 1) * width_ +
 			rect_width_, int_img + (rect_height_ - 1) * width_, rect_sum + 1, width);
-
+		
 #ifdef _OPENMP
 #pragma omp parallel num_threads(OMP_NUM_THREADS)
 		{
@@ -119,6 +146,7 @@ namespace excalibur
 #ifdef _OPENMP
 		}
 #endif
+		
 	}
 
 	void LABFeatureMap::ComputeFeatureMapCPU() {
@@ -161,14 +189,40 @@ namespace excalibur
 	}
 
 #ifdef USE_CUDA
+	void LABFeatureMap::ComputeGPU(const uint8_t* input, int32_t width, int32_t height)
+	{
+		if (input == nullptr || width <= 0 || height <= 0) {
+			return; 
+		}
+		
+		Reshape(width, height);
+		ComputeIntegralImagesGPU(input);
+		ComputeRectSumGPU();
+		
+		rect_sum_data = rect_sum_->gpu_data();
+		feat_map_data = feat_map_->mutable_gpu_data();
+		ComputeFeatureMapGPU();
+		
+		//std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+
+		int_img_data = int_img_->cpu_data();
+		square_int_img_data = square_int_img_->cpu_data();
+		feat_map_cpu_data = feat_map_->cpu_data();
+		/*std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+		std::cout << "total detection time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;*/
+	}
+
+
 	void LABFeatureMap::ComputeIntegralImagesGPU(const unsigned char* input)
 	{
 		int32_t len = width_ * height_;
-
+		/*std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();*/
 		MathHelper::UInt8ToInt32GPU(input, int_img_->mutable_gpu_data(), len);
 		MathHelper::SquareGPU(int_img_->gpu_data(), square_int_img_->mutable_gpu_data(), len);
-		IntegralCPU(int_img_);
-		IntegralCPU(square_int_img_);
+		IntegralGPU(int_img_);
+		IntegralGPU(square_int_img_);
+		/*std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+		std::cout << "total detection time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;*/
 	}
 #endif
 }

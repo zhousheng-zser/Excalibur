@@ -14,8 +14,8 @@ namespace excalibur
 	class FUSTDtector : public Detector
 	{
 		std::shared_ptr<ModelReader> CreateModelReader(ClassifierType type);
-		std::shared_ptr<Classifier> CreateClassifier(ClassifierType type);
-		std::shared_ptr<FeatureMap> CreateFeatureMap(ClassifierType type);
+		std::shared_ptr<Classifier> CreateClassifier(ClassifierType type, int device);
+		std::shared_ptr<FeatureMap> CreateFeatureMap(ClassifierType type, int device);
 
 		void GetWindowData(const ImageTensor<unsigned char> & img, const Rect & wnd);
 
@@ -36,10 +36,11 @@ namespace excalibur
 		std::map<ClassifierType, int32_t> cls2feat_idx_;
 		
 	public:
-		FUSTDtector()
+		FUSTDtector(int device)
 			: wnd_size_(40), slide_wnd_step_x_(4), slide_wnd_step_y_(4),
-			num_hierarchy_(0) 
+			num_hierarchy_(0)
 		{
+			device_ = device;
 			wnd_data_buf_.resize(wnd_size_ * wnd_size_);
 			wnd_data_.resize(wnd_size_ * wnd_size_);
 		}
