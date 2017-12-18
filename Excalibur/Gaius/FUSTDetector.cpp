@@ -10,6 +10,7 @@
 #include "SURFMLP.hpp"
 
 
+
 namespace excalibur
 {
 	bool FUSTDtector::LoadModel(const std::string& model_path)
@@ -48,7 +49,7 @@ namespace excalibur
 						model_file.read(reinterpret_cast<char*>(&type_id), sizeof(int32_t));
 						classifier_type = static_cast<ClassifierType>(type_id);
 						reader = CreateModelReader(classifier_type);
-						classifier = CreateClassifier(classifier_type);
+						classifier = CreateClassifier(classifier_type, device_);
 
 						is_loaded = !model_file.fail() &&
 							reader->Read(&model_file, classifier.get());
@@ -56,7 +57,7 @@ namespace excalibur
 							model_.push_back(classifier);
 							std::shared_ptr<FeatureMap> feat_map;
 							if (cls2feat_idx_.count(classifier_type) == 0) {
-								feat_map_.push_back(CreateFeatureMap(classifier_type));
+								feat_map_.push_back(CreateFeatureMap(classifier_type, device_));
 								cls2feat_idx_.insert(
 									std::map<ClassifierType, int32_t>::value_type(
 										classifier_type, feat_map_index++));
@@ -100,9 +101,20 @@ namespace excalibur
 		std::shared_ptr<FeatureMap> & feat_map_1 =
 			feat_map_[cls2feat_idx_[model_[0]->type()]];
 
+		
 		while (img_scaled != nullptr) {
-			feat_map_1->ComputeCPU(img_scaled->cpu_data(), img_scaled->width(),
-				img_scaled->height());
+			
+			if (device_>=0)
+			{
+				feat_map_1->ComputeGPU(img_scaled->cpu_data(), img_scaled->width(),
+					img_scaled->height());
+			}
+			else
+			{
+				feat_map_1->ComputeCPU(img_scaled->cpu_data(), img_scaled->width(),
+					img_scaled->height());
+			}
+			
 
 			wnd_info.bbox.width = static_cast<int32_t>(wnd_size_ / scale_factor + 0.5);
 			wnd_info.bbox.height = wnd_info.bbox.width;
@@ -130,12 +142,15 @@ namespace excalibur
 			img_scaled = img_pyramid->GetNextScaleImage(&scale_factor);
 		}
 
+		
+
 		std::vector<std::vector<FaceInfo> > proposals_nms(hierarchy_size_[0]);
 		for (int32_t i = 0; i < hierarchy_size_[0]; i++) {
 			utils::NonMaximumSuppression(&(proposals[i]),
 				&(proposals_nms[i]), 0.8f);
 			proposals[i].clear();
 		}
+		
 		return proposals_nms[0];
 	}
 
@@ -240,7 +255,7 @@ namespace excalibur
 		return reader;
 	}
 
-	std::shared_ptr<Classifier> FUSTDtector::CreateClassifier(ClassifierType type)
+	std::shared_ptr<Classifier> FUSTDtector::CreateClassifier(ClassifierType type, int device)
 	{
 		std::shared_ptr<Classifier> classifier;
 		switch (type) {
@@ -256,12 +271,12 @@ namespace excalibur
 		return classifier;
 	}
 
-	std::shared_ptr<FeatureMap> FUSTDtector::CreateFeatureMap(ClassifierType type)
+	std::shared_ptr<FeatureMap> FUSTDtector::CreateFeatureMap(ClassifierType type, int device)
 	{
 		std::shared_ptr<FeatureMap> feat_map;
 		switch (type) {
 		case ClassifierType::LAB_Boosted_Classifier:
-			feat_map.reset(new LABFeatureMap());
+			feat_map.reset(new LABFeatureMap(device));
 			break;
 		case ClassifierType::SURF_MLP:
 			feat_map.reset(new SURFFeatureMap());

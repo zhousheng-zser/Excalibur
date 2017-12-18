@@ -4,6 +4,8 @@
 
 #include "FeatureMap.hpp"
 #include "math_helper.hpp"
+#include <iostream>
+#include <chrono>
 
 namespace excalibur
 {
@@ -27,15 +29,11 @@ namespace excalibur
 		virtual void ComputeCPU(const uint8_t* input, int32_t width, int32_t height);
 
 #ifdef USE_CUDA
-		virtual void ComputeGPU(const uint8_t* input, int32_t width,
-			int32_t height)
-		{
-			NOT_IMPLEMENTED;
-		}
+		virtual void ComputeGPU(const uint8_t* input, int32_t width, int32_t height);
 #endif
 
 		uint8_t GetFeatureVal(int32_t offset_x, int32_t offset_y) const {
-			return feat_map_data[(roi_.y + offset_y) * width_ + roi_.x + offset_x];
+			return feat_map_cpu_data[(roi_.y + offset_y) * width_ + roi_.x + offset_x];
 		}
 
 		float GetStdDev() const;
@@ -47,24 +45,12 @@ namespace excalibur
 		void ComputeFeatureMapCPU();
 
 		template<typename Dtype>
-		void IntegralCPU(std::shared_ptr<ImageTensor<Dtype>> data)
-		{
-			const Dtype* src = data->cpu_data();
-			Dtype* dest = data->mutable_cpu_data();
-			const Dtype* dest_above = dest;
-			*dest = *(src++);
-			for (int32_t c = 1; c < width_; c++, src++, dest++)
-				*(dest + 1) = (*dest) + (*src);
-			dest++;
-			for (int32_t r = 1; r < height_; r++) {
-				for (int32_t c = 0, s = 0; c < width_; c++, src++, dest++, dest_above++) {
-					s += (*src);
-					*dest = *dest_above + s;
-				}
-			}
-		}
+		void IntegralCPU(std::shared_ptr<ImageTensor<Dtype>> data);
+		
 
 #ifdef USE_CUDA
+		void IntegralGPU(std::shared_ptr<ImageTensor<int>> data);
+		void IntegralGPU(std::shared_ptr<ImageTensor<unsigned int>> data);
 		void ComputeIntegralImagesGPU(const unsigned char* input);
 		void ComputeRectSumGPU();
 		void ComputeFeatureMapGPU();
@@ -83,6 +69,7 @@ namespace excalibur
 		std::shared_ptr<ImageTensor<int>> int_img_;
 		std::shared_ptr<ImageTensor<unsigned int>> square_int_img_;
 		unsigned char* feat_map_data;
+		const unsigned char* feat_map_cpu_data;
 		const int* rect_sum_data;
 		const int* int_img_data;
 		const unsigned int* square_int_img_data;

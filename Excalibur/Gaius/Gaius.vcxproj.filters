@@ -118,15 +118,13 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ImagePyramid.cu">
-      <Filter>cu</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
     <CudaCompile Include="math_helper.cu">
       <Filter>cu</Filter>
     </CudaCompile>
     <CudaCompile Include="LABFeatureMap.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="ImagePyramid.cu">
       <Filter>cu</Filter>
     </CudaCompile>
   </ItemGroup>
