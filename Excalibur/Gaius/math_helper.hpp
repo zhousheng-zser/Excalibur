@@ -142,7 +142,7 @@ namespace excalibur
 
 		static void VectorAbsGPU(const int* src, int* dest, int len);
 
-		static void SquareGPU(const int* src, int* dest, int len);
+		static void SquareGPU(const int* src, unsigned int* dest, int len);
 
 		static float VectorInnerProductGPU(cublasHandle_t cublas_handle_, const float* x, const float* y, int len)
 		{

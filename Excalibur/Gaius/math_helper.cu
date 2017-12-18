@@ -35,7 +35,7 @@ namespace excalibur
 		}
 	}
 
-	__global__ void SquareKernel(const int nthreads, const int* src, int* dest)
+	__global__ void SquareKernel(const int nthreads, const int* src, unsigned int* dest)
 	{
 		CUDA_KERNEL_LOOP(index, nthreads)
 		{
@@ -67,7 +67,7 @@ namespace excalibur
 			(len, x, y, z);
 	}
 
-	void MathHelper::SquareGPU(const int* src, int* dest, int len)
+	void MathHelper::SquareGPU(const int* src, unsigned int* dest, int len)
 	{
 		SquareKernel << <CUDA_GET_BLOCKS(len), CUDA_NUM_THREADS >> >
 			(len, src, dest);

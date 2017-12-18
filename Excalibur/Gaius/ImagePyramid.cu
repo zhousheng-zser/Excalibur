@@ -25,14 +25,14 @@ namespace excalibur
 	}
 
 
-	void ImagePyramid::ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest)
+	void ImagePyramid::ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest, int device)
 	{
 		int src_width = src->width();
 		int src_height = src->height();
 		int dest_width = dest->width();
 		int dest_height = dest->height();
 		if (src_width == dest_width && src_height == dest_height) {
-			math_functions::excalibur_copy(src_width * src_height, src->gpu_data(), dest->mutable_gpu_data(), -1);
+			math_functions::excalibur_copy(src_width * src_height, src->gpu_data(), dest->mutable_gpu_data(), device);
 			return;
 		}
 		const unsigned char* src_data = src->gpu_data();
