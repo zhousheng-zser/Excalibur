@@ -68,7 +68,7 @@ namespace excalibur
 		const std::shared_ptr<ImageTensor<unsigned char>> GetNextScaleImage(float* scale_factor = nullptr);
 
 #ifdef USE_CUDA
-		static void ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest);
+		static void ResizeImageGPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest, int device = 0);
 #endif
 
 		static void ResizeImageCPU(const std::shared_ptr<ImageTensor<unsigned char>>src, std::shared_ptr<ImageTensor<unsigned char>> & dest)

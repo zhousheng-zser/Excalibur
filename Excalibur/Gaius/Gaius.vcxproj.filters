@@ -126,5 +126,8 @@
     <CudaCompile Include="math_helper.cu">
       <Filter>cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="LABFeatureMap.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
