@@ -4,7 +4,7 @@
 #include <filesystem>
 
 using namespace excalibur;
-using namespace fastface;
+using namespace glasssix;
 
 void unittest()
 {
@@ -51,22 +51,38 @@ void unittest()
 
 void mtcnntset()
 {
-	cv::Mat image = cv::imread("D:\\Research\\CudaNpdDetect\\fastface_tester\\test2.jpg");
+	cv::Mat image = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\WeChat Image_20180309174405.jpg");
+	//C:\\Users\\BALTHASAR\\Desktop\\procesed.jpg  D:\\Detection-Data\\face\\ibug\\image_005_1.jpg
 	//cv::resize(image, image, cv::Size(375, 500));
-	mtcnn mt = mtcnn(0);
-	double threshold[3] = { 0.5, 0.7, 0.7 };
-	double factor = 0.717;
-	int minSize = 48;
-	std::vector<FaceInfo> faceInfo;
-	mt.Detect(image, faceInfo, minSize, threshold, factor);
-	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
-	for (int i = 0; i < 10; i++)
+	MTCNN detector(0);
+	float factor = 0.709f;
+	float threshold[3] = { 0.7f, 0.6f, 0.6f };
+	int minSize = 40;
+
+	std::vector<FaceInfoX> faceInfo = detector.Detect(image, minSize, threshold, factor, 3);
+
+	double t = (double)cv::getTickCount();
+	int execute_times = 10;
+	for (int i = 0; i < execute_times; i++)
 	{
-		mt.Detect(image, faceInfo, minSize, threshold, factor);
+		detector.Detect(image, minSize, threshold, factor, 3);
 	}
-	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
-	std::cout << "total forward time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 10<< "ms" << std::endl << std::endl;
-	mtcnn::drawDectionResult(image, faceInfo);
+	std::cout << "Detection time: " << (double)(cv::getTickCount() - t) / cv::getTickFrequency() / execute_times * 1000 << "ms" << std::endl;
+	for (int i = 0; i < faceInfo.size(); i++) {
+		int x = (int)faceInfo[i].bbox.xmin;
+		int y = (int)faceInfo[i].bbox.ymin;
+		int w = (int)(faceInfo[i].bbox.xmax - faceInfo[i].bbox.xmin + 1);
+		int h = (int)(faceInfo[i].bbox.ymax - faceInfo[i].bbox.ymin + 1);
+		std::cout << faceInfo[i].bbox.score << std::endl;
+		cv::rectangle(image, cv::Rect(x, y, w, h), cv::Scalar(255, 0, 0), 2);
+	}
+	for (int i = 0; i < faceInfo.size(); i++) {
+		float *landmark = faceInfo[i].landmark;
+		for (int j = 0; j < 5; j++) {
+			cv::circle(image, cv::Point((int)landmark[2 * j], (int)landmark[2 * j + 1]), 1, cv::Scalar(255, 255, 0), 2);
+		}
+	}
+
 	imshow("final", image);
 	cv::waitKey(0);
 }

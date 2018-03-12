@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
+using glasssix.aroundight.romancia;
 
 namespace Cassius_tester
 {
@@ -15,32 +18,19 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            Console.WriteLine("Device Count: " + atalanta.GetDeviceCount());
-            Console.WriteLine("Device 0 Name: " + atalanta.GetDeviceName(0));
-            Console.WriteLine("Device 0 DriverVersion: " + atalanta.GetDeviceDriverVersion(0));
-            Console.WriteLine("Device 0 RuntimeVersion: " + atalanta.GetDeviceRuntimeVersion(0));
-            Console.WriteLine("Device 0 Capability: " + atalanta.GetDeviceCapability(0));
-            Console.WriteLine("Device 0 CUDACoreNum: " + atalanta.GetDeviceCUDACoreNum(0));
-            var mem = atalanta.GetDeviceMemory(0);
-            Console.WriteLine("Device 0 TotalMem: " + mem[0] + " MB");
-            Console.WriteLine("Device 0 FreeMem: " + mem[1] + " MB");
-            //ipbbox ipb = new ipbbox(-1);
-            //ipts ipts = new ipts(0);
-            unicorn uc1 = new unicorn(-1);
-            //unicorn uc2 = new unicorn(0);
-            bmp1 = new Bitmap("E:\\rec-bench\\uofw\\re_equalized_backup\\Correct\\0\\0.jpg");
-            float[] a = uc1.ExtractBitmapOutputs(new[] {bmp1, bmp1}, -1);
-            for (int i = 0; i < a.Length; i++)
+            FastCNNFace mtcnn = new FastCNNFace(0);
+            bmp1 = new Bitmap("C:\\Users\\BALTHASAR\\Desktop\\WeChat Image_20180309174405.jpg");
+            var aaa = mtcnn.Facedetect_Mtcnn(bmp1, 40);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 10; i++)
             {
-                Console.WriteLine(a[i]);
+                mtcnn.Facedetect_Mtcnn(bmp1, 40);
             }
-            //bmp2 = new Bitmap("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\0.jpg");
-            //Thread t1 = new Thread(new ParameterizedThreadStart(multi_thread_tester1));
-            //Thread t2 = new Thread(new ParameterizedThreadStart(multi_thread_tester2));
-            //t1.IsBackground = true;
-            //t2.IsBackground = true;
-            //t1.Start(uc1);
-            //t2.Start(uc2);
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds/10);
+            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
+            //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
             Console.ReadLine();
         }
 
@@ -63,5 +53,23 @@ namespace Cassius_tester
         //        Console.WriteLine("Thread 2: the " + i + "-th execution.");
         //    }
         //}
+
+        public static Bitmap DrawRectangleInPicture(Bitmap bmp, Rectangle rect, Color RectColor, int LineWidth, DashStyle ds)
+        {
+            if (bmp == null) return null;
+
+
+            Graphics g = Graphics.FromImage(bmp);
+
+            Brush brush = new SolidBrush(RectColor);
+            Pen pen = new Pen(brush, LineWidth);
+            pen.DashStyle = ds;
+
+            g.DrawRectangle(pen, rect);
+
+            g.Dispose();
+
+            return bmp;
+        }
     }
 }

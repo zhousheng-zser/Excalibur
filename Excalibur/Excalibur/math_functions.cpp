@@ -25,8 +25,7 @@ namespace excalibur
 		std::cout << "total blas_gemm time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 << "ms" << std::endl << std::endl;*/
 	}
 
-	template <typename Dtype>
-	void math_functions::excalibur_copy(const int N, const Dtype* X, Dtype* Y, int device)
+	void math_functions::excalibur_copy(const int N, const float* X, float* Y, int device)
 	{
 		if (X!=Y)
 		{
@@ -34,26 +33,17 @@ namespace excalibur
 			{
 #ifdef USE_CUDA
 				cudaSetDevice(device);
-				CUDA_CHECK(cudaMemcpy(Y, X, sizeof(Dtype) * N, cudaMemcpyDefault));
+				CUDA_CHECK(cudaMemcpy(Y, X, sizeof(float) * N, cudaMemcpyDefault));
 #else
 				NO_GPU;
 #endif
 			}
 			else
 			{
-				memcpy(Y, X, sizeof(Dtype) * N);
+				memcpy(Y, X, sizeof(float) * N);
 			}
 		}
 	}
-
-	template 
-	void math_functions::excalibur_copy<float>(const int N, const float* X, float* Y, int device);
-
-	template
-	void math_functions::excalibur_copy<int>(const int N, const int* X, int* Y, int device);
-
-	template
-	void math_functions::excalibur_copy<unsigned char>(const int N, const unsigned char* X, unsigned char* Y, int device);
 
 	void math_functions::cpu_set(const int N, const float alpha, float* Y)
 	{
