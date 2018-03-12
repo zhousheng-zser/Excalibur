@@ -4,61 +4,62 @@
 #include "mtcnn_pnet.hpp"
 #include "mtcnn_onet.hpp"
 #include "mtcnn_rnet.hpp"
+#include <omp.h>
 
-namespace fastface
+namespace glasssix
 {
-	typedef struct FaceRect {
-		float x1;
-		float y1;
-		float x2;
-		float y2;
-		float score; /**< Larger score should mean higher confidence. */
-	} FaceRect;
+	typedef struct FaceBox {
+		float xmin;
+		float ymin;
+		float xmax;
+		float ymax;
+		float score;
+	} FaceBox;
 
-	typedef struct FacePts {
-		float x[5], y[5];
-	} FacePts;
+	typedef struct FaceInfoX {
+		float bbox_reg[4];
+		//float landmark_reg[10];
+		float landmark[10];
+		FaceBox bbox;
+	} FaceInfoX;
 
-	typedef struct FaceInfo {
-		FaceRect bbox;
-		cv::Vec4f regression;
-		FacePts facePts;
-		double roll;
-		double pitch;
-		double yaw;
-	} FaceInfo;
-	class mtcnn {
+	class MTCNN 
+	{
 	public:
-		mtcnn(int device);
-		void Detect(const cv::Mat& img, std::vector<FaceInfo> &faceInfo, int minSize, double* threshold, double factor);
-		static void drawDectionResult(cv::Mat &frame, std::vector<FaceInfo> &faceInfo);
-	private:
-		void GenerateBoundingBox(std::shared_ptr<tensor> confidence, std::shared_ptr<tensor> reg,
-			float scale, float thresh, int image_width, int image_height);
-		void ClassifyFace_MulImage(const std::vector<FaceInfo> &regressed_rects, cv::Mat &sample_single,
-			int net_id, double thresh, char netName);
-		std::vector<FaceInfo> NonMaximumSuppression(std::vector<FaceInfo>& bboxes, float thresh, char methodType);
-		void Bbox2Square(std::vector<FaceInfo>& bboxes);
-		void Padding(int img_w, int img_h);
-		std::vector<FaceInfo> BoxRegress(std::vector<FaceInfo> &faceInfo_, int stage);
+		MTCNN(int device_id);
+		~MTCNN();
+		std::vector<FaceInfoX> Detect(const cv::Mat& img, const int min_size, const float* threshold, const float factor, const int stage);
+
+	protected:
+		std::vector<FaceInfoX> ProposalNet(const cv::Mat& img, int min_size, float threshold, float factor);
+		std::vector<FaceInfoX> NextStage(const cv::Mat& image, std::vector<FaceInfoX> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold);
+		void BBoxRegression(std::vector<FaceInfoX>& bboxes);
+		void BBoxPadSquare(std::vector<FaceInfoX>& bboxes, int width, int height);
+		void BBoxPad(std::vector<FaceInfoX>& bboxes, int width, int height);
+		void GenerateBBox(std::shared_ptr<tensor> confidence, std::shared_ptr<tensor> reg_box, float scale, float thresh);
+		std::vector<FaceInfoX> NMS(std::vector<FaceInfoX>& bboxes, float thresh, char methodType);
+		float IoU(float xmin, float ymin, float xmax, float ymax, float xmin_, float ymin_, float xmax_, float ymax_, bool is_iom = false);
 
 	private:
-		mtcnn_pnet *PNet_;
-		mtcnn_rnet *RNet_;
-		mtcnn_onet *ONet_;
+		mtcnn_pnet* PNet_;
+		mtcnn_rnet* RNet_;
+		mtcnn_onet* ONet_;
 
-		// x1,y1,x2,t2 and score
-		std::vector<FaceInfo> condidate_rects_;
-		std::vector<FaceInfo> total_boxes_;
-		std::vector<FaceInfo> regressed_rects_;
-		std::vector<FaceInfo> regressed_pading_;
+		std::vector<FaceInfoX> candidate_boxes_;
+		std::vector<FaceInfoX> total_boxes_;
 
-		std::vector<cv::Mat> crop_img_;
-		int curr_feature_map_w_;
-		int curr_feature_map_h_;
-		int num_channels_;
-
-		int device_;
+		int device_id_;
+		//omp
+		const int threads_num = omp_get_num_procs();
+		//pnet config
+		const float pnet_stride = 2;
+		const float pnet_cell_size = 12;
+		const int pnet_max_detect_num = 5000;
+		//mean & std
+		const float mean_val = 127.5f;
+		const float std_val = 0.0078125f;
+		//minibatch size
+		const int step_size = 128;
 	};
 }
 

@@ -23,7 +23,6 @@ namespace excalibur
 		int channels = bottom->channels();
 		int width = bottom->width();
 		int height = bottom->height();
-
 		for (int n = 0; n < num; n++) {
 			for (int c = 0; c < channels; c++) {
 				for (int h = 0; h < height; h++) {

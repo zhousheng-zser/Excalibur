@@ -7,7 +7,7 @@
 
 using namespace excalibur;
 
-namespace fastface
+namespace glasssix
 {
 	class mtcnn_onet
 	{

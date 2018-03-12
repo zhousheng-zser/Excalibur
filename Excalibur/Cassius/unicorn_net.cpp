@@ -268,9 +268,9 @@ namespace glasssix
 		tensor_data.reset(new tensor(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
-		fliper->Forward_cpu(tensor_data, flip_top_data);
-		concator->Forward_cpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
-		conv1a->Forward_cpu(concat_top_data, conv1a_top_data);
+		//fliper->Forward_cpu(tensor_data, flip_top_data);
+		//concator->Forward_cpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
+		conv1a->Forward_cpu(tensor_data, conv1a_top_data);
 		relu1a->Forward_cpu(conv1a_top_data);
 		conv1b->Forward_cpu(conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_cpu(conv1b_top_data);
@@ -342,8 +342,8 @@ namespace glasssix
 		conv5->Forward_cpu(res5_6_top_data, conv5_top_data);
 		relu5->Forward_cpu(conv5_top_data);
 		pool5->Forward_cpu(conv5_top_data, pool5_top_data);
-		mirrmax->Forward_cpu(pool5_top_data, feature_top_data);
-		normalizer->Forward_cpu(feature_top_data);
+		//mirrmax->Forward_cpu(pool5_top_data, feature_top_data);
+		normalizer->Forward_cpu(pool5_top_data);//feature_top_data
 	}
 	
 #ifdef USE_CUDA
@@ -352,9 +352,9 @@ namespace glasssix
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		fliper->Forward_native_gpu(tensor_data, flip_top_data);
-		concator->Forward_native_gpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
-		conv1a->Forward_native_gpu(cublas_handle_, concat_top_data, conv1a_top_data);
+		/*fliper->Forward_native_gpu(tensor_data, flip_top_data);
+		concator->Forward_native_gpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);*/
+		conv1a->Forward_native_gpu(cublas_handle_, tensor_data, conv1a_top_data);//concat_top_data
 		relu1a->Forward_native_gpu(conv1a_top_data);
 		conv1b->Forward_native_gpu(cublas_handle_, conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_native_gpu(conv1b_top_data);
@@ -426,8 +426,8 @@ namespace glasssix
 		conv5->Forward_native_gpu(cublas_handle_, res5_6_top_data, conv5_top_data);
 		relu5->Forward_native_gpu(conv5_top_data);
 		pool5->Forward_native_gpu(conv5_top_data, pool5_top_data);
-		mirrmax->Forward_native_gpu(pool5_top_data, feature_top_data);
-		normalizer->Forward_native_gpu(feature_top_data);
+		//mirrmax->Forward_native_gpu(pool5_top_data, feature_top_data);
+		normalizer->Forward_native_gpu(pool5_top_data);//feature_top_data
 	}
 #endif
 

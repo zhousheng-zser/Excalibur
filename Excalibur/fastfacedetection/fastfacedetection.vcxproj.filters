@@ -27,15 +27,6 @@
     <ClInclude Include="mtcnn.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="mtcnn_pnet_data.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mtcnn_onet_data.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="mtcnn_rnet_data.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
