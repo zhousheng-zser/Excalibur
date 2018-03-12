@@ -59,3 +59,4 @@
 *.pb.h
 *.asv
 *_halfdata.hpp
+*_data_full.hpp
