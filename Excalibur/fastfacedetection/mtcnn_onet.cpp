@@ -1,6 +1,6 @@
 #include "mtcnn_onet.hpp"
 
-namespace fastface
+namespace glasssix
 {
 	mtcnn_onet::mtcnn_onet(int device)
 	{
@@ -51,6 +51,24 @@ namespace fastface
 		Init_InnerProduct_Params(conv6_2, 128, 1, 1, 4, true);
 		Init_InnerProduct_Params(conv6_3, 128, 1, 1, 10, true);
 		Init_Softmax_Params(prob1, 2);
+
+		/*Init_Conv_Params(conv1, 3, 32, 3, 1, 0, true);
+		Init_PReLU_Params(prelu1, 32, false);
+		Init_Pooling_Params(pool1, 3, 2, 0, 0);
+		Init_Conv_Params(conv2, 32, 64, 3, 1, 0, true);
+		Init_PReLU_Params(prelu2, 64, false);
+		Init_Pooling_Params(pool2, 3, 2, 0, 0);
+		Init_Conv_Params(conv3, 64, 64, 3, 1, 0, true);
+		Init_PReLU_Params(prelu3, 64, false);
+		Init_Pooling_Params(pool3, 2, 2, 0, 0);
+		Init_Conv_Params(conv4, 64, 128, 2, 1, 0, true);
+		Init_PReLU_Params(prelu4, 128, false);
+		Init_InnerProduct_Params(conv5, 128, 3, 3, 256, true);
+		Init_PReLU_Params(prelu5, 128, false);
+		Init_InnerProduct_Params(conv6_1, 256, 1, 1, 2, true);
+		Init_InnerProduct_Params(conv6_2, 256, 1, 1, 4, true);
+		Init_InnerProduct_Params(conv6_3, 256, 1, 1, 10, true);
+		Init_Softmax_Params(prob1, 2);*/
 	}
 
 

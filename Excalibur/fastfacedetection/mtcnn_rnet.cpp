@@ -1,6 +1,6 @@
 #include "mtcnn_rnet.hpp"
 
-namespace fastface
+namespace glasssix
 {
 	mtcnn_rnet::mtcnn_rnet(int device)
 	{
@@ -22,8 +22,8 @@ namespace fastface
 		Copy_Params(conv5_1_bias, RNet, quantize_level);
 		Copy_Params(conv5_2_weights, RNet, quantize_level);
 		Copy_Params(conv5_2_bias, RNet, quantize_level);
-		Copy_Params(conv5_3_weights, RNet, quantize_level);
-		Copy_Params(conv5_3_bias, RNet, quantize_level);
+		/*Copy_Params(conv5_3_weights, RNet, quantize_level);
+		Copy_Params(conv5_3_bias, RNet, quantize_level);*/
 		//
 		device_ = device;
 #ifdef USE_CUDA

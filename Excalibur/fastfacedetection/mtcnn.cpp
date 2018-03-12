@@ -1,33 +1,48 @@
 #include "mtcnn.hpp"
 
-namespace fastface
+using namespace std;
+using namespace cv;
+
+namespace glasssix
 {
-	// compare score
-	bool CompareBBox(const FaceInfo & a, const FaceInfo & b) {
+
+	bool CompareBBox(const FaceInfoX & a, const FaceInfoX & b) 
+	{
 		return a.bbox.score > b.bbox.score;
 	}
 
-	void mtcnn::drawDectionResult(cv::Mat &frame, std::vector<FaceInfo> &faceInfo)
+	MTCNN::MTCNN(int device_id) {
+		device_id_ = device_id;
+		omp_set_num_threads(threads_num);
+		PNet_ = new mtcnn_pnet(device_id_);
+		RNet_ = new mtcnn_rnet(device_id_);
+		ONet_ = new mtcnn_onet(device_id_);
+	}
+
+	float MTCNN::IoU(float xmin, float ymin, float xmax, float ymax,
+		float xmin_, float ymin_, float xmax_, float ymax_, bool is_iom) 
 	{
-		for (int i = 0; i < faceInfo.size(); i++) {
-			float x = faceInfo[i].bbox.x1;
-			float y = faceInfo[i].bbox.y1;
-			float h = faceInfo[i].bbox.x2 - faceInfo[i].bbox.x1 + 1;
-			float w = faceInfo[i].bbox.y2 - faceInfo[i].bbox.y1 + 1;
-			cv::rectangle(frame, cv::Rect(y, x, w, h), cv::Scalar(255, 0, 0), 2);
+		float iw = std::min(xmax, xmax_) - std::max(xmin, xmin_) + 1;
+		float ih = std::min(ymax, ymax_) - std::max(ymin, ymin_) + 1;
+		if (iw <= 0 || ih <= 0)
+			return 0;
+		float s = iw*ih;
+		if (is_iom) {
+			float ov = s / min((xmax - xmin + 1)*(ymax - ymin + 1), (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1));
+			return ov;
 		}
-		for (int i = 0; i < faceInfo.size(); i++) {
-			FacePts facePts = faceInfo[i].facePts;
-			for (int j = 0; j < 5; j++)
-				cv::circle(frame, cv::Point(facePts.x[j], facePts.y[j]), 1, cv::Scalar(255, 255, 0), 2);
+		else {
+			float ov = s / ((xmax - xmin + 1)*(ymax - ymin + 1) + (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1) - s);
+			return ov;
 		}
 	}
 
-	// methodType : u is IoU(Intersection Over Union)
-	// methodType : m is IoM(Intersection Over Maximum)
-	std::vector<FaceInfo> mtcnn::NonMaximumSuppression(std::vector<FaceInfo>& bboxes,
+	std::vector<FaceInfoX> MTCNN::NMS(std::vector<FaceInfoX>& bboxes,
 		float thresh, char methodType) {
-		std::vector<FaceInfo> bboxes_nms;
+		std::vector<FaceInfoX> bboxes_nms;
+		if (bboxes.size() == 0) {
+			return bboxes_nms;
+		}
 		std::sort(bboxes.begin(), bboxes.end(), CompareBBox);
 
 		int32_t select_idx = 0;
@@ -46,27 +61,28 @@ namespace fastface
 			bboxes_nms.push_back(bboxes[select_idx]);
 			mask_merged[select_idx] = 1;
 
-			FaceRect select_bbox = bboxes[select_idx].bbox;
-			float area1 = static_cast<float>((select_bbox.x2 - select_bbox.x1 + 1) * (select_bbox.y2 - select_bbox.y1 + 1));
-			float x1 = static_cast<float>(select_bbox.x1);
-			float y1 = static_cast<float>(select_bbox.y1);
-			float x2 = static_cast<float>(select_bbox.x2);
-			float y2 = static_cast<float>(select_bbox.y2);
+			FaceBox select_bbox = bboxes[select_idx].bbox;
+			float area1 = static_cast<float>((select_bbox.xmax - select_bbox.xmin + 1) * (select_bbox.ymax - select_bbox.ymin + 1));
+			float x1 = static_cast<float>(select_bbox.xmin);
+			float y1 = static_cast<float>(select_bbox.ymin);
+			float x2 = static_cast<float>(select_bbox.xmax);
+			float y2 = static_cast<float>(select_bbox.ymax);
 
 			select_idx++;
+#pragma omp parallel for num_threads(threads_num)
 			for (int32_t i = select_idx; i < num_bbox; i++) {
 				if (mask_merged[i] == 1)
 					continue;
 
-				FaceRect& bbox_i = bboxes[i].bbox;
-				float x = std::max<float>(x1, static_cast<float>(bbox_i.x1));
-				float y = std::max<float>(y1, static_cast<float>(bbox_i.y1));
-				float w = std::min<float>(x2, static_cast<float>(bbox_i.x2)) - x + 1;
-				float h = std::min<float>(y2, static_cast<float>(bbox_i.y2)) - y + 1;
+				FaceBox & bbox_i = bboxes[i].bbox;
+				float x = std::max<float>(x1, static_cast<float>(bbox_i.xmin));
+				float y = std::max<float>(y1, static_cast<float>(bbox_i.ymin));
+				float w = std::min<float>(x2, static_cast<float>(bbox_i.xmax)) - x + 1;
+				float h = std::min<float>(y2, static_cast<float>(bbox_i.ymax)) - y + 1;
 				if (w <= 0 || h <= 0)
 					continue;
 
-				float area2 = static_cast<float>((bbox_i.x2 - bbox_i.x1 + 1) * (bbox_i.y2 - bbox_i.y1 + 1));
+				float area2 = static_cast<float>((bbox_i.xmax - bbox_i.xmin + 1) * (bbox_i.ymax - bbox_i.ymin + 1));
 				float area_intersect = w * h;
 
 				switch (methodType) {
@@ -86,295 +102,270 @@ namespace fastface
 		return bboxes_nms;
 	}
 
-	void mtcnn::Bbox2Square(std::vector<FaceInfo>& bboxes) {
-		for (int i = 0; i < bboxes.size(); i++) {
-			float h = bboxes[i].bbox.x2 - bboxes[i].bbox.x1;
-			float w = bboxes[i].bbox.y2 - bboxes[i].bbox.y1;
-			float side = h > w ? h : w;
-			bboxes[i].bbox.x1 += (h - side)*0.5;
-			bboxes[i].bbox.y1 += (w - side)*0.5;
-
-			bboxes[i].bbox.x2 = (int)(bboxes[i].bbox.x1 + side);
-			bboxes[i].bbox.y2 = (int)(bboxes[i].bbox.y1 + side);
-			bboxes[i].bbox.x1 = (int)(bboxes[i].bbox.x1);
-			bboxes[i].bbox.y1 = (int)(bboxes[i].bbox.y1);
-
+	void MTCNN::BBoxRegression(std::vector<FaceInfoX>& bboxes) 
+	{
+#pragma omp parallel for num_threads(threads_num)
+		for (int i = 0; i < bboxes.size(); ++i) {
+			FaceBox &bbox = bboxes[i].bbox;
+			float *bbox_reg = bboxes[i].bbox_reg;
+			float w = bbox.xmax - bbox.xmin + 1;
+			float h = bbox.ymax - bbox.ymin + 1;
+			bbox.xmin += bbox_reg[0] * w;
+			bbox.ymin += bbox_reg[1] * h;
+			bbox.xmax += bbox_reg[2] * w;
+			bbox.ymax += bbox_reg[3] * h;
 		}
 	}
 
-	std::vector<FaceInfo> mtcnn::BoxRegress(std::vector<FaceInfo>& faceInfo, int stage) {
-		std::vector<FaceInfo> bboxes;
-		for (int bboxId = 0; bboxId < faceInfo.size(); bboxId++) {
-			FaceRect faceRect;
-			FaceInfo tempFaceInfo;
-			float regw = faceInfo[bboxId].bbox.y2 - faceInfo[bboxId].bbox.y1;
-			regw += (stage == 1) ? 0 : 1;
-			float regh = faceInfo[bboxId].bbox.x2 - faceInfo[bboxId].bbox.x1;
-			regh += (stage == 1) ? 0 : 1;
-			faceRect.y1 = faceInfo[bboxId].bbox.y1 + regw * faceInfo[bboxId].regression[0];
-			faceRect.x1 = faceInfo[bboxId].bbox.x1 + regh * faceInfo[bboxId].regression[1];
-			faceRect.y2 = faceInfo[bboxId].bbox.y2 + regw * faceInfo[bboxId].regression[2];
-			faceRect.x2 = faceInfo[bboxId].bbox.x2 + regh * faceInfo[bboxId].regression[3];
-			faceRect.score = faceInfo[bboxId].bbox.score;
-
-			tempFaceInfo.bbox = faceRect;
-			tempFaceInfo.regression = faceInfo[bboxId].regression;
-			if (stage == 3)
-				tempFaceInfo.facePts = faceInfo[bboxId].facePts;
-			bboxes.push_back(tempFaceInfo);
-		}
-		return bboxes;
-	}
-
-	// compute the padding coordinates (pad the bounding boxes to square)
-	void mtcnn::Padding(int img_w, int img_h) {
-		for (int i = 0; i < regressed_rects_.size(); i++) {
-			FaceInfo tempFaceInfo;
-			tempFaceInfo = regressed_rects_[i];
-			tempFaceInfo.bbox.y2 = (regressed_rects_[i].bbox.y2 >= img_w) ? img_w : regressed_rects_[i].bbox.y2;
-			tempFaceInfo.bbox.x2 = (regressed_rects_[i].bbox.x2 >= img_h) ? img_h : regressed_rects_[i].bbox.x2;
-			tempFaceInfo.bbox.y1 = (regressed_rects_[i].bbox.y1 < 1) ? 1 : regressed_rects_[i].bbox.y1;
-			tempFaceInfo.bbox.x1 = (regressed_rects_[i].bbox.x1 < 1) ? 1 : regressed_rects_[i].bbox.x1;
-			regressed_pading_.push_back(tempFaceInfo);
+	void MTCNN::BBoxPad(std::vector<FaceInfoX>& bboxes, int width, int height) 
+	{
+#pragma omp parallel for num_threads(threads_num)
+		for (int i = 0; i < bboxes.size(); ++i) {
+			FaceBox &bbox = bboxes[i].bbox;
+			bbox.xmin = round(std::max(bbox.xmin, 0.f));
+			bbox.ymin = round(std::max(bbox.ymin, 0.f));
+			bbox.xmax = round(std::min(bbox.xmax, width - 1.f));
+			bbox.ymax = round(std::min(bbox.ymax, height - 1.f));
 		}
 	}
 
-	void mtcnn::GenerateBoundingBox(std::shared_ptr<tensor> confidence, std::shared_ptr<tensor> reg,
-		float scale, float thresh, int image_width, int image_height) {
-		int stride = 2;
-		int cellSize = 12;
+	void MTCNN::BBoxPadSquare(std::vector<FaceInfoX>& bboxes, int width, int height) 
+	{
+#pragma omp parallel for num_threads(threads_num)
+		for (int i = 0; i < bboxes.size(); ++i) {
+			FaceBox &bbox = bboxes[i].bbox;
+			float w = bbox.xmax - bbox.xmin + 1;
+			float h = bbox.ymax - bbox.ymin + 1;
+			float side = h>w ? h : w;
+			bbox.xmin = round(max(bbox.xmin + (w - side)*0.5f, 0.f));
 
-		int curr_feature_map_w_ = std::ceil((image_width - cellSize)*1.0 / stride) + 1;
-		int curr_feature_map_h_ = std::ceil((image_height - cellSize)*1.0 / stride) + 1;
+			bbox.ymin = round(max(bbox.ymin + (h - side)*0.5f, 0.f));
+			bbox.xmax = round(min(bbox.xmin + side - 1, width - 1.f));
+			bbox.ymax = round(min(bbox.ymin + side - 1, height - 1.f));
+		}
+	}
 
-		//std::cout << "Feature_map_size:"<< curr_feature_map_w_ <<" "<<curr_feature_map_h_<<std::endl;
-		int regOffset = curr_feature_map_w_*curr_feature_map_h_;
-		// the first count numbers are confidence of face
-		int count = confidence->count() / 2;
-		const float* confidence_data = confidence->cpu_data();
-		confidence_data += count;
-		const float* reg_data = reg->cpu_data();
+	void MTCNN::GenerateBBox(std::shared_ptr<tensor> confidence, std::shared_ptr<tensor> reg_box,
+		float scale, float thresh) 
+	{
+		int feature_map_w_ = confidence->width();
+		int feature_map_h_ = confidence->height();
+		int spatical_size = feature_map_w_*feature_map_h_;
+		const float* confidence_data = confidence->cpu_data() + spatical_size;
+		const float* reg_data = reg_box->cpu_data();
+		candidate_boxes_.clear();
+		for (int i = 0; i<spatical_size; i++) {
+			if (confidence_data[i] >= thresh) {
 
-		condidate_rects_.clear();
-		for (int i = 0; i < count; i++) {
-			if (*(confidence_data + i) >= thresh) {
-				int y = i / curr_feature_map_w_;
-				int x = i - curr_feature_map_w_ * y;
+				int y = i / feature_map_w_;
+				int x = i - feature_map_w_ * y;
+				FaceInfoX FaceInfoX;
+				FaceBox &faceBox = FaceInfoX.bbox;
 
-				float xTop = (int)((x*stride + 1) / scale);
-				float yTop = (int)((y*stride + 1) / scale);
-				float xBot = (int)((x*stride + cellSize - 1 + 1) / scale);
-				float yBot = (int)((y*stride + cellSize - 1 + 1) / scale);
-				FaceRect faceRect;
-				faceRect.x1 = xTop;
-				faceRect.y1 = yTop;
-				faceRect.x2 = xBot;
-				faceRect.y2 = yBot;
-				faceRect.score = *(confidence_data + i);
-				FaceInfo faceInfo;
-				faceInfo.bbox = faceRect;
-				faceInfo.regression = cv::Vec4f(reg_data[i + 0 * regOffset], reg_data[i + 1 * regOffset], reg_data[i + 2 * regOffset], reg_data[i + 3 * regOffset]);
-				condidate_rects_.push_back(faceInfo);
+				faceBox.xmin = (float)(x * pnet_stride) / scale;
+				faceBox.ymin = (float)(y * pnet_stride) / scale;
+				faceBox.xmax = (float)(x * pnet_stride + pnet_cell_size - 1.f) / scale;
+				faceBox.ymax = (float)(y * pnet_stride + pnet_cell_size - 1.f) / scale;
+
+				FaceInfoX.bbox_reg[0] = reg_data[i];
+				FaceInfoX.bbox_reg[1] = reg_data[i + spatical_size];
+				FaceInfoX.bbox_reg[2] = reg_data[i + 2 * spatical_size];
+				FaceInfoX.bbox_reg[3] = reg_data[i + 3 * spatical_size];
+
+				faceBox.score = confidence_data[i];
+				candidate_boxes_.push_back(FaceInfoX);
 			}
 		}
 	}
 
-	mtcnn::mtcnn(int device) {
-		device_ = device;
-		PNet_ = new mtcnn_pnet(device_);
-		RNet_ = new mtcnn_rnet(device_);
-		ONet_ = new mtcnn_onet(device_);
-	}
-
-
-	// multi test image pass a forward
-	void mtcnn::ClassifyFace_MulImage(const std::vector<FaceInfo>& regressed_rects, cv::Mat &sample_single,
-		int net_id, double thresh, char netName) {
-		condidate_rects_.clear();
-
-		int numBox = regressed_rects.size();
-		int input_width = 1;
-		int input_height = 1;
-		if (net_id == 1)
-		{
-			input_width = 24;
-			input_height = 24;
-		}
-		if (net_id == 2)
-		{
-			input_width = 48;
-			input_height = 48;
-		}
-		std::vector<cv::Mat> rois;
-		// load crop_img data to datum
-		for (int i = 0; i < numBox; i++) {
-			int pad_top = std::abs(regressed_pading_[i].bbox.x1 - regressed_rects[i].bbox.x1);
-			int pad_left = std::abs(regressed_pading_[i].bbox.y1 - regressed_rects[i].bbox.y1);
-			int pad_right = std::abs(regressed_pading_[i].bbox.y2 - regressed_rects[i].bbox.y2);
-			int pad_bottom = std::abs(regressed_pading_[i].bbox.x2 - regressed_rects[i].bbox.x2);
-
-			cv::Mat crop_img = sample_single(cv::Range(regressed_pading_[i].bbox.y1 - 1, regressed_pading_[i].bbox.y2),
-				cv::Range(regressed_pading_[i].bbox.x1 - 1, regressed_pading_[i].bbox.x2));
-			cv::copyMakeBorder(crop_img, crop_img, pad_left, pad_right, pad_top, pad_bottom, cv::BORDER_CONSTANT, cv::Scalar(0));
-
-			cv::resize(crop_img, crop_img, cv::Size(input_width, input_height), 0, 0, cv::INTER_AREA);
-			rois.push_back(crop_img);
-		}
-		regressed_pading_.clear();
-
-		std::shared_ptr<tensor> input_tensor = nullptr;
-		io::images2tensor(rois, input_tensor);
-		std::shared_ptr<tensor> confidence;
-		std::shared_ptr<tensor> reg;
-		if (net_id == 1)
-		{
-			RNet_->Forward(input_tensor);
-			reg = RNet_->get_conv5_2();
-			confidence = RNet_->get_prob1();
-		}
-		if (net_id == 2)
-		{
-			ONet_->Forward(input_tensor);
-			reg = ONet_->get_conv6_2();
-			confidence = ONet_->get_prob1();
-		}
-		//  CHECK(reinterpret_cast<float*>(crop_img_set.at(0).data) == net->input_blobs()[0]->cpu_data())
-		//          << "Input channels are not wrapping the input layer of the network.";
-
-		// return RNet/ONet result
-		// ONet points_offset != NULL
-
-		const float* confidence_data = confidence->cpu_data();
-		const float* reg_data = reg->cpu_data();
-		const float* points_data = nullptr;
-		if (netName == 'o')
-		{
-			const std::shared_ptr<tensor> points_offset = ONet_->get_conv6_3();
-			points_data = points_offset->cpu_data();
-		}
-
-		for (int i = 0; i<numBox; i++) {
-			float temp;
-			if (net_id == 1)
-			{
-				temp = *(confidence_data + i * 2 + 1);
-			}
-			else
-			{
-				temp = *(confidence_data + i * 2);
-				//std::cout << temp << std::endl;
-			}
-			if (temp > thresh) {
-				FaceRect faceRect;
-				faceRect.x1 = regressed_rects[i].bbox.x1;
-				faceRect.y1 = regressed_rects[i].bbox.y1;
-				faceRect.x2 = regressed_rects[i].bbox.x2;
-				faceRect.y2 = regressed_rects[i].bbox.y2;
-				faceRect.score = *(confidence_data + i * 2 + 1);
-				FaceInfo faceInfo;
-				faceInfo.bbox = faceRect;
-				faceInfo.regression = cv::Vec4f(reg_data[4 * i + 0], reg_data[4 * i + 1], reg_data[4 * i + 2], reg_data[4 * i + 3]);
-
-				// x x x x x y y y y y
-				if (netName == 'o') {
-					FacePts face_pts;
-					float w = faceRect.y2 - faceRect.y1 + 1;
-					float h = faceRect.x2 - faceRect.x1 + 1;
-					for (int j = 0; j < 5; j++) {
-						face_pts.y[j] = faceRect.x1 + (*(points_data + 2 * j + 1 + 10 * i)) * h - 1;
-						face_pts.x[j] = faceRect.y1 + (*(points_data + 2 * j + 0 + 10 * i)) * w - 1;
-					}
-					faceInfo.facePts = face_pts;
-				}
-				condidate_rects_.push_back(faceInfo);
-			}
-		}
-	}
-
-
-	void mtcnn::Detect(const cv::Mat& image, std::vector<FaceInfo>& faceInfo, int minSize, double* threshold, double factor) {
-
-		// 2~3ms
-		// invert to RGB color space and float type
-		cv::Mat sample_single, resized;
-		image.convertTo(sample_single, CV_8UC3);
-		//cv::cvtColor(sample_single, sample_single, cv::COLOR_BGR2RGB);
-		sample_single = sample_single.t();
-
-		int height = image.rows;
-		int width = image.cols;
-		int minWH = std::min(height, width);
-		int factor_count = 0;
-		double m = 12. / minSize;
-		minWH *= m;
-		std::vector<double> scales;
-		while (minWH >= 12)
-		{
-			scales.push_back(m * std::pow(factor, factor_count));
+	vector<FaceInfoX> MTCNN::ProposalNet(const cv::Mat& img, int minSize, float threshold, float factor) {
+		cv::Mat  resized;
+		int width = img.cols;
+		int height = img.rows;
+		float scale = 12.f / minSize;
+		float minWH = std::min(height, width) *scale;
+		std::vector<float> scales;
+		while (minWH >= 12) {
+			scales.push_back(scale);
 			minWH *= factor;
-			++factor_count;
+			scale *= factor;
 		}
-
-		// 11ms main consum
-
-		for (int i = 0; i < factor_count; i++)
-		{
-			double scale = scales[i];
-			int ws = std::ceil(height*scale);
-			int hs = std::ceil(width*scale);
-
-			// wrap image and normalization using INTER_AREA method
-			cv::resize(sample_single, resized, cv::Size(ws, hs), 0, 0, cv::INTER_AREA);
-			//resized.convertTo(resized, CV_8UC3);
-
-			// input data
-			std::shared_ptr<tensor> input_layer;
-			io::image2tensor(resized, input_layer);
+		total_boxes_.clear();
+		std::shared_ptr<tensor> input_layer = nullptr;
+		for (int i = 0; i < scales.size(); i++) {
+			int ws = (int)std::ceil(width*scales[i]);
+			int hs = (int)std::ceil(height*scales[i]);
+			cv::resize(img, resized, cv::Size(ws, hs), 0, 0, cv::INTER_LINEAR);
+			input_layer.reset(new tensor(std::vector<int>{ 1, 3, hs, ws }, device_id_));
+			float * input_data = input_layer->mutable_cpu_data();
+			cv::Vec3b * img_data = (cv::Vec3b *)resized.data;
+			int spatial_size = ws* hs;
+			for (int k = 0; k < spatial_size; ++k) {
+				input_data[k] = float((img_data[k][0] - mean_val)* std_val);
+				input_data[k + spatial_size] = float((img_data[k][1] - mean_val) * std_val);
+				input_data[k + 2 * spatial_size] = float((img_data[k][2] - mean_val) * std_val);
+			}
 			PNet_->Forward(input_layer);
 
-			// return result
-			std::shared_ptr<tensor> reg = PNet_->get_conv4_2();
-			//const float* reg_data = reg->cpu_data();
 			std::shared_ptr<tensor> confidence = PNet_->get_prob1();
-			GenerateBoundingBox(confidence, reg, scale, threshold[0], ws, hs);
-			std::vector<FaceInfo> bboxes_nms = NonMaximumSuppression(condidate_rects_, 0.5, 'u');
-			total_boxes_.insert(total_boxes_.end(), bboxes_nms.begin(), bboxes_nms.end());
-			cv::Mat p = image.clone();
-			drawDectionResult(p, total_boxes_);
-		}
-		cv::Mat p = image.clone();
-		drawDectionResult(p, total_boxes_);
-		int numBox = total_boxes_.size();
-		if (numBox != 0) {
-			total_boxes_ = NonMaximumSuppression(total_boxes_, 0.7, 'u');
-			regressed_rects_ = BoxRegress(total_boxes_, 1);
-			total_boxes_.clear();
-			Bbox2Square(regressed_rects_);
-			Padding(width, height);
-
-			/// Second stage
-			ClassifyFace_MulImage(regressed_rects_, sample_single, 1, threshold[1], 'r');
-			condidate_rects_ = NonMaximumSuppression(condidate_rects_, 0.7, 'u');
-			regressed_rects_ = BoxRegress(condidate_rects_, 2);
-
-			Bbox2Square(regressed_rects_);
-			Padding(width, height);
-			cv::Mat r = image.clone();
-			drawDectionResult(r, regressed_rects_);
-
-			/// three stage
-			numBox = regressed_rects_.size();
-			if (numBox != 0) {
-				ClassifyFace_MulImage(regressed_rects_, sample_single, 2, threshold[2], 'o');
-				regressed_rects_ = BoxRegress(condidate_rects_, 3);
-				faceInfo = NonMaximumSuppression(regressed_rects_, 0.7, 'm');
+			std::shared_ptr<tensor> reg = PNet_->get_conv4_2();
+			GenerateBBox(confidence, reg, scales[i], threshold);
+			std::vector<FaceInfoX> bboxes_nms = NMS(candidate_boxes_, 0.5, 'u');
+			if (bboxes_nms.size()>0) {
+				total_boxes_.insert(total_boxes_.end(), bboxes_nms.begin(), bboxes_nms.end());
 			}
-			cv::Mat o = image.clone();
-			drawDectionResult(o, faceInfo);
 		}
-		regressed_pading_.clear();
-		regressed_rects_.clear();
-		condidate_rects_.clear();
+		int num_box = (int)total_boxes_.size();
+		vector<FaceInfoX> res_boxes;
+		if (num_box != 0) {
+			res_boxes = NMS(total_boxes_, 0.7f, 'u');
+			BBoxRegression(res_boxes);
+			BBoxPadSquare(res_boxes, width, height);
+		}
+		return res_boxes;
 	}
 
+	vector<FaceInfoX> MTCNN::NextStage(const cv::Mat& image, vector<FaceInfoX> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold) 
+	{
+		vector<FaceInfoX> res;
+		int batch_size = (int)pre_stage_res.size();
+		if (batch_size == 0)
+			return res;
+		std::shared_ptr<tensor> input_layer = nullptr;
+		std::shared_ptr<tensor> confidence = nullptr;
+		std::shared_ptr<tensor> reg_box = nullptr;
+		std::shared_ptr<tensor> reg_landmark = nullptr;
+
+		switch (stage_num) {
+		case 2: {
+			input_layer.reset(new tensor(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
+		}break;
+		case 3: {
+			input_layer.reset(new tensor(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
+		}break;
+		default:
+			return res;
+			break;
+		}
+		float * input_data = input_layer->mutable_cpu_data();
+		int spatial_size = input_h*input_w;
+
+#pragma omp parallel for num_threads(threads_num)
+		for (int n = 0; n < batch_size; ++n) {
+			FaceBox &box = pre_stage_res[n].bbox;
+			cv::Mat roi = image(Rect(Point((int)box.xmin, (int)box.ymin), Point((int)box.xmax, (int)box.ymax))).clone();
+			resize(roi, roi, Size(input_w, input_h));
+			float *input_data_n = input_data + input_layer->offset(n);
+			Vec3b *roi_data = (Vec3b *)roi.data;
+			CHECK_EQ(roi.isContinuous(), true);
+			for (int k = 0; k < spatial_size; ++k) {
+				input_data_n[k] = float((roi_data[k][0] - mean_val)*std_val);
+				input_data_n[k + spatial_size] = float((roi_data[k][1] - mean_val)*std_val);
+				input_data_n[k + 2 * spatial_size] = float((roi_data[k][2] - mean_val)*std_val);
+			}
+		}
+		switch (stage_num) {
+		case 2: {
+			RNet_->Forward(input_layer);
+			confidence = RNet_->get_prob1();
+			reg_box = RNet_->get_conv5_2();
+		}break;
+		case 3: {
+			ONet_->Forward(input_layer);
+			confidence = ONet_->get_prob1();
+			reg_box = ONet_->get_conv6_2();
+			reg_landmark = ONet_->get_conv6_3();
+		}break;
+		}
+		const float* confidence_data = confidence->cpu_data();
+		const float* reg_data = reg_box->cpu_data();
+		const float* landmark_data = nullptr;
+		if (reg_landmark) {
+			landmark_data = reg_landmark->cpu_data();
+		}
+		for (int k = 0; k < batch_size; ++k) {
+			if (confidence_data[2 * k + 1] >= threshold) {
+				FaceInfoX info;
+				info.bbox.score = confidence_data[2 * k + 1];
+				info.bbox.xmin = pre_stage_res[k].bbox.xmin;
+				info.bbox.ymin = pre_stage_res[k].bbox.ymin;
+				info.bbox.xmax = pre_stage_res[k].bbox.xmax;
+				info.bbox.ymax = pre_stage_res[k].bbox.ymax;
+				for (int i = 0; i < 4; ++i) {
+					info.bbox_reg[i] = reg_data[4 * k + i];
+				}
+				if (reg_landmark) {
+					float w = info.bbox.xmax - info.bbox.xmin + 1.f;
+					float h = info.bbox.ymax - info.bbox.ymin + 1.f;
+					for (int i = 0; i < 5; ++i) {
+						info.landmark[2 * i] = landmark_data[10 * k + 2 * i] * w + info.bbox.xmin;
+						info.landmark[2 * i + 1] = landmark_data[10 * k + 2 * i + 1] * h + info.bbox.ymin;
+					}
+				}
+				res.push_back(info);
+			}
+		}
+		return res;
+	}
+
+	vector<FaceInfoX> MTCNN::Detect(const cv::Mat& image, const int minSize, const float* threshold, const float factor, const int stage) {
+		vector<FaceInfoX> pnet_res;
+		vector<FaceInfoX> rnet_res;
+		vector<FaceInfoX> onet_res;
+		if (stage >= 1) {
+			pnet_res = ProposalNet(image, minSize, threshold[0], factor);
+		}
+		if (stage >= 2 && pnet_res.size()>0) {
+			if (pnet_max_detect_num < (int)pnet_res.size()) {
+				pnet_res.resize(pnet_max_detect_num);
+			}
+			int num = (int)pnet_res.size();
+			int size = (int)ceil(1.f*num / step_size);
+			for (int iter = 0; iter < size; ++iter) {
+				int start = iter*step_size;
+				int end = min(start + step_size, num);
+				vector<FaceInfoX> input(pnet_res.begin() + start, pnet_res.begin() + end);
+				vector<FaceInfoX> res = NextStage(image, input, 24, 24, 2, threshold[1]);
+				rnet_res.insert(rnet_res.end(), res.begin(), res.end());
+			}
+			rnet_res = NMS(rnet_res, 0.7f, 'u');
+			BBoxRegression(rnet_res);
+			BBoxPadSquare(rnet_res, image.cols, image.rows);
+
+		}
+		if (stage >= 3 && rnet_res.size()>0) {
+			int num = (int)rnet_res.size();
+			int size = (int)ceil(1.f*num / step_size);
+			for (int iter = 0; iter < size; ++iter) {
+				int start = iter*step_size;
+				int end = min(start + step_size, num);
+				vector<FaceInfoX> input(rnet_res.begin() + start, rnet_res.begin() + end);
+				vector<FaceInfoX> res = NextStage(image, input, 48, 48, 3, threshold[2]);
+				onet_res.insert(onet_res.end(), res.begin(), res.end());
+			}
+			BBoxRegression(onet_res);
+			onet_res = NMS(onet_res, 0.7f, 'm');
+			BBoxPad(onet_res, image.cols, image.rows);
+
+		}
+		if (stage == 1) {
+			return pnet_res;
+		}
+		else if (stage == 2) {
+			return rnet_res;
+		}
+		else if (stage == 3) {
+			return onet_res;
+		}
+		else {
+			return onet_res;
+		}
+	}
+
+	MTCNN::~MTCNN()
+	{
+		delete PNet_;
+		delete RNet_;
+		delete ONet_;
+	}
 }

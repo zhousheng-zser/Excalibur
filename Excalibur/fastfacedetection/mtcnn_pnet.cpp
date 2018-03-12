@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <iostream>
 
-namespace fastface
+namespace glasssix
 {
 	mtcnn_pnet::mtcnn_pnet(int device)
 	{
