@@ -15,118 +15,122 @@ using namespace System::Drawing::Imaging;
 
 namespace glasssix
 {
-
-	public ref class longinus
+	namespace excalibur
 	{
-	private:
-		int device_;
-		alcnn* alcnn_net_;
-	public:
-		longinus(int device)
+		namespace longinus
 		{
-			device_ = device;
-			alcnn_net_ = new alcnn(device_);
-		}
-
-		!longinus()
-		{
-			delete alcnn_net_;
-			alcnn_net_ = nullptr;
-		}
-
-		~longinus()
-		{
-			this->!longinus();
-		}
-
-		array<array<float>^>^ ExtractBitmapOutputs_IPBbox(array<Bitmap^>^ imgDatas)
-		{
-			std::shared_ptr<tensor> tensor_data = nullptr;
-			bitmaps2tensor(imgDatas, tensor_data);
-			alcnn_net_->Forward_IPBbox(tensor_data);
-			auto outputs = gcnew array<array<float>^>(static_cast<int>(2));
-			for (int i = 0; i < outputs->Length; i++)
+			public ref class Banshee
 			{
-				if (i == 0)
+			private:
+				int device_;
+				alcnn* alcnn_net_;
+			public:
+				Banshee(int device)
 				{
-					const float* intermediate = alcnn_net_->get_IPBbox_fc2_data();
-					int output_size = alcnn_net_->get_IPBbox_fc2_count();
-					MARSHAL_ARRAY(intermediate, output, output_size);
-					outputs[i] = output;
+					device_ = device;
+					alcnn_net_ = new alcnn(device_);
 				}
-				if (i == 1)
+				!Banshee()
 				{
-					const float* intermediate = alcnn_net_->get_IPBbox_fc3_data();
-					int output_size = alcnn_net_->get_IPBbox_fc2_count();
-					MARSHAL_ARRAY(intermediate, output, output_size);
-					outputs[i] = output;
+					delete alcnn_net_;
+					alcnn_net_ = nullptr;
 				}
-			}
-			return outputs;
-		}
 
-		array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas, int DeviceId)
-		{
-			std::shared_ptr<tensor> tensor_data = nullptr;
-			bitmaps2tensor(imgDatas, tensor_data);
-			alcnn_net_->Forward_IPTs(tensor_data);
-			const float* intermediate = alcnn_net_->get_IPTs_fc2_data();
-			int output_size = alcnn_net_->get_IPTs_fc2_count();
-			MARSHAL_ARRAY(intermediate, outputs, output_size);
-			return outputs;
-		}
-
-	private:
-		static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
-		{
-			int num = bitmaps->Length;
-			if (num <= 0)
-			{
-				return;
-			}
-			int channel = 3;// ipbbox_net::get_input_channel();
-			float mean[] = { 104.0f, 117.0f, 124.0f };
-			float scale = 0.0078125f;
-			int width = 60;// ipbbox_net::get_input_width();
-			int height = 60;// ipbbox_net::get_input_height();
-			int n_offset = channel * height * width;
-			int c_offset = height * width;
-
-			Drawing::Rectangle rc = Drawing::Rectangle(0, 0, width, height);
-			tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
-			float* float_data = tensor_data->mutable_cpu_data();
-
-			for (int n = 0; n < num; n++)
-			{
-				Bitmap^ resize_bitmap;
-				if (width == bitmaps[n]->Width && height == bitmaps[n]->Height)
+				~Banshee()
 				{
-					// no other situations, only channel == 3 for unicorn net
-					resize_bitmap = bitmaps[n]->Clone(rc, PixelFormat::Format24bppRgb);
+					this->!Banshee();
 				}
-				else
-				{
-					resize_bitmap = gcnew Bitmap((Image ^)bitmaps[n], width, height);
-					resize_bitmap = resize_bitmap->Clone(rc, PixelFormat::Format24bppRgb);
-				}
-				// get image data block
-				BitmapData ^bmpData = resize_bitmap->LockBits(rc, ImageLockMode::ReadOnly, resize_bitmap->PixelFormat);
-				pin_ptr<unsigned char> bmpBuffer = (unsigned char *)bmpData->Scan0.ToPointer();
 
-				for (int c = 0; c < channel; ++c)
+				array<array<float>^>^ ExtractBitmapOutputs_IPBbox(array<Bitmap^>^ imgDatas)
 				{
-					for (int h = 0; h < height; ++h)
+					std::shared_ptr<tensor> tensor_data = nullptr;
+					bitmaps2tensor(imgDatas, tensor_data);
+					alcnn_net_->Forward_IPBbox(tensor_data);
+					auto outputs = gcnew array<array<float>^>(static_cast<int>(2));
+					for (int i = 0; i < outputs->Length; i++)
 					{
-						int line_offset = h * bmpData->Stride + c;
-						for (int w = 0; w < width; ++w)
+						if (i == 0)
 						{
-							float_data[n*n_offset + c*c_offset + h*width + w] =
-								(static_cast<float>(bmpBuffer[line_offset + w * channel]) - mean[c]) * scale;
+							const float* intermediate = alcnn_net_->get_IPBbox_fc2_data();
+							int output_size = alcnn_net_->get_IPBbox_fc2_count();
+							MARSHAL_ARRAY(intermediate, output, output_size);
+							outputs[i] = output;
+						}
+						if (i == 1)
+						{
+							const float* intermediate = alcnn_net_->get_IPBbox_fc3_data();
+							int output_size = alcnn_net_->get_IPBbox_fc3_count();
+							MARSHAL_ARRAY(intermediate, output, output_size);
+							outputs[i] = output;
 						}
 					}
+					return outputs;
 				}
-				resize_bitmap->UnlockBits(bmpData);
-			}
+
+				array<float>^ ExtractBitmapOutputs_IPTs(array<Bitmap^>^ imgDatas)
+				{
+					std::shared_ptr<tensor> tensor_data = nullptr;
+					bitmaps2tensor(imgDatas, tensor_data);
+					alcnn_net_->Forward_IPTs(tensor_data);
+					const float* intermediate = alcnn_net_->get_IPTs_fc2_data();
+					int output_size = alcnn_net_->get_IPTs_fc2_count();
+					MARSHAL_ARRAY(intermediate, outputs, output_size);
+					return outputs;
+				}
+
+			private:
+				static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
+				{
+					int num = bitmaps->Length;
+					if (num <= 0)
+					{
+						return;
+					}
+					int channel = 3;// ipbbox_net::get_input_channel();
+					float mean[] = { 104.0f, 117.0f, 124.0f };
+					float scale = 0.0078125f;
+					int width = 60;// ipbbox_net::get_input_width();
+					int height = 60;// ipbbox_net::get_input_height();
+					int n_offset = channel * height * width;
+					int c_offset = height * width;
+
+					Drawing::Rectangle rc = Drawing::Rectangle(0, 0, width, height);
+					tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+					float* float_data = tensor_data->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						Bitmap^ resize_bitmap;
+						if (width == bitmaps[n]->Width && height == bitmaps[n]->Height)
+						{
+							// no other situations, only channel == 3 for unicorn net
+							resize_bitmap = bitmaps[n]->Clone(rc, PixelFormat::Format24bppRgb);
+						}
+						else
+						{
+							resize_bitmap = gcnew Bitmap((Image ^)bitmaps[n], width, height);
+							resize_bitmap = resize_bitmap->Clone(rc, PixelFormat::Format24bppRgb);
+						}
+						// get image data block
+						BitmapData ^bmpData = resize_bitmap->LockBits(rc, ImageLockMode::ReadOnly, resize_bitmap->PixelFormat);
+						pin_ptr<unsigned char> bmpBuffer = (unsigned char *)bmpData->Scan0.ToPointer();
+
+						for (int c = 0; c < channel; ++c)
+						{
+							for (int h = 0; h < height; ++h)
+							{
+								int line_offset = h * bmpData->Stride + c;
+								for (int w = 0; w < width; ++w)
+								{
+									float_data[n*n_offset + c*c_offset + h*width + w] =
+										(static_cast<float>(bmpBuffer[line_offset + w * channel]) - mean[c]) * scale;
+								}
+							}
+						}
+						resize_bitmap->UnlockBits(bmpData);
+					}
+				}
+			};
 		}
-	};
+	}
 }

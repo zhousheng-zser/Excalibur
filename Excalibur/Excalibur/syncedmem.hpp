@@ -14,7 +14,7 @@ namespace excalibur
 #ifdef USE_CUDA
 		if (device_id >=0) {
 			cudaSetDevice(device_id);
-			CUDA_CHECK(cudaMallocHost(ptr, size));
+			CUDA_CHECK(cudaMallocHost(ptr, size));//No original CUDA API£¬buddy memory management
 			*use_cuda = true;
 			return;
 		}

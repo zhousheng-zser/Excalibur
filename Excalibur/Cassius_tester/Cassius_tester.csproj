@@ -75,13 +75,9 @@
       <Project>{15566548-faf3-4321-8378-67f573b1b109}</Project>
       <Name>Atalanta</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Cassius\Cassius.vcxproj">
-      <Project>{8432fa67-f974-46c7-a792-dcfb77624f35}</Project>
-      <Name>Cassius</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Longinus\Longinus.vcxproj">
-      <Project>{1cc44456-c9d8-42cf-82fc-c3740099f2a1}</Project>
-      <Name>Longinus</Name>
+    <ProjectReference Include="..\Romancia\Romancia.vcxproj">
+      <Project>{1947f6d0-bf84-4f17-94a3-c8f5bc4b3d58}</Project>
+      <Name>Romancia</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
