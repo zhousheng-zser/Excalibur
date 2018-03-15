@@ -25,7 +25,7 @@ namespace glasssix
 		Declear_Params(conv4_2_bias)
 
 		//
-		Declear_Opration(convolution, conv1)
+		Declear_Opration(cudnn_convolution, conv1)
 		Declear_Opration(prelu, prelu1)
 		Declear_Opration(pooling, pool1)
 		Declear_Opration(convolution, conv2)
@@ -52,6 +52,7 @@ namespace glasssix
 		cublasHandle_t cublas_handle_ = nullptr;
 		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
 #ifdef USE_CUDNN
+		cudnnHandle_t cudnn_handle_ = nullptr;
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
 #endif 
 #endif
