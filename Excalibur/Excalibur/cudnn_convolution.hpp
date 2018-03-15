@@ -6,31 +6,8 @@
 #include "cudnn.hpp"
 namespace excalibur
 {
-// Set to three for the benefit of the backward pass, which
-// can use separate streams for calculating the gradient w.r.t.
-// bias, filter weights, and bottom data for each group independently
-#define CUDNN_STREAMS_PER_GROUP 1
 	class cudnn_convolution
 	{
-		bool handles_setup_;
-		cudnnHandle_t* handle_;
-		cudaStream_t*  stream_;
-
-		// algorithms for forward and backwards convolutions
-		cudnnConvolutionFwdAlgo_t *fwd_algo_;
-
-		std::vector<cudnnTensorDescriptor_t> bottom_descs_, top_descs_;
-		cudnnTensorDescriptor_t bias_desc_;
-		cudnnFilterDescriptor_t filter_desc_;
-		std::vector<cudnnConvolutionDescriptor_t> conv_descs_;
-		int bottom_offset_, top_offset_, bias_offset_;
-
-		size_t *workspace_fwd_sizes_;
-		size_t workspaceSizeInBytes;  // size of underlying storage
-		std::shared_ptr<tensor> workspaceDataBlob;  // hold the real data for workspace
-		void *workspaceData; // underlying storage
-		void **workspace;  // aliases into workspaceData
-
 		// init norm conv params
 		tensor* weights_;
 		tensor* bias_;
@@ -51,15 +28,35 @@ namespace excalibur
 		int top_dim_;
 		int out_spatial_dim_;
 		int kernel_dim_;
-		int weight_offset_;
-		void pre_Forward_cudnn_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+		int bottom_offset_, top_offset_, bias_offset_, weight_offset_;
+		//cuDNN API:
+		bool handles_setup_;
+		cudnnHandle_t* handle_;
+		cudaStream_t*  stream_;
 
+		// algorithms for forward and backwards convolutions
+		cudnnConvolutionFwdAlgo_t *fwd_algo_;
+
+		std::vector<cudnnTensorDescriptor_t> bottom_descs_, top_descs_;
+		cudnnTensorDescriptor_t bias_desc_;
+		cudnnFilterDescriptor_t filter_desc_;
+		std::vector<cudnnConvolutionDescriptor_t> conv_descs_;
+
+		size_t *workspace_fwd_sizes_;
+		tensor *workspaceDataBlob;  // hold the real data for workspace
+		void *workspaceData; // underlying storage
+		void **workspace;  // aliases into workspaceData
 	public:
 		cudnn_convolution(int input_Channel, int output_Channel, int kernelSize,
 			int stride, int pad, bool bias_term, int device);
 		~cudnn_convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
+		//for compatiblity
+		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+		{
+			//N/A
+		}
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
 	};
 }

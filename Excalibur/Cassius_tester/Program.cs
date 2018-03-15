@@ -22,6 +22,7 @@ namespace Cassius_tester
             bmp1 = new Bitmap(@"D:\Detection-Data\face\ibug\image_020_1.jpg");
             var aaa = mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
             var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
+            
             //Stopwatch sw = new Stopwatch();
             //sw.Start();
             //for (int i = 0; i < 100; i++)

@@ -11,7 +11,7 @@
 
 #ifdef X86
 #define USE_CUDA
-//#define USE_CUDNN
+#define USE_CUDNN
 #ifdef Parallel
 #define USE_MKL
 #define USE_MKLDNN
