@@ -14,7 +14,7 @@ namespace excalibur
 	int artemis::GetDeviceCount()
 	{
 		int deviceCount = 0;
-		CUDA_CHECK(cudaGetDeviceCount(&deviceCount));
+		cudaGetDeviceCount(&deviceCount);
 		return deviceCount;
 	}
 
