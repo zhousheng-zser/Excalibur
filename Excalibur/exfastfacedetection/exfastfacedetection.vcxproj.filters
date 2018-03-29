@@ -13,27 +13,44 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="cu">
+      <UniqueIdentifier>{a9594c81-2add-411d-a785-e6904d4898cb}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mtcnn_wrapper.hpp">
+    <ClInclude Include="npcalculator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="romancia.hpp">
+    <ClInclude Include="model_data.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="npd_wrapper.hpp">
+    <ClInclude Include="guinevere.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="nplogic.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cunpd.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="romancia.cpp">
+    <ClCompile Include="npcalculator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="mtcnn_wrapper.cpp">
+    <ClCompile Include="nplogic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="npd_wrapper.cpp">
+    <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="cunpd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="nplogic.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

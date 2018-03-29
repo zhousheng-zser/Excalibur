@@ -34,7 +34,7 @@ namespace glasssix
 #endif
 		
 		//
-		Init_cuDNN_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
+		Init_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
 		Init_PReLU_Params(prelu1, 10, false);
 		Init_Pooling_Params(pool1, 2, 2, 0, 0);
 		Init_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
@@ -98,13 +98,13 @@ namespace glasssix
 		tensor_data.reset(new tensor(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1->Forward_cudnn_gpu(tensor_data, conv1_top_data);//cudnn_handle_, 
+		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);//
 		//for dubug
-		const float* tt = conv1_top_data->cpu_data();
+		/*const float* tt = conv1_top_data->cpu_data();
 		for (int i = 0; i < 100; i++)
 		{
 			std::cout << tt[i] << " ";
-		}
+		}*/
 		prelu1->Forward_native_gpu(conv1_top_data);
 		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
 		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);

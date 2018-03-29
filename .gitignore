@@ -45,6 +45,7 @@
 *.metagen
 *.res
 *.txt
+*.exp
 *.ipdb
 *.iobj
 *.force

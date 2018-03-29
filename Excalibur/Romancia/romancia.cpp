@@ -11,14 +11,7 @@ namespace glasssix
 			FastFace::FastFace(int device)
 			{
 				mw_ = new mtcnn_warpper(device);
-				if (device>=0)
-				{
-					threshold_ = 3;
-				}
-				else
-				{
-					threshold_ = 0.701;
-				}
+				//nw_ = new npd_wrapper(device);
 			}
 
 			FastFace::~FastFace()
@@ -30,6 +23,8 @@ namespace glasssix
 			{
 				delete mw_;
 				mw_ = NULL;
+				/*delete nw_;
+				nw_ = NULL;*/
 			}
 
 			unsigned char* FastFace::Bitmap2RGB(System::Drawing::Bitmap^ bmp)
@@ -232,13 +227,31 @@ namespace glasssix
 					float arc_yaw = Math::Atan(lefteye_nose / righteye_nose / 10);
 					float radius_yaw = arc_yaw / 3.1415 * 180;
 					x += w * radius_yaw * 0.01;
-					Console::WriteLine(lefteye_nose);
+					/*Console::WriteLine(lefteye_nose);
 					Console::WriteLine(righteye_nose);
-					Console::WriteLine(Math::Cos(arc_yaw));
+					Console::WriteLine(Math::Cos(arc_yaw));*/
 					output->Add(FaceInfo(i, radius_yaw, score, System::Drawing::Rectangle(x, y, w, h), landmark));
 				}
 				return output;
 			}
+
+			/*List<FaceInfo>^ FastFace::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
+			{
+				int stride;
+				unsigned char * buf = Bitmap2Gray(Oribmp, stride);
+				int n = nw_->facedetect_npd(buf, Oribmp->Width, Oribmp->Height, min_size);
+				List<FaceInfo>^ output = gcnew List<FaceInfo>();
+				auto X = nw_->get_x();
+				auto Y = nw_->get_y();
+				auto S = nw_->get_size();
+				auto scores = nw_->get_score();
+				for(int i = 0; i < n; i++)
+				{
+					output->Add(FaceInfo(i, 0, scores[i], System::Drawing::Rectangle(X[i], Y[i], S[i], S[i])));
+				}
+				delete[] buf;
+				return output;
+			}*/
 		}
 	}
 }
