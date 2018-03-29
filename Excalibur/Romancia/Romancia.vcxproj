@@ -126,16 +126,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\exfastfacedetection\exfastfacedetection.vcxproj">
-      <Project>{829563a2-6123-4ece-818a-81cc5eb03b5d}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\fastfacedetection\fastfacedetection.vcxproj">
       <Project>{678e0224-db49-47dc-a5a5-8c5a61abb711}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="mtcnn_wrapper.hpp" />
-    <ClInclude Include="npd_wrapper.hpp" />
     <ClInclude Include="romancia.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -149,10 +145,6 @@
     <ClCompile Include="mtcnn_wrapper.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
-    </ClCompile>
-    <ClCompile Include="npd_wrapper.cpp">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="romancia.cpp" />
   </ItemGroup>

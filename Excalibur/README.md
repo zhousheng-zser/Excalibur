@@ -8,13 +8,13 @@ This implementation, has been specifically optimized in response to **Intel CPU*
 As we described above, the implementation is able to be divided into 2 parts: CPU and GPU. In order to accelerate the forward propagation, the following frameworks and libraries will be used in the project:
 - [Intel® TBB](https://www.threadingbuildingblocks.org/)
 - [Intel® Math Kernel Library](https://software.intel.com/en-us/intel-mkl)
-- [Intel® MKL-DNN](https://github.com/01org/mkl-dnn)
 - [Intel® MPI](https://software.intel.com/en-us/intel-mpi-library)
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
 - [cuDNNv6](https://developer.nvidia.com/cudnn)
 - [NCCL](https://github.com/NVIDIA/nccl)
 - [gemmlowp](https://github.com/inlmouse/gemmlowp)
 - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
+- [OpenBLAS](https://www.openblas.net/)
 
 ### Excalibur
 
@@ -27,6 +27,10 @@ A C++/CLI wrapper of Unicorn Net.
 ### Longinus
 
 A C++/CLI wrapper of IPBBox_v2 and 5IPTs_v2 Net.
+
+### exfastfacedetection
+
+A CUDA NPD implementation.
 
 ### fastfacedetection
 

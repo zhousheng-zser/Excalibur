@@ -8,15 +8,16 @@ int main()
 	nplogic* npd = new nplogic(0);
 	//npd->load();
 	npd->load("D:\\Research\\CudaNpdDetect\\model\\result_1223_1.bin");
-	cv::Mat gray = cv::imread("E:\\Data\\LS3D-W\\300W-Testset-3D\\outdoor_237.png", CV_LOAD_IMAGE_GRAYSCALE);
+	//cv::Mat gray = cv::imread("E:\\Data\\LS3D-W\\300W-Testset-3D\\outdoor_237.png", CV_LOAD_IMAGE_GRAYSCALE);
+	cv::Mat gray = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\keliamoniz1.jpg", CV_LOAD_IMAGE_GRAYSCALE);
 	int n = npd->detect(gray.data, gray.cols, gray.rows, 48);
 	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
-	for (int i = 0; i < 500; i++)
+	for (int i = 0; i < 5000; i++)
 	{
 		npd->detect(gray.data, gray.cols, gray.rows, 48);
 	}
 	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
-	std::cout << "total detection time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 500 << "ms" << std::endl << std::endl;
+	std::cout << "total detection time:" << (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 5000 << "ms" << std::endl << std::endl;
 	std::vector< int >& Xs = npd->getXs();
 	std::vector< int >& Ys = npd->getYs();
 	std::vector< int >& Ss = npd->getSs();
