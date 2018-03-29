@@ -308,11 +308,13 @@ namespace glasssix
 		return res;
 	}
 
-	vector<FaceInfoX> MTCNN::Detect(const cv::Mat& image, const int minSize, const float* threshold, const float factor, const int stage) {
+	vector<FaceInfoX> MTCNN::Detect(const cv::Mat& image, const int minSize, const float* threshold, const float factor, const int stage) 
+	{
 		vector<FaceInfoX> pnet_res;
 		vector<FaceInfoX> rnet_res;
 		vector<FaceInfoX> onet_res;
-		if (stage >= 1) {
+		if (stage >= 1) 
+		{
 			pnet_res = ProposalNet(image, minSize, threshold[0], factor);
 		}
 		if (stage >= 2 && pnet_res.size()>0) {
