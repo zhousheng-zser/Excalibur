@@ -15,8 +15,10 @@ namespace glasssix
 
 	std::vector<FaceInfoX> mtcnn_warpper::facedetect_mtcnn(unsigned char* image_data, int width, int height, int min_size)
 	{
-		//unsigned char* image_data, int width, int height
 		cv::Mat image = cv::Mat(height, width, CV_8UC3, image_data);
-		return mt_->Detect(image, min_size, threshold, factor, 3);
+		auto temp = mt_->Detect(image, min_size, threshold, factor, 3);
+		image.release();
+		delete image_data;
+		return temp;
 	}
 }

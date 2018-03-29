@@ -231,7 +231,8 @@ namespace excalibur
 
 
 #ifdef USE_CUDA
-	void syncedmem::async_gpu_push(const cudaStream_t& stream) {
+	void syncedmem::async_gpu_push(const cudaStream_t& stream) 
+	{
 		check_device();
 		CHECK(head_ == HEAD_AT_CPU);
 		if (gpu_ptr_ == NULL) {

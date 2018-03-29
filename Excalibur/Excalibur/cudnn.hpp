@@ -41,6 +41,16 @@ inline const char* cudnnGetErrorString(cudnnStatus_t status) {
 		return "CUDNN_STATUS_NOT_SUPPORTED";
 	case CUDNN_STATUS_LICENSE_ERROR:
 		return "CUDNN_STATUS_LICENSE_ERROR";
+#if CUDNN_VERSION_MIN(6, 0, 0)
+	case CUDNN_STATUS_RUNTIME_PREREQUISITE_MISSING:
+		return "CUDNN_STATUS_RUNTIME_PREREQUISITE_MISSING";
+#endif
+#if CUDNN_VERSION_MIN(7, 0, 0)
+	case CUDNN_STATUS_RUNTIME_IN_PROGRESS:
+		return "CUDNN_STATUS_RUNTIME_IN_PROGRESS";
+	case CUDNN_STATUS_RUNTIME_FP_OVERFLOW:
+		return "CUDNN_STATUS_RUNTIME_FP_OVERFLOW";
+#endif
 	}
 	return "Unknown cudnn status";
 }
@@ -55,6 +65,12 @@ namespace excalibur
 		public:
 			static const cudnnDataType_t type = CUDNN_DATA_FLOAT;
 			static float oneval, zeroval;
+			static const void *one, *zero;
+		};
+		template<> class dataType<double> {
+		public:
+			static const cudnnDataType_t type = CUDNN_DATA_DOUBLE;
+			static double oneval, zeroval;
 			static const void *one, *zero;
 		};
 
@@ -82,8 +98,13 @@ namespace excalibur
 		inline void createFilterDesc(cudnnFilterDescriptor_t* desc,
 			int n, int c, int h, int w) {
 			CUDNN_CHECK(cudnnCreateFilterDescriptor(desc));
+#if CUDNN_VERSION_MIN(5, 0, 0)
 			CUDNN_CHECK(cudnnSetFilter4dDescriptor(*desc, dataType<float>::type,
 				CUDNN_TENSOR_NCHW, n, c, h, w));
+#else
+			CUDNN_CHECK(cudnnSetFilter4dDescriptor_v4(*desc, dataType<Dtype>::type,
+				CUDNN_TENSOR_NCHW, n, c, h, w));
+#endif
 		}
 
 		inline void createConvolutionDesc(cudnnConvolutionDescriptor_t* conv) {
