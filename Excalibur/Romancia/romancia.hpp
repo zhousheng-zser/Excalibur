@@ -15,6 +15,7 @@ using namespace System::Runtime::InteropServices;
 using namespace msclr::interop;
 
 #include "mtcnn_wrapper.hpp"
+//#include "npd_wrapper.hpp"
 
 namespace glasssix
 {
@@ -37,7 +38,7 @@ namespace glasssix
 			public ref class FastFace
 			{
 				mtcnn_warpper* mw_;
-
+				//npd_wrapper* nw_;
 				//float scale;//1.2f
 				float threshold_;//3
 				//int min_object_width;//24
@@ -63,6 +64,7 @@ namespace glasssix
 				List<FaceInfo>^ Facedetect_Multiview_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale);
 				List<FaceInfo>^ Facedetect_Frontal_Surveillance(System::Drawing::Bitmap^ Oribmp, int min_size, float scale);
 				List<FaceInfo>^ Facedetect_Multiview_CNN(System::Drawing::Bitmap^ Oribmp, int min_size, float scale);
+				//List<FaceInfo>^ Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale);
 			};
 		}
 	}

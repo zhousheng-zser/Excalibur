@@ -18,22 +18,22 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            FastFace mtcnn = new FastFace(0);
-            bmp1 = new Bitmap(@"D:\Detection-Data\face\ibug\image_020_1.jpg");
+            FastFace mtcnn = new FastFace(1);
+            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\WeChat Image_20180309174405.jpg");
             var aaa = mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
-            var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
-            
-            //Stopwatch sw = new Stopwatch();
-            //sw.Start();
-            //for (int i = 0; i < 100; i++)
-            //{
-            //    mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
-            //}
-            //sw.Stop();
-            //Console.WriteLine(sw.ElapsedMilliseconds/100);
-            DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
-            DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
-            bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
+            //var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
+
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 10; i++)
+            {
+                mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
+            }
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds / 10);
+            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
+            //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
+            //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
             Console.ReadLine();
         }
 
