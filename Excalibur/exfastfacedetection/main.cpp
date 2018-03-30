@@ -1,10 +1,76 @@
 #include "nplogic.hpp"
 #include <opencv2/opencv.hpp>
 #include <chrono>
+#include <thread>
+#include <facedetect-dll.h>
 using namespace glasssix;
+
+void detect_thread(nplogic* npd, cv::Mat gray, int id)
+{
+	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+	for (size_t i = 0; i < 1000; i++)
+	{
+		npd->detect(gray.data, gray.cols, gray.rows, 48);
+	}
+	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+	std::cout << "Thread " << id << ", " << "total detection time:" 
+		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 1000 << "ms" << std::endl;
+}
+
+void multi_thread_test()
+{
+	std::vector<nplogic*> npds;
+	std::vector<std::thread> ts;
+	std::vector<cv::Mat> grays;
+	for (size_t i = 0; i < 8; i++)
+	{
+		grays.push_back(cv::imread("C:\\Users\\BALTHASAR\\Desktop\\keliamoniz1.jpg", CV_LOAD_IMAGE_GRAYSCALE));
+		nplogic* npd = new nplogic(i%2);
+		npds.push_back(npd);
+		npds[i]->load("D:\\Research\\CudaNpdDetect\\model\\result_1223_1.bin");
+		ts.push_back(std::thread(detect_thread, npds[i], grays[i], i));
+	}
+	for (size_t i = 0; i < 8; i++)
+	{
+		ts[i].detach();
+	}
+}
+
+void detect_thread_libface(cv::Mat gray, int id)
+{
+	unsigned char * pBuffer = (unsigned char *)malloc(0x20000);
+	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
+	for (size_t i = 0; i < 500; i++)
+	{
+		facedetect_frontal(pBuffer, (unsigned char*)(gray.ptr(0)), gray.cols, gray.rows, (int)gray.step,
+			1.2f, 2, 48, 0, 1);
+
+	}
+	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
+	std::cout << "Thread " << id << ", " << "total detection time:" 
+		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 500 << "ms" << std::endl;
+}
+
+void multi_thread_test_libface()
+{
+	std::vector<std::thread> ts;
+	std::vector<cv::Mat> grays;
+	for (size_t i = 0; i < 8; i++)
+	{
+		grays.push_back(cv::imread("C:\\Users\\BALTHASAR\\Desktop\\keliamoniz1.jpg", CV_LOAD_IMAGE_GRAYSCALE));
+		ts.push_back(std::thread(detect_thread_libface, grays[i], i));
+	}
+	for (size_t i = 0; i < 8; i++)
+	{
+		ts[i].detach();
+	}
+}
 
 int main()
 {
+	//multi_thread_test();
+	multi_thread_test_libface();
+	std::this_thread::sleep_for(std::chrono::seconds(300));
 	nplogic* npd = new nplogic(0);
 	//npd->load();
 	npd->load("D:\\Research\\CudaNpdDetect\\model\\result_1223_1.bin");
