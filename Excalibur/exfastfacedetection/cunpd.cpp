@@ -5,11 +5,12 @@
 
 namespace glasssix
 {
-	std::vector<std::shared_ptr<nplogic>> npd_models_;
+	///unable tp use std::shared_ptr
+	std::vector<nplogic*> npd_models_;
 
 	int cunpd::AddNpdModel(int device)
 	{
-		std::shared_ptr<nplogic> new_model = std::make_shared<nplogic>(device);
+		nplogic *new_model = new nplogic(device);
 		new_model->load();
 		npd_models_.push_back(new_model);
 		return npd_models_.size() - 1;
@@ -17,7 +18,7 @@ namespace glasssix
 
 	int cunpd::AddNpdModel(std::string modelpath, int device)
 	{
-		std::shared_ptr<nplogic> new_model = std::make_shared<nplogic>(device);
+		nplogic *new_model = new nplogic(device);
 		new_model->load(modelpath.c_str());
 		npd_models_.push_back(new_model);
 		return npd_models_.size() - 1;
@@ -36,6 +37,18 @@ namespace glasssix
 			output.push_back({ cv::Rect(Xs[i], Ys[i], Ss[i], Ss[i]), Scores[i] });
 		}
 		return output;
+	}
+
+	cunpd::~cunpd()
+	{
+		for (auto npd_model_ : npd_models_) {
+			try {
+				delete npd_model_;
+			}
+			catch (...) {
+
+			}
+		}
 	}
 
 }

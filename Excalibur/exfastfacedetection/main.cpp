@@ -11,10 +11,11 @@ void detect_thread(nplogic* npd, cv::Mat gray, int id)
 	for (size_t i = 0; i < 1000; i++)
 	{
 		npd->detect(gray.data, gray.cols, gray.rows, 48);
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
 	std::cout << "Thread " << id << ", " << "total detection time:" 
-		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 1000 << "ms" << std::endl;
+		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 1000 - 5<< "ms" << std::endl;
 }
 
 void multi_thread_test()
@@ -40,15 +41,15 @@ void detect_thread_libface(cv::Mat gray, int id)
 {
 	unsigned char * pBuffer = (unsigned char *)malloc(0x20000);
 	std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
-	for (size_t i = 0; i < 500; i++)
+	for (size_t i = 0; i < 1000; i++)
 	{
 		facedetect_frontal(pBuffer, (unsigned char*)(gray.ptr(0)), gray.cols, gray.rows, (int)gray.step,
 			1.2f, 2, 48, 0, 1);
-
+		std::this_thread::sleep_for(std::chrono::milliseconds(5));
 	}
 	std::chrono::time_point<std::chrono::system_clock> p1 = std::chrono::system_clock::now();
 	std::cout << "Thread " << id << ", " << "total detection time:" 
-		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 500 << "ms" << std::endl;
+		<< (float)std::chrono::duration_cast<std::chrono::microseconds>(p1 - p0).count() / 1000 / 1000 - 5<< "ms" << std::endl;
 }
 
 void multi_thread_test_libface()
@@ -68,8 +69,8 @@ void multi_thread_test_libface()
 
 int main()
 {
-	//multi_thread_test();
-	multi_thread_test_libface();
+	multi_thread_test();
+	//multi_thread_test_libface();
 	std::this_thread::sleep_for(std::chrono::seconds(300));
 	nplogic* npd = new nplogic(0);
 	//npd->load();
