@@ -11,7 +11,7 @@ namespace glasssix
 			FastFace::FastFace(int device)
 			{
 				mw_ = new mtcnn_warpper(device);
-				//nw_ = new npd_wrapper(device);
+				nw_ = new npd_wrapper(device);
 			}
 
 			FastFace::~FastFace()
@@ -23,8 +23,8 @@ namespace glasssix
 			{
 				delete mw_;
 				mw_ = NULL;
-				/*delete nw_;
-				nw_ = NULL;*/
+				delete nw_;
+				nw_ = NULL;
 			}
 
 			unsigned char* FastFace::Bitmap2RGB(System::Drawing::Bitmap^ bmp)
@@ -227,15 +227,12 @@ namespace glasssix
 					float arc_yaw = Math::Atan(lefteye_nose / righteye_nose / 10);
 					float radius_yaw = arc_yaw / 3.1415 * 180;
 					x += w * radius_yaw * 0.01;
-					/*Console::WriteLine(lefteye_nose);
-					Console::WriteLine(righteye_nose);
-					Console::WriteLine(Math::Cos(arc_yaw));*/
 					output->Add(FaceInfo(i, radius_yaw, score, System::Drawing::Rectangle(x, y, w, h), landmark));
 				}
 				return output;
 			}
 
-			/*List<FaceInfo>^ FastFace::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
+			List<FaceInfo>^ FastFace::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
 			{
 				int stride;
 				unsigned char * buf = Bitmap2Gray(Oribmp, stride);
@@ -251,7 +248,7 @@ namespace glasssix
 				}
 				delete[] buf;
 				return output;
-			}*/
+			}
 		}
 	}
 }
