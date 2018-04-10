@@ -15,18 +15,12 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="mtcnn_wrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="npd_wrapper.hpp">
+    <ClInclude Include="libcufacedetection.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="mtcnn_wrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="npd_wrapper.cpp">
+    <ClCompile Include="libcufacedetection.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

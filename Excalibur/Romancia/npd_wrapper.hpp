@@ -2,6 +2,7 @@
 #define _NPD_WRAPPER_HPP_
 
 #include "../exfastfacedetection/nplogic.hpp"
+#include <opencv2/opencv.hpp>
 #include <vector>
 
 namespace glasssix
@@ -13,6 +14,7 @@ namespace glasssix
 		~npd_wrapper();
 
 		int facedetect_npd(unsigned char* image_data, int width, int height, int min_size);
+		int facedetect_npd(const cv::Mat &gray, int min_size);
 		std::vector<int> get_x();
 		std::vector<int> get_y();
 		std::vector<int> get_size();
