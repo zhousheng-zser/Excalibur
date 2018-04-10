@@ -13,18 +13,18 @@ namespace excalibur
 		int softmax_axis_;
 
 		/// sum_multiplier is used to carry out sum using BLAS
-		tensor* sum_multiplier_;
+		std::shared_ptr<tensor<float>> sum_multiplier_;
 		/// scale is an intermediate Blob to hold temporary results.
-		std::shared_ptr<tensor> scale_;
+		std::shared_ptr<tensor<float>> scale_;
 
 		int device_;
 	public:
 		softmax(int input_channel, int device);
 		~softmax();
 
-		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
-		void Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 	};
 }

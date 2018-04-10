@@ -18,9 +18,9 @@ namespace excalibur
 		}
 	}
 
-	void flip::Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void flip::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
-		top.reset(new tensor(bottom->data_shape(), device_));
+		top.reset(new tensor<float>(bottom->data_shape(), device_));
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = top->mutable_cpu_data();
 		int num = bottom->num();

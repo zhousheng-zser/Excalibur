@@ -99,7 +99,7 @@ namespace glasssix
 		return numDetect;
 	}
 	
-	int nplogic::floodScoreMat(std::shared_ptr<tensor<float>> mat, int mat_height, int mat_width, int rowMax, int colMax, int winStep)
+	int nplogic::floodScoreMat(std::shared_ptr<excalibur::tensor<float>> mat, int mat_height, int mat_width, int rowMax, int colMax, int winStep)
 	{
 		int rows = mat_height;
 		int cols = mat_width;
@@ -164,21 +164,21 @@ namespace glasssix
 
 	void nplogic::mallocdetectspace(int n)
 	{
-		Tneighbors.reset(new tensor<int>(n, device_));
-		Tweight.reset(new tensor<float>(n, device_));
-		Txs.reset(new tensor<float>(n, device_));
-		Tys.reset(new tensor<float>(n, device_));
-		Tss.reset(new tensor<float>(n, device_));
+		Tneighbors.reset(new excalibur::tensor<int>(n, device_));
+		Tweight.reset(new excalibur::tensor<float>(n, device_));
+		Txs.reset(new excalibur::tensor<float>(n, device_));
+		Tys.reset(new excalibur::tensor<float>(n, device_));
+		Tss.reset(new excalibur::tensor<float>(n, device_));
 		maxDetectNum = n;
 	}
 
 	void nplogic::mallocsacnspace(int s)
 	{
-		Tpredicate.reset(new tensor<char>(s*s, device_));
-		Troot.reset(new tensor<int>(s, device_));
-		Tlogweight.reset(new tensor<float>(s, device_));
-		Tparent.reset(new tensor<int>(s, device_));
-		Trank.reset(new tensor<int>(s, device_));
+		Tpredicate.reset(new excalibur::tensor<char>(s*s, device_));
+		Troot.reset(new excalibur::tensor<int>(s, device_));
+		Tlogweight.reset(new excalibur::tensor<float>(s, device_));
+		Tparent.reset(new excalibur::tensor<int>(s, device_));
+		Trank.reset(new excalibur::tensor<int>(s, device_));
 		maxScanNum = s;
 	}
 

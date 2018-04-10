@@ -13,7 +13,7 @@ namespace excalibur
 	{
 	}
 
-	void concat::Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top)
+	void concat::Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		if (bottom.size() <= 1)
 		{
@@ -45,7 +45,7 @@ namespace excalibur
 				top_shape.push_back(bottom[0]->data_shape()[i]);
 			}
 		}
-		top.reset(new tensor(top_shape, device_));
+		top.reset(new tensor<float>(top_shape, device_));
 		num_concats_ = bottom[0]->count(0, concat_axis_);
 		concat_input_size_ = bottom[0]->count(concat_axis_ + 1, bottom[0]->data_shape().size());
 		//

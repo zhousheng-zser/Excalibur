@@ -10,7 +10,7 @@ namespace excalibur
 		}
 	}
 
-	void mirrormax::Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void mirrormax::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		if (mirror_axis_ == 0)
 		{
@@ -19,7 +19,7 @@ namespace excalibur
 			int height = bottom->height();
 			int width = bottom->width();
 			CHECK_EQ(num % 2, 0);
-			top.reset(new tensor(std::vector<int>{num / 2, channels, height, width}, device_));
+			top.reset(new tensor<float>(std::vector<int>{num / 2, channels, height, width}, device_));
 			const float* bottom_data = bottom->gpu_data();
 			float* top_data = top->mutable_gpu_data();
 			const int mirror_offset = num / 2 * channels * height * width;

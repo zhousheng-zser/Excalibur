@@ -13,13 +13,13 @@ namespace excalibur
 	{
 	}
 
-	void eltwise::Forward_cpu(const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top)
+	void eltwise::Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		coeffs_ = std::vector<float>(bottom.size(), 1);
 		for (int i = 1; i < bottom.size(); ++i) {
 			CHECK(bottom[i]->data_shape() == bottom[0]->data_shape());
 		}
-		top.reset(new tensor(bottom[0]->data_shape(), device_));
+		top.reset(new tensor<float>(bottom[0]->data_shape(), device_));
 		//
 		const float* bottom_data_a = nullptr;
 		const float* bottom_data_b = nullptr;

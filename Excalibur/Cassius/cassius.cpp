@@ -51,13 +51,24 @@ namespace glasssix
 
 				array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas)
 				{
-					std::shared_ptr<tensor> tensor_data = nullptr;
+					std::shared_ptr<tensor<float>> tensor_data = nullptr;
 					bitmaps2tensor(imgDatas, tensor_data);
 					net_->Forward(tensor_data);
 					const float* intermediate = net_->get_pool5()->cpu_data();
 					int output_size = net_->get_pool5()->count();
 					MARSHAL_ARRAY(intermediate, outputs, output_size);
 					return outputs;
+				}
+
+				array<float>^ GetQualityScores()
+				{
+					std::vector<float> qs = net_->get_quality_score();
+					auto output = gcnew array<float>(qs.size());
+					for (int i = 0; i < qs.size(); i++)
+					{
+						output[i] = qs[i];
+					}
+					return output;
 				}
 
 				static float CosineDistanceProb(array<float>^ feature1, array<float>^ feature2)
@@ -93,7 +104,7 @@ namespace glasssix
 				}
 
 			private:
-				static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
+				static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor<float>>& tensor_data)
 				{
 					int num = bitmaps->Length;
 					if (num <= 0)
@@ -109,7 +120,7 @@ namespace glasssix
 					int c_offset = height * width;
 
 					Drawing::Rectangle rc = Drawing::Rectangle(0, 0, width, height);
-					tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+					tensor_data.reset(new tensor<float>(std::vector<int>{num, channel, height, width}, -1));
 					float* float_data = tensor_data->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)

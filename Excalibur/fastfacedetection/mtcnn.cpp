@@ -145,7 +145,7 @@ namespace glasssix
 		}
 	}
 
-	void MTCNN::GenerateBBox(std::shared_ptr<tensor> confidence, std::shared_ptr<tensor> reg_box,
+	void MTCNN::GenerateBBox(std::shared_ptr<tensor<float>> confidence, std::shared_ptr<tensor<float>> reg_box,
 		float scale, float thresh) 
 	{
 		int feature_map_w_ = confidence->width();
@@ -191,12 +191,12 @@ namespace glasssix
 			scale *= factor;
 		}
 		total_boxes_.clear();
-		std::shared_ptr<tensor> input_layer = nullptr;
+		std::shared_ptr<tensor<float>> input_layer = nullptr;
 		for (int i = 0; i < scales.size(); i++) {
 			int ws = (int)std::ceil(width*scales[i]);
 			int hs = (int)std::ceil(height*scales[i]);
 			cv::resize(img, resized, cv::Size(ws, hs), 0, 0, cv::INTER_LINEAR);
-			input_layer.reset(new tensor(std::vector<int>{ 1, 3, hs, ws }, device_id_));
+			input_layer.reset(new tensor<float>(std::vector<int>{ 1, 3, hs, ws }, device_id_));
 			float * input_data = input_layer->mutable_cpu_data();
 			cv::Vec3b * img_data = (cv::Vec3b *)resized.data;
 			int spatial_size = ws* hs;
@@ -207,8 +207,8 @@ namespace glasssix
 			}
 			PNet_->Forward(input_layer);
 
-			std::shared_ptr<tensor> confidence = PNet_->get_prob1();
-			std::shared_ptr<tensor> reg = PNet_->get_conv4_2();
+			std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
+			std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
 			GenerateBBox(confidence, reg, scales[i], threshold);
 			std::vector<FaceInfoX> bboxes_nms = NMS(candidate_boxes_, 0.5, 'u');
 			if (bboxes_nms.size()>0) {
@@ -231,17 +231,17 @@ namespace glasssix
 		int batch_size = (int)pre_stage_res.size();
 		if (batch_size == 0)
 			return res;
-		std::shared_ptr<tensor> input_layer = nullptr;
-		std::shared_ptr<tensor> confidence = nullptr;
-		std::shared_ptr<tensor> reg_box = nullptr;
-		std::shared_ptr<tensor> reg_landmark = nullptr;
+		std::shared_ptr<tensor<float>> input_layer = nullptr;
+		std::shared_ptr<tensor<float>> confidence = nullptr;
+		std::shared_ptr<tensor<float>> reg_box = nullptr;
+		std::shared_ptr<tensor<float>> reg_landmark = nullptr;
 
 		switch (stage_num) {
 		case 2: {
-			input_layer.reset(new tensor(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
+			input_layer.reset(new tensor<float>(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
 		}break;
 		case 3: {
-			input_layer.reset(new tensor(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
+			input_layer.reset(new tensor<float>(std::vector<int>{batch_size, 3, input_h, input_w}, device_id_));
 		}break;
 		default:
 			return res;

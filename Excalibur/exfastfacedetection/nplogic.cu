@@ -144,45 +144,46 @@ namespace glasssix
 	
 	int nplogic::scan_gpu(const unsigned char* I, int width, int height, int min_size)
 	{
+		cudaSetDevice(device_);
 		if (cuda_level < 40)
 		{
-			return scan_gpu_template<40>(I, width, height, min_size);
+			return scan_gpu_template<10>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 40 && cuda_level < 80)
 		{
-			return scan_gpu_template<80>(I, width, height, min_size);
+			return scan_gpu_template<20>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 80 && cuda_level < 120)
 		{
-			return scan_gpu_template<120>(I, width, height, min_size);
+			return scan_gpu_template<30>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 120 && cuda_level < 160)
 		{
-			return scan_gpu_template<160>(I, width, height, min_size);
+			return scan_gpu_template<40>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 160 && cuda_level < 200)
 		{
-			return scan_gpu_template<200>(I, width, height, min_size);
+			return scan_gpu_template<50>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 240 && cuda_level < 280)
 		{
-			return scan_gpu_template<280>(I, width, height, min_size);
+			return scan_gpu_template<60>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 280 && cuda_level < 320)
 		{
-			return scan_gpu_template<320>(I, width, height, min_size);
+			return scan_gpu_template<70>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 320 && cuda_level < 360)
 		{
-			return scan_gpu_template<360>(I, width, height, min_size);
+			return scan_gpu_template<80>(I, width, height, min_size);
 		}
 		else if (cuda_level >= 360 && cuda_level < 400)
 		{
-			return scan_gpu_template<400>(I, width, height, min_size);
+			return scan_gpu_template<90>(I, width, height, min_size);
 		}
 		else // cuda_level > 400
 		{
-			return scan_gpu_template<440>(I, width, height, min_size);
+			return scan_gpu_template<100>(I, width, height, min_size);
 		}
 	}
 

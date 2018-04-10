@@ -14,7 +14,7 @@ namespace excalibur
 		}
 	}
 
-	void prelu::Forward_native_gpu(const std::shared_ptr<tensor>& bottom)
+	void prelu::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom)
 	{
 		const float* bottom_data = bottom->gpu_data();
 		float* top_data = bottom->mutable_gpu_data();
