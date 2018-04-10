@@ -24,16 +24,16 @@ namespace glasssix
 		scaleFactor = sf;
 		numScales = nsa;
 
-		stageThreshold.reset(new tensor<float>(numStages, device_));
-		treeRoot.reset(new tensor<int>(numStages, device_));
-		pixelx.reset(new tensor<int>(numScales * numBranchNodes, device_));
-		pixely.reset(new tensor<int>(numScales * numBranchNodes, device_));
-		cutpoint.reset(new tensor<unsigned char>(2 * numBranchNodes, device_));
-		leftChild.reset(new tensor<int>(numBranchNodes, device_));
-		rightChild.reset(new tensor<int>(numBranchNodes, device_));
-		fit.reset(new tensor<float>(numLeafNodes, device_));
-		winSize.reset(new tensor<int>(numScales, device_));
-		fea.reset(new tensor<unsigned char>(256 * 256, device_));
+		stageThreshold.reset(new excalibur::tensor<float>(numStages, device_));
+		treeRoot.reset(new excalibur::tensor<int>(numStages, device_));
+		pixelx.reset(new excalibur::tensor<int>(numScales * numBranchNodes, device_));
+		pixely.reset(new excalibur::tensor<int>(numScales * numBranchNodes, device_));
+		cutpoint.reset(new excalibur::tensor<unsigned char>(2 * numBranchNodes, device_));
+		leftChild.reset(new excalibur::tensor<int>(numBranchNodes, device_));
+		rightChild.reset(new excalibur::tensor<int>(numBranchNodes, device_));
+		fit.reset(new excalibur::tensor<float>(numLeafNodes, device_));
+		winSize.reset(new excalibur::tensor<int>(numScales, device_));
+		fea.reset(new excalibur::tensor<unsigned char>(256 * 256, device_));
 	}
 
 
@@ -47,16 +47,16 @@ namespace glasssix
 		numScales = num_Scales;
 		modelversion = model_version;
 		//
-		stageThreshold.reset(new tensor<float>(numStages, device_));
-		treeRoot.reset(new tensor<int>(numStages, device_));
-		pixelx.reset(new tensor<int>(numScales * numBranchNodes, device_));
-		pixely.reset(new tensor<int>(numScales * numBranchNodes, device_));
-		cutpoint.reset(new tensor<unsigned char>(2 * numBranchNodes, device_));
-		leftChild.reset(new tensor<int>(numBranchNodes, device_));
-		rightChild.reset(new tensor<int>(numBranchNodes, device_));
-		fit.reset(new tensor<float>(numLeafNodes, device_));
-		winSize.reset(new tensor<int>(numScales, device_));
-		fea.reset(new tensor<unsigned char>(256 * 256, device_));
+		stageThreshold.reset(new excalibur::tensor<float>(numStages, device_));
+		treeRoot.reset(new excalibur::tensor<int>(numStages, device_));
+		pixelx.reset(new excalibur::tensor<int>(numScales * numBranchNodes, device_));
+		pixely.reset(new excalibur::tensor<int>(numScales * numBranchNodes, device_));
+		cutpoint.reset(new excalibur::tensor<unsigned char>(2 * numBranchNodes, device_));
+		leftChild.reset(new excalibur::tensor<int>(numBranchNodes, device_));
+		rightChild.reset(new excalibur::tensor<int>(numBranchNodes, device_));
+		fit.reset(new excalibur::tensor<float>(numLeafNodes, device_));
+		winSize.reset(new excalibur::tensor<int>(numScales, device_));
+		fea.reset(new excalibur::tensor<unsigned char>(256 * 256, device_));
 		//
 		memcpy(stageThreshold->mutable_cpu_data(), stage_Threshold, sizeof(stage_Threshold));
 		memcpy(treeRoot->mutable_cpu_data(), tree_Root, sizeof(tree_Root));

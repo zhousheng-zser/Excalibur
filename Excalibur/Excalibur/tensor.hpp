@@ -15,6 +15,7 @@ namespace excalibur
 
 	public:
 		tensor(const std::vector<int>& shape, int device);
+		tensor(const int shape, int device = -1);
 		
 		~tensor();
 
