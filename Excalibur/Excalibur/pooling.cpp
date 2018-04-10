@@ -16,7 +16,7 @@ namespace excalibur
 	{
 	}
 
-	void pooling::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void pooling::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		int num = bottom->data_shape()[0];
 		channels_ = bottom->data_shape()[1];
@@ -26,7 +26,7 @@ namespace excalibur
 			height_ + 2 * pad_ - kernel_) / stride_)) + 1;
 		pooled_width_ = static_cast<int>(ceil(static_cast<float>(
 			width_ + 2 * pad_ - kernel_) / stride_)) + 1;
-		top.reset(new tensor(std::vector<int>{num, channels_, pooled_height_, pooled_width_}, device_));
+		top.reset(new tensor<float>(std::vector<int>{num, channels_, pooled_height_, pooled_width_}, device_));
 		//
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = (top)->mutable_cpu_data();

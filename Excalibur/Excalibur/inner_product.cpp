@@ -15,10 +15,10 @@ namespace excalibur
 		{
 			K_ *= input_shape_without_num_[i];
 		}
-		weights_ = new tensor(std::vector<int>{N_, K_}, device_);
+		weights_.reset(new tensor<float>(std::vector<int>{N_, K_}, device_));
 		if (bias_term_)
 		{
-			bias_ = new tensor(std::vector<int>{1, N_}, device_);
+			bias_.reset(new tensor<float>(std::vector<int>{1, N_}, device_));
 		}
 	}
 
@@ -37,19 +37,18 @@ namespace excalibur
 
 	inner_product::~inner_product()
 	{
-		delete weights_;
-		delete bias_;
+
 	}
 
-	void inner_product::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void inner_product::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		M_ = bottom->num();
 		if (bias_term_)
 		{
-			bias_multiplier_.reset(new tensor(std::vector<int>{M_}, device_));
+			bias_multiplier_.reset(new tensor<float>(std::vector<int>{M_}, device_));
 			math_functions::cpu_set(M_, 1.0f, bias_multiplier_->mutable_cpu_data());
 		}
-		top.reset(new tensor(std::vector<int>{M_, N_}, device_));
+		top.reset(new tensor<float>(std::vector<int>{M_, N_}, device_));
 		//
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = (top)->mutable_cpu_data();

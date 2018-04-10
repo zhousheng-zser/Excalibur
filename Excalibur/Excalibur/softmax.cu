@@ -71,20 +71,20 @@ namespace excalibur
 		}
 	}
 
-	void softmax::Forward_native_gpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void softmax::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		outer_num_ = bottom->num();
 		if (bottom->data_shape().size() <= 2)
 		{
 			inner_num_ = 1;
-			scale_.reset(new tensor(std::vector<int>{outer_num_, 1}, device_));
+			scale_.reset(new tensor<float>(std::vector<int>{outer_num_, 1}, device_));
 		}
 		else
 		{
 			inner_num_ = bottom->height()*bottom->width();
-			scale_.reset(new tensor(std::vector<int>{outer_num_, 1, bottom->height(), bottom->width()}, device_));
+			scale_.reset(new tensor<float>(std::vector<int>{outer_num_, 1, bottom->height(), bottom->width()}, device_));
 		}
-		top.reset(new tensor(bottom->data_shape(), device_));
+		top.reset(new tensor<float>(bottom->data_shape(), device_));
 		//
 		const float* bottom_data = bottom->gpu_data();
 		float* top_data = top->mutable_gpu_data();
