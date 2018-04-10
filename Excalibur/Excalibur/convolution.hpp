@@ -10,9 +10,9 @@ namespace excalibur
 {
 	class convolution
 	{
-		tensor* weights_;
-		tensor* bias_;
-	    std::shared_ptr<tensor> col_buffer_;
+		std::shared_ptr<tensor<float>> weights_;
+		std::shared_ptr<tensor<float>> bias_;
+	    std::shared_ptr<tensor<float>> col_buffer_;
 		int device_;
 		/// parameters
 		int input_Channel_;
@@ -40,7 +40,7 @@ namespace excalibur
 		int kernel_dim_;
 		int col_offset_;
 		int output_offset_;
-		std::shared_ptr<tensor> bias_multiplier_;
+		std::shared_ptr<tensor<float>> bias_multiplier_;
 		///
 		inline void conv_im2col_cpu(const float* data, float* col_buff);
 		inline void conv_col2im_cpu(const float* col_buff, float* data);
@@ -55,9 +55,9 @@ namespace excalibur
 		~convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
-		void Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
-		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top);
+		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 	private:
 		void forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false);

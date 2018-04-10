@@ -46,13 +46,13 @@ namespace excalibur
 		io();
 		~io();
 		static void bytes2tensor(const unsigned char* bytes, int num, int channel, int height, int width,
-			std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+			std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 		static void bytes2tensor(const char* bytes, int num, int channel, int height, int width,
-			std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+			std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 #ifdef USE_OPENCV
-		static void images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+		static void images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 
-		static void image2tensor(const cv::Mat image, std::shared_ptr<tensor>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
+		static void image2tensor(const cv::Mat image, std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean = true, float scale = 0.0078125f);
 #endif
 #ifdef CAFFEMODEL_SOPPORT
 		static bool readcaffemodel(const std::string modelpath, NetParameter& net);

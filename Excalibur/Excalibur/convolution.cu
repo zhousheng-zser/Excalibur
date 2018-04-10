@@ -4,7 +4,8 @@
 #include <iostream>
 namespace excalibur
 {
-	void convolution::Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void convolution::Forward_native_gpu(cublasHandle_t cublas_handle_, 
+		const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		
 		const int num = bottom->num();
@@ -17,7 +18,7 @@ namespace excalibur
 		
 		int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
 		int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
-		top.reset(new tensor(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
+		top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
 		//
 		
 		float* top_data = (top)->mutable_gpu_data();
@@ -25,9 +26,9 @@ namespace excalibur
 		{
 			last_height = bottom->height();
 			last_width = bottom->width();
-			col_buffer_.reset(new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+			col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 			gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
-			bias_multiplier_.reset(new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+			bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 			conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 			out_spatial_dim_ = output_dim_w_*output_dim_h_;
 			col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
@@ -41,9 +42,9 @@ namespace excalibur
 			{
 				last_height = bottom->height();
 				last_width = bottom->width();
-				col_buffer_.reset(new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+				col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 				gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
-				bias_multiplier_.reset(new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+				bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 				conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 				out_spatial_dim_ = output_dim_w_*output_dim_h_;
 				col_offset_ = kernel_dim_ * conv_out_spatial_dim_;

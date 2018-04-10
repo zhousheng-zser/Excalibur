@@ -2,7 +2,8 @@
 
 namespace excalibur
 {
-	tensor::tensor(const std::vector<int>& shape, int device)
+	template <typename Dtype>
+	tensor<Dtype>::tensor(const std::vector<int>& shape, int device)
 	{
 		count_ = 1;
 		for (int i = 0; i < shape.size(); i++)
@@ -11,61 +12,68 @@ namespace excalibur
 			shape_.push_back(shape[i]);
 		}
 		device_ = device;
-		data_ = new syncedmem(count_ * sizeof(float), device_);
+		data_.reset(new syncedmem(count_ * sizeof(float), device_));
 	}
 
-
-	tensor::~tensor()
+	template <typename Dtype>
+	tensor<Dtype>::~tensor()
 	{
-		delete data_;
+		//delete data_;
 	}
 
-	const float* tensor::cpu_data() const
-	{
-		CHECK(data_);
-		return static_cast<const float*>(data_->cpu_data());
-	}
-
-	const float* tensor::gpu_data() const
+	template <typename Dtype>
+	const Dtype* tensor<Dtype>::cpu_data() const
 	{
 		CHECK(data_);
-		return static_cast<const float*>(data_->gpu_data());
+		return static_cast<const Dtype*>(data_->cpu_data());
 	}
 
-	float* tensor::mutable_cpu_data() const
+	template <typename Dtype>
+	const Dtype* tensor<Dtype>::gpu_data() const
 	{
 		CHECK(data_);
-		return static_cast<float*>(data_->mutable_cpu_data());
+		return static_cast<const Dtype*>(data_->gpu_data());
 	}
 
-	float* tensor::mutable_gpu_data() const
+	template <typename Dtype>
+	Dtype* tensor<Dtype>::mutable_cpu_data() const
 	{
 		CHECK(data_);
-		return static_cast<float*>(data_->mutable_gpu_data());
+		return static_cast<Dtype*>(data_->mutable_cpu_data());
 	}
 
-	void tensor::set_cpu_data(float* data)
+	template <typename Dtype>
+	Dtype* tensor<Dtype>::mutable_gpu_data() const
+	{
+		CHECK(data_);
+		return static_cast<Dtype*>(data_->mutable_gpu_data());
+	}
+
+	template <typename Dtype>
+	void tensor<Dtype>::set_cpu_data(Dtype* data)
 	{
 		CHECK(data);
 		// Make sure CPU and GPU sizes remain equal
-		size_t size = count_ * sizeof(float);
+		size_t size = count_ * sizeof(Dtype);
 		if (data_->size() != size) {
-			data_ = new syncedmem(size);
-			//data_.reset(new SyncedMemory(size));
+			data_.reset(new syncedmem(size));
 		}
 		data_->set_cpu_data(data);
 	}
 
-	void tensor::set_gpu_data(float* data)
+	template <typename Dtype>
+	void tensor<Dtype>::set_gpu_data(Dtype* data)
 	{
 		CHECK(data);
 		// Make sure CPU and GPU sizes remain equal
-		size_t size = count_ * sizeof(float);
+		size_t size = count_ * sizeof(Dtype);
 		if (data_->size() != size) {
-			data_ = new syncedmem(size);
-			//data_.reset(new SyncedMemory(size));
+			data_.reset(new syncedmem(size));
 		}
 		data_->set_gpu_data(data);
 	}
 
+	template class tensor<float>;
+	template class tensor<int>;
+	template class tensor<unsigned char>;
 }

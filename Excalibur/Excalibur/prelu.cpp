@@ -7,14 +7,14 @@ namespace excalibur
 	prelu::prelu(int input_channel, bool isrelu, int device)
 	{
 		channel_ = input_channel;
-		slope_data_ = new tensor(std::vector<int>{input_channel}, device);
+		slope_data_.reset(new tensor<float>(std::vector<int>{input_channel}, device));
 		isrelu_ = isrelu;
 		device_ = device;
 	}
 
 	prelu::~prelu()
 	{
-		delete slope_data_;
+		
 	}
 
 	void prelu::setslope(float* slope_data)
@@ -32,7 +32,7 @@ namespace excalibur
 		}
 	}
 
-	void prelu::Forward_cpu(const std::shared_ptr<tensor>& bottom)
+	void prelu::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom)
 	{
 		int num = (bottom)->data_shape()[0];
 		float* bottom_data = (bottom)->mutable_cpu_data();

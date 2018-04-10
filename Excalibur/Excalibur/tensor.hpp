@@ -4,9 +4,10 @@
 #include "syncedmem.hpp"
 namespace excalibur
 {
+	template <typename Dtype>
 	class tensor
 	{
-		syncedmem* data_;
+		std::shared_ptr<syncedmem> data_;
 		std::vector<int> shape_;
 		int count_;
 		//int capacity_;
@@ -14,19 +15,15 @@ namespace excalibur
 
 	public:
 		tensor(const std::vector<int>& shape, int device);
-		/*tensor()
-		{
-			data_ = nullptr;
-
-		};*/
+		
 		~tensor();
 
-		const float* cpu_data() const;
-		const float* gpu_data() const;
-		float* mutable_cpu_data() const;
-		float* mutable_gpu_data() const;
-		void set_cpu_data(float* data);
-		void set_gpu_data(float* data);
+		const Dtype* cpu_data() const;
+		const Dtype* gpu_data() const;
+		Dtype* mutable_cpu_data() const;
+		Dtype* mutable_gpu_data() const;
+		void set_cpu_data(Dtype* data);
+		void set_gpu_data(Dtype* data);
 
 		int num() const { return shape_[0]; }
 		int channels() const { return shape_[1]; }

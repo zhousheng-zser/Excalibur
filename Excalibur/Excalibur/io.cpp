@@ -12,9 +12,9 @@ namespace excalibur
 	}
 
 	void io::bytes2tensor(const unsigned char* bytes, int num, int channel, int height, int width, 
-		std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+		std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean, float scale)
 	{
-		tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+		tensor_data.reset(new tensor<float>(std::vector<int>{num, channel, height, width}, -1));
 		float* float_data = tensor_data->mutable_cpu_data();
 		int n_offset = channel * height * width;
 		int c_offset = height * width;
@@ -51,9 +51,9 @@ namespace excalibur
 
 
 	void io::bytes2tensor(const char* bytes, int num, int channel, int height, int width, 
-		std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+		std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean, float scale)
 	{
-		tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+		tensor_data.reset(new tensor<float>(std::vector<int>{num, channel, height, width}, -1));
 		float* float_data = tensor_data->mutable_cpu_data();
 		int n_offset = channel * height * width;
 		int c_offset = height * width;
@@ -90,13 +90,13 @@ namespace excalibur
 
 
 #ifdef USE_OPENCV
-	void io::images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+	void io::images2tensor(const std::vector<cv::Mat> images, std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean, float scale)
 	{
 		int num = images.size();
 		int channel = 3;
 		int width = images[0].cols;
 		int height = images[0].rows;
-		tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
+		tensor_data.reset(new tensor<float>(std::vector<int>{num, channel, height, width}, -1));
 		float* transformed_data = (tensor_data)->mutable_cpu_data();
 		int batch_offset = channel*width*height;
 		float mean[3];
@@ -135,7 +135,7 @@ namespace excalibur
 		return;
 	}
 
-	void io::image2tensor(const cv::Mat image, std::shared_ptr<tensor>& tensor_data, bool minus_mean, float scale)
+	void io::image2tensor(const cv::Mat image, std::shared_ptr<tensor<float>>& tensor_data, bool minus_mean, float scale)
 	{
 		int channel = 3;
 		int width = image.cols;
@@ -148,7 +148,7 @@ namespace excalibur
 		{
 			delete *tensor_data;
 		}*/
-		tensor_data.reset(new tensor(std::vector<int>{1, channel, height, width}, -1));
+		tensor_data.reset(new tensor<float>(std::vector<int>{1, channel, height, width}, -1));
 		float* transformed_data = (tensor_data)->mutable_cpu_data();
 		float mean[3];
 		if (minus_mean)
