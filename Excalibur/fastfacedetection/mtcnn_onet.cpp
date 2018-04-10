@@ -99,9 +99,9 @@ namespace glasssix
 #endif
 	}
 
-	void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor> input_data)
+	void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor(input_data->data_shape(), -1));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
@@ -124,9 +124,9 @@ namespace glasssix
 	}
 
 #ifdef USE_CUDA
-	void mtcnn_onet::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
+	void mtcnn_onet::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
 		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
@@ -150,7 +150,7 @@ namespace glasssix
 
 #endif
 
-	void mtcnn_onet::Forward(const std::shared_ptr<tensor> input_data)
+	void mtcnn_onet::Forward(const std::shared_ptr<tensor<float>> input_data)
 	{
 		if (device_<0)
 		{
