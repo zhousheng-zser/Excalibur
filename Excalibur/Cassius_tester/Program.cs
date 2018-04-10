@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
 using glasssix.aroundight.romancia;
-using glasssix.excalibur.cassius;
+//using glasssix.excalibur.cassius;
 
 namespace Cassius_tester
 {
@@ -19,13 +19,14 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
+            detection_test();
             //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
             //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
             //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
             Console.ReadLine();
         }
 
-        void detection_test()
+        static void detection_test()
         {
             FastFace mtcnn = new FastFace(1);
             bmp1 = new Bitmap(@"E:\Data\LS3D-W\300W-Testset-3D\outdoor_236.png");
@@ -34,9 +35,11 @@ namespace Cassius_tester
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
+            var auto = mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
+            Console.WriteLine(auto[0].score);
             for (int i = 0; i < 5; i++)
             {
-                mtcnn.Facedetect_Frontal(bmp1, 48, 1.2f);
+                mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
             }
             sw.Stop();
             Console.WriteLine(sw.ElapsedMilliseconds / 5);
