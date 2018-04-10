@@ -84,5 +84,6 @@ namespace excalibur
 
 	template class tensor<float>;
 	template class tensor<int>;
+	template class tensor<char>;
 	template class tensor<unsigned char>;
 }
