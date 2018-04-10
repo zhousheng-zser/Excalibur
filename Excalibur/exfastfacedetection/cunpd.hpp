@@ -21,11 +21,12 @@ namespace glasssix
 
 	class CUNPD_DLL cunpd
 	{
+	public:
 		cunpd() {};
 		int AddNpdModel(int device);
 		int AddNpdModel(std::string modelpath, int device);
 		std::vector<FaceInfomation> detect(cv::Mat img, int model_id, int min_size);
-		~cunpd(){};
+		~cunpd();
 	};
 }
 

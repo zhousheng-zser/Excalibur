@@ -70,8 +70,8 @@ namespace excalibur
 }
 
 #define Neuron_Name(name) private: \
-std::shared_ptr<tensor> name##_top_data = nullptr;\
-public: std::shared_ptr<tensor> get_##name(){\
+std::shared_ptr<tensor<float>> name##_top_data = nullptr;\
+public: std::shared_ptr<tensor<float>> get_##name(){\
 return name##_top_data;\
 }\
 private:

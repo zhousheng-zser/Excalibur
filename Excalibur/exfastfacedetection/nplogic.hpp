@@ -2,6 +2,9 @@
 #define _NPLOGIC_HPP_
 #include "npcalculator.hpp"
 #include <helper_cuda.h>
+#include <vector>
+#include <cuda_runtime_api.h>
+
 namespace glasssix
 {
 	class nplogic
@@ -29,18 +32,18 @@ namespace glasssix
 		int maxDetectNum;
 
 		// Scan size.
-		std::shared_ptr<tensor<char>> Tpredicate;
-		std::shared_ptr<tensor<int>> Troot;
-		std::shared_ptr<tensor<float>> Tlogweight;
-		std::shared_ptr<tensor<int>> Tparent;
-		std::shared_ptr<tensor<int>> Trank;
+		std::shared_ptr<excalibur::tensor<char>> Tpredicate;
+		std::shared_ptr<excalibur::tensor<int>> Troot;
+		std::shared_ptr<excalibur::tensor<float>> Tlogweight;
+		std::shared_ptr<excalibur::tensor<int>> Tparent;
+		std::shared_ptr<excalibur::tensor<int>> Trank;
 
 		// Detect size.
-		std::shared_ptr<tensor<int>> Tneighbors;
-		std::shared_ptr<tensor<float>> Tweight;
-		std::shared_ptr<tensor<float>> Txs;
-		std::shared_ptr<tensor<float>> Tys;
-		std::shared_ptr<tensor<float>> Tss;
+		std::shared_ptr<excalibur::tensor<int>> Tneighbors;
+		std::shared_ptr<excalibur::tensor<float>> Tweight;
+		std::shared_ptr<excalibur::tensor<float>> Txs;
+		std::shared_ptr<excalibur::tensor<float>> Tys;
+		std::shared_ptr<excalibur::tensor<float>> Tss;
 
 		void init(int minFace = 20, int maxFace = 400);
 		void mallocsacnspace(int s);
@@ -63,7 +66,7 @@ namespace glasssix
 
 		int nms();
 		int partition(const char* predicate, int* root);
-		int floodScoreMat(std::shared_ptr<tensor<float>> mat, int mat_height, int mat_width, int rowMax, int colMax, int winStep);
+		int floodScoreMat(std::shared_ptr<excalibur::tensor<float>> mat, int mat_height, int mat_width, int rowMax, int colMax, int winStep);
 		int scan_cpu(const unsigned char* I, int width, int height, int min_size);
 #ifdef USE_CUDA
 		//const int gridDims[10] = { 40, 80, 120, 160, 200, 240, 280, 320, 360, 400 };

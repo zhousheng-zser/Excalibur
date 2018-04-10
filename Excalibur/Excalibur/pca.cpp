@@ -7,13 +7,13 @@ namespace excalibur
 		initial_dimensions = d;
 		final_dimensions = k;
 		device_ = device;
-		weights_ = new tensor(std::vector<int>{initial_dimensions, final_dimensions}, device_);
+		weights_.reset(new tensor<float>(std::vector<int>{initial_dimensions, final_dimensions}, device_));
 	}
 
 
 	pca::~pca()
 	{
-		delete weights_;
+		
 	}
 
 	void pca::set_weights(float* weights)
@@ -21,10 +21,10 @@ namespace excalibur
 		weights_->set_cpu_data(weights);
 	}
 
-	void pca::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void pca::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		int num = bottom->num();
-		top.reset(new tensor(std::vector<int>{num, final_dimensions}, device_));
+		top.reset(new tensor<float>(std::vector<int>{num, final_dimensions}, device_));
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = top->mutable_cpu_data();
 		math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, num, final_dimensions, initial_dimensions,

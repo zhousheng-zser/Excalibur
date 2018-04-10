@@ -14,14 +14,14 @@ namespace excalibur
 	{
 	}
 
-	void normalize::Forward_cpu(const std::shared_ptr<tensor>& bottom)
+	void normalize::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom)
 	{
 		int num = bottom->num();
 		int channels = bottom->channels();
 		int height = bottom->height();
 		int width = bottom->width();
-		squared_.reset(new tensor(std::vector<int>{num, channels, height, width}, device_));
-		norm_.reset(new tensor(std::vector<int>{num, 1, height, width}, device_));
+		squared_.reset(new tensor<float>(std::vector<int>{num, channels, height, width}, device_));
+		norm_.reset(new tensor<float>(std::vector<int>{num, 1, height, width}, device_));
 		//
 		const float* bottom_data = bottom->cpu_data();
 		float* top_data = bottom->mutable_cpu_data();

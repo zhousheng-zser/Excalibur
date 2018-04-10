@@ -14,15 +14,14 @@ namespace excalibur
 		pad_ = pad;
 		bias_term_ = bias_term;
 		device_ = device;
-		weights_ = new tensor(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_);
-		bias_ = new tensor(std::vector<int>{output_Channel_}, device_);
+		weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_));
+		bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
 		setup_internal_params();
 	}
 
 	convolution::~convolution()
 	{
-		delete weights_;
-		delete bias_;
+		
 	}
 
 	void convolution::set_bias(float* bias)
@@ -123,7 +122,7 @@ namespace excalibur
 
 #endif
 
-	void convolution::Forward_cpu(const std::shared_ptr<tensor>& bottom, std::shared_ptr<tensor>& top)
+	void convolution::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		const int num = bottom->data_shape()[0];
 		const float* bottom_data = bottom->cpu_data();
@@ -134,12 +133,12 @@ namespace excalibur
 		intput_shape_ = bottom->data_shape();
 		int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
 		int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
-		top.reset(new tensor(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
+		top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
 		//
 
 		float* top_data = (top)->mutable_cpu_data();
-		col_buffer_.reset(new tensor(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
-		bias_multiplier_.reset(new tensor(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+		col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+		bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		out_spatial_dim_ = output_dim_w_*output_dim_h_;
 		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;

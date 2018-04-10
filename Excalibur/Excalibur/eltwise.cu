@@ -12,10 +12,10 @@ namespace excalibur
 		}
 	}
 
-	void eltwise::Forward_native_gpu(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor>> bottom, std::shared_ptr<tensor>& top)
+	void eltwise::Forward_native_gpu(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		coeffs_ = std::vector<float>(bottom.size(), 1);
-		top.reset(new tensor(bottom[0]->data_shape(), device_));
+		top.reset(new tensor<float>(bottom[0]->data_shape(), device_));
 		const int count = top->count();
 		float* top_data = top->mutable_gpu_data();
 		switch (type_)

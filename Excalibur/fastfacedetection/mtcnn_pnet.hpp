@@ -37,7 +37,7 @@ namespace glasssix
 		Declear_Opration(softmax, prob1)
 		
 		//
-		std::shared_ptr<tensor> tensor_data = nullptr;
+		std::shared_ptr<tensor<float>> tensor_data = nullptr;
 		Neuron_Name(conv1)
 		Neuron_Name(pool1)
 		Neuron_Name(conv2)
@@ -47,20 +47,20 @@ namespace glasssix
 		Neuron_Name(prob1)
 		//
 		int device_;
-		void Forward_cpu(const std::shared_ptr<tensor> input_data);
+		void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_ = nullptr;
-		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
+		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
 		cudnnHandle_t cudnn_handle_ = nullptr;
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
 		
 	public:
 		mtcnn_pnet(int device);
 		~mtcnn_pnet();
-		void Forward(const std::shared_ptr<tensor> input_data);
+		void Forward(const std::shared_ptr<tensor<float>> input_data);
 	};
 }
 
