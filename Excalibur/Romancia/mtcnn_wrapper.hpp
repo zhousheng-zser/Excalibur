@@ -18,8 +18,8 @@ namespace glasssix
 		MTCNN* mt_;
 		int device_;
 		//
-		float factor = 0.709f;
-		float threshold[3] = { 0.7f, 0.6f, 0.6f };
+		float factor = 0.707f;
+		float threshold[3] = { 0.70f, 0.60f, 0.60f };
 	};
 }
 

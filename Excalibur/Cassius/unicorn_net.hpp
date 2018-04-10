@@ -98,6 +98,7 @@ namespace glasssix
 		//
 		int device_;
 		std::shared_ptr<tensor> tensor_data = nullptr;
+		std::vector<float> quality_score;
 		//
 		Declear_Opration(flip, fliper);
 		Neuron_Name(flip);
@@ -259,6 +260,16 @@ namespace glasssix
 #endif 
 #endif
 		void Forward_cpu(const std::shared_ptr<tensor> input_data);
+
+		void calc_quality_score()
+		{
+			quality_score.clear();
+			const float* np5 = pool5_top_data->cpu_data();
+			for (int i = 0; i < pool5_top_data->num(); i++)
+			{
+				quality_score.push_back(cblas_snrm2(512, np5 + i * 512, 1));
+			}
+		}
 	public:
 		unicorn_net(int device);
 		~unicorn_net();
@@ -278,6 +289,11 @@ namespace glasssix
 		static int get_input_height()
 		{
 			return 128;
+		}
+
+		std::vector<float> get_quality_score()
+		{
+			return quality_score;
 		}
 	};
 }

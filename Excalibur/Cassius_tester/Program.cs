@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
 using glasssix.aroundight.romancia;
+using glasssix.excalibur.cassius;
 
 namespace Cassius_tester
 {
@@ -18,23 +19,27 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            FastFace mtcnn = new FastFace(-1);
+            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
+            //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
+            //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
+            Console.ReadLine();
+        }
+
+        void detection_test()
+        {
+            FastFace mtcnn = new FastFace(1);
             bmp1 = new Bitmap(@"E:\Data\LS3D-W\300W-Testset-3D\outdoor_236.png");
             //var aaa = mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
             //var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
 
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            for (int i = 0; i < 500; i++)
+            for (int i = 0; i < 5; i++)
             {
                 mtcnn.Facedetect_Frontal(bmp1, 48, 1.2f);
             }
             sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds / 500);
-            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
-            //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
-            //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
-            Console.ReadLine();
+            Console.WriteLine(sw.ElapsedMilliseconds / 5);
         }
 
         //public static void multi_thread_tester1(object extractor)

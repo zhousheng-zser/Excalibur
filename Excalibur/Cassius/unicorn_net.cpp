@@ -343,6 +343,7 @@ namespace glasssix
 		relu5->Forward_cpu(conv5_top_data);
 		pool5->Forward_cpu(conv5_top_data, pool5_top_data);
 		//mirrmax->Forward_cpu(pool5_top_data, feature_top_data);
+		calc_quality_score();
 		normalizer->Forward_cpu(pool5_top_data);//feature_top_data
 	}
 	
@@ -427,6 +428,7 @@ namespace glasssix
 		relu5->Forward_native_gpu(conv5_top_data);
 		pool5->Forward_native_gpu(conv5_top_data, pool5_top_data);
 		//mirrmax->Forward_native_gpu(pool5_top_data, feature_top_data);
+		calc_quality_score();
 		normalizer->Forward_native_gpu(pool5_top_data);//feature_top_data
 	}
 #endif

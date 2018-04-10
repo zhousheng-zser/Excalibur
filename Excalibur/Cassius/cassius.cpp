@@ -60,6 +60,17 @@ namespace glasssix
 					return outputs;
 				}
 
+				array<float>^ GetQualityScores()
+				{
+					std::vector<float> qs = net_->get_quality_score();
+					auto output = gcnew array<float>(qs.size());
+					for (int i = 0; i < qs.size(); i++)
+					{
+						output[i] = qs[i];
+					}
+					return output;
+				}
+
 				static float CosineDistanceProb(array<float>^ feature1, array<float>^ feature2)
 				{
 					float output = 0;
