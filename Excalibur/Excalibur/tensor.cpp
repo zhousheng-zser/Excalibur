@@ -16,6 +16,15 @@ namespace excalibur
 	}
 
 	template <typename Dtype>
+	tensor<Dtype>::tensor(const int shape, int device = -1)
+	{
+		count_ = shape;
+		shape_.push_back(shape);
+		device_ = device;
+		data_.reset(new syncedmem(count_ * sizeof(Dtype), device_));
+	}
+
+	template <typename Dtype>
 	tensor<Dtype>::~tensor()
 	{
 		//delete data_;
