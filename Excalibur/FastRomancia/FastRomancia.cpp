@@ -11,23 +11,23 @@ namespace glasssix
 		namespace romancia
 		{
 
-			FastFace::FastFace(int device)
+			FastFaceNPD::FastFaceNPD(int device)
 			{
 				nw_ = new npd_wrapper(device);
 			}
 
-			FastFace::~FastFace()
+			FastFaceNPD::~FastFaceNPD()
 			{
-				this->!FastFace();
+				this->!FastFaceNPD();
 			}
 
-			FastFace::!FastFace()
+			FastFaceNPD::!FastFaceNPD()
 			{
 				delete nw_;
 				nw_ = NULL;
 			}
 
-			unsigned char* FastFace::Bitmap2Gray(System::Drawing::Bitmap^ bmp, int& stride)
+			unsigned char* FastFaceNPD::Bitmap2Gray(System::Drawing::Bitmap^ bmp, int& stride)
 			{
 				//Console::WriteLine(bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed);
 				System::Drawing::Imaging::BitmapData^ bmpd;
@@ -59,19 +59,19 @@ namespace glasssix
 				return res;
 			}
 
-			List<FaceInfo>^ FastFace::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
+			List<FaceInfoNPD>^ FastFaceNPD::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
 			{
 				int stride;
 				unsigned char * buf = Bitmap2Gray(Oribmp, stride);
 				int n = nw_->facedetect_npd(buf, Oribmp->Width, Oribmp->Height, min_size);
-				List<FaceInfo>^ output = gcnew List<FaceInfo>();
+				List<FaceInfoNPD>^ output = gcnew List<FaceInfoNPD>();
 				auto X = nw_->get_x();
 				auto Y = nw_->get_y();
 				auto S = nw_->get_size();
 				auto scores = nw_->get_score();
 				for (int i = 0; i < n; i++)
 				{
-					output->Add(FaceInfo(i, 0, scores[i], System::Drawing::Rectangle(X[i], Y[i], S[i], S[i])));
+					output->Add(FaceInfoNPD(i, 0, scores[i], System::Drawing::Rectangle(X[i], Y[i], S[i], S[i])));
 				}
 				delete[] buf;
 				return output;
