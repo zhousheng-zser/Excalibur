@@ -30,8 +30,10 @@ namespace glasssix
 				float score;
 				System::Drawing::Rectangle rect;
 				array<int>^ landmarks;
+				String^ guid;
 				FaceInfo(int Index) :index(Index) {}
 				FaceInfo(int Index, int Angle, float Score, System::Drawing::Rectangle Rect) :index(Index), angle(Angle), score(Score), rect(Rect) {}
+				FaceInfo(int Index, int Angle, float Score, System::Drawing::Rectangle Rect, String^ Guid) :index(Index), angle(Angle), score(Score), rect(Rect), guid(Guid) {}
 				FaceInfo(int Index, int Angle, float Score, System::Drawing::Rectangle Rect, array<int>^ Landmarks) :index(Index), angle(Angle), score(Score), rect(Rect), landmarks(Landmarks) {}
 			};
 
@@ -41,7 +43,6 @@ namespace glasssix
 				npd_wrapper* nw_;
 				//float scale;//1.2f
 				float threshold_;//3
-				//int min_object_width;//24
 				bool dolandmark_;//true
 
 				List<FaceInfo>^ GetResultsList(int * pResults);

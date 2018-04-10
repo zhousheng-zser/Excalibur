@@ -15,6 +15,11 @@ namespace glasssix
 		delete npd_;
 	}
 
+	int npd_wrapper::facedetect_npd(const cv::Mat &gray, int min_size)
+	{
+		return npd_->detect(gray.data, gray.cols, gray.rows, min_size);
+	}
+
 	int npd_wrapper::facedetect_npd(unsigned char* image_data, int width, int height, int min_size)
 	{
 		return npd_->detect(image_data, width, height, min_size);

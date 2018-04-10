@@ -14,6 +14,7 @@ namespace glasssix
 
 		std::vector<FaceInfoX> facedetect_mtcnn(unsigned char* image_data, int width, int height, int min_size);
 
+		std::vector<FaceInfoX> facedetect_mtcnn(const cv::Mat &image, int min_size);
 	private:
 		MTCNN* mt_;
 		int device_;
