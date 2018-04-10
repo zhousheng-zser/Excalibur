@@ -263,9 +263,9 @@ namespace glasssix
 #endif
 	}
 
-	void unicorn_net::Forward_cpu(const std::shared_ptr<tensor> input_data)
+	void unicorn_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor(input_data->data_shape(), -1));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), -1));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
 		//fliper->Forward_cpu(tensor_data, flip_top_data);
@@ -279,7 +279,7 @@ namespace glasssix
 		relu2_1->Forward_cpu(conv2_1_top_data);
 		conv2_2->Forward_cpu(conv2_1_top_data, conv2_2_top_data);
 		relu2_2->Forward_cpu(conv2_2_top_data);
-		res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
+		res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
 		conv2->Forward_cpu(res2_2_top_data, conv2_top_data);
 		relu2->Forward_cpu(conv2_top_data);
 		pool2->Forward_cpu(conv2_top_data, pool2_top_data);
@@ -287,12 +287,12 @@ namespace glasssix
 		relu3_1->Forward_cpu(conv3_1_top_data);
 		conv3_2->Forward_cpu(conv3_1_top_data, conv3_2_top_data);
 		relu3_2->Forward_cpu(conv3_2_top_data);
-		res3_2->Forward_cpu(std::vector<std::shared_ptr<tensor>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
+		res3_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
 		conv3_3->Forward_cpu(res3_2_top_data, conv3_3_top_data);
 		relu3_3->Forward_cpu(conv3_3_top_data);
 		conv3_4->Forward_cpu(conv3_3_top_data, conv3_4_top_data);
 		relu3_4->Forward_cpu(conv3_4_top_data);
-		res3_4->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
+		res3_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
 		conv3->Forward_cpu(res3_4_top_data, conv3_top_data);
 		relu3->Forward_cpu(conv3_top_data);
 		pool3->Forward_cpu(conv3_top_data, pool3_top_data);
@@ -300,27 +300,27 @@ namespace glasssix
 		relu4_1->Forward_cpu(conv4_1_top_data);
 		conv4_2->Forward_cpu(conv4_1_top_data, conv4_2_top_data);
 		relu4_2->Forward_cpu(conv4_2_top_data);
-		res4_2->Forward_cpu(std::vector<std::shared_ptr<tensor>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
+		res4_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
 		conv4_3->Forward_cpu(res4_2_top_data, conv4_3_top_data);
 		relu4_3->Forward_cpu(conv4_3_top_data);
 		conv4_4->Forward_cpu(conv4_3_top_data, conv4_4_top_data);
 		relu4_4->Forward_cpu(conv4_4_top_data);
-		res4_4->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
+		res4_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
 		conv4_5->Forward_cpu(res4_4_top_data, conv4_5_top_data);
 		relu4_5->Forward_cpu(conv4_5_top_data);
 		conv4_6->Forward_cpu(conv4_5_top_data, conv4_6_top_data);
 		relu4_6->Forward_cpu(conv4_6_top_data);
-		res4_6->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
+		res4_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
 		conv4_7->Forward_cpu(res4_6_top_data, conv4_7_top_data);
 		relu4_7->Forward_cpu(conv4_7_top_data);
 		conv4_8->Forward_cpu(conv4_7_top_data, conv4_8_top_data);
 		relu4_8->Forward_cpu(conv4_8_top_data);
-		res4_8->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
+		res4_8->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
 		conv4_9->Forward_cpu(res4_8_top_data, conv4_9_top_data);
 		relu4_9->Forward_cpu(conv4_9_top_data);
 		conv4_10->Forward_cpu(conv4_9_top_data, conv4_10_top_data);
 		relu4_10->Forward_cpu(conv4_10_top_data);
-		res4_10->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
+		res4_10->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
 		conv4->Forward_cpu(res4_10_top_data, conv4_top_data);
 		relu4->Forward_cpu(conv4_top_data);
 		pool4->Forward_cpu(conv4_top_data, pool4_top_data);
@@ -328,17 +328,17 @@ namespace glasssix
 		relu5_1->Forward_cpu(conv5_1_top_data);
 		conv5_2->Forward_cpu(conv5_1_top_data, conv5_2_top_data);
 		relu5_2->Forward_cpu(conv5_2_top_data);
-		res5_2->Forward_cpu(std::vector<std::shared_ptr<tensor>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
+		res5_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
 		conv5_3->Forward_cpu(res5_2_top_data, conv5_3_top_data);
 		relu5_3->Forward_cpu(conv5_3_top_data);
 		conv5_4->Forward_cpu(conv5_3_top_data, conv5_4_top_data);
 		relu5_4->Forward_cpu(conv5_4_top_data);
-		res5_4->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
+		res5_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
 		conv5_5->Forward_cpu(res5_4_top_data, conv5_5_top_data);
 		relu5_5->Forward_cpu(conv5_5_top_data);
 		conv5_6->Forward_cpu(conv5_5_top_data, conv5_6_top_data);
 		relu5_6->Forward_cpu(conv5_6_top_data);
-		res5_6->Forward_cpu(std::vector<std::shared_ptr<tensor>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
+		res5_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 		conv5->Forward_cpu(res5_6_top_data, conv5_top_data);
 		relu5->Forward_cpu(conv5_top_data);
 		pool5->Forward_cpu(conv5_top_data, pool5_top_data);
@@ -348,9 +348,9 @@ namespace glasssix
 	}
 	
 #ifdef USE_CUDA
-	void unicorn_net::Forward_native_gpu(const std::shared_ptr<tensor> input_data)
+	void unicorn_net::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
 		/*fliper->Forward_native_gpu(tensor_data, flip_top_data);
@@ -364,7 +364,7 @@ namespace glasssix
 		relu2_1->Forward_native_gpu(conv2_1_top_data);
 		conv2_2->Forward_native_gpu(cublas_handle_, conv2_1_top_data, conv2_2_top_data);
 		relu2_2->Forward_native_gpu(conv2_2_top_data);
-		res2_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
+		res2_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
 		conv2->Forward_native_gpu(cublas_handle_, res2_2_top_data, conv2_top_data);
 		relu2->Forward_native_gpu(conv2_top_data);
 		pool2->Forward_native_gpu(conv2_top_data, pool2_top_data);
@@ -372,12 +372,12 @@ namespace glasssix
 		relu3_1->Forward_native_gpu(conv3_1_top_data);
 		conv3_2->Forward_native_gpu(cublas_handle_, conv3_1_top_data, conv3_2_top_data);
 		relu3_2->Forward_native_gpu(conv3_2_top_data);
-		res3_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
+		res3_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
 		conv3_3->Forward_native_gpu(cublas_handle_, res3_2_top_data, conv3_3_top_data);
 		relu3_3->Forward_native_gpu(conv3_3_top_data);
 		conv3_4->Forward_native_gpu(cublas_handle_, conv3_3_top_data, conv3_4_top_data);
 		relu3_4->Forward_native_gpu(conv3_4_top_data);
-		res3_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
+		res3_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
 		conv3->Forward_native_gpu(cublas_handle_, res3_4_top_data, conv3_top_data);
 		relu3->Forward_native_gpu(conv3_top_data);
 		pool3->Forward_native_gpu(conv3_top_data, pool3_top_data);
@@ -385,27 +385,27 @@ namespace glasssix
 		relu4_1->Forward_native_gpu(conv4_1_top_data);
 		conv4_2->Forward_native_gpu(cublas_handle_, conv4_1_top_data, conv4_2_top_data);
 		relu4_2->Forward_native_gpu(conv4_2_top_data);
-		res4_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
+		res4_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
 		conv4_3->Forward_native_gpu(cublas_handle_, res4_2_top_data, conv4_3_top_data);
 		relu4_3->Forward_native_gpu(conv4_3_top_data);
 		conv4_4->Forward_native_gpu(cublas_handle_, conv4_3_top_data, conv4_4_top_data);
 		relu4_4->Forward_native_gpu(conv4_4_top_data);
-		res4_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
+		res4_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
 		conv4_5->Forward_native_gpu(cublas_handle_, res4_4_top_data, conv4_5_top_data);
 		relu4_5->Forward_native_gpu(conv4_5_top_data);
 		conv4_6->Forward_native_gpu(cublas_handle_, conv4_5_top_data, conv4_6_top_data);
 		relu4_6->Forward_native_gpu(conv4_6_top_data);
-		res4_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
+		res4_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
 		conv4_7->Forward_native_gpu(cublas_handle_, res4_6_top_data, conv4_7_top_data);
 		relu4_7->Forward_native_gpu(conv4_7_top_data);
 		conv4_8->Forward_native_gpu(cublas_handle_, conv4_7_top_data, conv4_8_top_data);
 		relu4_8->Forward_native_gpu(conv4_8_top_data);
-		res4_8->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
+		res4_8->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
 		conv4_9->Forward_native_gpu(cublas_handle_, res4_8_top_data, conv4_9_top_data);
 		relu4_9->Forward_native_gpu(conv4_9_top_data);
 		conv4_10->Forward_native_gpu(cublas_handle_, conv4_9_top_data, conv4_10_top_data);
 		relu4_10->Forward_native_gpu(conv4_10_top_data);
-		res4_10->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
+		res4_10->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
 		conv4->Forward_native_gpu(cublas_handle_, res4_10_top_data, conv4_top_data);
 		relu4->Forward_native_gpu(conv4_top_data);
 		pool4->Forward_native_gpu(conv4_top_data, pool4_top_data);
@@ -413,17 +413,17 @@ namespace glasssix
 		relu5_1->Forward_native_gpu(conv5_1_top_data);
 		conv5_2->Forward_native_gpu(cublas_handle_, conv5_1_top_data, conv5_2_top_data);
 		relu5_2->Forward_native_gpu(conv5_2_top_data);
-		res5_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
+		res5_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
 		conv5_3->Forward_native_gpu(cublas_handle_, res5_2_top_data, conv5_3_top_data);
 		relu5_3->Forward_native_gpu(conv5_3_top_data);
 		conv5_4->Forward_native_gpu(cublas_handle_, conv5_3_top_data, conv5_4_top_data);
 		relu5_4->Forward_native_gpu(conv5_4_top_data);
-		res5_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
+		res5_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
 		conv5_5->Forward_native_gpu(cublas_handle_, res5_4_top_data, conv5_5_top_data);
 		relu5_5->Forward_native_gpu(conv5_5_top_data);
 		conv5_6->Forward_native_gpu(cublas_handle_, conv5_5_top_data, conv5_6_top_data);
 		relu5_6->Forward_native_gpu(conv5_6_top_data);
-		res5_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
+		res5_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 		conv5->Forward_native_gpu(cublas_handle_, res5_6_top_data, conv5_top_data);
 		relu5->Forward_native_gpu(conv5_top_data);
 		pool5->Forward_native_gpu(conv5_top_data, pool5_top_data);
@@ -433,7 +433,7 @@ namespace glasssix
 	}
 #endif
 
-	void unicorn_net::Forward(const std::shared_ptr<tensor> input_data)
+	void unicorn_net::Forward(const std::shared_ptr<tensor<float>> input_data)
 	{
 		if (device_<0)
 		{

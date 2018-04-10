@@ -97,7 +97,7 @@ namespace glasssix
 		Declear_Params(relu5_weights);
 		//
 		int device_;
-		std::shared_ptr<tensor> tensor_data = nullptr;
+		std::shared_ptr<tensor<float>> tensor_data = nullptr;
 		std::vector<float> quality_score;
 		//
 		Declear_Opration(flip, fliper);
@@ -254,12 +254,12 @@ namespace glasssix
 		
 #ifdef USE_CUDA
 		cublasHandle_t cublas_handle_ = nullptr;
-		void Forward_native_gpu(const std::shared_ptr<tensor> input_data);
+		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
-		void Forward_cpu(const std::shared_ptr<tensor> input_data);
+		void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 
 		void calc_quality_score()
 		{
@@ -274,7 +274,7 @@ namespace glasssix
 		unicorn_net(int device);
 		~unicorn_net();
 
-		void Forward(const std::shared_ptr<tensor> input_data);
+		void Forward(const std::shared_ptr<tensor<float>> input_data);
 
 		static int get_input_channel()
 		{
