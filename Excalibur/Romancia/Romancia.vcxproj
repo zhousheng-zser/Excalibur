@@ -136,6 +136,7 @@
   <ItemGroup>
     <ClInclude Include="mtcnn_wrapper.hpp" />
     <ClInclude Include="npd_wrapper.hpp" />
+    <ClInclude Include="romancia.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -150,6 +151,7 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
     </ClCompile>
     <ClCompile Include="npd_wrapper.cpp" />
+    <ClCompile Include="romancia.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
