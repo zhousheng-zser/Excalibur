@@ -1,8 +1,5 @@
 #include "mtcnn.hpp"
 
-using namespace std;
-using namespace cv;
-
 namespace glasssix
 {
 
@@ -28,7 +25,7 @@ namespace glasssix
 			return 0;
 		float s = iw*ih;
 		if (is_iom) {
-			float ov = s / min((xmax - xmin + 1)*(ymax - ymin + 1), (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1));
+			float ov = s / std::min((xmax - xmin + 1)*(ymax - ymin + 1), (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1));
 			return ov;
 		}
 		else {
@@ -137,11 +134,11 @@ namespace glasssix
 			float w = bbox.xmax - bbox.xmin + 1;
 			float h = bbox.ymax - bbox.ymin + 1;
 			float side = h>w ? h : w;
-			bbox.xmin = round(max(bbox.xmin + (w - side)*0.5f, 0.f));
+			bbox.xmin = round(std::max(bbox.xmin + (w - side)*0.5f, 0.f));
 
-			bbox.ymin = round(max(bbox.ymin + (h - side)*0.5f, 0.f));
-			bbox.xmax = round(min(bbox.xmin + side - 1, width - 1.f));
-			bbox.ymax = round(min(bbox.ymin + side - 1, height - 1.f));
+			bbox.ymin = round(std::max(bbox.ymin + (h - side)*0.5f, 0.f));
+			bbox.xmax = round(std::min(bbox.xmin + side - 1, width - 1.f));
+			bbox.ymax = round(std::min(bbox.ymin + side - 1, height - 1.f));
 		}
 	}
 
@@ -178,7 +175,7 @@ namespace glasssix
 		}
 	}
 
-	vector<FaceInfoX> MTCNN::ProposalNet(const cv::Mat& img, int minSize, float threshold, float factor) {
+	std::vector<FaceInfoX> MTCNN::ProposalNet(const cv::Mat& img, int minSize, float threshold, float factor) {
 		cv::Mat  resized;
 		int width = img.cols;
 		int height = img.rows;
@@ -216,7 +213,7 @@ namespace glasssix
 			}
 		}
 		int num_box = (int)total_boxes_.size();
-		vector<FaceInfoX> res_boxes;
+		std::vector<FaceInfoX> res_boxes;
 		if (num_box != 0) {
 			res_boxes = NMS(total_boxes_, 0.7f, 'u');
 			BBoxRegression(res_boxes);
@@ -225,9 +222,9 @@ namespace glasssix
 		return res_boxes;
 	}
 
-	vector<FaceInfoX> MTCNN::NextStage(const cv::Mat& image, vector<FaceInfoX> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold) 
+	std::vector<FaceInfoX> MTCNN::NextStage(const cv::Mat& image, std::vector<FaceInfoX> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold) 
 	{
-		vector<FaceInfoX> res;
+		std::vector<FaceInfoX> res;
 		int batch_size = (int)pre_stage_res.size();
 		if (batch_size == 0)
 			return res;
@@ -251,17 +248,32 @@ namespace glasssix
 		int spatial_size = input_h*input_w;
 
 #pragma omp parallel for num_threads(threads_num)
-		for (int n = 0; n < batch_size; ++n) {
+		for (int n = 0; n < batch_size; ++n) 
+		{
 			FaceBox &box = pre_stage_res[n].bbox;
-			cv::Mat roi = image(Rect(Point((int)box.xmin, (int)box.ymin), Point((int)box.xmax, (int)box.ymax))).clone();
-			resize(roi, roi, Size(input_w, input_h));
+			cv::Mat roi = image(cv::Rect(cv::Point((int)box.xmin, (int)box.ymin), 
+				cv::Point((int)box.xmax, (int)box.ymax))).clone();
 			float *input_data_n = input_data + input_layer->offset(n);
-			Vec3b *roi_data = (Vec3b *)roi.data;
-			CHECK_EQ(roi.isContinuous(), true);
-			for (int k = 0; k < spatial_size; ++k) {
-				input_data_n[k] = float((roi_data[k][0] - mean_val)*std_val);
-				input_data_n[k + spatial_size] = float((roi_data[k][1] - mean_val)*std_val);
-				input_data_n[k + 2 * spatial_size] = float((roi_data[k][2] - mean_val)*std_val);
+			if (roi.cols*roi.rows>0)
+			{
+				cv::resize(roi, roi, cv::Size(input_w, input_h));
+				cv::Vec3b *roi_data = (cv::Vec3b *)roi.data;
+				CHECK_EQ(roi.isContinuous(), true);
+				for (int k = 0; k < spatial_size; ++k)
+				{
+					input_data_n[k] = float((roi_data[k][0] - mean_val)*std_val);
+					input_data_n[k + spatial_size] = float((roi_data[k][1] - mean_val)*std_val);
+					input_data_n[k + 2 * spatial_size] = float((roi_data[k][2] - mean_val)*std_val);
+				}
+			}
+			else
+			{
+				for (int k = 0; k < spatial_size; ++k)
+				{
+					input_data_n[k] = 0.0f;
+					input_data_n[k + spatial_size] = 0.0f;
+					input_data_n[k + 2 * spatial_size] = 0.0f;
+				}
 			}
 		}
 		switch (stage_num) {
@@ -308,11 +320,11 @@ namespace glasssix
 		return res;
 	}
 
-	vector<FaceInfoX> MTCNN::Detect(const cv::Mat& image, const int minSize, const float* threshold, const float factor, const int stage) 
+	std::vector<FaceInfoX> MTCNN::Detect(const cv::Mat& image, const int minSize, const float* threshold, const float factor, const int stage) 
 	{
-		vector<FaceInfoX> pnet_res;
-		vector<FaceInfoX> rnet_res;
-		vector<FaceInfoX> onet_res;
+		std::vector<FaceInfoX> pnet_res;
+		std::vector<FaceInfoX> rnet_res;
+		std::vector<FaceInfoX> onet_res;
 		if (stage >= 1) 
 		{
 			pnet_res = ProposalNet(image, minSize, threshold[0], factor);
@@ -325,9 +337,9 @@ namespace glasssix
 			int size = (int)ceil(1.f*num / step_size);
 			for (int iter = 0; iter < size; ++iter) {
 				int start = iter*step_size;
-				int end = min(start + step_size, num);
-				vector<FaceInfoX> input(pnet_res.begin() + start, pnet_res.begin() + end);
-				vector<FaceInfoX> res = NextStage(image, input, 24, 24, 2, threshold[1]);
+				int end = std::min(start + step_size, num);
+				std::vector<FaceInfoX> input(pnet_res.begin() + start, pnet_res.begin() + end);
+				std::vector<FaceInfoX> res = NextStage(image, input, 24, 24, 2, threshold[1]);
 				rnet_res.insert(rnet_res.end(), res.begin(), res.end());
 			}
 			rnet_res = NMS(rnet_res, 0.7f, 'u');
@@ -340,9 +352,9 @@ namespace glasssix
 			int size = (int)ceil(1.f*num / step_size);
 			for (int iter = 0; iter < size; ++iter) {
 				int start = iter*step_size;
-				int end = min(start + step_size, num);
-				vector<FaceInfoX> input(rnet_res.begin() + start, rnet_res.begin() + end);
-				vector<FaceInfoX> res = NextStage(image, input, 48, 48, 3, threshold[2]);
+				int end = std::min(start + step_size, num);
+				std::vector<FaceInfoX> input(rnet_res.begin() + start, rnet_res.begin() + end);
+				std::vector<FaceInfoX> res = NextStage(image, input, 48, 48, 3, threshold[2]);
 				onet_res.insert(onet_res.end(), res.begin(), res.end());
 			}
 			BBoxRegression(onet_res);
