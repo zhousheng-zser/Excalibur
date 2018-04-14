@@ -8,8 +8,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
-using glasssix.aroundight.romancia;
+//using glasssix.aroundight.romancia;
 //using glasssix.excalibur.cassius;
+using glasssix.excalibur.longinus;
 
 namespace Cassius_tester
 {
@@ -19,30 +20,41 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            detection_test();
+            bmp1 = new Bitmap(@"E:\Data\bing_detected\810\144491\1472771909219708_35.jpg");
+            Banshee be = new Banshee(0);
+            bmp2 = be.align_face(bmp1);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 10100; i++)
+            {
+                be.align_face(bmp1);
+            }
+            //detection_test();
             //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
             //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
-            //bmp1.Save("C:\\Users\\BALTHASAR\\Desktop\\detected.jpg");
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds / 1000);
+            bmp2.Save("C:\\Users\\BALTHASAR\\Desktop\\aligned.jpg");
             Console.ReadLine();
         }
 
         static void detection_test()
         {
-            FastFace mtcnn = new FastFace(1);
-            bmp1 = new Bitmap(@"E:\Data\LS3D-W\300W-Testset-3D\outdoor_236.png");
-            //var aaa = mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
-            //var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
+            //FastFace mtcnn = new FastFace(1);
+            //bmp1 = new Bitmap(@"E:\Data\LS3D-W\300W-Testset-3D\outdoor_236.png");
+            ////var aaa = mtcnn.Facedetect_Multiview_CNN(bmp1, 40, 1.0f);
+            ////var bbb = mtcnn.Facedetect_Multiview_Reinforce(bmp1, 40, 1.2f);
 
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            var auto = mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
-            Console.WriteLine(auto[0].score);
-            for (int i = 0; i < 5; i++)
-            {
-                mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
-            }
-            sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds / 5);
+            //Stopwatch sw = new Stopwatch();
+            //sw.Start();
+            //var auto = mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
+            //Console.WriteLine(auto[0].score);
+            //for (int i = 0; i < 5; i++)
+            //{
+            //    mtcnn.Facedetect_Multiview_CNN(bmp1, 48, 1.2f);
+            //}
+            //sw.Stop();
+            //Console.WriteLine(sw.ElapsedMilliseconds / 5);
         }
 
         //public static void multi_thread_tester1(object extractor)

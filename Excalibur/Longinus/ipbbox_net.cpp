@@ -74,14 +74,14 @@ namespace glasssix
 //#endif
 	}
 
-	void ipbbox_net::Forward_cpu(const std::shared_ptr<tensor> input_data)
+	void ipbbox_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 	{
 #ifdef _DEBUG
 		CHECK_EQ(input_data->width(), 60);
 		CHECK_EQ(input_data->height(), 60);
 		CHECK_EQ(input_data->channels(), 3);
 #endif
-		tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_cpu_data();
 		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
 		conv1->Forward_cpu(tensor_data, conv1_top_data);
@@ -102,14 +102,14 @@ namespace glasssix
 	}
 
 #ifdef USE_CUDA
-	void ipbbox_net::Forward_native_gpu(const std::shared_ptr<tensor> input_data, cublasHandle_t cublas_handle_)
+	void ipbbox_net::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_)
 	{
 #ifdef _DEBUG
 		CHECK_EQ(input_data->width(), 60);
 		CHECK_EQ(input_data->height(), 60);
 		CHECK_EQ(input_data->channels(), 3);
 #endif
-		tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
 		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);

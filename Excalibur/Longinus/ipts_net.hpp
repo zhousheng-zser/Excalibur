@@ -27,7 +27,7 @@ namespace glasssix
 		Declear_Params(fc2_bias);
 		//
 		int device_;
-		std::shared_ptr<tensor> tensor_data = nullptr;
+		std::shared_ptr<tensor<float>> tensor_data = nullptr;
 		//
 		Declear_Opration(convolution, conv1);
 		Neuron_Name(conv1);
@@ -57,12 +57,12 @@ namespace glasssix
 	public:
 #ifdef USE_CUDA
 		//cublasHandle_t cublas_handle_ = nullptr;
-		void Forward_native_gpu(const std::shared_ptr<tensor> input_data, cublasHandle_t cublas_handle_);
+		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_);
 #ifdef USE_CUDNN
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
 #endif 
 #endif
-		void Forward_cpu(const std::shared_ptr<tensor> input_data);
+		void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 
 	
 		ipts_net(int device);

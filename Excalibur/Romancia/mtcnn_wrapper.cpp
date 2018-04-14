@@ -21,4 +21,10 @@ namespace glasssix
 		delete image_data;
 		return temp;
 	}
+
+	std::vector<FaceInfoX> mtcnn_warpper::facedetect_mtcnn(const cv::Mat &image, int min_size)
+	{
+		return mt_->Detect(image, min_size, threshold, factor, 3);
+	}
+
 }
