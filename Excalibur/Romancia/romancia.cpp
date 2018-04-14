@@ -41,7 +41,7 @@ namespace glasssix
 				else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 				{
 					bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height), System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
-					stride = bmp->Width + (4 - bmp->Width % 4) % 4;
+					stride = bmp->Width;
 					res = new unsigned char[stride * bmp->Height * 3];
 					unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
 						*b, *g, *r;
@@ -78,7 +78,7 @@ namespace glasssix
 				}
 
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height), System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
-				stride = bmp->Width + (4 - bmp->Width % 4) % 4;
+				stride = bmp->Width;
 				unsigned char* res = new unsigned char[stride * bmp->Height];
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
 					*b, *g, *r;

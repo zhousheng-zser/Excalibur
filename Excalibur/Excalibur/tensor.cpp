@@ -3,6 +3,15 @@
 namespace excalibur
 {
 	template <typename Dtype>
+	tensor<Dtype>::tensor()
+	{
+		count_ = 0;
+		shape_ = std::vector<int>{ 0 };
+		device_ = -1;
+		data_ = nullptr;
+	}
+
+	template <typename Dtype>
 	tensor<Dtype>::tensor(const std::vector<int>& shape, int device)
 	{
 		count_ = 1;
@@ -12,7 +21,7 @@ namespace excalibur
 			shape_.push_back(shape[i]);
 		}
 		device_ = device;
-		data_.reset(new syncedmem(count_ * sizeof(float), device_));
+		data_.reset(new syncedmem(count_ * sizeof(Dtype), device_));
 	}
 
 	template <typename Dtype>
@@ -25,10 +34,76 @@ namespace excalibur
 	}
 
 	template <typename Dtype>
+	tensor<Dtype>::tensor(const tensor& t)
+	{
+		count_ = t.count_;
+		device_ = t.device_;
+		shape_ = t.shape_;
+		this->data_ = t.data_;
+	}
+
+	template <typename Dtype>
+	tensor<Dtype>& tensor<Dtype>::operator=(const tensor& t)
+	{
+		if (this == &t)
+		{
+			return *this;
+		}
+		count_ = t.count_;
+		device_ = t.device_;
+		shape_ = t.shape_;
+		this->data_ = t.data_;
+		return *this;
+	}
+
+
+	template <typename Dtype>
 	tensor<Dtype>::~tensor()
 	{
-		//delete data_;
+		
 	}
+
+	template <typename Dtype>
+	tensor<Dtype> tensor<Dtype>::clone() const
+	{
+		if (empty())
+		{
+			return tensor();
+		}
+		tensor t(shape_, device_);
+		if (device_ >= 0)
+		{
+			math_functions::excalibur_copy(count_, this->gpu_data(), t.mutable_gpu_data(), device_);
+		}
+		else
+		{
+			math_functions::excalibur_copy(count_, this->cpu_data(), t.mutable_cpu_data(), device_);
+		}
+		return t;
+	}
+
+	template <typename Dtype>
+	bool tensor<Dtype>::empty() const
+	{
+		return data_ == nullptr || count() == 0;
+	}
+
+	template <typename Dtype>
+	tensor<Dtype> tensor<Dtype>::channel_tensor_ptr(int c)
+	{
+		tensor t(std::vector<int>{1, 1, height(), width()}, device_);
+		int offset = height() * width();
+		if (device_ >= 0)
+		{
+			math_functions::excalibur_copy(offset, this->gpu_data() + offset * c, t.mutable_gpu_data(), device_);
+		}
+		else
+		{
+			math_functions::excalibur_copy(offset, this->cpu_data() + offset * c, t.mutable_cpu_data(), device_);
+		}
+		return t;
+	}
+
 
 	template <typename Dtype>
 	const Dtype* tensor<Dtype>::cpu_data() const

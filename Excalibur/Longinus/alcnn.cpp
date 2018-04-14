@@ -37,7 +37,7 @@ namespace glasssix
 		delete ipts;
 	}
 
-	void alcnn::Forward_IPBbox(const std::shared_ptr<tensor> input_data)
+	void alcnn::Forward_IPBbox(const std::shared_ptr<tensor<float>> input_data)
 	{
 		if (device_>=0)
 		{
@@ -53,7 +53,7 @@ namespace glasssix
 		}
 	}
 
-	void alcnn::Forward_IPTs(const std::shared_ptr<tensor> input_data)
+	void alcnn::Forward_IPTs(const std::shared_ptr<tensor<float>> input_data)
 	{
 		if (device_ >= 0)
 		{

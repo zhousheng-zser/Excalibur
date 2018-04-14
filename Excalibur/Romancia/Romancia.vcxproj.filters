@@ -18,21 +18,21 @@
     <ClInclude Include="mtcnn_wrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="romancia.hpp">
+    <ClInclude Include="npd_wrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="npd_wrapper.hpp">
+    <ClInclude Include="romancia.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="romancia.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="mtcnn_wrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="npd_wrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="romancia.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

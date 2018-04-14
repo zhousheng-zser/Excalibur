@@ -170,6 +170,7 @@
     <ClInclude Include="support_layers.hpp" />
     <ClInclude Include="syncedmem.hpp" />
     <ClInclude Include="tensor.hpp" />
+    <ClInclude Include="tensoroperation.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accelerator.cpp" />
@@ -193,6 +194,7 @@
     <ClCompile Include="softmax.cpp" />
     <ClCompile Include="syncedmem.cpp" />
     <ClCompile Include="tensor.cpp" />
+    <ClCompile Include="tensoroperation.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

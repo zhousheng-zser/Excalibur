@@ -1,5 +1,5 @@
 #include <msclr\marshal_cppstd.h>
-#include "alcnn.hpp"
+#include "alignment.hpp"
 
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -23,17 +23,17 @@ namespace glasssix
 			{
 			private:
 				int device_;
-				alcnn* alcnn_net_;
+				alignment* aligner_;
 			public:
 				Banshee(int device)
 				{
 					device_ = device;
-					alcnn_net_ = new alcnn(device_);
+					aligner_ = new alignment(device_);
 				}
 				!Banshee()
 				{
-					delete alcnn_net_;
-					alcnn_net_ = nullptr;
+					delete aligner_;
+					aligner_ = nullptr;
 				}
 
 				~Banshee()
@@ -41,94 +41,163 @@ namespace glasssix
 					this->!Banshee();
 				}
 
-				array<array<float>^>^ ExtractBitmapOutputs_IPBbox(array<Bitmap^>^ imgDatas)
+				System::Drawing::Bitmap^ align_face(System::Drawing::Bitmap^ detected_face)
 				{
-					std::shared_ptr<tensor> tensor_data = nullptr;
-					bitmaps2tensor(imgDatas, tensor_data);
-					alcnn_net_->Forward_IPBbox(tensor_data);
-					auto outputs = gcnew array<array<float>^>(static_cast<int>(2));
-					for (int i = 0; i < outputs->Length; i++)
-					{
-						if (i == 0)
-						{
-							const float* intermediate = alcnn_net_->get_IPBbox_fc2_data();
-							int output_size = alcnn_net_->get_IPBbox_fc2_count();
-							MARSHAL_ARRAY(intermediate, output, output_size);
-							outputs[i] = output;
-						}
-						if (i == 1)
-						{
-							const float* intermediate = alcnn_net_->get_IPBbox_fc3_data();
-							int output_size = alcnn_net_->get_IPBbox_fc3_count();
-							MARSHAL_ARRAY(intermediate, output, output_size);
-							outputs[i] = output;
-						}
-					}
-					return outputs;
-				}
-
-				array<float>^ ExtractBitmapOutputs_IPTs(array<Bitmap^>^ imgDatas)
-				{
-					std::shared_ptr<tensor> tensor_data = nullptr;
-					bitmaps2tensor(imgDatas, tensor_data);
-					alcnn_net_->Forward_IPTs(tensor_data);
-					const float* intermediate = alcnn_net_->get_IPTs_fc2_data();
-					int output_size = alcnn_net_->get_IPTs_fc2_count();
-					MARSHAL_ARRAY(intermediate, outputs, output_size);
-					return outputs;
+					int stride;
+					unsigned char * buf = Bitmap2RGB(detected_face);
+					cv::Mat detected_face_mat = cv::Mat(detected_face->Height, detected_face->Width, CV_8UC3, buf);
+					cv::Mat aligned_face;
+					aligner_->alignment_face(detected_face_mat, aligned_face);
+					delete buf;
+					return MatToBitmap(aligned_face);
 				}
 
 			private:
-				static void bitmaps2tensor(array<Bitmap^>^ bitmaps, std::shared_ptr<tensor>& tensor_data)
+				unsigned char* Bitmap2RGB(System::Drawing::Bitmap^ bmp)
 				{
-					int num = bitmaps->Length;
-					if (num <= 0)
+					int stride;
+					unsigned char* res;
+					System::Drawing::Imaging::BitmapData^ bmpd;
+					if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
 					{
-						return;
+						stride = bmpd->Stride;
+						bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height), 
+							System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+						return (unsigned char*)bmpd->Scan0.ToPointer();
 					}
-					int channel = 3;// ipbbox_net::get_input_channel();
-					float mean[] = { 104.0f, 117.0f, 124.0f };
-					float scale = 0.0078125f;
-					int width = 60;// ipbbox_net::get_input_width();
-					int height = 60;// ipbbox_net::get_input_height();
-					int n_offset = channel * height * width;
-					int c_offset = height * width;
-
-					Drawing::Rectangle rc = Drawing::Rectangle(0, 0, width, height);
-					tensor_data.reset(new tensor(std::vector<int>{num, channel, height, width}, -1));
-					float* float_data = tensor_data->mutable_cpu_data();
-
-					for (int n = 0; n < num; n++)
+					else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 					{
-						Bitmap^ resize_bitmap;
-						if (width == bitmaps[n]->Width && height == bitmaps[n]->Height)
+						bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height), 
+							System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+						stride = bmp->Width;
+						res = new unsigned char[stride * bmp->Height * 3];
+						unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
+							*b, *g, *r;
+						for (int offset = 0, y = 0; y < bmp->Height; ++y, offset += bmpd->Stride)
 						{
-							// no other situations, only channel == 3 for unicorn net
-							resize_bitmap = bitmaps[n]->Clone(rc, PixelFormat::Format24bppRgb);
-						}
-						else
-						{
-							resize_bitmap = gcnew Bitmap((Image ^)bitmaps[n], width, height);
-							resize_bitmap = resize_bitmap->Clone(rc, PixelFormat::Format24bppRgb);
-						}
-						// get image data block
-						BitmapData ^bmpData = resize_bitmap->LockBits(rc, ImageLockMode::ReadOnly, resize_bitmap->PixelFormat);
-						pin_ptr<unsigned char> bmpBuffer = (unsigned char *)bmpData->Scan0.ToPointer();
-
-						for (int c = 0; c < channel; ++c)
-						{
-							for (int h = 0; h < height; ++h)
+							b = pBmp + offset + 0, g = pBmp + offset + 1, r = pBmp + offset + 2;
+							for (int x = 0; x < bmpd->Width; ++x, b += 3, g += 3, r += 3)
 							{
-								int line_offset = h * bmpData->Stride + c;
-								for (int w = 0; w < width; ++w)
-								{
-									float_data[n*n_offset + c*c_offset + h*width + w] =
-										(static_cast<float>(bmpBuffer[line_offset + w * channel]) - mean[c]) * scale;
-								}
+								res[(y * stride + x) * 3] = *b;
+								res[(y * stride + x) * 3 + 1] = *g;
+								res[(y * stride + x) * 3 + 2] = *r;
 							}
 						}
-						resize_bitmap->UnlockBits(bmpData);
+						bmp->UnlockBits(bmpd);
 					}
+					else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
+					{
+						bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+							System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+						stride = bmp->Width;
+						res = new unsigned char[stride * bmp->Height * 3];
+						unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
+							*b, *g, *r;
+						for (int offset = 0, y = 0; y < bmp->Height; ++y, offset += bmpd->Stride)
+						{
+							b = pBmp + offset + 0, g = pBmp + offset + 1, r = pBmp + offset + 2;
+							for (int x = 0; x < bmpd->Width; ++x, b += 4, g += 4, r += 4)
+							{
+								res[(y * stride + x) * 3] = *b;
+								res[(y * stride + x) * 3 + 1] = *g;
+								res[(y * stride + x) * 3 + 2] = *r;
+							}
+						}
+						bmp->UnlockBits(bmpd);
+					}
+					else
+					{
+						res = nullptr;//logical complication
+					}
+					return res;
+				}
+
+				System::Drawing::Bitmap^ MatToBitmap(cv::Mat srcImg) {
+					int stride = srcImg.size().width * srcImg.channels();//calc the srtide
+					int hDataCount = srcImg.size().height;
+
+					System::Drawing::Bitmap^ retImg;
+
+					System::IntPtr ptr(srcImg.data);
+
+					//create a pointer with Stride
+					if (stride % 4 != 0) 
+					{
+						//is not stride a multiple of 4?
+						//make it a multiple of 4 by fiiling an offset to the end of each row
+
+						//to hold processed data
+						uchar *dataPro = new uchar[((srcImg.size().width * srcImg.channels() + 3) & -4) * hDataCount];
+
+						uchar *data = srcImg.ptr();
+
+						//current position on the data array
+						int curPosition = 0;
+						//current offset
+						int curOffset = 0;
+
+						int offsetCounter = 0;
+
+						//itterate through all the bytes on the structure
+						for (int r = 0; r < hDataCount; r++) {
+							//fill the data
+							for (int c = 0; c < stride; c++) {
+								curPosition = (r * stride) + c;
+
+								dataPro[curPosition + curOffset] = data[curPosition];
+							}
+
+							//reset offset counter
+							offsetCounter = stride;
+
+							//fill the offset
+							do {
+								curOffset += 1;
+								dataPro[curPosition + curOffset] = 0;
+
+								offsetCounter += 1;
+							} while (offsetCounter % 4 != 0);
+						}
+
+						ptr = (System::IntPtr)dataPro;
+						//set the data pointer to new/modified data array
+
+						//calc the stride to nearest number which is a multiply of 4
+						stride = (srcImg.size().width * srcImg.channels() + 3) & -4;
+
+						retImg = gcnew System::Drawing::Bitmap(srcImg.size().width, srcImg.size().height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
+							ptr);
+					}
+					else 
+					{
+
+						//no need to add a padding or recalculate the stride
+						retImg = gcnew System::Drawing::Bitmap(srcImg.size().width, srcImg.size().height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
+							ptr);
+					}
+
+					array<unsigned char>^ imageData;
+					System::Drawing::Bitmap^ output;
+
+					// Create the byte array.
+					{
+						System::IO::MemoryStream^ ms = gcnew System::IO::MemoryStream();
+						retImg->Save(ms, System::Drawing::Imaging::ImageFormat::Png);
+						imageData = ms->ToArray();
+						delete ms;
+					}
+
+					// Convert back to bitmap
+					{
+						System::IO::MemoryStream^ ms = gcnew System::IO::MemoryStream(imageData);
+						output = (System::Drawing::Bitmap^)System::Drawing::Bitmap::FromStream(ms);
+					}
+
+					return output;
 				}
 			};
 		}
