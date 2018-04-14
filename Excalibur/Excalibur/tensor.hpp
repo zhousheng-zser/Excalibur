@@ -10,14 +10,26 @@ namespace excalibur
 		std::shared_ptr<syncedmem> data_;
 		std::vector<int> shape_;
 		int count_;
-		//int capacity_;
 		int device_;
 
 	public:
+		// empty
+		tensor();
+		// universal constructor
 		tensor(const std::vector<int>& shape, int device);
+		// external vector
 		tensor(const int shape, int device = -1);
-		
+		// copy constructor
+		tensor(const tensor& t);
+		// assign
+		tensor& operator=(const tensor& t);
+		// release
 		~tensor();
+		// deep copy
+		tensor clone() const;
+		bool empty() const;
+
+		tensor channel_tensor_ptr(int c);
 
 		const Dtype* cpu_data() const;
 		const Dtype* gpu_data() const;
@@ -26,10 +38,45 @@ namespace excalibur
 		void set_cpu_data(Dtype* data);
 		void set_gpu_data(Dtype* data);
 
-		int num() const { return shape_[0]; }
-		int channels() const { return shape_[1]; }
-		int height() const { return shape_[2]; }
-		int width() const { return shape_[3]; }
+		int num() const
+		{
+			if (shape_.size()<1)
+			{
+				LOG(ERROR) << "out of index.";
+				return 0;
+			}
+			return shape_[0];
+		}
+
+		int channels() const
+		{
+			if (shape_.size()<2)
+			{
+				LOG(ERROR) << "out of index.";
+				return 0;
+			}
+			return shape_[1];
+		}
+
+		int height() const
+		{
+			if (shape_.size()<3)
+			{
+				LOG(ERROR) << "out of index.";
+				return 0;
+			}
+			return shape_[2];
+		}
+
+		int width() const
+		{
+			if (shape_.size()<4)
+			{
+				LOG(ERROR) << "out of index.";
+				return 0;
+			}
+			return shape_[3];
+		}
 
 		int count(int start_axis, int end_axis) const
 		{
@@ -43,6 +90,11 @@ namespace excalibur
 		int count() const
 		{
 			return count(0, shape_.size());
+		}
+
+		int device() const
+		{
+			return device_;
 		}
 
 		int offset(const int n, const int c = 0,

@@ -10,7 +10,7 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 - [Intel® Math Kernel Library](https://software.intel.com/en-us/intel-mkl)
 - [Intel® MPI](https://software.intel.com/en-us/intel-mpi-library)
 - [CUDA8.0](https://developer.nvidia.com/cuda-toolkit)
-- [cuDNNv6](https://developer.nvidia.com/cudnn)
+- [cuDNNv7](https://developer.nvidia.com/cudnn)
 - [NCCL](https://github.com/NVIDIA/nccl)
 - [gemmlowp](https://github.com/inlmouse/gemmlowp)
 - [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page)
@@ -36,9 +36,21 @@ A CUDA NPD implementation.
 
 A Excalibur based MTCNN implementation.
 
+### libcufacedetection
+
+A C++ interface of all detection algorithms.
+
+### Romancia
+
+A C++/CLI interface of all detection algorithms.
+
 ### PersonalReality
 
 A tool of transfering prototxt and caffemodel into hpp and cpp. The last preparatory step to build a CNN with Excalibur.
+
+### Atalanta
+
+A gpu infomation infer tool, depends on NVIDIA driver only.
 
 ## Features
   * Hard code your model into executable file in binary.
@@ -68,6 +80,15 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
   - TE: Implementated but error exists;
   - --: No implementation;
   - NT: Implementated but no test yet;
+ 
+ 
+|  Operations  |  CPU  |  GPU   |
+| :------: | :------:| :------: |
+| resize | NT | -- |
+| flip | -- | -- |
+| cut | -- | -- |
+| copymakeborder | -- | -- |
+| rotate | -- | -- |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
@@ -104,8 +125,8 @@ however, this problem will also be exposed while confronted with variable input 
 
 ## Todo list
   * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.
-  * Separate the net's weights and the images calculated to make it threadsafe.
+  * ~~Separate the net's weights and the images calculated to make it threadsafe.~~
   * Add ARM NEON support.
   * Support multi-machine, multi-uint(CPU) and multi-card(GPU)
-  * Compress the model file.
+  * ~~Compress the model file.~~
   * [ONNX](https://github.com/onnx/onnx) support.

@@ -137,6 +137,9 @@
     <ClInclude Include="mirrormax.hpp">
       <Filter>include</Filter>
     </ClInclude>
+    <ClInclude Include="tensoroperation.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
@@ -200,6 +203,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="mirrormax.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="tensoroperation.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
