@@ -1,0 +1,262 @@
+name: "IPBBox_v2"
+layer {
+	name: "data"
+	type: "MemoryData"
+	top: "data"
+	top: "label"
+	memory_data_param {
+		batch_size: 1
+		channels: 3
+		height: 60
+		width: 60
+	}
+	transform_param {
+		mean_value: 104
+		mean_value: 117
+		mean_value: 124
+		scale: 0.0078125
+	}
+}
+layer {
+    name: "Conv1"
+    type: "Convolution"
+    bottom: "data"
+    top: "Conv1"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    convolution_param {
+        num_output: 10
+        kernel_size: 5
+        stride: 1
+        weight_filler {
+            type: "xavier"
+            std: 0.1
+        }
+        bias_filler {
+            type: "constant"
+            value: 0.2
+        }
+    }
+}
+layer {
+  name: "PReLU1"
+  type: "PReLU"
+  bottom: "Conv1"
+  top: "Conv1"
+}
+layer {
+    name: "Pool1"
+    type: "Pooling"
+    bottom: "Conv1"
+    top: "Pool1"
+    pooling_param {
+        pool: MAX
+        kernel_size: 2
+        stride: 2
+    }
+}
+layer {
+    name: "Conv2"
+    type: "Convolution"
+    bottom: "Pool1"
+    top: "Conv2"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    convolution_param {
+        num_output: 20
+        kernel_size: 5
+        stride: 1
+        weight_filler {
+        type: "xavier"
+        std: 0.1
+    }
+    bias_filler {
+        type: "constant"
+        value: 0.2
+        }
+    }
+}
+layer {
+  name: "PReLU2"
+  type: "PReLU"
+  bottom: "Conv2"
+  top: "Conv2"
+}
+layer {
+    name: "Pool2"
+    type: "Pooling"
+    bottom: "Conv2"
+    top: "Pool2"
+    pooling_param {
+        pool: MAX
+        kernel_size: 2
+        stride: 2
+    }
+}
+layer {
+    name: "Conv3"
+    type: "Convolution"
+    bottom: "Pool2"
+    top: "Conv3"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    convolution_param {
+        num_output: 30
+        kernel_size: 3
+        stride: 1
+        weight_filler {
+            type: "xavier"
+            std: 0.1
+        }
+        bias_filler {
+            type: "constant"
+            value: 0.2
+        }
+    }
+}
+layer {
+  name: "PReLU3"
+  type: "PReLU"
+  bottom: "Conv3"
+  top: "Conv3"
+}
+layer {
+    name: "Pool3"
+    type: "Pooling"
+    bottom: "Conv3"
+    top: "Pool3"
+    pooling_param {
+        pool: MAX
+        kernel_size: 2
+        stride: 2
+    }
+}
+layer {
+    name: "Conv4"
+    type: "Convolution"
+    bottom: "Pool3"
+    top: "Conv4"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    convolution_param {
+        num_output: 40
+        kernel_size: 3
+        stride: 1
+        weight_filler {
+            type: "xavier"
+            std: 0.1
+        }
+        bias_filler {
+            type: "constant"
+            value: 0.2
+        }
+    }
+}
+layer {
+  name: "PReLU4"
+  type: "PReLU"
+  bottom: "Conv4"
+  top: "Conv4"
+}
+layer {
+    name: "fc1"
+    type: "InnerProduct"
+    bottom: "Conv4"
+    top: "fc1"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    inner_product_param {
+        num_output: 64
+        weight_filler {
+            type: "xavier"
+        }
+        bias_filler {
+            type: "constant"
+            value: 0
+        }
+    }
+}
+layer {
+  name: "PReLU5"
+  type: "ReLU"
+  bottom: "fc1"
+  top: "fc1"
+}
+layer {
+    name: "fc2"
+    type: "InnerProduct"
+    bottom: "fc1"
+    top: "fc2"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    inner_product_param {
+        num_output: 4
+        weight_filler {
+            type: "xavier"
+        }
+        bias_filler {
+            type: "constant"
+            value: 0
+        }
+    }
+}
+layer {
+    name: "fc3"
+    type: "InnerProduct"
+    bottom: "fc1"
+    top: "fc3"
+    param {
+        lr_mult: 1
+        decay_mult: 1
+    }
+    param {
+        lr_mult: 2
+        decay_mult: 0
+    }
+    inner_product_param {
+        num_output: 3
+        weight_filler {
+            type: "xavier"
+        }
+        bias_filler {
+            type: "constant"
+            value: 0
+        }
+    }
+}

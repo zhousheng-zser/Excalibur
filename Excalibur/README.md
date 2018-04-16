@@ -85,10 +85,11 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 |  Operations  |  CPU  |  GPU   |
 | :------: | :------:| :------: |
 | resize | NT | -- |
-| flip | -- | -- |
-| cut | -- | -- |
-| copymakeborder | -- | -- |
+| flip | NT | -- |
+| cut | NT | -- |
+| copymakeborder | NT | -- |
 | rotate | -- | -- |
+| grayscale | NT | -- |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
