@@ -62,7 +62,7 @@ void mtcnntset()
 	std::vector<FaceInfoX> faceInfo = detector.Detect(image, minSize, threshold, factor, 3);
 
 	double t = (double)cv::getTickCount();
-	int execute_times = 10;
+	int execute_times = 50;
 	for (int i = 0; i < execute_times; i++)
 	{
 		detector.Detect(image, minSize, threshold, factor, 3);
