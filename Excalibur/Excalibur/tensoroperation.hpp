@@ -23,7 +23,6 @@ namespace excalibur
 		static void rgb2gray_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst);
 
-
 		static void copy_make_border_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right, int type, Dtype v);
 
