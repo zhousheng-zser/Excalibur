@@ -23,7 +23,7 @@ namespace excalibur
 		int device_;
 		
 		//cuDNN API:
-		cudnnHandle_t handle_;
+		//cudnnHandle_t handle_;
 		float one = 1.0, zero = 0.0;
 		size_t size;
 		cudnnTensorDescriptor_t xdesc;
@@ -45,7 +45,7 @@ namespace excalibur
 		{
 			//N/A
 		}
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+		void Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 	};
 }
 

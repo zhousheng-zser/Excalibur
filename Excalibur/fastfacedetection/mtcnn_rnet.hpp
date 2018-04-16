@@ -31,19 +31,19 @@ namespace glasssix
 		Declear_Params(conv5_3_bias);
 		//
 		std::shared_ptr<tensor<float>> tensor_data = nullptr;
-		Declear_Opration(convolution, conv1);
+		Declear_Opration(cudnn_convolution, conv1);
 		Neuron_Name(conv1);
 		Declear_Opration(prelu, prelu1);
 		Neuron_Name(prelu1);
 		Declear_Opration(pooling, pool1);
 		Neuron_Name(pool1);
-		Declear_Opration(convolution, conv2);
+		Declear_Opration(cudnn_convolution, conv2);
 		Neuron_Name(conv2);
 		Declear_Opration(prelu, prelu2);
 		Neuron_Name(prelu2);
 		Declear_Opration(pooling, pool2);
 		Neuron_Name(pool2);
-		Declear_Opration(convolution, conv3);
+		Declear_Opration(cudnn_convolution, conv3);
 		Neuron_Name(conv3);
 		Declear_Opration(prelu, prelu3);
 		Neuron_Name(prelu3);
@@ -64,7 +64,8 @@ namespace glasssix
 		cublasHandle_t cublas_handle_ = nullptr;
 		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor> input_data);
+		cudnnHandle_t cudnn_handle_ = nullptr;
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
 	public:

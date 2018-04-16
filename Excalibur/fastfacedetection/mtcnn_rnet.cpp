@@ -30,15 +30,20 @@ namespace glasssix
 		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 		}
+#ifdef USE_CUDNN
+		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}
+#endif
 #endif
 		//
-		Init_Conv_Params(conv1, 3, 28, 3, 1, 0, true);
+		Init_cuDNN_Conv_Params(conv1, 3, 28, 3, 1, 0, true);
 		Init_PReLU_Params(prelu1, 28, false);
 		Init_Pooling_Params(pool1, 3, 2, 0, 0);
-		Init_Conv_Params(conv2, 28, 48, 3, 1, 0, true);
+		Init_cuDNN_Conv_Params(conv2, 28, 48, 3, 1, 0, true);
 		Init_PReLU_Params(prelu2, 48, false);
 		Init_Pooling_Params(pool2, 3, 2, 0, 0);
-		Init_Conv_Params(conv3, 48, 64, 2, 1, 0, true);
+		Init_cuDNN_Conv_Params(conv3, 48, 64, 2, 1, 0, true);
 		Init_PReLU_Params(prelu3, 64, false);
 		Init_InnerProduct_Params(conv4, 64, 3, 3, 128, true);
 		Init_PReLU_Params(prelu4, 128, false);
@@ -68,6 +73,12 @@ namespace glasssix
 		{
 			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 		}
+#ifdef USE_CUDNN
+		if (cudnn_handle_)
+		{
+			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+		}
+#endif
 #endif
 	}
 
@@ -97,13 +108,13 @@ namespace glasssix
 		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
+		conv1->Forward_cudnn_gpu(cudnn_handle_, tensor_data, conv1_top_data);
 		prelu1->Forward_native_gpu(conv1_top_data);
 		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
-		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
+		conv2->Forward_cudnn_gpu(cudnn_handle_, pool1_top_data, conv2_top_data);
 		prelu2->Forward_native_gpu(conv2_top_data);
 		pool2->Forward_native_gpu(conv2_top_data, pool2_top_data);
-		conv3->Forward_native_gpu(cublas_handle_, pool2_top_data, conv3_top_data);
+		conv3->Forward_cudnn_gpu(cudnn_handle_, pool2_top_data, conv3_top_data);
 		prelu3->Forward_native_gpu(conv3_top_data);
 		conv4->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_top_data);
 		prelu4->Forward_native_gpu(conv4_top_data);

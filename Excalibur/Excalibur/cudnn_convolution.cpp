@@ -21,14 +21,14 @@ namespace excalibur
 		weights_.reset(new tensor<float>(std::vector<int>{num_input_*num_output_*kernel_size_*kernel_size_}, device_));
 		bias_.reset(new tensor<float>(std::vector<int>{num_output_}, device_));
 		// init handle
-		CUDNN_CHECK(cudnnCreate(&handle_));
+		//CUDNN_CHECK(cudnnCreate(&handle_));
 		// create descriptor
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));		
 		CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
 		CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
 		// set params descriptor
-		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW, 
+		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
 			num_output_ / group_, num_input_ / group_, kernel_size_, kernel_size_));
 		CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
 			1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
@@ -51,20 +51,20 @@ namespace excalibur
 		{
 			CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
 		}
-		CUDNN_CHECK(cudnnDestroy(handle_));
+		//CUDNN_CHECK(cudnnDestroy(handle_));
 	}
 
 	void cudnn_convolution::set_weights(float* weights)
 	{
-		weights_->set_gpu_data(weights);
+		weights_->set_cpu_data(weights);
 	}
 
 	void cudnn_convolution::set_bias(float* bias)
 	{
-		bias_->set_gpu_data(bias);
+		bias_->set_cpu_data(bias);
 	}
 
-	void cudnn_convolution::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	void cudnn_convolution::Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		// calcu output parms
 		const int height = bottom->height();
@@ -77,7 +77,7 @@ namespace excalibur
 			num, channels_, height, width));
 		CUDNN_CHECK(cudnnSetTensor4dDescriptor(ydesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, 
 			num, num_output_, height_out, width_out));
-		CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(handle_,
+		CUDNN_CHECK(cudnnGetConvolutionForwardAlgorithm(cudnn_handle_,
 			xdesc,
 			wdesc,
 			conv_desc,
@@ -85,7 +85,7 @@ namespace excalibur
 			CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT,
 			workspace_limit_bytes,
 			&fwd_algo_));
-		CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(handle_,
+		CUDNN_CHECK(cudnnGetConvolutionForwardWorkspaceSize(cudnn_handle_,
 			xdesc,
 			wdesc,
 			conv_desc,
@@ -99,20 +99,18 @@ namespace excalibur
 		// FORWARD!
 		for (int g = 0; g < group_; g++)
 		{
-			CUDNN_CHECK(cudnnConvolutionForward(handle_, &one,
+			CUDNN_CHECK(cudnnConvolutionForward(cudnn_handle_, &one,
 				xdesc, bottom_data, wdesc, weights_->gpu_data(),
 				conv_desc, fwd_algo_,
 				extra, size, &zero,
 				ydesc, top_data));
 			if (bias_term_)
 			{
-				CUDNN_CHECK(cudnnAddTensor(handle_, &one, bdesc, bias_->gpu_data(), 
+				CUDNN_CHECK(cudnnAddTensor(cudnn_handle_, &one, bdesc, bias_->gpu_data(),
 					&one, ydesc, top_data));
 			}
 		}
 		cudaFree(extra);
-		
 	}
-
 }
 #endif // USE_CUDNN

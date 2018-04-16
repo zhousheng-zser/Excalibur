@@ -62,7 +62,7 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 
 |  Layers  |   BLAS  |   Native CUDA   | cuDNN | MKLDNN | NEON |
 | :------: | :------:| :------: | :------: | :------: | :------: |
-| Convolution | TP |  TP  |  TE  |  F  |  F  |
+| Convolution | TP |  TP  |  TP  |  F  |  F  |
 | (P)ReLU | TP |  TP  |  F  |  F  |  F  |
 | Pooling | TP |  TP  |  F  |  F  |  F  |
 | Inner-Product | TP |  TP  |  F  |  F  |  F  |
@@ -82,14 +82,14 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
   - NT: Implementated but no test yet;
  
  
-|  Operations  |  CPU  |  GPU   |
-| :------: | :------:| :------: |
-| resize | NT | -- |
-| flip | NT | -- |
-| cut | NT | -- |
-| copymakeborder | NT | -- |
-| rotate | -- | -- |
-| grayscale | NT | -- |
+|  Operations  |  Native CPU  |  SIMD CPU  |  GPU   |
+| :------: | :------:| :------: | :------: |
+| resize | NT | -- | -- |
+| flip | NT | -- | -- |
+| cut | NT | -- | -- |
+| copymakeborder | NT | -- | -- |
+| rotate | -- | -- | -- |
+| grayscale | NT | -- | -- |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.
