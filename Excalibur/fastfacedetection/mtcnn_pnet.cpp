@@ -34,15 +34,15 @@ namespace glasssix
 #endif
 		
 		//
-		Init_cuDNN_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
+		Init_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
 		Init_PReLU_Params(prelu1, 10, false);
 		Init_Pooling_Params(pool1, 2, 2, 0, 0);
-		Init_cuDNN_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
+		Init_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
 		Init_PReLU_Params(prelu2, 16, false);
-		Init_cuDNN_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
+		Init_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
 		Init_PReLU_Params(prelu3, 32, false);
-		Init_cuDNN_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
-		Init_cuDNN_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
+		Init_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
+		Init_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
 		Init_Softmax_Params(prob1, 2);
 		//
 	}
@@ -98,21 +98,15 @@ namespace glasssix
 		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1->Forward_cudnn_gpu(cudnn_handle_, tensor_data, conv1_top_data);//
-		//for dubug
-		/*const float* tt = conv1_top_data->cpu_data();
-		for (int i = 0; i < 100; i++)
-		{
-			std::cout << tt[i] << " ";
-		}*/
+		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
 		prelu1->Forward_native_gpu(conv1_top_data);
 		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
-		conv2->Forward_cudnn_gpu(cudnn_handle_, pool1_top_data, conv2_top_data);
+		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
 		prelu2->Forward_native_gpu(conv2_top_data);
-		conv3->Forward_cudnn_gpu(cudnn_handle_, conv2_top_data, conv3_top_data);
+		conv3->Forward_native_gpu(cublas_handle_, conv2_top_data, conv3_top_data);
 		prelu3->Forward_native_gpu(conv3_top_data);
-		conv4_1->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_1_top_data);
-		conv4_2->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_2_top_data);
+		conv4_1->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_1_top_data);
+		conv4_2->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_2_top_data);
 		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
 		
 	}
@@ -120,23 +114,22 @@ namespace glasssix
 #ifdef USE_CUDNN
 	void mtcnn_pnet::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		/*tensor_data.reset(new tensor(input_data->data_shape(), device_));
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1->Forward_cudnn_gpu( tensor_data, conv1_top_data);
+		conv1->Forward_cudnn_gpu(cudnn_handle_, tensor_data, conv1_top_data);
 		prelu1->Forward_native_gpu(conv1_top_data);
-		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
-		conv2->Forward_cudnn_gpu( pool1_top_data, conv2_top_data);
+		pool1->Forward_cudnn_gpu(cudnn_handle_, conv1_top_data, pool1_top_data);
+		conv2->Forward_cudnn_gpu(cudnn_handle_, pool1_top_data, conv2_top_data);
 		prelu2->Forward_native_gpu(conv2_top_data);
-		conv3->Forward_cudnn_gpu( conv2_top_data, conv3_top_data);
+		conv3->Forward_cudnn_gpu(cudnn_handle_, conv2_top_data, conv3_top_data);
 		prelu3->Forward_native_gpu(conv3_top_data);
-		conv4_1->Forward_cudnn_gpu( conv3_top_data, conv4_1_top_data);
-		conv4_2->Forward_cudnn_gpu( conv3_top_data, conv4_2_top_data);
-		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);*/
+		conv4_1->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_1_top_data);
+		conv4_2->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_2_top_data);
+		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
 	}
 
 #endif
-
 #endif
 
 	void mtcnn_pnet::Forward(const std::shared_ptr<tensor<float>> input_data)
@@ -148,7 +141,12 @@ namespace glasssix
 		else
 		{
 #ifdef USE_CUDA
+#ifdef USE_CUDNN
+			Forward_cudnn_gpu(input_data);
+			return;
+#endif
 			Forward_native_gpu(input_data);
+			return;
 #else
 			NO_GPU;
 #endif

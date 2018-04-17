@@ -25,15 +25,15 @@ namespace glasssix
 		Declear_Params(conv4_2_bias)
 
 		//
-		Declear_Opration(cudnn_convolution, conv1)
+		Declear_Opration(convolution, conv1)
 		Declear_Opration(prelu, prelu1)
 		Declear_Opration(pooling, pool1)
-		Declear_Opration(cudnn_convolution, conv2)
+		Declear_Opration(convolution, conv2)
 		Declear_Opration(prelu, prelu2)
-		Declear_Opration(cudnn_convolution, conv3)
+		Declear_Opration(convolution, conv3)
 		Declear_Opration(prelu, prelu3)
-		Declear_Opration(cudnn_convolution, conv4_1)
-		Declear_Opration(cudnn_convolution, conv4_2)
+		Declear_Opration(convolution, conv4_1)
+		Declear_Opration(convolution, conv4_2)
 		Declear_Opration(softmax, prob1)
 		
 		//

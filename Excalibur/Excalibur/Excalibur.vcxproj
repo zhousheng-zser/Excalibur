@@ -131,7 +131,6 @@
   <ItemGroup>
     <CudaCompile Include="concat.cu" />
     <CudaCompile Include="convolution.cu" />
-    <CudaCompile Include="cudnn_convolution.cu" />
     <CudaCompile Include="eltwise.cu" />
     <CudaCompile Include="flip.cu" />
     <CudaCompile Include="im2col.cu" />
@@ -151,7 +150,6 @@
     <ClInclude Include="concat.hpp" />
     <ClInclude Include="convolution.hpp" />
     <ClInclude Include="cudnn.hpp" />
-    <ClInclude Include="cudnn_convolution.hpp" />
     <ClInclude Include="eltwise.hpp" />
     <ClInclude Include="flip.hpp" />
     <ClInclude Include="im2col.hpp" />
@@ -178,7 +176,6 @@
     <ClCompile Include="concat.cpp" />
     <ClCompile Include="convolution.cpp" />
     <ClCompile Include="cudnn.cpp" />
-    <ClCompile Include="cudnn_convolution.cpp" />
     <ClCompile Include="eltwise.cpp" />
     <ClCompile Include="flip.cpp" />
     <ClCompile Include="im2col.cpp" />

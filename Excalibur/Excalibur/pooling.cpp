@@ -10,10 +10,32 @@ namespace excalibur
 		pad_ = pad;
 		type_ = (pooling_type)type;
 		device_ = device;
+#ifdef USE_CUDNN
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
+		if (type_==MAX)
+		{
+			mode_ = CUDNN_POOLING_MAX;
+		}
+		else if (type_==AVE)
+		{
+			mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+		}
+		else
+		{
+			LOG(FATAL) << "Unknown pooling type.";
+		}
+		CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pooling_desc_));
+		CUDNN_CHECK(cudnnSetPooling2dDescriptor(pooling_desc_, mode_,
+			CUDNN_PROPAGATE_NAN, kernel_, kernel_, pad_, pad_, stride_, stride_));
+#endif
 	}
 
 	pooling::~pooling()
 	{
+		cudnnDestroyTensorDescriptor(bottom_desc_);
+		cudnnDestroyTensorDescriptor(top_desc_);
+		cudnnDestroyPoolingDescriptor(pooling_desc_);
 	}
 
 	void pooling::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)

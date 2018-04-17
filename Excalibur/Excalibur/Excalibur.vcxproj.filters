@@ -39,9 +39,6 @@
     <CudaCompile Include="softmax.cu">
       <Filter>cu</Filter>
     </CudaCompile>
-    <CudaCompile Include="cudnn_convolution.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
     <CudaCompile Include="eltwise.cu">
       <Filter>cu</Filter>
     </CudaCompile>
@@ -119,9 +116,6 @@
     <ClInclude Include="cudnn.hpp">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="cudnn_convolution.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="flip.hpp">
       <Filter>include</Filter>
     </ClInclude>
@@ -185,9 +179,6 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="cudnn.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="cudnn_convolution.cpp">
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="flip.cpp">
