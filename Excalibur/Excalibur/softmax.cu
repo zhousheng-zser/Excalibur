@@ -116,5 +116,38 @@ namespace excalibur
 			CUDA_NUM_THREADS >> >(count, outer_num_, channels, inner_num_,
 				scale_data, top_data);
 	}
+
+#ifdef USE_CUDNN
+	void softmax::Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	{
+		outer_num_ = bottom->num();
+		int c = bottom->channels();
+		if (bottom->data_shape().size() <= 2)
+		{
+			inner_num_ = 1;
+		}
+		else
+		{
+			inner_num_ = bottom->height()*bottom->width();
+		}
+		int h = inner_num_;
+		int w = 1;
+		top.reset(new tensor<float>(bottom->data_shape(), device_));
+		//
+		CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(bottom_desc_, CUDNN_DATA_FLOAT,
+			outer_num_, c, h, w, c*h*w, h*w, w, 1));
+		CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(top_desc_, CUDNN_DATA_FLOAT,
+			outer_num_, c, h, w, c*h*w, h*w, w, 1));
+		const float* bottom_data = bottom->gpu_data();
+		float* top_data = top->mutable_gpu_data();
+
+		CUDNN_CHECK(cudnnSoftmaxForward(cudnn_handle_, CUDNN_SOFTMAX_ACCURATE,
+			CUDNN_SOFTMAX_MODE_CHANNEL,
+			&one,
+			bottom_desc_, bottom_data,
+			&zero,
+			top_desc_, top_data));
+	}
+#endif
 }
 #endif
