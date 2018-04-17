@@ -37,13 +37,13 @@ namespace glasssix
 #endif
 #endif
 		//
-		Init_cuDNN_Conv_Params(conv1, 3, 28, 3, 1, 0, true);
+		Init_Conv_Params(conv1, 3, 28, 3, 1, 0, true);
 		Init_PReLU_Params(prelu1, 28, false);
 		Init_Pooling_Params(pool1, 3, 2, 0, 0);
-		Init_cuDNN_Conv_Params(conv2, 28, 48, 3, 1, 0, true);
+		Init_Conv_Params(conv2, 28, 48, 3, 1, 0, true);
 		Init_PReLU_Params(prelu2, 48, false);
 		Init_Pooling_Params(pool2, 3, 2, 0, 0);
-		Init_cuDNN_Conv_Params(conv3, 48, 64, 2, 1, 0, true);
+		Init_Conv_Params(conv3, 48, 64, 2, 1, 0, true);
 		Init_PReLU_Params(prelu3, 64, false);
 		Init_InnerProduct_Params(conv4, 64, 3, 3, 128, true);
 		Init_PReLU_Params(prelu4, 128, false);
@@ -108,12 +108,32 @@ namespace glasssix
 		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
 		float* temp = tensor_data->mutable_gpu_data();
 		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
-		conv1->Forward_cudnn_gpu(cudnn_handle_, tensor_data, conv1_top_data);
+		conv1->Forward_native_gpu(cublas_handle_, tensor_data, conv1_top_data);
 		prelu1->Forward_native_gpu(conv1_top_data);
 		pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
-		conv2->Forward_cudnn_gpu(cudnn_handle_, pool1_top_data, conv2_top_data);
+		conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
 		prelu2->Forward_native_gpu(conv2_top_data);
 		pool2->Forward_native_gpu(conv2_top_data, pool2_top_data);
+		conv3->Forward_native_gpu(cublas_handle_, pool2_top_data, conv3_top_data);
+		prelu3->Forward_native_gpu(conv3_top_data);
+		conv4->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_top_data);
+		prelu4->Forward_native_gpu(conv4_top_data);
+		conv5_1->Forward_native_gpu(cublas_handle_, conv4_top_data, conv5_1_top_data);
+		conv5_2->Forward_native_gpu(cublas_handle_, conv4_top_data, conv5_2_top_data);
+		prob1->Forward_native_gpu(conv5_1_top_data, prob1_top_data);
+	}
+#ifdef USE_CUDNN
+	void mtcnn_rnet::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
+	{
+		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
+		float* temp = tensor_data->mutable_gpu_data();
+		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
+		conv1->Forward_cudnn_gpu(cudnn_handle_, tensor_data, conv1_top_data);
+		prelu1->Forward_native_gpu(conv1_top_data);
+		pool1->Forward_cudnn_gpu(cudnn_handle_, conv1_top_data, pool1_top_data);
+		conv2->Forward_cudnn_gpu(cudnn_handle_, pool1_top_data, conv2_top_data);
+		prelu2->Forward_native_gpu(conv2_top_data);
+		pool2->Forward_cudnn_gpu(cudnn_handle_, conv2_top_data, pool2_top_data);
 		conv3->Forward_cudnn_gpu(cudnn_handle_, pool2_top_data, conv3_top_data);
 		prelu3->Forward_native_gpu(conv3_top_data);
 		conv4->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_top_data);
@@ -122,7 +142,7 @@ namespace glasssix
 		conv5_2->Forward_native_gpu(cublas_handle_, conv4_top_data, conv5_2_top_data);
 		prob1->Forward_native_gpu(conv5_1_top_data, prob1_top_data);
 	}
-
+#endif
 #endif
 	void mtcnn_rnet::Forward(const std::shared_ptr<tensor<float>> input_data)
 	{
@@ -133,7 +153,12 @@ namespace glasssix
 		else
 		{
 #ifdef USE_CUDA
+#ifdef USE_CUDNN
+			Forward_cudnn_gpu(input_data);
+			return;
+#endif
 			Forward_native_gpu(input_data);
+			return;
 #else
 			NO_GPU;
 #endif
