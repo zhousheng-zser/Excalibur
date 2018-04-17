@@ -13,11 +13,18 @@ namespace excalibur
 		{
 			multiplier_data[i] = 1.0f;
 		}
+#ifdef USE_CUDNN
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
+#endif
 	}
 
 	softmax::~softmax()
 	{
-		
+#ifdef USE_CUDNN
+		cudnnDestroyTensorDescriptor(bottom_desc_);
+		cudnnDestroyTensorDescriptor(top_desc_);
+#endif
 	}
 
 	void softmax::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)

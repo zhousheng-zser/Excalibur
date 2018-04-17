@@ -126,7 +126,7 @@ namespace glasssix
 		prelu3->Forward_native_gpu(conv3_top_data);
 		conv4_1->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_cudnn_gpu(cudnn_handle_, conv3_top_data, conv4_2_top_data);
-		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
+		prob1->Forward_cudnn_gpu(cudnn_handle_, conv4_1_top_data, prob1_top_data);
 	}
 
 #endif
