@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
 //using glasssix.aroundight.romancia;
-//using glasssix.excalibur.cassius;
+using glasssix.excalibur.cassius;
 using glasssix.excalibur.longinus;
 
 namespace Cassius_tester
@@ -20,21 +20,17 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            bmp1 = new Bitmap(@"E:\Data\bing_detected\810\144491\1472771909219708_35.jpg");
-            Banshee be = new Banshee(0);
-            bmp2 = be.align_face(bmp1);
+            Unicorn uc = new Unicorn(0);
+            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned.jpg");
+            var aaa = uc.ExtractBitmapOutputs(new[] {bmp1});
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            for (int i = 0; i < 10100; i++)
+            for (int i = 0; i < 100; i++)
             {
-                be.align_face(bmp1);
+                uc.ExtractBitmapOutputs(new[] { bmp1, bmp1 });
             }
-            //detection_test();
-            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
-            //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
             sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds / 1000);
-            bmp2.Save("C:\\Users\\BALTHASAR\\Desktop\\aligned.jpg");
+            Console.WriteLine(sw.ElapsedMilliseconds / 1);
             Console.ReadLine();
         }
 

@@ -51,10 +51,10 @@ void unittest()
 
 void mtcnntset()
 {
-	cv::Mat image = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\keliamoniz1.jpg");
+	cv::Mat image = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\outdoor_236.png");
 	//C:\\Users\\BALTHASAR\\Desktop\\procesed.jpg  D:\\Detection-Data\\face\\ibug\\image_005_1.jpg
 	//cv::resize(image, image, cv::Size(375, 500));
-	MTCNN detector(1);
+	MTCNN detector(-1);
 	float factor = 0.709f;
 	float threshold[3] = { 0.7f, 0.6f, 0.6f };
 	int minSize = 48;

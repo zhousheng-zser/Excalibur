@@ -11,6 +11,10 @@ namespace excalibur
 		type_ = (pooling_type)type;
 		device_ = device;
 #ifdef USE_CUDNN
+		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+		{
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
 		if (type_==MAX)
@@ -33,9 +37,15 @@ namespace excalibur
 
 	pooling::~pooling()
 	{
+#ifdef USE_CUDNN
+		if (cudnn_handle_)
+		{
+			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+		}
 		cudnnDestroyTensorDescriptor(bottom_desc_);
 		cudnnDestroyTensorDescriptor(top_desc_);
 		cudnnDestroyPoolingDescriptor(pooling_desc_);
+#endif
 	}
 
 	void pooling::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)

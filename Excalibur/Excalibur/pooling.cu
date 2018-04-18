@@ -106,7 +106,7 @@ namespace excalibur
 	}
 
 #ifdef USE_CUDNN
-	void pooling::Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	void pooling::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		int num = bottom->num();
 		channels_ = bottom->channels();

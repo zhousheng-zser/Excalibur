@@ -50,6 +50,7 @@ namespace excalibur
 #ifdef USE_CUDNN
 		float one = 1.0, zero = 0.0;
 		size_t size;
+		cudnnHandle_t cudnn_handle_ = nullptr;
 		cudnnTensorDescriptor_t xdesc;
 		cudnnTensorDescriptor_t	ydesc;
 		cudnnTensorDescriptor_t bdesc;
@@ -58,6 +59,8 @@ namespace excalibur
 		// algorithms for forward and backwards convolutions
 		cudnnConvolutionFwdAlgo_t fwd_algo_;
 		size_t workspace_limit_bytes = 8 * 1024 * 1024;
+		float *extra = nullptr;
+		size_t current_size;
 #endif
 		void conv_im2col_gpu(const float* data, float* col_buff);
 		void conv_col2im_gpu(const float* col_buff, float* data);
@@ -73,7 +76,7 @@ namespace excalibur
 #ifdef USE_CUDA
 		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDNN
-		void Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 #endif
 	private:

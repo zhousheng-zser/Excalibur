@@ -118,8 +118,7 @@ namespace excalibur
 	}
 
 #ifdef USE_CUDNN
-	void softmax::Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, 
-		const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	void softmax::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		outer_num_ = bottom->num();
 		int c = bottom->channels();
