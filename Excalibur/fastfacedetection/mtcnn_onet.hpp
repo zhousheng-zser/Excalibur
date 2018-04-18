@@ -75,7 +75,7 @@ namespace glasssix
 		cublasHandle_t cublas_handle_ = nullptr;
 		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-		cudnnHandle_t cudnn_handle_ = nullptr;
+		//cudnnHandle_t cudnn_handle_ = nullptr;
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif

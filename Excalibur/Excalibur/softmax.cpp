@@ -14,6 +14,10 @@ namespace excalibur
 			multiplier_data[i] = 1.0f;
 		}
 #ifdef USE_CUDNN
+		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+		{
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
 		CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
 #endif
@@ -22,6 +26,10 @@ namespace excalibur
 	softmax::~softmax()
 	{
 #ifdef USE_CUDNN
+		if (cudnn_handle_)
+		{
+			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+		}
 		cudnnDestroyTensorDescriptor(bottom_desc_);
 		cudnnDestroyTensorDescriptor(top_desc_);
 #endif

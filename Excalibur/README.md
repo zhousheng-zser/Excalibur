@@ -115,6 +115,16 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 | mtcnn-ONet(48*48)  |  --/-- |  --/--  |  --/--  |
 | Unicorn(128*128)  |  7.145/-- |  8.309/--  |  --/6.424  |
 | Unicorn_with_MirrorFace(128*128)  |  8.347/-- |  --/--  |  --/12.880  |
+
+### The 1000 average forward time(ms) on GPU(NVIDIA GTX TitanX) with/without cuDNN
+
+| Unicorn Net(batch size)     | Caffe |  mini-Caffe  |  Excalibur  |
+| :------: | :------:| :------: | :------: |
+| 1  |  9.98/-- |  --/--  |  14.39/16.86  |
+| 2  |  12.45/-- |  --/--  |  18.50/33.17  |
+| 3  |  15.31/-- |  --/--  |  30.61/47.51  |
+| 4  |  17.98/-- |  --/--  |  32.21/58.78  |
+| 5  |  22.03/-- |  --/--  |  38.89/71.02  |
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 

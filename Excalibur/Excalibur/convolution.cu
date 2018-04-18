@@ -63,12 +63,11 @@ namespace excalibur
 			{
 				forward_gpu_bias(cublas_handle_, top_data + n * top_dim, bias);
 			}
-			
 		}
 	}
 
 #ifdef USE_CUDNN
-	void convolution::Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	void convolution::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 	{
 		// calcu output parms
 		const int height = bottom->height();
@@ -96,8 +95,17 @@ namespace excalibur
 			ydesc,
 			fwd_algo_,
 			&(size)));
-		float *extra;
-		CUDA_CHECK(cudaMalloc((void **)&extra, size));
+		/// To avoid malloc workspace every forward, this is a very costly operation
+		if (size > current_size)
+		{
+			if (extra!=nullptr)
+			{
+				cudaFree(extra);
+			}
+			CUDA_CHECK(cudaMalloc((void **)&extra, size));
+			current_size = size;
+		}
+		
 		const float* bottom_data = bottom->gpu_data();
 		float* top_data = top->mutable_gpu_data();
 		// FORWARD!
@@ -114,7 +122,6 @@ namespace excalibur
 					&one, ydesc, top_data));
 			}
 		}
-		cudaFree(extra);
 	}
 #endif
 }

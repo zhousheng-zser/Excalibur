@@ -30,11 +30,12 @@ namespace excalibur
 #ifdef USE_CUDNN
 	private:
 		float one = 1.0, zero = 0.0;
+		cudnnHandle_t cudnn_handle_ = nullptr;
 		cudnnTensorDescriptor_t bottom_desc_, top_desc_;
 		cudnnPoolingDescriptor_t  pooling_desc_;
 		cudnnPoolingMode_t        mode_;
 	public:
-		void Forward_cudnn_gpu(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 #endif
 	};
