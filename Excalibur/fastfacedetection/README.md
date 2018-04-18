@@ -13,16 +13,16 @@ A fast library for face detection and face landmark detection with high accuracy
 ### The 1000 average forward time(ms) on CPU(Intel i7-6700k)
 |  image resolution  | Caffe |  mini-Caffe  |  Excalibur  |
 | :------: | :------:| :------: | :------: |
-| 640*480   |  -- |  --  |  115  |
-| 1280*720   |  -- |  --  |  171  |
-| 1920*1080   | -- |  --  |  247  |
+| 640*480   |  55.8 |  --  |  115  |
+| 1280*720   |  87.6 |  --  |  171  |
+| 1920*1080   | 251 |  --  |  247  |
 
 ### The 1000 average forward time(ms) on GPU(NVIDIA GTX TitanX) with/without cuDNN
 |  image resolution  | Caffe |  mini-Caffe  |  Excalibur  |
 | :------: | :------:| :------: | :------: |
-| 640*480   |  55.8/ |  --  |  27.9/  |
-| 1280*720   |  87.6/ |  --  |  42.1/  |
-| 1920*1080   | 251/ |  --  |  63.7/  |
+| 640*480   |  11.5/-- |  --/--  |  27.9/46.3  |
+| 1280*720   |  17.8/-- |  --/--  |  42.1/67.7  |
+| 1920*1080   | 26.1/-- |  --/--  |  63.7/104  |
 
 ## Comparison on ARM
 
