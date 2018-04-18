@@ -60,20 +60,20 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
   
 ## Implementation log
 
-|  Layers  |   BLAS  |   Native CUDA   | cuDNN | MKLDNN | NEON |
-| :------: | :------:| :------: | :------: | :------: | :------: |
-| Convolution | TP |  TP  |  TP  |  F  |  F  |
-| (P)ReLU | TP |  TP  |  F  |  F  |  F  |
-| Pooling | TP |  TP  |  TP  |  F  |  F  |
-| Inner-Product | TP |  TP  |  --  |  F  |  F  |
-| Softmax | TP |  TP  |  TP  |  F  |  F  |
-| Eltwise | TP |  TP  |  --  |  --  |  F  |
-| Slice | TE |  TE  |  --  |  --  |  F  |
-| Flip | TP |  TP  |  --  |  --  |  F  |
-| Concat | TP |  TP  |  --  |  --  |  F  |
-| Normalize | TP |  TP  |  --  |  --  |  F  |
-| MirrorMax | TP |  TP  |  --  |  --  |  F  |
-| PCA | NT |  NT  |  --  |  --  |  F  |
+|  Layers  |   BLAS  |   Native CUDA   | cuDNN | NEON |
+| :------: | :------:| :------: | :------: | :------: |
+| Convolution | TP |  TP  |  TP  |  F  |
+| (P)ReLU | TP |  TP  |  F  |  F  |
+| Pooling | TP |  TP  |  TP  |  F  |
+| Inner-Product | TP |  TP  |  --  |  F  |
+| Softmax | TP |  TP  |  TP  |  F  |
+| Eltwise | TP |  TP  |  --  |  F  |
+| Slice | TE |  TE  |  --  |  F  |
+| Flip | TP |  TP  |  --  |  F  |
+| Concat | TP |  TP  |  --  |  F  |
+| Normalize | TP |  TP  |  --  |  F  |
+| MirrorMax | TP |  TP  |  --  |  F  |
+| PCA | NT |  NT  |  --  |  F  |
 
   - TP: Implementated and test passed;
   - F: Not implementated;
@@ -135,9 +135,11 @@ however, this problem will also be exposed while confronted with variable input 
   - The *cudnnGetConvolutionForwardAlgorithm* function in cuDNN does not get the correct workspace.
 
 ## Todo list
-  * Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.
+  * ~~Change some layer implementation into MKL(MKLDNN) and CUDA(CUDNN) implementation.~~
   * ~~Separate the net's weights and the images calculated to make it threadsafe.~~
+  * Accelerate CNN implementation, to get 2 times faster than now.
+  * Add virtual class support to build CNN by meta-programming.
   * Add ARM NEON support.
-  * Support multi-machine, multi-uint(CPU) and multi-card(GPU)
+  * Support multi-machine~~, multi-uint(CPU) and multi-card(GPU)~~.
   * ~~Compress the model file.~~
   * [ONNX](https://github.com/onnx/onnx) support.
