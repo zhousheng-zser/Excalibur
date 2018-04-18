@@ -64,9 +64,9 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 | :------: | :------:| :------: | :------: | :------: | :------: |
 | Convolution | TP |  TP  |  TP  |  F  |  F  |
 | (P)ReLU | TP |  TP  |  F  |  F  |  F  |
-| Pooling | TP |  TP  |  F  |  F  |  F  |
-| Inner-Product | TP |  TP  |  F  |  F  |  F  |
-| Softmax | TP |  TP  |  F  |  F  |  F  |
+| Pooling | TP |  TP  |  TP  |  F  |  F  |
+| Inner-Product | TP |  TP  |  --  |  F  |  F  |
+| Softmax | TP |  TP  |  TP  |  F  |  F  |
 | Eltwise | TP |  TP  |  --  |  --  |  F  |
 | Slice | TE |  TE  |  --  |  --  |  F  |
 | Flip | TP |  TP  |  --  |  --  |  F  |

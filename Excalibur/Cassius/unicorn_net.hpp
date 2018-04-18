@@ -2,7 +2,7 @@
 #ifndef _UNICORN_NET_HPP_
 #define _UNICORN_NET_HPP_
 
-#include "unicorn_9722_halfdata.hpp"//
+#include "unicorn_9722_halfdata.hppp"//
 #include "../Excalibur/support_layers.hpp"
 
 using namespace excalibur;
@@ -256,6 +256,7 @@ namespace glasssix
 		cublasHandle_t cublas_handle_ = nullptr;
 		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
+		cudnnHandle_t cudnn_handle_ = nullptr;
 		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
