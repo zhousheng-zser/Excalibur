@@ -108,7 +108,6 @@ namespace glasssix
 		conv4_1->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_1_top_data);
 		conv4_2->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_2_top_data);
 		prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
-		
 	}
 
 #ifdef USE_CUDNN
