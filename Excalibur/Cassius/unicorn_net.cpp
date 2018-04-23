@@ -440,11 +440,14 @@ namespace glasssix
 #ifdef USE_CUDNN
 	void unicorn_net::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
+		//t.Start();
 		conv1a->Forward_cudnn_gpu(input_data, conv1a_top_data);//concat_top_data
 		relu1a->Forward_native_gpu(conv1a_top_data);
 		conv1b->Forward_cudnn_gpu(conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_native_gpu(conv1b_top_data);
+		//t.Stop();
 		pool1b->Forward_cudnn_gpu(conv1b_top_data, pool1b_top_data);
+		//std::cout << t.GetElapsedMilliseconds() << "ms" << std::endl;
 		conv2_1->Forward_cudnn_gpu(pool1b_top_data, conv2_1_top_data);
 		relu2_1->Forward_native_gpu(conv2_1_top_data);
 		conv2_2->Forward_cudnn_gpu(conv2_1_top_data, conv2_2_top_data);
@@ -512,6 +515,7 @@ namespace glasssix
 		conv5->Forward_cudnn_gpu(res5_6_top_data, conv5_top_data);
 		relu5->Forward_native_gpu(conv5_top_data);
 		pool5->Forward_cudnn_gpu(conv5_top_data, pool5_top_data);
+		calc_quality_score();
 		normalizer->Forward_native_gpu(pool5_top_data);//feature_top_data
 	}
 #endif

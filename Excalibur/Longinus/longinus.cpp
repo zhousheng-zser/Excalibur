@@ -19,6 +19,15 @@ namespace glasssix
 	{
 		namespace longinus
 		{
+			public value struct AlignFaceInfo
+			{
+				int yaw;
+				int pitch;
+				int roll;
+				System::Drawing::Bitmap^ align_face;
+				AlignFaceInfo(Bitmap^ AF, int Y, int P, int R) :align_face(AF), yaw(Y), pitch(P), roll(R) {};
+			};
+
 			public ref class Banshee
 			{
 			private:
@@ -41,7 +50,7 @@ namespace glasssix
 					this->!Banshee();
 				}
 
-				System::Drawing::Bitmap^ align_face(System::Drawing::Bitmap^ detected_face)
+				System::Drawing::Bitmap^ align(System::Drawing::Bitmap^ detected_face)
 				{
 					int stride;
 					unsigned char * buf = Bitmap2RGB(detected_face);
@@ -50,6 +59,30 @@ namespace glasssix
 					aligner_->alignment_face(detected_face_mat, aligned_face);
 					delete buf;
 					return MatToBitmap(aligned_face);
+				}
+
+				List<AlignFaceInfo>^ align(array<Bitmap^>^ detected_faces)
+				{
+					List<AlignFaceInfo>^ output = gcnew List<AlignFaceInfo>();
+					std::vector<cv::Mat> detected_face_mats(detected_faces->Length);
+					std::vector<cv::Mat> aligned_faces(detected_faces->Length);
+					std::vector<unsigned char *> bufs(detected_faces->Length);
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						int stride;
+						bufs[i] = Bitmap2RGB(detected_faces[i]);
+						detected_face_mats[i] = cv::Mat(detected_faces[i]->Height, detected_faces[i]->Width, CV_8UC3, bufs[i]);
+					}
+					aligner_->alignment_face(detected_face_mats, aligned_faces);
+					auto yaw = aligner_->get_yaw_angle();
+					auto pitch = aligner_->get_pitch_angle();
+					auto roll = aligner_->get_roll_angle();
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						delete bufs[i];
+						output->Add(AlignFaceInfo(MatToBitmap(aligned_faces[i]), yaw[i], pitch[i], roll[i]));
+					}
+					return output;
 				}
 
 			private:

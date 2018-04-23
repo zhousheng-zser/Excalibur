@@ -4,7 +4,7 @@
 
 #include "unicorn_9722_halfdata.hpp"//
 #include "../Excalibur/support_layers.hpp"
-
+#include <glasssix/Timer.hpp>
 using namespace excalibur;
 
 namespace glasssix
@@ -99,6 +99,7 @@ namespace glasssix
 		int device_;
 		std::shared_ptr<tensor<float>> tensor_data = nullptr;
 		std::vector<float> quality_score;
+		glasssix::Timer t;
 		//
 		Declear_Opration(flip, fliper);
 		Neuron_Name(flip);
@@ -265,10 +266,23 @@ namespace glasssix
 		void calc_quality_score()
 		{
 			quality_score.clear();
-			const float* np5 = pool5_top_data->cpu_data();
-			for (int i = 0; i < pool5_top_data->num(); i++)
+			if (device_>=0)
 			{
-				quality_score.push_back(cblas_snrm2(512, np5 + i * 512, 1));
+				const float* np5 = pool5_top_data->gpu_data();
+				for (int i = 0; i < pool5_top_data->num(); i++)
+				{
+					float results;
+					cublasSnrm2(cublas_handle_, 512, np5 + i * 512, 1, &results);
+					quality_score.push_back(results);
+				}
+			}
+			else
+			{
+				const float* np5 = pool5_top_data->cpu_data();
+				for (int i = 0; i < pool5_top_data->num(); i++)
+				{
+					quality_score.push_back(cblas_snrm2(512, np5 + i * 512, 1));
+				}
 			}
 		}
 	public:

@@ -101,5 +101,27 @@ namespace glasssix
 		fc2->Forward_native_gpu(cublas_handle_, conv4_top_data, fc2_top_data);
 	}
 
+#ifdef USE_CUDNN
+	void ipts_net::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_)
+	{
+#ifdef _DEBUG
+		CHECK_EQ(input_data->width(), 60);
+		CHECK_EQ(input_data->height(), 60);
+		CHECK_EQ(input_data->channels(), 3);
+#endif
+		conv1->Forward_cudnn_gpu(input_data, conv1_top_data);
+		prelu1->Forward_native_gpu(conv1_top_data);
+		pool1->Forward_cudnn_gpu(conv1_top_data, pool1_top_data);
+		conv2->Forward_cudnn_gpu(pool1_top_data, conv2_top_data);
+		prelu2->Forward_native_gpu(conv2_top_data);
+		pool2->Forward_cudnn_gpu(conv2_top_data, pool2_top_data);
+		conv3->Forward_cudnn_gpu(pool2_top_data, conv3_top_data);
+		prelu3->Forward_native_gpu(conv3_top_data);
+		pool3->Forward_cudnn_gpu(conv3_top_data, pool3_top_data);
+		conv4->Forward_cudnn_gpu(pool3_top_data, conv4_top_data);
+		prelu4->Forward_native_gpu(conv4_top_data);
+		fc2->Forward_native_gpu(cublas_handle_, conv4_top_data, fc2_top_data);
+	}
+#endif 
 #endif
 }

@@ -21,12 +21,29 @@ namespace glasssix
 		cublasHandle_t cublas_handle_ = nullptr;
 #endif
 		cv::Mat saftycut(cv::Mat ori_image, cv::Rect roi);
-
+		static cv::Rect calc_margin_rect(cv::Rect& face_rect, cv::Point2f& center, float roll, float pitch);
+		std::vector<int> yaw;
+		std::vector<int> pitch;
+		std::vector<int> roll;
 	public:
 		alignment(int device);
 		~alignment();
 
 		void alignment_face(cv::Mat& img, cv::Mat& aligned);
+		void alignment_face(std::vector<cv::Mat>& imgs, std::vector<cv::Mat>& aligned_faces);
+
+		std::vector<int> get_yaw_angle()
+		{
+			return yaw;
+		}
+		std::vector<int> get_pitch_angle()
+		{
+			return pitch;
+		}
+		std::vector<int> get_roll_angle()
+		{
+			return roll;
+		}
 	};
 }
 #endif // !_ALIGNMENT_HPP_
