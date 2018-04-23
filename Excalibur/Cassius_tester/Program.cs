@@ -20,18 +20,41 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
+            unicorntest();
+            Banshee be = new Banshee(0);
+            bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_2.jpg");
+            bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1472379517124671_1052.jpg");
+            var aaa = be.align(new[] {bmp1, bmp2});
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 1000; i++)
+            {
+                be.align(new[] {bmp1});
+            }
+            sw.Stop();
+            Console.WriteLine(sw.ElapsedMilliseconds / 1);
+            //aaa[0].align_face.Save(@"C:\Users\BALTHASAR\Desktop\aligned.jpg");
+            //aaa[1].align_face.Save(@"C:\Users\BALTHASAR\Desktop\aligned1.jpg");
+            //Console.WriteLine(String.Format("Yaw: {0}, Pitch: {1}, Roll: {2}", aaa[0].yaw, aaa[0].pitch, aaa[0].roll));
+            //Console.WriteLine(String.Format("Yaw: {0}, Pitch: {1}, Roll: {2}", aaa[1].yaw, aaa[1].pitch, aaa[1].roll));
+            Console.ReadLine();
+        }
+
+        static void unicorntest()
+        {
             Unicorn uc = new Unicorn(0);
-            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned.jpg");
-            var aaa = uc.ExtractBitmapOutputs(new[] {bmp1});
+            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned2.jpg");
+            uc.ExtractBitmapOutputs(new[] { bmp1 });
             Stopwatch sw = new Stopwatch();
             sw.Start();
             for (int i = 0; i < 100; i++)
             {
-                uc.ExtractBitmapOutputs(new[] { bmp1, bmp1 });
+                uc.ExtractBitmapOutputs(new[] { bmp1, bmp1, bmp1, bmp1, bmp1 });
             }
             sw.Stop();
+            float[] qs = uc.GetQualityScores();
+            Console.WriteLine(qs[0]);
             Console.WriteLine(sw.ElapsedMilliseconds / 1);
-            Console.ReadLine();
         }
 
         static void detection_test()
