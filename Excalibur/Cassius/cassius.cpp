@@ -49,6 +49,16 @@ namespace glasssix
 					return gcnew String(MODEL_VERSION);
 				}
 
+				String^ version()
+				{
+					return gcnew String("1.0.0");
+				}
+
+				String^ description()
+				{
+					return gcnew String("Baseline version, with quality score supoort with cudnn.");
+				}
+
 				array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas)
 				{
 					std::shared_ptr<tensor<float>> tensor_data = nullptr;

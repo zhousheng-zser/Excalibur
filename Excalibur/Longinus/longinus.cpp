@@ -50,15 +50,28 @@ namespace glasssix
 					this->!Banshee();
 				}
 
-				System::Drawing::Bitmap^ align(System::Drawing::Bitmap^ detected_face)
+				String^ version()
+				{
+					return gcnew String("1.0.0");
+				}
+
+				String^ description()
+				{
+					return gcnew String("Baseline version, with batch image supoort with cudnn.");
+				}
+
+				AlignFaceInfo^ align(System::Drawing::Bitmap^ detected_face)
 				{
 					int stride;
 					unsigned char * buf = Bitmap2RGB(detected_face);
 					cv::Mat detected_face_mat = cv::Mat(detected_face->Height, detected_face->Width, CV_8UC3, buf);
 					cv::Mat aligned_face;
 					aligner_->alignment_face(detected_face_mat, aligned_face);
-					delete buf;
-					return MatToBitmap(aligned_face);
+					delete buf; 
+					auto yaw = aligner_->get_yaw_angle();
+					auto pitch = aligner_->get_pitch_angle();
+					auto roll = aligner_->get_roll_angle();
+					return AlignFaceInfo(MatToBitmap(aligned_face), yaw[0], pitch[0], roll[0]);
 				}
 
 				List<AlignFaceInfo>^ align(array<Bitmap^>^ detected_faces)
