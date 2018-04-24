@@ -51,18 +51,18 @@ void unittest()
 
 void mtcnntset()
 {
-	cv::Mat image = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\WeChat Image_20180309174405.jpg");
+	cv::Mat image = cv::imread("C:\\Users\\BALTHASAR\\Desktop\\outdoor_236.png");
 	//C:\\Users\\BALTHASAR\\Desktop\\procesed.jpg  D:\\Detection-Data\\face\\ibug\\image_005_1.jpg
 	//cv::resize(image, image, cv::Size(375, 500));
-	MTCNN detector(0);
+	MTCNN detector(-1);
 	float factor = 0.709f;
 	float threshold[3] = { 0.7f, 0.6f, 0.6f };
-	int minSize = 40;
+	int minSize = 48;
 
 	std::vector<FaceInfoX> faceInfo = detector.Detect(image, minSize, threshold, factor, 3);
 
 	double t = (double)cv::getTickCount();
-	int execute_times = 50;
+	int execute_times = 10;
 	for (int i = 0; i < execute_times; i++)
 	{
 		detector.Detect(image, minSize, threshold, factor, 3);

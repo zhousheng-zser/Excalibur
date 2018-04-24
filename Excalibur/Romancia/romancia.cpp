@@ -200,7 +200,7 @@ namespace glasssix
 				delete[] pBuffer;
 				return output;
 			}
-
+			
 			List<FaceInfo>^ FastFace::Facedetect_Multiview_CNN(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
 			{
 				std::vector<FaceInfoX> infos = mw_->facedetect_mtcnn(Bitmap2RGB(Oribmp), Oribmp->Width, Oribmp->Height, min_size);
@@ -231,7 +231,7 @@ namespace glasssix
 				}
 				return output;
 			}
-
+			
 			List<FaceInfo>^ FastFace::Facedetect_Frontal_Reinforce(System::Drawing::Bitmap^ Oribmp, int min_size, float scale)
 			{
 				int stride;
@@ -249,6 +249,7 @@ namespace glasssix
 				delete[] buf;
 				return output;
 			}
+			
 		}
 	}
 }

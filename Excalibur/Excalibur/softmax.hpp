@@ -3,7 +3,9 @@
 #define _SOFTMAX_HPP_
 #include "tensor.hpp"
 #include "math_functions.hpp"
-
+#ifdef USE_CUDNN
+#include "cudnn.hpp"
+#endif
 namespace excalibur
 {
 	class softmax
@@ -18,6 +20,7 @@ namespace excalibur
 		std::shared_ptr<tensor<float>> scale_;
 
 		int device_;
+
 	public:
 		softmax(int input_channel, int device);
 		~softmax();
@@ -25,6 +28,15 @@ namespace excalibur
 		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
 		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+#ifdef USE_CUDNN
+	private:
+		float one = 1.0, zero = 0.0;
+		cudnnHandle_t cudnn_handle_ = nullptr;
+		cudnnTensorDescriptor_t bottom_desc_;
+		cudnnTensorDescriptor_t top_desc_;
+	public:
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+#endif
 #endif
 	};
 }

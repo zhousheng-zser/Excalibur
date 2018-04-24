@@ -1,4 +1,5 @@
 #include "unicorn_net.hpp"
+#include <iostream>
 
 namespace glasssix
 {
@@ -95,6 +96,11 @@ namespace glasssix
 		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 		}
+#ifdef USE_CUDNN
+		/*if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}*/
+#endif
 #endif
 		//
 		Init_Flip_Params(fliper, false, true);
@@ -260,17 +266,20 @@ namespace glasssix
 		{
 			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 		}
+#ifdef USE_CUDNN
+		/*if (cudnn_handle_)
+		{
+			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+		}*/
+#endif
 #endif
 	}
 
 	void unicorn_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor<float>(input_data->data_shape(), -1));
-		float* temp = tensor_data->mutable_cpu_data();
-		memcpy(temp, input_data->cpu_data(), input_data->count(0, 4) * sizeof(float));
 		//fliper->Forward_cpu(tensor_data, flip_top_data);
 		//concator->Forward_cpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);
-		conv1a->Forward_cpu(tensor_data, conv1a_top_data);
+		conv1a->Forward_cpu(input_data, conv1a_top_data);
 		relu1a->Forward_cpu(conv1a_top_data);
 		conv1b->Forward_cpu(conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_cpu(conv1b_top_data);
@@ -350,12 +359,9 @@ namespace glasssix
 #ifdef USE_CUDA
 	void unicorn_net::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
-		tensor_data.reset(new tensor<float>(input_data->data_shape(), device_));
-		float* temp = tensor_data->mutable_gpu_data();
-		math_functions::excalibur_copy(input_data->count(0, 4), input_data->gpu_data(), temp, device_);
 		/*fliper->Forward_native_gpu(tensor_data, flip_top_data);
 		concator->Forward_native_gpu(std::vector<std::shared_ptr<tensor>>{tensor_data, flip_top_data}, concat_top_data);*/
-		conv1a->Forward_native_gpu(cublas_handle_, tensor_data, conv1a_top_data);//concat_top_data
+		conv1a->Forward_native_gpu(cublas_handle_, input_data, conv1a_top_data);//concat_top_data
 		relu1a->Forward_native_gpu(conv1a_top_data);
 		conv1b->Forward_native_gpu(cublas_handle_, conv1a_top_data, conv1b_top_data);
 		relu1b->Forward_native_gpu(conv1b_top_data);
@@ -431,6 +437,88 @@ namespace glasssix
 		calc_quality_score();
 		normalizer->Forward_native_gpu(pool5_top_data);//feature_top_data
 	}
+#ifdef USE_CUDNN
+	void unicorn_net::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
+	{
+		//t.Start();
+		conv1a->Forward_cudnn_gpu(input_data, conv1a_top_data);//concat_top_data
+		relu1a->Forward_native_gpu(conv1a_top_data);
+		conv1b->Forward_cudnn_gpu(conv1a_top_data, conv1b_top_data);
+		relu1b->Forward_native_gpu(conv1b_top_data);
+		//t.Stop();
+		pool1b->Forward_cudnn_gpu(conv1b_top_data, pool1b_top_data);
+		//std::cout << t.GetElapsedMilliseconds() << "ms" << std::endl;
+		conv2_1->Forward_cudnn_gpu(pool1b_top_data, conv2_1_top_data);
+		relu2_1->Forward_native_gpu(conv2_1_top_data);
+		conv2_2->Forward_cudnn_gpu(conv2_1_top_data, conv2_2_top_data);
+		relu2_2->Forward_native_gpu(conv2_2_top_data);
+		res2_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
+		conv2->Forward_cudnn_gpu(res2_2_top_data, conv2_top_data);
+		relu2->Forward_native_gpu(conv2_top_data);
+		pool2->Forward_cudnn_gpu(conv2_top_data, pool2_top_data);
+		conv3_1->Forward_cudnn_gpu(pool2_top_data, conv3_1_top_data);
+		relu3_1->Forward_native_gpu(conv3_1_top_data);
+		conv3_2->Forward_cudnn_gpu(conv3_1_top_data, conv3_2_top_data);
+		relu3_2->Forward_native_gpu(conv3_2_top_data);
+		res3_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
+		conv3_3->Forward_cudnn_gpu(res3_2_top_data, conv3_3_top_data);
+		relu3_3->Forward_native_gpu(conv3_3_top_data);
+		conv3_4->Forward_cudnn_gpu(conv3_3_top_data, conv3_4_top_data);
+		relu3_4->Forward_native_gpu(conv3_4_top_data);
+		res3_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
+		conv3->Forward_cudnn_gpu(res3_4_top_data, conv3_top_data);
+		relu3->Forward_native_gpu(conv3_top_data);
+		pool3->Forward_cudnn_gpu(conv3_top_data, pool3_top_data);
+		conv4_1->Forward_cudnn_gpu(pool3_top_data, conv4_1_top_data);
+		relu4_1->Forward_native_gpu(conv4_1_top_data);
+		conv4_2->Forward_cudnn_gpu(conv4_1_top_data, conv4_2_top_data);
+		relu4_2->Forward_native_gpu(conv4_2_top_data);
+		res4_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
+		conv4_3->Forward_cudnn_gpu(res4_2_top_data, conv4_3_top_data);
+		relu4_3->Forward_native_gpu(conv4_3_top_data);
+		conv4_4->Forward_cudnn_gpu(conv4_3_top_data, conv4_4_top_data);
+		relu4_4->Forward_native_gpu(conv4_4_top_data);
+		res4_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
+		conv4_5->Forward_cudnn_gpu(res4_4_top_data, conv4_5_top_data);
+		relu4_5->Forward_native_gpu(conv4_5_top_data);
+		conv4_6->Forward_cudnn_gpu(conv4_5_top_data, conv4_6_top_data);
+		relu4_6->Forward_native_gpu(conv4_6_top_data);
+		res4_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
+		conv4_7->Forward_cudnn_gpu(res4_6_top_data, conv4_7_top_data);
+		relu4_7->Forward_native_gpu(conv4_7_top_data);
+		conv4_8->Forward_cudnn_gpu(conv4_7_top_data, conv4_8_top_data);
+		relu4_8->Forward_native_gpu(conv4_8_top_data);
+		res4_8->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
+		conv4_9->Forward_cudnn_gpu(res4_8_top_data, conv4_9_top_data);
+		relu4_9->Forward_native_gpu(conv4_9_top_data);
+		conv4_10->Forward_cudnn_gpu(conv4_9_top_data, conv4_10_top_data);
+		relu4_10->Forward_native_gpu(conv4_10_top_data);
+		res4_10->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
+		conv4->Forward_cudnn_gpu(res4_10_top_data, conv4_top_data);
+		relu4->Forward_native_gpu(conv4_top_data);
+		pool4->Forward_cudnn_gpu(conv4_top_data, pool4_top_data);
+		conv5_1->Forward_cudnn_gpu(pool4_top_data, conv5_1_top_data);
+		relu5_1->Forward_native_gpu(conv5_1_top_data);
+		conv5_2->Forward_cudnn_gpu(conv5_1_top_data, conv5_2_top_data);
+		relu5_2->Forward_native_gpu(conv5_2_top_data);
+		res5_2->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
+		conv5_3->Forward_cudnn_gpu(res5_2_top_data, conv5_3_top_data);
+		relu5_3->Forward_native_gpu(conv5_3_top_data);
+		conv5_4->Forward_cudnn_gpu(conv5_3_top_data, conv5_4_top_data);
+		relu5_4->Forward_native_gpu(conv5_4_top_data);
+		res5_4->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
+		conv5_5->Forward_cudnn_gpu(res5_4_top_data, conv5_5_top_data);
+		relu5_5->Forward_native_gpu(conv5_5_top_data);
+		conv5_6->Forward_cudnn_gpu(conv5_5_top_data, conv5_6_top_data);
+		relu5_6->Forward_native_gpu(conv5_6_top_data);
+		res5_6->Forward_native_gpu(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
+		conv5->Forward_cudnn_gpu(res5_6_top_data, conv5_top_data);
+		relu5->Forward_native_gpu(conv5_top_data);
+		pool5->Forward_cudnn_gpu(conv5_top_data, pool5_top_data);
+		calc_quality_score();
+		normalizer->Forward_native_gpu(pool5_top_data);//feature_top_data
+	}
+#endif
 #endif
 
 	void unicorn_net::Forward(const std::shared_ptr<tensor<float>> input_data)
@@ -442,7 +530,12 @@ namespace glasssix
 		else
 		{
 #ifdef USE_CUDA
+#ifdef USE_CUDNN
+			Forward_cudnn_gpu(input_data);
+			return;
+#endif
 			Forward_native_gpu(input_data);
+			return;
 #else
 			NO_GPU;
 #endif
