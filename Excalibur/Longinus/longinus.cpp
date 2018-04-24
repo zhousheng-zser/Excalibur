@@ -52,12 +52,12 @@ namespace glasssix
 
 				String^ version()
 				{
-					return gcnew String("1.0.0");
+					return gcnew String("1.0.1");
 				}
 
 				String^ description()
 				{
-					return gcnew String("Baseline version, with batch image supoort with cudnn.");
+					return gcnew String("fix data format bug.");
 				}
 
 				AlignFaceInfo^ align(System::Drawing::Bitmap^ detected_face)
@@ -153,7 +153,23 @@ namespace glasssix
 					}
 					else
 					{
-						res = nullptr;//logical complication
+						bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+							System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
+						stride = bmp->Width;
+						res = new unsigned char[stride * bmp->Height * 3];
+						unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
+							*b, *g, *r;
+						for (int offset = 0, y = 0; y < bmp->Height; ++y, offset += bmpd->Stride)
+						{
+							b = pBmp + offset + 0, g = pBmp + offset + 1, r = pBmp + offset + 2;
+							for (int x = 0; x < bmpd->Width; ++x, b += 3, g += 3, r += 3)
+							{
+								res[(y * stride + x) * 3] = *b;
+								res[(y * stride + x) * 3 + 1] = *g;
+								res[(y * stride + x) * 3 + 2] = *r;
+							}
+						}
+						bmp->UnlockBits(bmpd);
 					}
 					return res;
 				}
