@@ -104,6 +104,34 @@ namespace excalibur
 		}
 		CUDA_POST_KERNEL_CHECK;
 	}
+
+#ifdef USE_CUDNN
+	void pooling::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+	{
+		int num = bottom->num();
+		channels_ = bottom->channels();
+		height_ = bottom->height();
+		width_ = bottom->width();
+		pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+			height_ + 2 * pad_ - kernel_) / stride_)) + 1;
+		pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+			width_ + 2 * pad_ - kernel_) / stride_)) + 1;
+		top.reset(new tensor<float>(std::vector<int>{num, channels_, pooled_height_, pooled_width_}, device_));
+		///
+		CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(bottom_desc_, CUDNN_DATA_FLOAT,
+			num, channels_, height_, width_, width_ * height_ * channels_, width_ * height_, width_, 1));
+		CUDNN_CHECK(cudnnSetTensor4dDescriptorEx(top_desc_, CUDNN_DATA_FLOAT,
+			num, channels_, pooled_height_, pooled_width_, pooled_width_ * pooled_height_ * channels_, pooled_width_ * pooled_height_, pooled_width_, 1));
+
+		const float* bottom_data = bottom->gpu_data();
+		float* top_data = top->mutable_gpu_data();
+		CUDNN_CHECK(cudnnPoolingForward(cudnn_handle_, pooling_desc_,
+			&one,
+			bottom_desc_, bottom_data,
+			&zero,
+			top_desc_, top_data));
+	}
+#endif
 }
 
 #endif

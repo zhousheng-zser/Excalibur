@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
 //using glasssix.aroundight.romancia;
-//using glasssix.excalibur.cassius;
+using glasssix.excalibur.cassius;
 using glasssix.excalibur.longinus;
 
 namespace Cassius_tester
@@ -20,22 +20,41 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            bmp1 = new Bitmap(@"E:\Data\bing_detected\810\144491\1472771909219708_35.jpg");
+            unicorntest();
             Banshee be = new Banshee(0);
-            bmp2 = be.align_face(bmp1);
+            bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_2.jpg");
+            bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1472379517124671_1052.jpg");
+            var aaa = be.align(new[] {bmp1, bmp2});
             Stopwatch sw = new Stopwatch();
             sw.Start();
-            for (int i = 0; i < 10100; i++)
+            for (int i = 0; i < 1000; i++)
             {
-                be.align_face(bmp1);
+                be.align(new[] {bmp1});
             }
-            //detection_test();
-            //DrawRectangleInPicture(bmp1, aaa[0].rect, Color.Aquamarine, 2, DashStyle.DashDot);
-            //DrawRectangleInPicture(bmp1, bbb[0].rect, Color.Crimson, 2, DashStyle.DashDot);
             sw.Stop();
-            Console.WriteLine(sw.ElapsedMilliseconds / 1000);
-            bmp2.Save("C:\\Users\\BALTHASAR\\Desktop\\aligned.jpg");
+            Console.WriteLine(sw.ElapsedMilliseconds / 1);
+            //aaa[0].align_face.Save(@"C:\Users\BALTHASAR\Desktop\aligned.jpg");
+            //aaa[1].align_face.Save(@"C:\Users\BALTHASAR\Desktop\aligned1.jpg");
+            //Console.WriteLine(String.Format("Yaw: {0}, Pitch: {1}, Roll: {2}", aaa[0].yaw, aaa[0].pitch, aaa[0].roll));
+            //Console.WriteLine(String.Format("Yaw: {0}, Pitch: {1}, Roll: {2}", aaa[1].yaw, aaa[1].pitch, aaa[1].roll));
             Console.ReadLine();
+        }
+
+        static void unicorntest()
+        {
+            Unicorn uc = new Unicorn(0);
+            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned2.jpg");
+            uc.ExtractBitmapOutputs(new[] { bmp1 });
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            for (int i = 0; i < 100; i++)
+            {
+                uc.ExtractBitmapOutputs(new[] { bmp1, bmp1, bmp1, bmp1, bmp1 });
+            }
+            sw.Stop();
+            float[] qs = uc.GetQualityScores();
+            Console.WriteLine(qs[0]);
+            Console.WriteLine(sw.ElapsedMilliseconds / 1);
         }
 
         static void detection_test()

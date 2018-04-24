@@ -5,7 +5,9 @@
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>
-
+#ifdef USE_CUDNN
+#include "cudnn.hpp"
+#endif
 namespace excalibur
 {
 	class convolution
@@ -45,6 +47,21 @@ namespace excalibur
 		inline void conv_im2col_cpu(const float* data, float* col_buff);
 		inline void conv_col2im_cpu(const float* col_buff, float* data);
 #ifdef USE_CUDA
+#ifdef USE_CUDNN
+		float one = 1.0, zero = 0.0;
+		size_t size;
+		cudnnHandle_t cudnn_handle_ = nullptr;
+		cudnnTensorDescriptor_t xdesc;
+		cudnnTensorDescriptor_t	ydesc;
+		cudnnTensorDescriptor_t bdesc;
+		cudnnFilterDescriptor_t wdesc;
+		cudnnConvolutionDescriptor_t conv_desc;
+		// algorithms for forward and backwards convolutions
+		cudnnConvolutionFwdAlgo_t fwd_algo_;
+		size_t workspace_limit_bytes = 8 * 1024 * 1024;
+		float *extra = nullptr;
+		size_t current_size;
+#endif
 		void conv_im2col_gpu(const float* data, float* col_buff);
 		void conv_col2im_gpu(const float* col_buff, float* data);
 #endif
@@ -55,9 +72,16 @@ namespace excalibur
 		~convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
+		void set_depthwise()
+		{
+			group_ = output_Channel_;
+		}
 		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
 		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+#ifdef USE_CUDNN
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+#endif
 #endif
 	private:
 		void forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false);
@@ -65,6 +89,7 @@ namespace excalibur
 #ifdef USE_CUDA
 		void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false);
 		void forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias);
+		void forward_depthwise_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 	};
 }

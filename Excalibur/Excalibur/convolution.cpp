@@ -17,11 +17,50 @@ namespace excalibur
 		weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_));
 		bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
 		setup_internal_params();
+#ifdef USE_CUDNN
+		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) 
+		{
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+		CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+		CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+		// set params descriptor
+		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+			output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+		CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+			1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+		if (bias_term_)
+		{
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+			CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+				1, output_Channel_ / group_, 1, 1));
+		}
+		current_size = 0;
+#endif
 	}
 
 	convolution::~convolution()
 	{
-		
+#ifdef USE_CUDNN
+		if (cudnn_handle_)
+		{
+			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+		}
+		CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+		CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
+		CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
+		CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+		if (bias_term_)
+		{
+			CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+		}
+		if (extra!=nullptr)
+		{
+			cudaFree(extra);
+		}
+#endif
 	}
 
 	void convolution::set_bias(float* bias)

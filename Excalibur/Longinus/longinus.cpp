@@ -19,6 +19,15 @@ namespace glasssix
 	{
 		namespace longinus
 		{
+			public value struct AlignFaceInfo
+			{
+				int yaw;
+				int pitch;
+				int roll;
+				System::Drawing::Bitmap^ align_face;
+				AlignFaceInfo(Bitmap^ AF, int Y, int P, int R) :align_face(AF), yaw(Y), pitch(P), roll(R) {};
+			};
+
 			public ref class Banshee
 			{
 			private:
@@ -41,15 +50,52 @@ namespace glasssix
 					this->!Banshee();
 				}
 
-				System::Drawing::Bitmap^ align_face(System::Drawing::Bitmap^ detected_face)
+				String^ version()
+				{
+					return gcnew String("1.0.0");
+				}
+
+				String^ description()
+				{
+					return gcnew String("Baseline version, with batch image supoort with cudnn.");
+				}
+
+				AlignFaceInfo^ align(System::Drawing::Bitmap^ detected_face)
 				{
 					int stride;
 					unsigned char * buf = Bitmap2RGB(detected_face);
 					cv::Mat detected_face_mat = cv::Mat(detected_face->Height, detected_face->Width, CV_8UC3, buf);
 					cv::Mat aligned_face;
 					aligner_->alignment_face(detected_face_mat, aligned_face);
-					delete buf;
-					return MatToBitmap(aligned_face);
+					delete buf; 
+					auto yaw = aligner_->get_yaw_angle();
+					auto pitch = aligner_->get_pitch_angle();
+					auto roll = aligner_->get_roll_angle();
+					return AlignFaceInfo(MatToBitmap(aligned_face), yaw[0], pitch[0], roll[0]);
+				}
+
+				List<AlignFaceInfo>^ align(array<Bitmap^>^ detected_faces)
+				{
+					List<AlignFaceInfo>^ output = gcnew List<AlignFaceInfo>();
+					std::vector<cv::Mat> detected_face_mats(detected_faces->Length);
+					std::vector<cv::Mat> aligned_faces(detected_faces->Length);
+					std::vector<unsigned char *> bufs(detected_faces->Length);
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						int stride;
+						bufs[i] = Bitmap2RGB(detected_faces[i]);
+						detected_face_mats[i] = cv::Mat(detected_faces[i]->Height, detected_faces[i]->Width, CV_8UC3, bufs[i]);
+					}
+					aligner_->alignment_face(detected_face_mats, aligned_faces);
+					auto yaw = aligner_->get_yaw_angle();
+					auto pitch = aligner_->get_pitch_angle();
+					auto roll = aligner_->get_roll_angle();
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						delete bufs[i];
+						output->Add(AlignFaceInfo(MatToBitmap(aligned_faces[i]), yaw[i], pitch[i], roll[i]));
+					}
+					return output;
 				}
 
 			private:
