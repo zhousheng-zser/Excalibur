@@ -104,6 +104,12 @@ conv_name = new convolution(input_channel, output_channel, kernel_size, stride, 
 conv_name->set_weights(conv_name##_##weights);\
 conv_name->set_bias(conv_name##_##bias);
 
+#define Init_DepthConv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new convolution(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);\
+conv_name->set_depthwise();
+
 #define Init_PReLU_Params(prelu_name, input_channel, isrelu)\
 prelu_name = new prelu(input_channel, isrelu, device_);\
 prelu_name->setslope(prelu_name##_##weights);

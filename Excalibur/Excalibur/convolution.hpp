@@ -72,6 +72,10 @@ namespace excalibur
 		~convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
+		void set_depthwise()
+		{
+			group_ = output_Channel_;
+		}
 		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
 		void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
@@ -85,6 +89,7 @@ namespace excalibur
 #ifdef USE_CUDA
 		void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false);
 		void forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias);
+		void forward_depthwise_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 	};
 }
