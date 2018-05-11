@@ -45,10 +45,10 @@ namespace glasssix
 		}
 		else
 		{
-			int top = std::max(-1, -1 * roi.x);
-			int bottom = std::max(roi.y + roi.height - ori_image.rows, -1);
-			int left = std::max(-1, -1 * roi.y);
-			int right = std::max(roi.x + roi.width - ori_image.cols, -1);
+			int top = std::max(0, -1 * roi.x);
+			int bottom = std::max(roi.y + roi.height - ori_image.rows, 0);
+			int left = std::max(0, -1 * roi.y);
+			int right = std::max(roi.x + roi.width - ori_image.cols, 0);
 			cv::Mat temp_origin_with_border;
 			cv::copyMakeBorder(ori_image, temp_origin_with_border, top, bottom, left, right, cv::BORDER_CONSTANT);
 			roi.x += left;
