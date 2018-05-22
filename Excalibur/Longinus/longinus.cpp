@@ -52,12 +52,12 @@ namespace glasssix
 
 				String^ version()
 				{
-					return gcnew String("1.0.0");
+					return gcnew String("1.0.1");
 				}
 
 				String^ description()
 				{
-					return gcnew String("Baseline version, with batch image supoort with cudnn.");
+					return gcnew String("fix data format bug.");
 				}
 
 				AlignFaceInfo^ align(System::Drawing::Bitmap^ detected_face)
@@ -98,6 +98,58 @@ namespace glasssix
 					return output;
 				}
 
+				array<array<float>^>^ ExtractBitmapOutputs_IPBbox(array<Bitmap^>^ detected_faces)
+				{
+					array<array<float>^>^ output = gcnew array<array<float>^>(2);
+					std::vector<cv::Mat> detected_face_mats(detected_faces->Length);
+					std::vector<unsigned char *> bufs(detected_faces->Length);
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						int stride;
+						bufs[i] = Bitmap2RGB(detected_faces[i]);
+						detected_face_mats[i] = cv::Mat(detected_faces[i]->Height, detected_faces[i]->Width, CV_8UC3, bufs[i]);
+					}
+					auto results = aligner_->F_Ipbbox(detected_face_mats);
+					output[0] = gcnew array<float>(results[0].size());
+					for (size_t i = 0; i < results[0].size(); i++)
+					{
+						output[0][i] = results[0][i];
+					}
+					output[1] = gcnew array<float>(results[1].size());
+					for (size_t i = 0; i < results[1].size(); i++)
+					{
+						output[1][i] = results[1][i];
+					}
+					for (size_t i = 0; i < detected_faces->Length; i++)
+					{
+						delete bufs[i];
+					}
+					return output;
+				}
+
+				array<float>^ ExtractBitmapOutputs_IPTs(array<Bitmap^>^ Cs)
+				{
+					int batchsize = Cs->Length;
+					array<float>^ output = gcnew array<float>(10 * batchsize);
+					std::vector<cv::Mat> detected_face_mats(Cs->Length);
+					std::vector<unsigned char *> bufs(Cs->Length);
+					for (size_t i = 0; i < Cs->Length; i++)
+					{
+						int stride;
+						bufs[i] = Bitmap2RGB(Cs[i]);
+						detected_face_mats[i] = cv::Mat(Cs[i]->Height, Cs[i]->Width, CV_8UC3, bufs[i]);
+					}
+					auto results = aligner_->F_Ipts(detected_face_mats);
+					for (size_t i = 0; i < Cs->Length * 10; i++)
+					{
+						output[i] = results[i];
+					}
+					for (size_t i = 0; i < Cs->Length; i++)
+					{
+						delete bufs[i];
+					}
+					return output;
+				}
 			private:
 				unsigned char* Bitmap2RGB(System::Drawing::Bitmap^ bmp)
 				{
@@ -153,7 +205,23 @@ namespace glasssix
 					}
 					else
 					{
-						res = nullptr;//logical complication
+						bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+							System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
+						stride = bmp->Width;
+						res = new unsigned char[stride * bmp->Height * 3];
+						unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer(),
+							*b, *g, *r;
+						for (int offset = 0, y = 0; y < bmp->Height; ++y, offset += bmpd->Stride)
+						{
+							b = pBmp + offset + 0, g = pBmp + offset + 1, r = pBmp + offset + 2;
+							for (int x = 0; x < bmpd->Width; ++x, b += 3, g += 3, r += 3)
+							{
+								res[(y * stride + x) * 3] = *b;
+								res[(y * stride + x) * 3 + 1] = *g;
+								res[(y * stride + x) * 3 + 2] = *r;
+							}
+						}
+						bmp->UnlockBits(bmpd);
 					}
 					return res;
 				}
