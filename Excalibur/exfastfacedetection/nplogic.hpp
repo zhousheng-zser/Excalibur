@@ -4,7 +4,7 @@
 #include <helper_cuda.h>
 #include <vector>
 #include <cuda_runtime_api.h>
-
+#define CUDA_CORE_FRACTOR 4
 namespace glasssix
 {
 	class nplogic

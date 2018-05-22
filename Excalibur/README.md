@@ -84,12 +84,14 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
  
 |  Operations  |  Native CPU  |  SIMD CPU  |  GPU   |
 | :------: | :------:| :------: | :------: |
-| resize | NT | -- | -- |
-| flip | NT | -- | -- |
-| cut | NT | -- | -- |
-| copymakeborder | NT | -- | -- |
+| resize | TE | -- | -- |
+| flip | TP | -- | -- |
+| cut | TE | -- | -- |
+| copymakeborder | TE | -- | -- |
 | rotate | -- | -- | -- |
-| grayscale | NT | -- | -- |
+| grayscale | TP | -- | -- |
+| convert2mat | TP | -- | -- |
+| convert2tensor | TP | -- | -- |
 
 ## How to use
   * Now, the project is under developing. No offical API has been provied.

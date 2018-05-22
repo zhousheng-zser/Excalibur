@@ -31,7 +31,8 @@ namespace glasssix
 
 		void alignment_face(cv::Mat& img, cv::Mat& aligned);
 		void alignment_face(std::vector<cv::Mat>& imgs, std::vector<cv::Mat>& aligned_faces);
-
+		std::vector<std::vector<float>> F_Ipbbox(std::vector<cv::Mat> imgs);
+		std::vector<float> F_Ipts(std::vector<cv::Mat> imgs);
 		std::vector<int> get_yaw_angle()
 		{
 			return yaw;

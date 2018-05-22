@@ -137,6 +137,7 @@ namespace glasssix
 		std::vector<cv::Mat> ipts_input_mats(batch_size);
 		for (size_t i = 0; i < batch_size; i++)
 		{
+			cv::imwrite("C:\\Users\\BALTHASAR\\Desktop\\algnmenttest\\C_cpp.jpg", Cs[i]);
 			cv::resize(Cs[i], ipts_input_mats[i], cv::Size(60, 60), cv::INTER_CUBIC);
 		}
 		io::images2tensor(ipts_input_mats, tensor_data);
@@ -277,7 +278,7 @@ namespace glasssix
 		double tan = (ipts_fc2[1] - ipts_fc2[3]) / (ipts_fc2[0] + ipts_fc2[2]);
 		double arctan = atan(tan) * 180 / CV_PI;
 
-		cv::Mat rot_mat_2 = cv::getRotationMatrix2D(cv::Point2f(half_quarter.x + margin_rect.x, half_quarter.y + margin_rect.y), -1 * arctan, 1.0);
+		cv::Mat rot_mat_2 = cv::getRotationMatrix2D(cv::Point2f(half_quarter.x + margin_rect.x, half_quarter.y + margin_rect.y), -3 * arctan, 1.0);
 		cv::Mat roted_img_2;
 		cv::warpAffine(roted_img, roted_img_2, rot_mat_2, roted_img.size(), cv::INTER_CUBIC, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 
@@ -295,5 +296,82 @@ namespace glasssix
 		cv::Mat colorimg;
 		cv::merge(std::vector<cv::Mat>{ Gray, Gray, Gray }, colorimg);
 		cv::resize(colorimg, aligned_face, cv::Size(128, 128), cv::INTER_CUBIC);
+	}
+
+	std::vector<std::vector<float>> alignment::F_Ipbbox(std::vector<cv::Mat> imgs)
+	{
+		std::vector<std::vector<float>> output(2);
+		int batch_size = imgs.size();
+		std::vector<cv::Mat> ipbbox_input_mats(batch_size);
+		for (size_t i = 0; i < batch_size; i++)
+		{
+			cv::resize(imgs[i], ipbbox_input_mats[i], cv::Size(60, 60), cv::INTER_CUBIC);
+		}
+		io::images2tensor(ipbbox_input_mats, tensor_data);
+		if (device_ >= 0)
+		{
+#ifdef USE_CUDA
+#ifdef USE_CUDNN
+
+			ipbbox->Forward_cudnn_gpu(tensor_data, cublas_handle_);
+#else
+			ipbbox->Forward_native_gpu(tensor_data, cublas_handle_);
+#endif
+#else
+			NO_GPU;
+#endif
+		}
+		else
+		{
+			ipbbox->Forward_cpu(tensor_data);
+		}
+		const float* ipbbox_fc2 = ipbbox->get_fc2()->cpu_data();
+		const float* ipbbox_fc3 = ipbbox->get_fc3()->cpu_data();
+		for (size_t i = 0; i < batch_size; i++)
+		{
+			for (size_t j = 0; j < 4; j++)
+			{
+				output[0].push_back(ipbbox_fc2[4 * i + j]);
+			}
+			for (size_t j = 0; j < 3; j++)
+			{
+				output[1].push_back(ipbbox_fc3[3 * i + j]);
+			}
+		}
+		return output;
+	}
+
+	std::vector<float> alignment::F_Ipts(std::vector<cv::Mat> imgs)
+	{
+		std::vector<float> output;
+		int batch_size = imgs.size();
+		std::vector<cv::Mat> ipts_input_mats(batch_size);
+		for (size_t i = 0; i < batch_size; i++)
+		{
+			cv::resize(imgs[i], ipts_input_mats[i], cv::Size(60, 60), cv::INTER_CUBIC);
+		}
+		io::images2tensor(ipts_input_mats, tensor_data);
+		if (device_ >= 0)
+		{
+#ifdef USE_CUDA
+#ifdef USE_CUDNN
+			ipts->Forward_cudnn_gpu(tensor_data, cublas_handle_);
+#else
+			ipts->Forward_native_gpu(tensor_data, cublas_handle_);
+#endif
+#else
+			NO_GPU;
+#endif
+		}
+		else
+		{
+			ipts->Forward_cpu(tensor_data);
+		}
+		const float* ipts_fc2 = ipts->get_fc2()->cpu_data();
+		for (size_t i = 0; i < 10 * batch_size; i++)
+		{
+			output.push_back(ipts_fc2[i]);
+		}
+		return output;
 	}
 }
