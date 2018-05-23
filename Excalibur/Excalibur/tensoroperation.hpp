@@ -10,16 +10,18 @@ namespace excalibur
 {
 	class tensoroperation
 	{
-		enum resizeType { Nearest, Bilinear, Cubic };
-		enum bordertype { BORDER_CONSTANT, BORDER_REPLICATE };
 	public:
 		tensoroperation(){};
 		~tensoroperation(){};
-		
+
+		enum interpolationType { Nearest, Bilinear, Cubic };
+		enum borderType { BORDER_CONSTANT, BORDER_REPLICATE };
+
 		template <typename Dtype>
 		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
 			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, int type)
 		{
+			CHECK_EQ(src->num(), 1);
 			if (new_height*new_width<=0)
 			{
 				LOG(ERROR) << "Illegal input size.";
@@ -48,7 +50,41 @@ namespace excalibur
 			}
 			else
 			{
-				LOG(ERROR) << "Un-support type.";
+				LOG(ERROR) << "Un-support interpolation type.";
+				return;
+			}
+		}
+
+		template <typename Dtype>
+		static void rotate_cpu(std::shared_ptr<tensor<Dtype>> src,
+			std::shared_ptr<tensor<Dtype>>& dst, float theta, int center_x, int center_y, int type, Dtype v)
+		{
+			CHECK_EQ(src->num(), 1);
+			int height = src->height();
+			int width = src->width();
+			if (fabs(theta)<0.000001)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+			int channels = src->channels();
+			dst.reset(new tensor<Dtype>(std::vector<int>{src->num(), channels,
+				height, width}, src->device()));
+			Dtype* dst_data = dst->mutable_cpu_data();
+			const Dtype* src_data = src->cpu_data();
+			if (type == Nearest)
+			{
+				rotate_cpu_nearset(src->cpu_data(), height, width, channels,
+					dst->mutable_cpu_data(), theta, center_x, center_y, v);
+			}
+			else if (type == Bilinear)
+			{
+				
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support interpolation type.";
 				return;
 			}
 		}
@@ -90,6 +126,7 @@ namespace excalibur
 		static void rgb2gray_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst)
 		{
+			CHECK_EQ(src->num(), 1);
 			if (src->channels() != 3)
 			{
 				return;
@@ -116,6 +153,7 @@ namespace excalibur
 		static void copy_make_border_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right, int type, Dtype v)
 		{
+			CHECK_EQ(src->num(), 1);
 			int w = src->width() + left + right;
 			int h = src->height() + top + bottom;
 			if (w == src->width() && h == src->height())
@@ -143,6 +181,7 @@ namespace excalibur
 		static void copy_cut_border_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right)
 		{
+			CHECK_EQ(src->num(), 1);
 			int w = src->width() - left - right;
 			int h = src->height() - top - bottom;
 
@@ -533,6 +572,39 @@ namespace excalibur
 				}
 			}
 			delete c_src_offset;
+		}
+
+		template <typename Dtype>
+		static void rotate_cpu_nearset(const Dtype* src_data, int height, int width, int channels,
+			Dtype* dst_data, float theta, int center_x, int center_y, Dtype v)
+		{
+			memset(dst_data, v, height * width * channels * sizeof(Dtype));
+			float SinTheta = sin(theta);
+			float CosTheta = cos(theta);
+			float ConstX = -center_x*CosTheta + center_y*SinTheta + center_x + 0.5;
+			float ConstY = -center_y*CosTheta - center_x*SinTheta + center_y + 0.5;
+			int offset = height * width;
+			for (int y = 0; y<height; y++)
+			{
+				float x1 = -y*SinTheta - CosTheta + ConstX;
+				float y1 = y*CosTheta - SinTheta + ConstY;
+				for (int x = 0; x<width; x++)
+				{
+					x1 += CosTheta;
+					y1 += SinTheta;
+
+					int x0 = int(x1);
+					int y0 = int(y1);
+					if (x0<0 || x0>width - 1 || y0<0 || y0>height - 1)
+					{
+						continue;
+					}
+					for (int c = 0; c < channels; c++)
+					{
+						dst_data[c * offset + y * width + x] = src_data[c * offset + y0 * width + x0];
+					}
+				}
+			}
 		}
 
 #ifdef USE_OPENCV

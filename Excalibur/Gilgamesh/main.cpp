@@ -15,7 +15,8 @@ int main()
 	{
 		//tensoroperation::resize_cpu(tensor_mat, tensor_mat_gray, 600, 600, 1);
 		//cv::resize(mat, resize_mat, cv::Size(600, 600), 0, 0, 1);
-		tensoroperation::copy_make_border_cpu(tensor_mat, tensor_mat_gray, 40, 23, 64, 71, 0, (unsigned char)128);
+		//tensoroperation::copy_make_border_cpu(tensor_mat, tensor_mat_gray, 40, 23, 64, 71, 0, (unsigned char)128);
+		tensoroperation::rotate_cpu(tensor_mat, tensor_mat_gray, 3.14 / 6, 125, 297, 0, (unsigned char)128);
 	}
 	
 	timer.Stop();
