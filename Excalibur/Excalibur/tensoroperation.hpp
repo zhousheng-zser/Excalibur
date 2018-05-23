@@ -10,16 +10,15 @@ namespace excalibur
 {
 	class tensoroperation
 	{
-#define Get_Index(x, y, offset) (y*offset+x) 
+		enum resizeType { Nearest, Bilinear };
 		enum bordertype { BORDER_CONSTANT, BORDER_REPLICATE };
 	public:
 		tensoroperation(){};
 		~tensoroperation(){};
-
-		//Bug!
+		
 		template <typename Dtype>
-		static void bilinear_resize_cpu(std::shared_ptr<tensor<Dtype>> src, 
-			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width)
+		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
+			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, int type)
 		{
 			int old_height = src->height();
 			int old_width = src->width();
@@ -27,37 +26,37 @@ namespace excalibur
 				new_height, new_width}, src->device()));
 			Dtype* dst_data = dst->mutable_cpu_data();
 			const Dtype* src_data = src->cpu_data();
-			int width_offset = new_width;
-			int new_channel_offset = new_height*new_width;
-			//int old_channel_offset = old_height*old_width;
-			for (int i = 0; i < new_height; i++)
+			if (type == Nearest)
 			{
-				Dtype* p = dst_data + i * width_offset;
-				float x = (i + 0.5)*old_height / new_height - 0.5;
-				int fx = (int)x;
-				x -= fx;
-				short x1 = (1.f - x) * 2048;
-				short x2 = 2048 - x1;
-				for (int j = 0; j < new_width; j++)
+				float width_ratio = old_width * 1.0f / new_width;
+				float height_ratio = old_height * 1.0f / new_height;
+				int src_offset = old_height * old_width;
+				int dst_offset = new_width * new_height;
+				int channels = src->channels();
+				int* c_dst_offset = new int[channels];
+				int* c_src_offset = new int[channels];
+				for (size_t c = 0; c < channels; c++)
 				{
-					float y = (j + 0.5)*old_width / new_width - 0.5;
-					int fy = (int)y;
-					y -= fy;
-					short y1 = (1.f - y) * 2048;
-					short y2 = 2048 - y1;
-					for (int c = 0; c < src->channels(); c++)
+					c_dst_offset[c] = c*dst_offset;
+					c_src_offset[c] = c*src_offset;
+				}
+				for (int c = 0; c < channels; c++)
+				{
+					for (int h = 0; h < new_height; h++)
 					{
-						p[j + c*new_channel_offset] =
-							static_cast<Dtype>(
-								static_cast<int>(
-									static_cast<float>(src_data[Get_Index(fx, fy, old_width) + c*new_channel_offset]) * x1*y1 +
-									static_cast<float>(src_data[Get_Index(fx + 1, fy, old_width) + c*new_channel_offset]) * x2*y1 +
-									static_cast<float>(src_data[Get_Index(fx, fy + 1, old_width) + c*new_channel_offset]) * x1*y2 +
-									static_cast<float>(src_data[Get_Index(fx + 1, fy + 1, old_width) + c*new_channel_offset]) * x2*y2
-									)
-								>> 22);
+						int y0 = int(h * height_ratio);
+						int dst_sub_offset = h * new_width;
+						int src_sub_offset = y0 * old_width;
+						for (int w = 0; w < new_width; w++)
+						{
+							int x0 = int(w * width_ratio);
+							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
+								src_data[c_src_offset[c] + src_sub_offset + x0];
+						}
 					}
 				}
+				delete c_dst_offset;
+				delete c_src_offset;
 			}
 		}
 
