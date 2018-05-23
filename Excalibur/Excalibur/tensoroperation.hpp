@@ -20,43 +20,36 @@ namespace excalibur
 		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
 			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, int type)
 		{
+			if (new_height*new_width<=0)
+			{
+				LOG(ERROR) << "Illegal input size.";
+				return;
+			}
 			int old_height = src->height();
 			int old_width = src->width();
-			dst.reset(new tensor<Dtype>(std::vector<int>{src->num(), src->channels(),
+			if (new_width==old_width&&new_height==old_height)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+			int channels = src->channels();
+			dst.reset(new tensor<Dtype>(std::vector<int>{src->num(), channels,
 				new_height, new_width}, src->device()));
 			Dtype* dst_data = dst->mutable_cpu_data();
 			const Dtype* src_data = src->cpu_data();
 			if (type == Nearest)
 			{
-				float width_ratio = old_width * 1.0f / new_width;
-				float height_ratio = old_height * 1.0f / new_height;
-				int src_offset = old_height * old_width;
-				int dst_offset = new_width * new_height;
-				int channels = src->channels();
-				int* c_dst_offset = new int[channels];
-				int* c_src_offset = new int[channels];
-				for (size_t c = 0; c < channels; c++)
-				{
-					c_dst_offset[c] = c*dst_offset;
-					c_src_offset[c] = c*src_offset;
-				}
-				for (int c = 0; c < channels; c++)
-				{
-					for (int h = 0; h < new_height; h++)
-					{
-						int y0 = int(h * height_ratio);
-						int dst_sub_offset = h * new_width;
-						int src_sub_offset = y0 * old_width;
-						for (int w = 0; w < new_width; w++)
-						{
-							int x0 = int(w * width_ratio);
-							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
-								src_data[c_src_offset[c] + src_sub_offset + x0];
-						}
-					}
-				}
-				delete c_dst_offset;
-				delete c_src_offset;
+				resize_cpu_nearset(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
+			}
+			else if (type == Bilinear)
+			{
+				resize_cpu_bilinear(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support type.";
+				return;
 			}
 		}
 
@@ -461,6 +454,84 @@ namespace excalibur
 				outptr += w;
 				ptr += src->width();
 			}
+		}
+
+		template <typename Dtype>
+		static void resize_cpu_nearset(const Dtype* src_data, int old_height, int old_width, int channels,
+			Dtype* dst_data, int new_height, int new_width)
+		{
+			float width_ratio = old_width * 1.0f / new_width;
+			float height_ratio = old_height * 1.0f / new_height;
+			int src_offset = old_height * old_width;
+			int dst_offset = new_width * new_height;
+			int* c_dst_offset = new int[channels];
+			int* c_src_offset = new int[channels];
+			for (int c = 0; c < channels; c++)
+			{
+				c_dst_offset[c] = c*dst_offset;
+				c_src_offset[c] = c*src_offset;
+			}
+			for (int c = 0; c < channels; c++)
+			{
+				for (int h = 0; h < new_height; h++)
+				{
+					int y0 = int(h * height_ratio);
+					int dst_sub_offset = h * new_width;
+					int src_sub_offset = y0 * old_width;
+					for (int w = 0; w < new_width; w++)
+					{
+						int x0 = int(w * width_ratio);
+						dst_data[c_dst_offset[c] + dst_sub_offset + w] =
+							src_data[c_src_offset[c] + src_sub_offset + x0];
+					}
+				}
+			}
+			delete c_dst_offset;
+			delete c_src_offset;
+		}
+
+		template <typename Dtype>
+		static void resize_cpu_bilinear(const Dtype* src_data, int old_height, int old_width, int channels,
+			Dtype* dst_data, int new_height, int new_width)
+		{
+			float x_ratio = ((float)(old_width - 1)) / new_width;
+			float y_ratio = ((float)(old_height - 1)) / new_height;
+			int src_offset = old_height * old_width;
+			int dst_offset = new_width * new_height;
+			float x_diff, y_diff;
+			int* c_src_offset = new int[channels];
+			int* c_dst_offset = new int[channels];
+			for (int c = 0; c < channels; c++)
+			{
+				c_src_offset[c] = c * src_offset;
+				c_dst_offset[c] = c * dst_offset;
+			}
+			for (int h = 0; h < new_height; h++)
+			{
+				int dst_sub_offset = h * new_width;
+				for (int w = 0; w < new_width; w++)
+				{
+					int x = (int)(x_ratio * w);
+					int y = (int)(y_ratio * h);
+					x_diff = x_ratio * w - x;
+					y_diff = y_ratio * h - y;
+					int index = y*old_width + x;
+					for (int c = 0; c < channels; c++)
+					{
+						Dtype A = src_data[c_src_offset[c] + index];
+						Dtype B = src_data[c_src_offset[c] + index + 1];
+						Dtype C = src_data[c_src_offset[c] + index + old_width];
+						Dtype D = src_data[c_src_offset[c] + index + old_width + 1];
+
+						dst_data[c_dst_offset[c] + dst_sub_offset + w]
+							= Dtype(static_cast<float>(A) *(1 - x_diff)*(1 - y_diff) +
+								static_cast<float>(B)*x_diff*(1 - y_diff) +
+								static_cast<float>(C)*y_diff*(1 - x_diff) +
+								static_cast<float>(D)*x_diff*y_diff);
+					}
+				}
+			}
+			delete c_src_offset;
 		}
 
 #ifdef USE_OPENCV
