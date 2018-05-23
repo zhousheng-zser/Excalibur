@@ -10,7 +10,7 @@ namespace excalibur
 {
 	class tensoroperation
 	{
-		enum resizeType { Nearest, Bilinear };
+		enum resizeType { Nearest, Bilinear, Cubic };
 		enum bordertype { BORDER_CONSTANT, BORDER_REPLICATE };
 	public:
 		tensoroperation(){};
@@ -133,8 +133,9 @@ namespace excalibur
 			//#pragma omp parallel for
 			for (int q = 0; q<channels; q++)
 			{
-				std::shared_ptr<tensor<Dtype>> borderm = std::make_shared<tensor<Dtype>>(dst->channel_tensor_ptr(q));
-				copy_make_border_image_cpu(std::make_shared<tensor<Dtype>>(src->channel_tensor_ptr(q)), borderm, top, left, type, v);
+				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
+					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					dst->height(), dst->width(), top, left, type, v);
 			}
 		}
 
@@ -148,21 +149,20 @@ namespace excalibur
 			if (w == src->width() && h == src->height())
 			{
 				dst = src;
+				LOG(WARNING) << "Just copy from the source.";
+				return;
+			}
+			if (w<=0||h<=0)
+			{
+				LOG(ERROR) << "Illegal input size.";
 				return;
 			}
 			int channels = src->channels();
 
 			dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device()));
-			if (dst->empty())
-				return;
 
-			// unroll image channel
-#pragma omp parallel for
-			for (int q = 0; q<channels; q++)
-			{
-				std::shared_ptr<tensor<Dtype>> cutm = std::make_shared<tensor<Dtype>>(dst->channel_tensor_ptr(q));
-				copy_cut_border_image_cpu(std::make_shared<tensor<Dtype>>(src->channel_tensor_ptr(q)), cutm, top, left);
-			}
+			copy_cut_border_image_cpu(src->cpu_data(), src->height(), src->width(), src->channels(),
+				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
 		}
 
 #ifdef USE_OPENCV
@@ -284,13 +284,12 @@ namespace excalibur
 
 	private:
 		template <typename Dtype>
-		static void copy_make_border_image_cpu(std::shared_ptr<tensor<Dtype>> src,
-			std::shared_ptr<tensor<Dtype>>& dst, int top, int left, int type, Dtype v)
+		static void copy_make_border_image_cpu(const Dtype* src_data, int src_height, int src_width, int channels,
+			Dtype* dst_data, int dst_height, int dst_width, int top, int left, int type, Dtype v)
 		{
-			int w = dst->width();
-			int h = dst->height();
-			const Dtype* ptr = src->cpu_data();
-			Dtype* outptr = dst->mutable_cpu_data();
+			int w = dst_width;
+			int h = dst_height;
+
 			if (type == BORDER_CONSTANT)
 			{
 				int y = 0;
@@ -300,36 +299,36 @@ namespace excalibur
 					int x = 0;
 					for (; x < w; x++)
 					{
-						outptr[x] = v;
+						dst_data[x] = v;
 					}
-					outptr += w;
+					dst_data += w;
 				}
 				// fill center
-				for (; y < (top + src->height()); y++)
+				for (; y < (top + src_height); y++)
 				{
 					int x = 0;
 					for (; x < left; x++)
 					{
-						outptr[x] = v;
+						dst_data[x] = v;
 					}
-					if (src->width() < 12)
+					if (src_width < 12)
 					{
-						for (; x < (left + src->width()); x++)
+						for (; x < (left + src_width); x++)
 						{
-							outptr[x] = ptr[x - left];
+							dst_data[x] = src_data[x - left];
 						}
 					}
 					else
 					{
-						memcpy(outptr + left, ptr, src->width() * sizeof(Dtype));
-						x += src->width();
+						memcpy(dst_data + left, src_data, src_width * sizeof(Dtype));
+						x += src_width;
 					}
 					for (; x < w; x++)
 					{
-						outptr[x] = v;
+						dst_data[x] = v;
 					}
-					ptr += src->width();
-					outptr += w;
+					src_data += src_width;
+					dst_data += w;
 				}
 				// fill bottom
 				for (; y < h; y++)
@@ -337,9 +336,9 @@ namespace excalibur
 					int x = 0;
 					for (; x < w; x++)
 					{
-						outptr[x] = v;
+						dst_data[x] = v;
 					}
-					outptr += w;
+					dst_data += w;
 				}
 			}
 			else if (type == BORDER_REPLICATE)
@@ -351,108 +350,110 @@ namespace excalibur
 					int x = 0;
 					for (; x < left; x++)
 					{
-						outptr[x] = ptr[0];
+						dst_data[x] = src_data[0];
 					}
-					if (src->width() < 12)
+					if (src_width < 12)
 					{
-						for (; x < (left + src->width()); x++)
+						for (; x < (left + src_width); x++)
 						{
-							outptr[x] = ptr[x - left];
+							dst_data[x] = src_data[x - left];
 						}
 					}
 					else
 					{
-						memcpy(outptr + left, ptr, src->width() * sizeof(Dtype));
-						x += src->width();
+						memcpy(dst_data + left, src_data, src_width * sizeof(Dtype));
+						x += src_width;
 					}
 					for (; x < w; x++)
 					{
-						outptr[x] = ptr[src->width() - 1];
+						dst_data[x] = src_data[src_width - 1];
 					}
-					outptr += w;
+					dst_data += w;
 				}
 				// fill center
-				for (; y < (top + src->height()); y++)
+				for (; y < (top + src_height); y++)
 				{
 					int x = 0;
 					for (; x < left; x++)
 					{
-						outptr[x] = ptr[0];
+						dst_data[x] = src_data[0];
 					}
-					if (src->width() < 12)
+					if (src_width < 12)
 					{
-						for (; x < (left + src->width()); x++)
+						for (; x < (left + src_width); x++)
 						{
-							outptr[x] = ptr[x - left];
+							dst_data[x] = src_data[x - left];
 						}
 					}
 					else
 					{
-						memcpy(outptr + left, ptr, src->width() * sizeof(Dtype));
-						x += src->width();
+						memcpy(dst_data + left, src_data, src_width * sizeof(Dtype));
+						x += src_width;
 					}
 					for (; x < w; x++)
 					{
-						outptr[x] = ptr[src->width() - 1];
+						dst_data[x] = src_data[src_width - 1];
 					}
-					ptr += src->width();
-					outptr += w;
+					src_data += src_width;
+					dst_data += w;
 				}
 				// fill bottom
-				ptr -= src->width();
+				src_data -= src_width;
 				for (; y < h; y++)
 				{
 					int x = 0;
 					for (; x < left; x++)
 					{
-						outptr[x] = ptr[0];
+						dst_data[x] = src_data[0];
 					}
-					if (src->width() < 12)
+					if (src_width < 12)
 					{
-						for (; x < (left + src->width()); x++)
+						for (; x < (left + src_width); x++)
 						{
-							outptr[x] = ptr[x - left];
+							dst_data[x] = src_data[x - left];
 						}
 					}
 					else
 					{
-						memcpy(outptr + left, ptr, src->width() * sizeof(Dtype));
-						x += src->width();
+						memcpy(dst_data + left, src_data, src_width * sizeof(Dtype));
+						x += src_width;
 					}
 					for (; x < w; x++)
 					{
-						outptr[x] = ptr[src->width() - 1];
+						dst_data[x] = src_data[src_width - 1];
 					}
-					outptr += w;
+					dst_data += w;
 				}
 			}
 		}
 
 		template <typename Dtype>
-		static void copy_cut_border_image_cpu(std::shared_ptr<tensor<Dtype>> src,
-			std::shared_ptr<tensor<Dtype>>& dst, int top, int left)
+		static void copy_cut_border_image_cpu(const Dtype* src_data, int src_height, int src_width, int channels,
+			Dtype* dst_data, int dst_height, int dst_width, int top, int left)
 		{
-			int w = dst->width();
-			int h = dst->height();
-
-			const Dtype* ptr = src->cpu_data() + src->width() * top + left;
-			Dtype* outptr = dst->mutable_cpu_data();
-
-			for (int y = 0; y < h; y++)
+			int dst_offset = dst_width * dst_height;
+			// unroll image channel
+			//#pragma omp parallel for
+			for (int c = 0; c < channels; c++)
 			{
-				if (w < 12)
+				int c_dst_offset = c * dst_offset;
+				const Dtype* ptr = src_data + c * src_width * src_height + src_width * top + left;
+				for (int h = 0; h < dst_height; h++)
 				{
-					for (int x = 0; x < w; x++)
+					if (dst_width < 12)
 					{
-						outptr[x] = ptr[x];
+						int dst_sub_offset = h * dst_width;
+						for (int x = 0; x < dst_width; x++)
+						{
+							dst_data[x + c_dst_offset + dst_sub_offset] = ptr[x];
+						}
 					}
+					else
+					{
+						memcpy(dst_data + c_dst_offset + h * dst_width, ptr, dst_width * sizeof(Dtype));
+					}
+					ptr += src_width;
 				}
-				else
-				{
-					memcpy(outptr, ptr, w * sizeof(Dtype));
-				}
-				outptr += w;
-				ptr += src->width();
 			}
 		}
 

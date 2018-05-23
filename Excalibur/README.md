@@ -84,10 +84,10 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
  
 |  Operations  |  Native CPU  |  SIMD CPU  |  GPU   |
 | :------: | :------:| :------: | :------: |
-| resize | TE | -- | -- |
+| resize | TP | -- | -- |
 | flip | TP | -- | -- |
-| cut | TE | -- | -- |
-| copymakeborder | TE | -- | -- |
+| cut | TP | -- | -- |
+| copymakeborder | TP | -- | -- |
 | rotate | -- | -- | -- |
 | grayscale | TP | -- | -- |
 | convert2mat | TP | -- | -- |
