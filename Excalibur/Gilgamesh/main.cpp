@@ -13,15 +13,15 @@ int main()
 	timer.Start();
 	for (size_t i = 0; i < 100; i++)
 	{
-		//tensoroperation::resize_cpu(tensor_mat, tensor_mat_gray, 100, 100, 0);
-		cv::resize(mat, resize_mat, cv::Size(100, 100), 0, 0, 0);
+		tensoroperation::resize_cpu(tensor_mat, tensor_mat_gray, 600, 600, 1);
+		//cv::resize(mat, resize_mat, cv::Size(600, 600), 0, 0, 1);
 	}
 	
 	timer.Stop();
 	std::cout << timer.GetElapsedMilliseconds() / 100;
 	cv::Mat show_mat;
-	/*excalibur::tensoroperation::convert2mat(tensor_mat_gray, show_mat);
-	cv::imshow("test", show_mat);*/
+	excalibur::tensoroperation::convert2mat(tensor_mat_gray, show_mat);
+	cv::imshow("test", show_mat);
 	cv::waitKey();
 	return 0;
 }
