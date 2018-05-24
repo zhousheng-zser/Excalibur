@@ -89,6 +89,7 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 | cut | TP | F | F |
 | copymakeborder | TP | F | F |
 | rotate | TP | F | F |
+| draw_rectangle | TP | F | F |
 | grayscale | TP | F | F |
 | convert2mat | TP | F | F |
 | convert2tensor | TP | F | F |

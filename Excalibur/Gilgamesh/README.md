@@ -8,12 +8,13 @@ A wrapper and test project of Tensor Operations in Excalibur.
 - GPU: GTX TitanX(Maxwell) * 2
 
 ### Speed
-| Method             |    OpenCV   | Native CPU  | SIMD CPU | GPU |
-|--------------------|-------------|-------------|-----------|
-|resize              | --          | --          | --  |
-|flip             | --      | --       | -- |
-|grayscale| --      | --       | -- |
-|cut           |--      | --       | -- |
-|copymakeborder |--      | --       | -- |
-|rotate				 |--      | --       | -- |
+| Method    |   OpenCV  |Native CPU |  SIMD CPU |    GPU    |
+|:---------:|:---------:|:---------:|:---------:|:---------:|
+|resize		| --        | --        | --        | --        |
+|flip 		| --        | --        | --        | --        |
+|grayscale	| --        | --        | --        | --        |
+|cut		| --        | --        | --        | --        |
+|copymakeborder	| --    | --        | --        | --        |
+|rotate		| --        | --        | --        | --        |
+| draw_rectangle| --    | --        | --        | --        |
 
