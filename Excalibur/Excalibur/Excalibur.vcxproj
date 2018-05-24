@@ -163,6 +163,7 @@
     <ClInclude Include="pca.hpp" />
     <ClInclude Include="pooling.hpp" />
     <ClInclude Include="prelu.hpp" />
+    <ClInclude Include="tensor_utils.hpp" />
     <ClInclude Include="slice.hpp" />
     <ClInclude Include="softmax.hpp" />
     <ClInclude Include="support_layers.hpp" />

@@ -2,6 +2,7 @@
 #define _TENSOROPERATION_HPP_
 
 #include "tensor.hpp"
+#include "tensor_utils.hpp"
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
@@ -16,10 +17,11 @@ namespace excalibur
 
 		enum interpolationType { Nearest, Bilinear, Cubic };
 		enum borderType { BORDER_CONSTANT, BORDER_REPLICATE };
+		enum flipType { C_Wise, W_Wise, H_Wise };
 
 		template <typename Dtype>
 		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
-			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, int type)
+			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, interpolationType type)
 		{
 			CHECK_EQ(src->num(), 1);
 			if (new_height*new_width<=0)
@@ -56,8 +58,8 @@ namespace excalibur
 		}
 
 		template <typename Dtype>
-		static void rotate_cpu(std::shared_ptr<tensor<Dtype>> src,
-			std::shared_ptr<tensor<Dtype>>& dst, float theta, int center_x, int center_y, int type, Dtype v)
+		static void rotate_cpu(std::shared_ptr<tensor<Dtype>> src, std::shared_ptr<tensor<Dtype>>& dst,
+			 float theta, int center_x, int center_y, interpolationType type, Dtype v)
 		{
 			CHECK_EQ(src->num(), 1);
 			int height = src->height();
@@ -80,7 +82,7 @@ namespace excalibur
 			}
 			else if (type == Bilinear)
 			{
-				
+				NOT_IMPLEMENTED;
 			}
 			else
 			{
@@ -89,9 +91,110 @@ namespace excalibur
 			}
 		}
 
+		template <typename Dtype, typename Rtype>
+		static void draw_rectangle_cpu(std::shared_ptr<tensor<Dtype>>& dst, rectangle<Rtype> rect,
+			int thickness, color color_)
+		{
+			if (thickness <= 0)
+			{
+				LOG(WARNING) << "Zero or minus thickness. Return without any changes.";
+				return;
+			}
+			int channels = dst->channels();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			int outer_thickness = (thickness - 1) / 2;
+			int inner_thickness = thickness / 2;
+			int width = dst->width();
+			int height = dst->height();
+			int offset = width * height;
+			if (rect.x>width || rect.y>height || rect.x + rect.w < 0 || rect.y + rect.h<0)
+			{
+				LOG(WARNING) << "Illegal rectangle input. Return without any changes.";
+				return;
+			}
+			if (channels == 1)
+			{
+				Dtype filler = Dtype(color_.g / 3 + color_.b / 3 + color_.r / 3);
+				for (int h = 0; h < height; h++)
+				{
+					//top
+					if (h>=rect.y - outer_thickness && h<= rect.y + inner_thickness)
+					{
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler, 
+							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+					}
+					//2 sides
+					if (h>rect.y + inner_thickness && h<rect.y +rect.h -inner_thickness)
+					{
+						//left part
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler,
+							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						//right part
+						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
+							filler,
+							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+					}
+					//bottom
+					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+					{
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler,
+							std::min(rect.w + 2 * outer_thickness + std::min(rect.x , 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+					}
+				}
+			}
+			else if(channels == 3)
+			{
+				Dtype* filler = new Dtype[3];
+				filler[0] = color_.r;
+				filler[1] = color_.g;
+				filler[2] = color_.b;
+				for (int c = 0; c < 3; c++)
+				{
+					int c_offset = c * offset;
+					for (int h = 0; h < height; h++)
+					{
+						//top
+						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+						{
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						}
+						//2 sides
+						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+						{
+							//left part
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							//right part
+							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
+								filler[c],
+								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						}
+						//bottom
+						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+						{
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						}
+					}
+				}
+				delete filler;
+			}
+			else
+			{
+				LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+			}
+		}
+
 		template <typename Dtype>
 		static void flip_cpu(std::shared_ptr<tensor<Dtype>> src, 
-			std::shared_ptr<tensor<Dtype>>& dst, std::string axis)
+			std::shared_ptr<tensor<Dtype>>& dst, flipType axis)
 		{
 			CHECK_EQ(src->num(), 1);
 			int channels = src->channels();
@@ -100,25 +203,25 @@ namespace excalibur
 			dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device()));
 			const Dtype* src_data = src->cpu_data();
 			Dtype* dst_data = dst->mutable_cpu_data();
-			if (axis == "x" || axis == "y")
+			if (axis == W_Wise || axis == H_Wise)
 			{
 				for (int c = 0; c < channels; c++)
 				{
 					for (int h = 0; h < height; h++) {
 						for (int w = 0; w < width; w++) {
 							dst_data[((c * height + h) * width) + w] =
-								src_data[((c * height + (axis == "y" ? (height - 1 - h) : h)) * width) + (axis == "x" ? (width - 1 - w) : w)];
+								src_data[((c * height + (axis == H_Wise ? (height - 1 - h) : h)) * width) + (axis == W_Wise ? (width - 1 - w) : w)];
 						}
 					}
 				}
 			}
-			else if (axis == "c")
+			else if (axis == C_Wise)
 			{
-				return;
+				NOT_IMPLEMENTED;
 			}
 			else
 			{
-				return;
+				LOG(ERROR) << "Un-support flip type.";
 			}
 		}
 
@@ -150,8 +253,8 @@ namespace excalibur
 		}
 
 		template <typename Dtype>
-		static void copy_make_border_cpu(std::shared_ptr<tensor<Dtype>> src, 
-			std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right, int type, Dtype v)
+		static void copy_make_border_cpu(std::shared_ptr<tensor<Dtype>> src, std::shared_ptr<tensor<Dtype>>& dst,
+			 int top, int bottom, int left, int right, borderType type, Dtype v)
 		{
 			CHECK_EQ(src->num(), 1);
 			int w = src->width() + left + right;
