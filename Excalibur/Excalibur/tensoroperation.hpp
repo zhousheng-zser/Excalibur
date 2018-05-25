@@ -58,6 +58,43 @@ namespace excalibur
 		}
 
 		template <typename Dtype>
+		static void resize_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, 
+			int new_height, int new_width, interpolationType type)
+		{
+			CHECK_EQ(src->num(), 1);
+			if (new_height*new_width <= 0)
+			{
+				LOG(ERROR) << "Illegal input size.";
+				return;
+			}
+			int old_height = src->height();
+			int old_width = src->width();
+			if (new_width == old_width&&new_height == old_height)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+			int channels = src->channels();
+			Dtype* src_data = src->cpu_data();
+			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
+				new_height, new_width}, src->device());
+			Dtype* dst_data = dst->mutable_cpu_data();
+			if (type == Nearest)
+			{
+				resize_cpu_nearset(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
+			}
+			else if (type == Bilinear)
+			{
+				resize_cpu_bilinear(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support interpolation type.";
+			}
+		}
+
+		template <typename Dtype>
 		static void rotate_cpu(std::shared_ptr<tensor<Dtype>> src, std::shared_ptr<tensor<Dtype>>& dst,
 			 float theta, int center_x, int center_y, interpolationType type, Dtype v)
 		{
@@ -88,6 +125,39 @@ namespace excalibur
 			{
 				LOG(ERROR) << "Un-support interpolation type.";
 				return;
+			}
+		}
+
+		template <typename Dtype>
+		static void rotate_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst,
+			float theta, int center_x, int center_y, interpolationType type, Dtype v)
+		{
+			CHECK_EQ(src->num(), 1);
+			int height = src->height();
+			int width = src->width();
+			if (fabs(theta)<0.000001)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+			int channels = src->channels();
+			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
+				height, width}, src->device());
+			Dtype* dst_data = dst->mutable_cpu_data();
+			const Dtype* src_data = src->cpu_data();
+			if (type == Nearest)
+			{
+				rotate_cpu_nearset(src->cpu_data(), height, width, channels,
+					dst->mutable_cpu_data(), theta, center_x, center_y, v);
+			}
+			else if (type == Bilinear)
+			{
+				NOT_IMPLEMENTED;
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support interpolation type.";
 			}
 		}
 
@@ -192,6 +262,107 @@ namespace excalibur
 			}
 		}
 
+		template <typename Dtype, typename Rtype>
+		static void draw_rectangle_cpu(tensor<Dtype>* dst, rectangle<Rtype> rect,
+			int thickness, color color_)
+		{
+			if (thickness <= 0)
+			{
+				LOG(WARNING) << "Zero or minus thickness. Return without any changes.";
+				return;
+			}
+			int channels = dst->channels();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			int outer_thickness = (thickness - 1) / 2;
+			int inner_thickness = thickness / 2;
+			int width = dst->width();
+			int height = dst->height();
+			int offset = width * height;
+			if (rect.x>width || rect.y>height || rect.x + rect.w < 0 || rect.y + rect.h<0)
+			{
+				LOG(WARNING) << "Illegal rectangle input. Return without any changes.";
+				return;
+			}
+			if (channels == 1)
+			{
+				Dtype filler = Dtype(color_.g / 3 + color_.b / 3 + color_.r / 3);
+				for (int h = 0; h < height; h++)
+				{
+					//top
+					if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+					{
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler,
+							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+					}
+					//2 sides
+					if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+					{
+						//left part
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler,
+							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						//right part
+						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
+							filler,
+							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+					}
+					//bottom
+					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+					{
+						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
+							filler,
+							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+					}
+				}
+			}
+			else if (channels == 3)
+			{
+				Dtype* filler = new Dtype[3];
+				filler[0] = color_.r;
+				filler[1] = color_.g;
+				filler[2] = color_.b;
+				for (int c = 0; c < 3; c++)
+				{
+					int c_offset = c * offset;
+					for (int h = 0; h < height; h++)
+					{
+						//top
+						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+						{
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						}
+						//2 sides
+						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+						{
+							//left part
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							//right part
+							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
+								filler[c],
+								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						}
+						//bottom
+						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+						{
+							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
+								filler[c],
+								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						}
+					}
+				}
+				delete filler;
+			}
+			else
+			{
+				LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+			}
+		}
+
 		template <typename Dtype>
 		static void flip_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst, flipType axis)
@@ -226,12 +397,48 @@ namespace excalibur
 		}
 
 		template <typename Dtype>
+		static void flip_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, flipType axis)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			dst = new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device());
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			if (axis == W_Wise || axis == H_Wise)
+			{
+				for (int c = 0; c < channels; c++)
+				{
+					int offset = c * height;
+					for (int h = 0; h < height; h++) 
+					{
+						for (int w = 0; w < width; w++) 
+						{
+							dst_data[(offset + h) * width + w] =
+								src_data[((offset + (axis == H_Wise ? (height - 1 - h) : h)) * width) + (axis == W_Wise ? (width - 1 - w) : w)];
+						}
+					}
+				}
+			}
+			else if (axis == C_Wise)
+			{
+				NOT_IMPLEMENTED;
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support flip type.";
+			}
+		}
+
+		template <typename Dtype>
 		static void rgb2gray_cpu(std::shared_ptr<tensor<Dtype>> src, 
 			std::shared_ptr<tensor<Dtype>>& dst)
 		{
 			CHECK_EQ(src->num(), 1);
 			if (src->channels() != 3)
 			{
+				LOG(ERROR) << "Incorrect input channel.";
 				return;
 			}
 			else
@@ -246,7 +453,40 @@ namespace excalibur
 				{
 					for (int j = 0; j < width; j++)
 					{
-						dst_data[i*width + j] = (src_data[channel_offset * 0 + i*width + j] + src_data[channel_offset * 1 + i*width + j] + src_data[channel_offset * 2 + i*width + j]) / 3.0f;
+						dst_data[i*width + j] = 
+							Dtype(src_data[channel_offset * 0 + i*width + j] / 3.0f + 
+								src_data[channel_offset * 1 + i*width + j] / 3.0f + 
+								src_data[channel_offset * 2 + i*width + j] / 3.0f);
+					}
+				}
+			}
+		}
+
+		template <typename Dtype>
+		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			if (src->channels() != 3)
+			{
+				LOG(ERROR) << "Incorrect input channel.";
+				return;
+			}
+			else
+			{
+				int height = src->height();
+				int width = src->width();
+				dst = new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device());
+				int channel_offset = height*width;
+				const Dtype* src_data = src->cpu_data();
+				Dtype* dst_data = dst->mutable_cpu_data();
+				for (int i = 0; i < height; i++)
+				{
+					for (int j = 0; j < width; j++)
+					{
+						dst_data[i*width + j] = 
+							Dtype(src_data[channel_offset * 0 + i*width + j] / 3.0f + 
+								src_data[channel_offset * 1 + i*width + j] / 3.0f + 
+								src_data[channel_offset * 2 + i*width + j] / 3.0f);
 					}
 				}
 			}
@@ -267,6 +507,34 @@ namespace excalibur
 			int channels = src->channels();
 
 			dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device()));
+			if (dst->empty())
+				return;
+
+			// unroll image channel
+			//#pragma omp parallel for
+			for (int q = 0; q<channels; q++)
+			{
+				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
+					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					dst->height(), dst->width(), top, left, type, v);
+			}
+		}
+
+		template <typename Dtype>
+		static void copy_make_border_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst,
+			int top, int bottom, int left, int right, borderType type, Dtype v)
+		{
+			CHECK_EQ(src->num(), 1);
+			int w = src->width() + left + right;
+			int h = src->height() + top + bottom;
+			if (w == src->width() && h == src->height())
+			{
+				dst = src;
+				return;
+			}
+			int channels = src->channels();
+
+			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
 			if (dst->empty())
 				return;
 
@@ -307,9 +575,76 @@ namespace excalibur
 				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
 		}
 
+		template <typename Dtype>
+		static void copy_cut_border_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst,
+			int top, int bottom, int left, int right)
+		{
+			CHECK_EQ(src->num(), 1);
+			int w = src->width() - left - right;
+			int h = src->height() - top - bottom;
+
+			if (w == src->width() && h == src->height())
+			{
+				dst = src;
+				LOG(WARNING) << "Just copy from the source.";
+				return;
+			}
+			if (w <= 0 || h <= 0)
+			{
+				LOG(ERROR) << "Illegal input size.";
+				return;
+			}
+			int channels = src->channels();
+
+			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
+
+			copy_cut_border_image_cpu(src->cpu_data(), src->height(), src->width(), src->channels(),
+				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
+		}
 #ifdef USE_OPENCV
 		template <typename Dtype>
 		static void convert2mat(std::shared_ptr<tensor<Dtype>> src, cv::Mat& dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channel = src->channels();
+			if (channel>4)
+			{
+				LOG(ERROR) << "Too many channels.";
+				return;
+			}
+			int width = src->width();
+			int height = src->height();
+			int type = get_cv_type<Dtype>();
+			if (type<0)
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+			dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
+			const Dtype* src_data = src->cpu_data();
+			int src_offset = width * height;
+			int* c_src_offset = new int[channel];
+			for (int c = 0; c < channel; c++)
+			{
+				c_src_offset[c] = c * src_offset;
+			}
+			for (int h = 0; h < height; h++)
+			{
+				Dtype* dst_data = dst.ptr<Dtype>(h);
+				int src_sub_offset = h * width;
+				for (int w = 0; w < width; w++)
+				{
+					for (int c = 0; c < channel; c++)
+					{
+						dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
+					}
+				}
+			}
+			delete c_src_offset;
+		}
+
+		template <typename Dtype>
+		static void convert2mat(const tensor<Dtype>* src, cv::Mat& dst)
 		{
 			CHECK_EQ(src->num(), 1);
 			int channel = src->channels();
@@ -400,6 +735,80 @@ namespace excalibur
 				return;
 			}
 			dst.reset(new tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1));
+			Dtype* dst_data = dst->mutable_cpu_data();
+			int dst_offset = width * height;
+			int* c_dst_offset = new int[channel];
+			for (int c = 0; c < channel; c++)
+			{
+				c_dst_offset[c] = c * dst_offset;
+			}
+			for (int c = 0; c < channel; c++)
+			{
+				for (int h = 0; h < height; h++)
+				{
+					const Dtype* src_data = src.ptr<Dtype>(h);
+					int dst_sub_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						dst_data[c_dst_offset[c] + dst_sub_offset + w] =
+							src_data[w * channel + c];
+					}
+				}
+			}
+			delete c_dst_offset;
+		}
+
+		template <typename Dtype>
+		static void convert2tensor(const cv::Mat src, tensor<Dtype>* dst)
+		{
+			int channel = src.channels();
+			int width = src.cols;
+			int height = src.rows;
+			if (src.data == nullptr)
+			{
+				LOG(ERROR) << "No data.";
+				return;
+			}
+			int type_id = src.type() % 8;
+			auto type_name = std::string(typeid(Dtype).name());
+			if (type_id == 0)
+			{
+				if (type_name != std::string("unsigned char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("int"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("float"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+			dst = new tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1);
 			Dtype* dst_data = dst->mutable_cpu_data();
 			int dst_offset = width * height;
 			int* c_dst_offset = new int[channel];
