@@ -7,8 +7,8 @@ using namespace System;
 using namespace System::Runtime::InteropServices;
 using namespace System::Collections::Generic;
 using namespace System::IO;
-//using namespace System::Drawing;
-//using namespace System::Drawing::Imaging;
+using namespace System::Drawing;
+using namespace System::Drawing::Imaging;
 
 namespace glasssix
 {
@@ -25,7 +25,29 @@ namespace glasssix
 				excalibur::tensor<float>* data;
 
 			public:
-				Tensor(){};
+				Tensor();
+
+				!Tensor();
+
+				~Tensor();
+
+				Tensor(int num, int channel, int width, int height, int device);
+
+				Tensor(int channel, int width, int height, int device);
+
+				Tensor(int width, int height, int device);
+
+				Tensor(int size, int device);
+
+				Tensor(Bitmap^ bmp, int device);
+				//Tensor(array<float>^ array, int num, int channel, int width, int height, int device);
+				//Tensor(array<float>^ array, int channel, int width, int height, int device);
+
+				//array<float>^ ToArray();
+				Bitmap^ ToBitmap();
+
+				//Save(String^ path);//++
+				//Tensor(String^ path);
 
 				property int Num
 				{
@@ -33,33 +55,62 @@ namespace glasssix
 					{
 						return num;
 					}
+				private:
+					void set(int num)
+					{
+						this->num = num;
+					}
 				}
+
 				property int Channel
 				{
 					int get()
 					{
 						return channel;
 					}
+				private:
+					void set(int channel)
+					{
+						this->channel = channel;
+					}
 				}
+
 				property int Width
 				{
 					int get()
 					{
 						return width;
 					}
+				private:
+					void set(int width)
+					{
+						this->width = width;
+					}
 				}
+
 				property int Height
 				{
 					int get()
 					{
 						return height;
 					}
+				private:
+					void set(int height)
+					{
+						this->height = height;
+					}
 				}
+
 				property int Device
 				{
 					int get()
 					{
 						return device;
+					}
+				private:
+					void set(int device)
+					{
+						this->device = device;
 					}
 				}
 			};

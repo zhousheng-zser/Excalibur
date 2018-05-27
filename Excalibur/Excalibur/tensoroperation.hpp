@@ -462,6 +462,9 @@ namespace excalibur
 			}
 		}
 
+		//rgba2rgb()
+		//compression()
+
 		template <typename Dtype>
 		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
 		{

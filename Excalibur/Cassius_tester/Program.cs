@@ -23,7 +23,7 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            glasssix.gilgamesh./*a*/
+            glasssix.gilgamesh.Tensor a = new glasssix.gilgamesh.Tensor();
             //unicorntest();
             Banshee be = new Banshee(0);
             Unicorn uc = new Unicorn(0);
