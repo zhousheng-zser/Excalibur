@@ -14,6 +14,8 @@ namespace glasssix
 {
 	namespace gilgamesh
 	{
+		public enum class ImageEncodingType : int { Native, Bmp, Png, Jpeg};
+
 			public ref class Tensor
 			{
 				int num;
@@ -31,6 +33,9 @@ namespace glasssix
 
 				~Tensor();
 
+				// (deep) copy construct function
+				Tensor(const Tensor %t);
+
 				Tensor(int num, int channel, int width, int height, int device);
 
 				Tensor(int channel, int width, int height, int device);
@@ -40,14 +45,18 @@ namespace glasssix
 				Tensor(int size, int device);
 
 				Tensor(Bitmap^ bmp, int device);
+
+				Tensor(String^ path, int device);
 				//Tensor(array<float>^ array, int num, int channel, int width, int height, int device);
 				//Tensor(array<float>^ array, int channel, int width, int height, int device);
 
-				//array<float>^ ToArray();
+				/*array<float>^ ToArray(){};*/
+
+				//array<float>^ ToNativeArray();
+
 				Bitmap^ ToBitmap();
 
-				//Save(String^ path);//++
-				//Tensor(String^ path);
+				void Save(String^ path, ImageEncodingType type);
 
 				property int Num
 				{
