@@ -26,6 +26,16 @@ namespace glasssix
 			this->!Tensor();
 		}
 
+		Tensor::Tensor(const Tensor %t)
+		{
+			num = t.num;
+			channel = t.channel;
+			width = t.width;
+			height = t.height;
+			device = t.device;
+			data = &(t.data->clone());
+		}
+
 		Tensor::Tensor(int num, int channel, int width, int height, int device)
 		{
 			this->num = num;
@@ -174,6 +184,112 @@ namespace glasssix
 			}
 		}
 
+		Tensor::Tensor(String^ path, int device)
+		{
+			Bitmap^ bmp = gcnew Bitmap(path);
+			this->num = 1;
+			this->width = bmp->Width;
+			this->height = bmp->Height;
+			this->device = device;
+			System::Drawing::Imaging::BitmapData^ bmpd;
+			//gray8
+			if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
+			{
+				this->channel = 1;
+				data = new tensor<float>(std::vector<int>
+				{this->num, this->channel, this->width, this->height}, this->device);
+				float* dst_data = data->mutable_cpu_data();
+				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				for (int h = 0; h < this->height; h++)
+				{
+					int offset = h * this->width;
+					for (int w = 0; w < this->width; w++)
+					{
+						dst_data[offset + w] = (float)pBmp[offset + w];
+					}
+				}
+				bmp->UnlockBits(bmpd);
+			}
+			//rgb24
+			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
+			{
+				this->channel = 3;
+				data = new tensor<float>(std::vector<int>
+				{this->num, this->channel, this->width, this->height}, this->device);
+				float* dst_data = data->mutable_cpu_data();
+				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				for (int c = 0; c < this->channel; c++)
+				{
+					int offset = this->width * this->height * c;
+					for (int h = 0; h < this->height; h++)
+					{
+						int sub_offset = h * this->width;
+						for (int w = 0; w < this->width; w++)
+						{
+							dst_data[offset + sub_offset + w] =
+								(float)pBmp[(sub_offset + w) * 3 + c];
+						}
+					}
+				}
+				bmp->UnlockBits(bmpd);
+			}
+			//rgba32
+			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
+			{
+				this->channel = 4;
+				data = new tensor<float>(std::vector<int>
+				{this->num, this->channel, this->width, this->height}, this->device);
+				float* dst_data = data->mutable_cpu_data();
+				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
+				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				for (int c = 0; c < this->channel; c++)
+				{
+					int offset = this->width * this->height * c;
+					for (int h = 0; h < this->height; h++)
+					{
+						int sub_offset = h * this->width;
+						for (int w = 0; w < this->width; w++)
+						{
+							dst_data[offset + sub_offset + w] =
+								(float)pBmp[(sub_offset + w) * 4 + c];
+						}
+					}
+				}
+				bmp->UnlockBits(bmpd);
+			}
+			// else, convert to rgb24
+			else
+			{
+				this->channel = 3;
+				data = new tensor<float>(std::vector<int>
+				{this->num, this->channel, this->width, this->height}, this->device);
+				float* dst_data = data->mutable_cpu_data();
+				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
+					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
+				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				for (int c = 0; c < this->channel; c++)
+				{
+					int offset = this->width * this->height * c;
+					for (int h = 0; h < this->height; h++)
+					{
+						int sub_offset = h * this->width;
+						for (int w = 0; w < this->width; w++)
+						{
+							dst_data[offset + sub_offset + w] =
+								(float)pBmp[(sub_offset + w) * 3 + c];
+						}
+					}
+				}
+				bmp->UnlockBits(bmpd);
+			}
+			delete bmp;
+		}
+
 		Bitmap^ Tensor::ToBitmap()
 		{
 			if (this->channel > 4)
@@ -267,6 +383,34 @@ namespace glasssix
 				// channel == 2, do not support now
 				return gcnew System::Drawing::Bitmap(0, 0);
 			}
+		}
+
+		void Tensor::Save(String^ path, ImageEncodingType type)
+		{
+			Bitmap^ bmp = ToBitmap();
+			if (type == ImageEncodingType::Native)
+			{
+				//Un-support now
+				return;
+			}
+			else if (type == ImageEncodingType::Bmp)
+			{
+				bmp->Save(path, ImageFormat::Bmp);
+			}
+			else if (type == ImageEncodingType::Png)
+			{
+				bmp->Save(path, ImageFormat::Png);
+			}
+			else if (type == ImageEncodingType::Jpeg)
+			{
+				bmp->Save(path, ImageFormat::Jpeg);
+			}
+			else
+			{
+				//Un-known type
+				return;
+			}
+			delete bmp;
 		}
 	}
 }
