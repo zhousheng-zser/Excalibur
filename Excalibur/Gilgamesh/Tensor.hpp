@@ -3,6 +3,7 @@
 
 #include <msclr\marshal_cppstd.h>
 #include "../Excalibur/tensor.hpp"
+#include "TensorCVUtils.hpp"
 
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -15,7 +16,6 @@ namespace glasssix
 {
 	namespace gilgamesh
 	{
-		public enum class ImageEncodingType : int { Native, Bmp, Png, Jpeg };
 
 		public ref class Tensor
 		{
@@ -25,9 +25,9 @@ namespace glasssix
 			int height;
 			int device;
 
+		public:
 			excalibur::tensor<float>* data;
 
-		public:
 			Tensor();
 
 			!Tensor();
