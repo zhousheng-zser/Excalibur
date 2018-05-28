@@ -359,7 +359,7 @@ namespace glasssix
 				delete offset;
 				System::IntPtr ptr = (System::IntPtr)dst_data;
 				System::Drawing::Bitmap^ bmp;
-				stride = ((width * channel + 3) & -4) * height;
+				stride = (width * channel + 3) & -4;
 				if (channel == 1)
 				{
 					// gray 8
@@ -410,7 +410,6 @@ namespace glasssix
 				//Un-known type
 				return;
 			}
-			delete bmp;
 		}
 	}
 }

@@ -1,7 +1,8 @@
-#pragma once
+#ifndef _TENSOR_CLI_HPP_
+#define _TENSOR_CLI_HPP_
+
 #include <msclr\marshal_cppstd.h>
-#include "../Excalibur/tensoroperation.hpp"
-#include "../Excalibur/tensor_utils.hpp"
+#include "../Excalibur/tensor.hpp"
 
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -14,114 +15,110 @@ namespace glasssix
 {
 	namespace gilgamesh
 	{
-		public enum class ImageEncodingType : int { Native, Bmp, Png, Jpeg};
+		public enum class ImageEncodingType : int { Native, Bmp, Png, Jpeg };
 
-			public ref class Tensor
+		public ref class Tensor
+		{
+			int num;
+			int channel;
+			int width;
+			int height;
+			int device;
+
+			excalibur::tensor<float>* data;
+
+		public:
+			Tensor();
+
+			!Tensor();
+
+			~Tensor();
+
+			// (deep) copy construct function
+			Tensor(const Tensor %t);
+
+			Tensor(int num, int channel, int width, int height, int device);
+
+			Tensor(int channel, int width, int height, int device);
+
+			Tensor(int width, int height, int device);
+
+			Tensor(int size, int device);
+
+			Tensor(Bitmap^ bmp, int device);
+
+			Tensor(String^ path, int device);
+
+			Bitmap^ ToBitmap();
+
+			void Save(String^ path, ImageEncodingType type);
+
+			property int Num
 			{
-				int num;
-				int channel;
-				int width;
-				int height;
-				int device;
-				
-				excalibur::tensor<float>* data;
-
-			public:
-				Tensor();
-
-				!Tensor();
-
-				~Tensor();
-
-				// (deep) copy construct function
-				Tensor(const Tensor %t);
-
-				Tensor(int num, int channel, int width, int height, int device);
-
-				Tensor(int channel, int width, int height, int device);
-
-				Tensor(int width, int height, int device);
-
-				Tensor(int size, int device);
-
-				Tensor(Bitmap^ bmp, int device);
-
-				Tensor(String^ path, int device);
-				//Tensor(array<float>^ array, int num, int channel, int width, int height, int device);
-				//Tensor(array<float>^ array, int channel, int width, int height, int device);
-
-				/*array<float>^ ToArray(){};*/
-
-				//array<float>^ ToNativeArray();
-
-				Bitmap^ ToBitmap();
-
-				void Save(String^ path, ImageEncodingType type);
-
-				property int Num
+				int get()
 				{
-					int get()
-					{
-						return num;
-					}
-				private:
-					void set(int num)
-					{
-						this->num = num;
-					}
+					return num;
 				}
-
-				property int Channel
+			private:
+				void set(int num)
 				{
-					int get()
-					{
-						return channel;
-					}
-				private:
-					void set(int channel)
-					{
-						this->channel = channel;
-					}
+					this->num = num;
 				}
+			}
 
-				property int Width
+			property int Channel
+			{
+				int get()
 				{
-					int get()
-					{
-						return width;
-					}
-				private:
-					void set(int width)
-					{
-						this->width = width;
-					}
+					return channel;
 				}
+			private:
+				void set(int channel)
+				{
+					this->channel = channel;
+				}
+			}
 
-				property int Height
+			property int Width
+			{
+				int get()
 				{
-					int get()
-					{
-						return height;
-					}
-				private:
-					void set(int height)
-					{
-						this->height = height;
-					}
+					return width;
 				}
+			private:
+				void set(int width)
+				{
+					this->width = width;
+				}
+			}
 
-				property int Device
+			property int Height
+			{
+				int get()
 				{
-					int get()
-					{
-						return device;
-					}
-				private:
-					void set(int device)
-					{
-						this->device = device;
-					}
+					return height;
 				}
-			};
+			private:
+				void set(int height)
+				{
+					this->height = height;
+				}
+			}
+
+			property int Device
+			{
+				int get()
+				{
+					return device;
+				}
+			private:
+				void set(int device)
+				{
+					this->device = device;
+				}
+			}
+		};
 	}
 }
+
+#endif // !_TENSOR_CLI_HPP_
