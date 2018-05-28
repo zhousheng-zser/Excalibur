@@ -16,7 +16,7 @@ namespace excalibur
 		~tensoroperation(){};
 
 		enum interpolationType { Nearest, Bilinear, Cubic };
-		enum borderType { BORDER_CONSTANT, BORDER_REPLICATE };
+		enum borderType { Border_Constant, Border_Replicate };
 		enum flipType { C_Wise, W_Wise, H_Wise };
 
 		template <typename Dtype>
@@ -72,11 +72,11 @@ namespace excalibur
 			if (new_width == old_width&&new_height == old_height)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				dst = &(src->clone());
 				return;
 			}
 			int channels = src->channels();
-			Dtype* src_data = src->cpu_data();
+			const Dtype* src_data = src->cpu_data();
 			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
 				new_height, new_width}, src->device());
 			Dtype* dst_data = dst->mutable_cpu_data();
@@ -844,7 +844,7 @@ namespace excalibur
 			int w = dst_width;
 			int h = dst_height;
 
-			if (type == BORDER_CONSTANT)
+			if (type == Border_Constant)
 			{
 				int y = 0;
 				// fill top
@@ -895,7 +895,7 @@ namespace excalibur
 					dst_data += w;
 				}
 			}
-			else if (type == BORDER_REPLICATE)
+			else if (type == Border_Replicate)
 			{
 				int y = 0;
 				// fill top
