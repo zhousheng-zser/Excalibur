@@ -14,10 +14,10 @@ namespace glasssix
 			tensorcv() {}
 			~tensorcv() {}
 
-			static void resize(Tensor^ src, Tensor^ dst, int new_height, int new_width, InterpolationType type, int device);
+			static void resize(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
 
 		private:
-			static void resize_cpu(Tensor^ src, Tensor^ dst, int new_height, int new_width, InterpolationType type);
+			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
 		};
 	}
 }
