@@ -65,38 +65,31 @@ namespace excalibur
 			}
 			int old_height = src->height();
 			int old_width = src->width();
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
 			if (new_width == old_width && new_height == old_height)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = &(src->clone());
+				memcpy(dst_data, src_data, src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-			const Dtype* src_data = src->cpu_data();
-			/*dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
-				new_height, new_width}, src->device());*/
-			Dtype* dst_data = dst->mutable_cpu_data();
-			if (type == Nearest)
+			
+			switch (type)
 			{
+			case excalibur::Nearest:
 				resize_cpu_nearset(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
-			}
-			else if (type == Bilinear)
-			{
+				break;
+			case excalibur::Bilinear:
 				resize_cpu_bilinear(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
-			}
-			else
-			{
+				break;
+			case excalibur::Cubic:
+				NOT_IMPLEMENTED;
+				break;
+			default:
 				LOG(ERROR) << "Un-support interpolation type.";
+				break;
 			}
-			//cv::Mat mat, dst_mat;
-			//convert2mat(dst, dst_mat);
-			///*cv::resize(mat, dst_mat, cv::Size(new_width, new_height));
-			//convert2tensor(dst_mat, dst);*/
-			//cv::Mat showmat;
-			//dst_mat.convertTo(showmat, CV_8U);
-			//cv::imshow("test", showmat);
-			//cv::waitKey();
-			//return;
 		}
 
 		template <typename Dtype>
@@ -140,29 +133,30 @@ namespace excalibur
 			CHECK_EQ(src->num(), 1);
 			int height = src->height();
 			int width = src->width();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			const Dtype* src_data = src->cpu_data();
 			if (fabs(theta)<0.000001)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				memcpy(dst_data, src_data, src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
-				height, width}, src->device());
-			Dtype* dst_data = dst->mutable_cpu_data();
-			const Dtype* src_data = src->cpu_data();
-			if (type == Nearest)
+			switch (type)
 			{
+			case excalibur::Nearest:
 				rotate_cpu_nearset(src->cpu_data(), height, width, channels,
 					dst->mutable_cpu_data(), theta, center_x, center_y, v);
-			}
-			else if (type == Bilinear)
-			{
+				break;
+			case excalibur::Bilinear:
 				NOT_IMPLEMENTED;
-			}
-			else
-			{
+				break;
+			case excalibur::Cubic:
+				NOT_IMPLEMENTED;
+				break;
+			default:
 				LOG(ERROR) << "Un-support interpolation type.";
+				break;
 			}
 		}
 
