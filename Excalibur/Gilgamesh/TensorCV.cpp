@@ -21,13 +21,27 @@ namespace glasssix
 			}
 		}
 
-		void tensorcv::rotate_cpu(Tensor^ src, Tensor^ %dst, float theta,
+		void tensorcv::rotate(Tensor^ src, Tensor^ %dst, float theta,
 			int center_x, int center_y, InterpolationType type, float v, int device)
 		{
 			if (device < 0)
 			{
 				dst = gcnew Tensor(src->Num, src->Channel, src->Height, src->Width, device);
 				rotate_cpu(src, dst, theta, center_x, center_y, type, v);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::flip(Tensor^ src, Tensor^ %dst, FlipType axis, int device)
+		{
+			if (device < 0)
+			{
+				dst = gcnew Tensor(src->Num, src->Channel, src->Height, src->Width, device);
+				flip_cpu(src, dst, axis);
 			}
 			else
 			{
@@ -82,6 +96,24 @@ namespace glasssix
 			default:
 
 				NOT_IMPLEMENTED;
+				break;
+			}
+		}
+
+		void tensorcv::flip_cpu(Tensor^ src, Tensor^ %dst, FlipType axis)
+		{
+			switch (axis)
+			{
+			case glasssix::gilgamesh::FlipType::C_Wise:
+				tensoroperation::flip_cpu(src->data, dst->data, flipType::C_Wise);
+				break;
+			case glasssix::gilgamesh::FlipType::W_Wise:
+				tensoroperation::flip_cpu(src->data, dst->data, flipType::W_Wise);
+				break;
+			case glasssix::gilgamesh::FlipType::H_Wise:
+				tensoroperation::flip_cpu(src->data, dst->data, flipType::H_Wise);
+				break;
+			default:
 				break;
 			}
 		}
