@@ -3,6 +3,12 @@
 #include <glog/logging.h>
 namespace excalibur
 {
+	enum interpolationType { Nearest, Bilinear, Cubic };
+
+	enum borderType { Border_Constant, Border_Replicate };
+
+	enum flipType { C_Wise, W_Wise, H_Wise };
+
 	template <typename Dtype>
 	class point
 	{

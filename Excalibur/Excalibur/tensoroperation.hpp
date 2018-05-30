@@ -15,10 +15,6 @@ namespace excalibur
 		tensoroperation(){};
 		~tensoroperation(){};
 
-		enum interpolationType { Nearest, Bilinear, Cubic };
-		enum borderType { Border_Constant, Border_Replicate };
-		enum flipType { C_Wise, W_Wise, H_Wise };
-
 		template <typename Dtype>
 		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
 			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, interpolationType type)
@@ -69,7 +65,7 @@ namespace excalibur
 			}
 			int old_height = src->height();
 			int old_width = src->width();
-			if (new_width == old_width&&new_height == old_height)
+			if (new_width == old_width && new_height == old_height)
 			{
 				LOG(WARNING) << "Just copy from the source.";
 				dst = &(src->clone());
@@ -77,8 +73,8 @@ namespace excalibur
 			}
 			int channels = src->channels();
 			const Dtype* src_data = src->cpu_data();
-			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
-				new_height, new_width}, src->device());
+			/*dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
+				new_height, new_width}, src->device());*/
 			Dtype* dst_data = dst->mutable_cpu_data();
 			if (type == Nearest)
 			{
@@ -92,6 +88,15 @@ namespace excalibur
 			{
 				LOG(ERROR) << "Un-support interpolation type.";
 			}
+			//cv::Mat mat, dst_mat;
+			//convert2mat(dst, dst_mat);
+			///*cv::resize(mat, dst_mat, cv::Size(new_width, new_height));
+			//convert2tensor(dst_mat, dst);*/
+			//cv::Mat showmat;
+			//dst_mat.convertTo(showmat, CV_8U);
+			//cv::imshow("test", showmat);
+			//cv::waitKey();
+			//return;
 		}
 
 		template <typename Dtype>
@@ -681,8 +686,10 @@ namespace excalibur
 					for (int c = 0; c < channel; c++)
 					{
 						dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
+						//std::cout << dst_data[w*channel + c] << " ";
 					}
 				}
+				//std::cout << std::endl;
 			}
 			delete c_src_offset;
 		}

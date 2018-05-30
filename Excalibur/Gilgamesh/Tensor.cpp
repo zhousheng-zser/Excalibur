@@ -97,12 +97,14 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				int stride = (width * channel + 3) & -4;
 				for (int h = 0; h < this->height; h++)
 				{
 					int offset = h * this->width;
+					int h_stride = h * stride;
 					for (int w = 0; w < this->width; w++)
 					{
-						dst_data[offset + w] = (float)pBmp[offset + w];
+						dst_data[offset + w] = (float)pBmp[h_stride + w];
 					}
 				}
 				bmp->UnlockBits(bmpd);
@@ -117,16 +119,19 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
-				for (int c = 0; c < this->channel; c++)
+				int stride = (width * channel + 3) & -4;
+				int offset = this->width * this->height;
+				for (int c = 0; c < channel; c++)
 				{
-					int offset = this->width * this->height * c;
+					int c_offset = offset * c;
 					for (int h = 0; h < this->height; h++)
 					{
 						int sub_offset = h * this->width;
+						int h_stride = h * stride;
 						for (int w = 0; w < this->width; w++)
 						{
-							dst_data[offset + sub_offset + w] = 
-								(float)pBmp[(sub_offset + w) * 3 + c];
+							dst_data[c_offset + sub_offset + w]
+								= (float)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -167,16 +172,19 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
-				for (int c = 0; c < this->channel; c++)
+				int stride = (width * channel + 3) & -4;
+				int offset = this->width * this->height;
+				for (int c = 0; c < channel; c++)
 				{
-					int offset = this->width * this->height * c;
+					int c_offset = offset * c;
 					for (int h = 0; h < this->height; h++)
 					{
 						int sub_offset = h * this->width;
+						int h_stride = h * stride;
 						for (int w = 0; w < this->width; w++)
 						{
-							dst_data[offset + sub_offset + w] =
-								(float)pBmp[(sub_offset + w) * 3 + c];
+							dst_data[c_offset + sub_offset + w]
+								= (float)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -326,56 +334,91 @@ namespace glasssix
 			{
 				// rgb24 or gray8, alignment check is neccessary
 				// pointer aligned to 4's multiple
-				unsigned char* dst_data = new unsigned char[((width * channel + 3) & -4) * height];
+				System::Drawing::Bitmap^ bmp;
 				const float* src_data = data->cpu_data();
-				int stride = width * channel;
-				//int offset = this->width * this->height;
 				int* offset = new int[channel];
 				for (int c = 0; c < channel; c++)
 				{
 					offset[c] = c * this->width * this->height;
 				}
-				int dst_aligned_offset = 0;
-				for (int h = 0; h < height; h++)
+				int stride = width * channel;
+				if (stride % 4 != 0)
 				{
-					int sub_offset = h * this->width;
-					for (int w = 0; w < width; w++)
+					unsigned char* dst_data = new unsigned char[((width * channel + 3) & -4) * height];
+					int dst_aligned_offset = 0;
+					for (int h = 0; h < height; h++)
 					{
-						for (int c = 0; c < channel; c++)
+						int sub_offset = h * this->width;
+						for (int w = 0; w < width; w++)
 						{
-							dst_data[(sub_offset + w) * channel + c] =
-								(unsigned char)src_data[offset[c] + sub_offset + w];
+							for (int c = 0; c < channel; c++)
+							{
+								dst_data[(sub_offset + w) * channel + c] =
+									(unsigned char)src_data[offset[c] + sub_offset + w];
+							}
 						}
-					}
-					int stride_offset_counter = stride;
-					//fill the offset
-					do
-					{
+						int stride_offset_counter = stride;
+						//fill the offset
+						/*do
+						{
 						dst_aligned_offset += 1;
 						dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
 						stride_offset_counter += 1;
-					} while (stride_offset_counter % 4 != 0);
-				}
-				delete offset;
-				System::IntPtr ptr = (System::IntPtr)dst_data;
-				System::Drawing::Bitmap^ bmp;
-				stride = (width * channel + 3) & -4;
-				if (channel == 1)
-				{
-					// gray 8
-					bmp = gcnew System::Drawing::Bitmap(width, height,
-						stride,
-						System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
-						ptr);
+						} while (stride_offset_counter % 4 != 0);*/
+					}
+					System::IntPtr ptr = (System::IntPtr)dst_data;
+					stride = (width * channel + 3) & -4;
+					if (channel == 1)
+					{
+						// gray 8
+						bmp = gcnew System::Drawing::Bitmap(width, height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
+							ptr);
+					}
+					else
+					{
+						// rgb24
+						bmp = gcnew System::Drawing::Bitmap(width, height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
+							ptr);
+					}
 				}
 				else
 				{
-					// rgb24
-					bmp = gcnew System::Drawing::Bitmap(width, height,
-						stride,
-						System::Drawing::Imaging::PixelFormat::Format24bppRgb,
-						ptr);
+					unsigned char* dst_data = new unsigned char[width * channel * height];
+					for (int h = 0; h < height; h++)
+					{
+						int sub_offset = h * this->width;
+						for (int w = 0; w < width; w++)
+						{
+							for (int c = 0; c < channel; c++)
+							{
+								dst_data[(sub_offset + w) * channel + c] =
+									(unsigned char)src_data[offset[c] + sub_offset + w];
+							}
+						}
+					}
+					System::IntPtr ptr = (System::IntPtr)dst_data;
+					if (channel == 1)
+					{
+						// gray 8
+						bmp = gcnew System::Drawing::Bitmap(width, height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
+							ptr);
+					}
+					else
+					{
+						// rgb24
+						bmp = gcnew System::Drawing::Bitmap(width, height,
+							stride,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
+							ptr);
+					}
 				}
+				delete offset;
 				return bmp;
 			}
 			else

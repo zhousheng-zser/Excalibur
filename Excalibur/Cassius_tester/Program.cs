@@ -30,8 +30,10 @@ namespace Cassius_tester
             //Unicorn uc = new Unicorn(0);
             bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471065472304142_155.jpg");
             bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_47.jpg");
-            glasssix.gilgamesh.Tensor a = new glasssix.gilgamesh.Tensor(bmp1, -1);
-            a.Save(@"C:\Users\BALTHASAR\Desktop\00.jpg", ImageEncodingType.Png);
+            glasssix.gilgamesh.Tensor a = new glasssix.gilgamesh.Tensor(bmp2, -1);
+            glasssix.gilgamesh.Tensor b = new Tensor();
+            glasssix.gilgamesh.tensorcv.resize(a, ref a, 500, 500, InterpolationType.Nearest, -1);
+            a.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
@@ -87,7 +89,7 @@ namespace Cassius_tester
                 double angeltheta = ipbbox[1][j * 3 + 2] * 90;
                 double arctheta = angeltheta * Math.PI / 180;
                 CvInvoke.GetRotationMatrix2D(center, -1 * angeltheta, 1, mat);
-                image = image.WarpAffine(mat, Inter.Cubic, Warp.FillOutliers, BorderType.Constant, new Bgr(Color.Black));
+                image = image.WarpAffine(mat, Inter.Cubic, Warp.FillOutliers, Emgu.CV.CvEnum.BorderType.Constant, new Bgr(Color.Black));
                 int delta = Convert.ToInt32(Math.Sin(arctheta) * draw.Height / 2); //Correction 1
                 draw.X += delta;
                 center.X += delta;
@@ -150,7 +152,7 @@ namespace Cassius_tester
 
                 image.ROI = Rectangle.Empty;
 
-                image = image.WarpAffine(mat_2, Inter.Cubic, Warp.FillOutliers, BorderType.Constant,
+                image = image.WarpAffine(mat_2, Inter.Cubic, Warp.FillOutliers, Emgu.CV.CvEnum.BorderType.Constant,
                     new Bgr(Color.Black));
                 image.ROI = Margindraw;
                 //************* 待修改
