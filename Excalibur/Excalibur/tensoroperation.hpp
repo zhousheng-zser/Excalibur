@@ -387,7 +387,19 @@ namespace excalibur
 			}
 			else if (axis == C_Wise)
 			{
-				NOT_IMPLEMENTED;
+				int offset = height * width;
+				for (int h = 0; h < height; h++)
+				{
+					int h_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channels; c++)
+						{
+							dst_data[c * offset + h_offset + w] =
+								src_data[(channels - 1 - c) * offset + h_offset + w];
+						}
+					}
+				}
 			}
 			else
 			{
@@ -422,7 +434,19 @@ namespace excalibur
 			}
 			else if (axis == C_Wise)
 			{
-				NOT_IMPLEMENTED;
+				int offset = height * width;
+				for (int h = 0; h < height; h++)
+				{
+					int h_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channels; c++)
+						{
+							dst_data[c * offset + h_offset + w] =
+								src_data[(channels - 1 - c) * offset + h_offset + w];
+						}
+					}
+				}
 			}
 			else
 			{
