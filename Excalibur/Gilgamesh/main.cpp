@@ -13,7 +13,7 @@ int main()
 	timer.Start();
 	for (size_t i = 0; i < 1; i++)
 	{
-		tensoroperation::resize_cpu(tensor_mat, tensor_mat, 100, 100, tensoroperation::Nearest);
+		tensoroperation::resize_cpu(tensor_mat, tensor_mat, 100, 100, Nearest);
 		//cv::resize(mat, resize_mat, cv::Size(600, 600), 0, 0, 1);
 		//tensoroperation::copy_make_border_cpu(tensor_mat, tensor_mat_gray, 40, 23, 64, 71, 0, (unsigned char)128);
 		/*tensoroperation::rotate_cpu(tensor_mat, tensor_mat_gray, 3.14 / 6, 
