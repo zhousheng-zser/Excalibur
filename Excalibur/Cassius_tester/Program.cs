@@ -9,11 +9,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using glasssix;
 //using glasssix.aroundight.romancia;
-using glasssix.excalibur.cassius;
+//using glasssix.excalibur.cassius;
 using glasssix.excalibur.longinus;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
+using glasssix.gilgamesh;
 
 namespace Cassius_tester
 {
@@ -23,23 +24,25 @@ namespace Cassius_tester
         private static Bitmap bmp2;
         static void Main(string[] args)
         {
-            glasssix.gilgamesh./*a*/
             //unicorntest();
             Banshee be = new Banshee(0);
-            Unicorn uc = new Unicorn(0);
+            //Unicorn uc = new Unicorn(0);
             bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471065472304142_155.jpg");
             bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_47.jpg");
-
+            Tensor a = new Tensor(bmp2, -1);
+            Tensor b = new Tensor();
+            tensorcv.resize(a, ref a, 500, 500, InterpolationType.Nearest, -1);
+            a.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
             //Stopwatch sw = new Stopwatch();
-            float[] cs = uc.ExtractBitmapOutputs(new[] { ccc[0] });
-            float[] cpp = uc.ExtractBitmapOutputs(new[] { aaa[0].align_face });
-            float prob = Unicorn.CosineDistanceProb(cs, cpp);
+            //float[] cs = uc.ExtractBitmapOutputs(new[] { ccc[0] });
+            //float[] cpp = uc.ExtractBitmapOutputs(new[] { aaa[0].align_face });
+            //float prob = Unicorn.CosineDistanceProb(cs, cpp);
             ccc[0].Save(@"C:\Users\BALTHASAR\Desktop\algnmenttest\cs.jpg");
             aaa[0].align_face.Save(@"C:\Users\BALTHASAR\Desktop\algnmenttest\cpp.jpg");
-            Console.WriteLine(prob);
+            //Console.WriteLine(prob);
             //sw.Start();
             //for (int i = 0; i < 1000; i++)
             //{
@@ -55,19 +58,19 @@ namespace Cassius_tester
 
         static void unicorntest()
         {
-            Unicorn uc = new Unicorn(0);
-            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned2.jpg");
-            uc.ExtractBitmapOutputs(new[] { bmp1 });
-            Stopwatch sw = new Stopwatch();
-            sw.Start();
-            for (int i = 0; i < 100; i++)
-            {
-                uc.ExtractBitmapOutputs(new[] { bmp1, bmp1, bmp1, bmp1, bmp1 });
-            }
-            sw.Stop();
-            float[] qs = uc.GetQualityScores();
-            Console.WriteLine(qs[0]);
-            Console.WriteLine(sw.ElapsedMilliseconds / 1);
+            //Unicorn uc = new Unicorn(0);
+            //bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\aligned2.jpg");
+            //uc.ExtractBitmapOutputs(new[] { bmp1 });
+            //Stopwatch sw = new Stopwatch();
+            //sw.Start();
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    uc.ExtractBitmapOutputs(new[] { bmp1, bmp1, bmp1, bmp1, bmp1 });
+            //}
+            //sw.Stop();
+            //float[] qs = uc.GetQualityScores();
+            //Console.WriteLine(qs[0]);
+            //Console.WriteLine(sw.ElapsedMilliseconds / 1);
         }
 
         public static Bitmap[] Aligement(Bitmap[] bits, float[][] ipbbox, glasssix.excalibur.longinus.Banshee aligementModule)
@@ -85,7 +88,7 @@ namespace Cassius_tester
                 double angeltheta = ipbbox[1][j * 3 + 2] * 90;
                 double arctheta = angeltheta * Math.PI / 180;
                 CvInvoke.GetRotationMatrix2D(center, -1 * angeltheta, 1, mat);
-                image = image.WarpAffine(mat, Inter.Cubic, Warp.FillOutliers, BorderType.Constant, new Bgr(Color.Black));
+                image = image.WarpAffine(mat, Inter.Cubic, Warp.FillOutliers, Emgu.CV.CvEnum.BorderType.Constant, new Bgr(Color.Black));
                 int delta = Convert.ToInt32(Math.Sin(arctheta) * draw.Height / 2); //Correction 1
                 draw.X += delta;
                 center.X += delta;
@@ -148,7 +151,7 @@ namespace Cassius_tester
 
                 image.ROI = Rectangle.Empty;
 
-                image = image.WarpAffine(mat_2, Inter.Cubic, Warp.FillOutliers, BorderType.Constant,
+                image = image.WarpAffine(mat_2, Inter.Cubic, Warp.FillOutliers, Emgu.CV.CvEnum.BorderType.Constant,
                     new Bgr(Color.Black));
                 image.ROI = Margindraw;
                 //************* 待修改

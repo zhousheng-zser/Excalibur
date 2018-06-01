@@ -15,10 +15,6 @@ namespace excalibur
 		tensoroperation(){};
 		~tensoroperation(){};
 
-		enum interpolationType { Nearest, Bilinear, Cubic };
-		enum borderType { BORDER_CONSTANT, BORDER_REPLICATE };
-		enum flipType { C_Wise, W_Wise, H_Wise };
-
 		template <typename Dtype>
 		static void resize_cpu(std::shared_ptr<tensor<Dtype>> src,
 			std::shared_ptr<tensor<Dtype>>& dst, int new_height, int new_width, interpolationType type)
@@ -69,28 +65,30 @@ namespace excalibur
 			}
 			int old_height = src->height();
 			int old_width = src->width();
-			if (new_width == old_width&&new_height == old_height)
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			if (new_width == old_width && new_height == old_height)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				memcpy(dst_data, src_data, src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-			Dtype* src_data = src->cpu_data();
-			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
-				new_height, new_width}, src->device());
-			Dtype* dst_data = dst->mutable_cpu_data();
-			if (type == Nearest)
+			
+			switch (type)
 			{
+			case excalibur::Nearest:
 				resize_cpu_nearset(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
-			}
-			else if (type == Bilinear)
-			{
+				break;
+			case excalibur::Bilinear:
 				resize_cpu_bilinear(src_data, old_height, old_width, channels, dst_data, new_height, new_width);
-			}
-			else
-			{
+				break;
+			case excalibur::Cubic:
+				NOT_IMPLEMENTED;
+				break;
+			default:
 				LOG(ERROR) << "Un-support interpolation type.";
+				break;
 			}
 		}
 
@@ -135,29 +133,30 @@ namespace excalibur
 			CHECK_EQ(src->num(), 1);
 			int height = src->height();
 			int width = src->width();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			const Dtype* src_data = src->cpu_data();
 			if (fabs(theta)<0.000001)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				memcpy(dst_data, src_data, src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-			dst = new tensor<Dtype>(std::vector<int>{src->num(), channels,
-				height, width}, src->device());
-			Dtype* dst_data = dst->mutable_cpu_data();
-			const Dtype* src_data = src->cpu_data();
-			if (type == Nearest)
+			switch (type)
 			{
+			case excalibur::Nearest:
 				rotate_cpu_nearset(src->cpu_data(), height, width, channels,
 					dst->mutable_cpu_data(), theta, center_x, center_y, v);
-			}
-			else if (type == Bilinear)
-			{
+				break;
+			case excalibur::Bilinear:
 				NOT_IMPLEMENTED;
-			}
-			else
-			{
+				break;
+			case excalibur::Cubic:
+				NOT_IMPLEMENTED;
+				break;
+			default:
 				LOG(ERROR) << "Un-support interpolation type.";
+				break;
 			}
 		}
 
@@ -388,7 +387,19 @@ namespace excalibur
 			}
 			else if (axis == C_Wise)
 			{
-				NOT_IMPLEMENTED;
+				int offset = height * width;
+				for (int h = 0; h < height; h++)
+				{
+					int h_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channels; c++)
+						{
+							dst_data[c * offset + h_offset + w] =
+								src_data[(channels - 1 - c) * offset + h_offset + w];
+						}
+					}
+				}
 			}
 			else
 			{
@@ -423,7 +434,19 @@ namespace excalibur
 			}
 			else if (axis == C_Wise)
 			{
-				NOT_IMPLEMENTED;
+				int offset = height * width;
+				for (int h = 0; h < height; h++)
+				{
+					int h_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channels; c++)
+						{
+							dst_data[c * offset + h_offset + w] =
+								src_data[(channels - 1 - c) * offset + h_offset + w];
+						}
+					}
+				}
 			}
 			else
 			{
@@ -461,6 +484,9 @@ namespace excalibur
 				}
 			}
 		}
+
+		//rgba2rgb()
+		//compression()
 
 		template <typename Dtype>
 		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
@@ -678,8 +704,10 @@ namespace excalibur
 					for (int c = 0; c < channel; c++)
 					{
 						dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
+						//std::cout << dst_data[w*channel + c] << " ";
 					}
 				}
+				//std::cout << std::endl;
 			}
 			delete c_src_offset;
 		}
@@ -841,7 +869,7 @@ namespace excalibur
 			int w = dst_width;
 			int h = dst_height;
 
-			if (type == BORDER_CONSTANT)
+			if (type == Border_Constant)
 			{
 				int y = 0;
 				// fill top
@@ -892,7 +920,7 @@ namespace excalibur
 					dst_data += w;
 				}
 			}
-			else if (type == BORDER_REPLICATE)
+			else if (type == Border_Replicate)
 			{
 				int y = 0;
 				// fill top
