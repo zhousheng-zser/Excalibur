@@ -414,7 +414,6 @@ namespace excalibur
 			int channels = src->channels();
 			int height = src->height();
 			int width = src->width();
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device());
 			const Dtype* src_data = src->cpu_data();
 			Dtype* dst_data = dst->mutable_cpu_data();
 			if (axis == W_Wise || axis == H_Wise)
@@ -501,7 +500,6 @@ namespace excalibur
 			{
 				int height = src->height();
 				int width = src->width();
-				dst = new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device());
 				int channel_offset = height*width;
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst->mutable_cpu_data();
@@ -516,6 +514,7 @@ namespace excalibur
 					}
 				}
 			}
+			showimage(dst);
 		}
 
 		template <typename Dtype>
@@ -555,14 +554,10 @@ namespace excalibur
 			int h = src->height() + top + bottom;
 			if (w == src->width() && h == src->height())
 			{
-				dst = src;
+				memcpy(src->mutable_cpu_data(), dst->cpu_data(), src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
-			if (dst->empty())
-				return;
 
 			// unroll image channel
 			//#pragma omp parallel for
@@ -611,7 +606,7 @@ namespace excalibur
 
 			if (w == src->width() && h == src->height())
 			{
-				dst = src;
+				memcpy(src->mutable_cpu_data(), dst->cpu_data(), src->count() * sizeof(Dtype));
 				LOG(WARNING) << "Just copy from the source.";
 				return;
 			}
@@ -621,8 +616,6 @@ namespace excalibur
 				return;
 			}
 			int channels = src->channels();
-
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
 
 			copy_cut_border_image_cpu(src->cpu_data(), src->height(), src->width(), src->channels(),
 				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
@@ -1148,6 +1141,17 @@ namespace excalibur
 		}
 
 #ifdef USE_OPENCV
+		template <typename Dtype>
+		static void showimage(tensor<Dtype>* dst)
+		{
+			cv::Mat mat;
+			convert2mat(dst, mat);
+			cv::Mat showmat;
+			mat.convertTo(showmat, CV_8U);
+			cv::imshow("test", showmat);
+			cv::waitKey();
+		}
+
 		template <typename Dtype>
 		static int get_cv_type()
 		{
