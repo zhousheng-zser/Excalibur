@@ -29,12 +29,13 @@ namespace Cassius_tester
             Banshee be = new Banshee(0);
             //Unicorn uc = new Unicorn(0);
             bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471065472304142_155.jpg");
-            bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_47.jpg");
-            Tensor a = new Tensor(bmp2, -1);
+            //bmp2 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\00.jpg");
+            Tensor a = new Tensor(bmp1, -1);
             Tensor b = new Tensor();
-            tensorcv.rgb2gray(a, ref b, -1);
+            //tensorcv.copy_make_border(a, ref b, 20, 20, 20, 20,glasssix.gilgamesh.BorderType.Border_Constant, 0, -1);
+            tensorcv.copy_cut_border(a, ref b, 20, 20, 20, 20, -1);
             //tensorcv.resize(a, ref b, 380,281, InterpolationType.Bilinear, -1);
-            b.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
+            b.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
