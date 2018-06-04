@@ -94,6 +94,19 @@ namespace glasssix
 			}
 		}
 
+		void tensorcv::draw_rectangle(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device)
+		{
+			if (device < 0)
+			{
+				draw_rectangle_cpu(dst, rect, thickness, color_);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)
@@ -188,6 +201,11 @@ namespace glasssix
 		void tensorcv::copy_cut_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right)
 		{
 			tensoroperation::copy_cut_border_cpu(src->data, dst->data, top, bottom, left, right);
+		}
+
+		void tensorcv::draw_rectangle_cpu(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_)
+		{
+			tensoroperation::draw_rectangle_cpu(dst->data, (rect->rect), thickness, (color_->c));
 		}
 	}
 }
