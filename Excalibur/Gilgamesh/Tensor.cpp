@@ -361,20 +361,20 @@ namespace glasssix
 						}
 						int stride_offset_counter = stride;
 						//fill the offset
-						/*do
+						do
 						{
-						dst_aligned_offset += 1;
-						dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
-						stride_offset_counter += 1;
-						} while (stride_offset_counter % 4 != 0);*/
+							dst_aligned_offset += 1;
+							dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
+							stride_offset_counter += 1;
+						} while (stride_offset_counter % 4 != 0);
 					}
 					System::IntPtr ptr = (System::IntPtr)dst_data;
-					aligned_stride = (width * channel + 3) & -4;
+					//aligned_stride = (width * channel + 3) & -4;
 					if (channel == 1)
 					{
 						// gray 8
 						bmp = gcnew System::Drawing::Bitmap(width, height,
-							width * channel,
+							aligned_stride,
 							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
 							ptr);
 					}
@@ -432,28 +432,34 @@ namespace glasssix
 
 		void Tensor::Save(String^ path, ImageEncodingType type)
 		{
+			if (this->Channel == 1)
+			{
+				// There is an unknown phenomenon in .NET GDI+(1.0) that\ 
+				// Bitmap 'save' mathod will ignored pixelformat settings.
+				// Fix it in next version without GDI+ solution.
+				// Now, return directly.
+				// https://stackoverflow.com/questions/4679827/c-sharp-why-bitmap-save-ignores-pixelformat-of-bitmap
+				return;
+			}
 			Bitmap^ bmp = ToBitmap();
-			if (type == ImageEncodingType::Native)
+			
+			switch (type)
 			{
-				//Un-support now
-				return;
-			}
-			else if (type == ImageEncodingType::Bmp)
-			{
+			case glasssix::gilgamesh::ImageEncodingType::Native:
+				NOT_IMPLEMENTED;
+				break;
+			case glasssix::gilgamesh::ImageEncodingType::Bmp:
 				bmp->Save(path, ImageFormat::Bmp);
-			}
-			else if (type == ImageEncodingType::Png)
-			{
+				break;
+			case glasssix::gilgamesh::ImageEncodingType::Png:
 				bmp->Save(path, ImageFormat::Png);
-			}
-			else if (type == ImageEncodingType::Jpeg)
-			{
+				break;
+			case glasssix::gilgamesh::ImageEncodingType::Jpeg:
 				bmp->Save(path, ImageFormat::Jpeg);
-			}
-			else
-			{
-				//Un-known type
-				return;
+				break;
+			default:
+				LOG(ERROR) << "Un-known Encoding type.";
+				break;
 			}
 		}
 	}
