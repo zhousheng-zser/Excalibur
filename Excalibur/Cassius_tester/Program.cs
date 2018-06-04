@@ -15,6 +15,7 @@ using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using glasssix.gilgamesh;
+using FlipType = glasssix.gilgamesh.FlipType;
 
 namespace Cassius_tester
 {
@@ -31,8 +32,9 @@ namespace Cassius_tester
             bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_47.jpg");
             Tensor a = new Tensor(bmp2, -1);
             Tensor b = new Tensor();
-            tensorcv.resize(a, ref a, 500, 500, InterpolationType.Nearest, -1);
-            a.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
+            tensorcv.rgb2gray(a, ref b, -1);
+            //tensorcv.resize(a, ref b, 380,281, InterpolationType.Bilinear, -1);
+            b.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });

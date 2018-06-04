@@ -36,7 +36,7 @@ namespace glasssix
 			data = &(t.data->clone());
 		}
 
-		Tensor::Tensor(int num, int channel, int width, int height, int device)
+		Tensor::Tensor(int num, int channel, int height, int width, int device)
 		{
 			this->num = num;
 			this->channel = channel;
@@ -44,10 +44,10 @@ namespace glasssix
 			this->height = height;
 			this->device = device;
 			data = new tensor<float>(std::vector<int>
-			{this->num, this->channel, this->width, this->height}, this->device);
+			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(int channel, int width, int height, int device)
+		Tensor::Tensor(int channel, int height, int width, int device)
 		{
 			this->num = 1;
 			this->channel = channel;
@@ -55,10 +55,10 @@ namespace glasssix
 			this->height = height;
 			this->device = device;
 			data = new tensor<float>(std::vector<int>
-			{this->num, this->channel, this->width, this->height}, this->device);
+			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(int width, int height, int device)
+		Tensor::Tensor(int height, int width, int device)
 		{
 			this->num = 1;
 			this->channel = 1;
@@ -66,7 +66,7 @@ namespace glasssix
 			this->height = height;
 			this->device = device;
 			data = new tensor<float>(std::vector<int>
-			{this->num, this->channel, this->width, this->height}, this->device);
+			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
 		Tensor::Tensor(int size, int device)
@@ -77,7 +77,7 @@ namespace glasssix
 			this->height = 1;
 			this->device = device;
 			data = new tensor<float>(std::vector<int>
-			{this->num, this->channel, this->width, this->height}, this->device);
+			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
 		Tensor::Tensor(Bitmap^ bmp, int device)
@@ -345,15 +345,17 @@ namespace glasssix
 				if (stride % 4 != 0)
 				{
 					unsigned char* dst_data = new unsigned char[((width * channel + 3) & -4) * height];
+					int aligned_stride = (width * channel + 3) & -4;
 					int dst_aligned_offset = 0;
 					for (int h = 0; h < height; h++)
 					{
 						int sub_offset = h * this->width;
+						int aligned_stride_h = aligned_stride * h;
 						for (int w = 0; w < width; w++)
 						{
 							for (int c = 0; c < channel; c++)
 							{
-								dst_data[(sub_offset + w) * channel + c] =
+								dst_data[aligned_stride_h + w * channel + c] =
 									(unsigned char)src_data[offset[c] + sub_offset + w];
 							}
 						}
@@ -367,12 +369,12 @@ namespace glasssix
 						} while (stride_offset_counter % 4 != 0);*/
 					}
 					System::IntPtr ptr = (System::IntPtr)dst_data;
-					stride = (width * channel + 3) & -4;
+					aligned_stride = (width * channel + 3) & -4;
 					if (channel == 1)
 					{
 						// gray 8
 						bmp = gcnew System::Drawing::Bitmap(width, height,
-							stride,
+							width * channel,
 							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
 							ptr);
 					}
@@ -380,7 +382,7 @@ namespace glasssix
 					{
 						// rgb24
 						bmp = gcnew System::Drawing::Bitmap(width, height,
-							stride,
+							aligned_stride,
 							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
 							ptr);
 					}

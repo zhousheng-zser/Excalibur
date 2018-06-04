@@ -50,6 +50,50 @@ namespace glasssix
 			}
 		}
 
+		void tensorcv::rgb2gray(Tensor^ src, Tensor^ %dst, int device)
+		{
+			if (device < 0)
+			{
+				dst = gcnew Tensor(src->Num, 1, src->Height, src->Width, device);
+				rgb2gray_cpu(src, dst);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::copy_make_border(Tensor^ src, Tensor^ %dst, int top, int bottom,
+			int left, int right, BorderType type, float v, int device)
+		{
+			if (device < 0)
+			{
+				dst = gcnew Tensor(src->Num, src->Channel, src->Height + bottom + top, src->Width + left + right, device);
+				copy_make_border_cpu(src, dst, top, bottom, left, right, type, v);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::copy_cut_border(Tensor^ src, Tensor^ %dst, int top, int bottom, 
+			int left, int right, int device)
+		{
+			if (device < 0)
+			{
+				dst = gcnew Tensor(src->Num, src->Channel, src->Height - top - bottom, src->Width - left - right, device);
+				copy_cut_border_cpu(src, dst, top, bottom, left, right);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)
@@ -70,8 +114,7 @@ namespace glasssix
 					new_height, new_width, interpolationType::Cubic);
 				break;
 			default:
-				tensoroperation::resize_cpu(src->data, dst->data,
-					new_height, new_width, interpolationType::Nearest);
+				NOT_IMPLEMENTED;
 				break;
 			}
 		}
@@ -94,7 +137,6 @@ namespace glasssix
 					theta, center_x, center_y, interpolationType::Cubic, v);
 				break;
 			default:
-
 				NOT_IMPLEMENTED;
 				break;
 			}
@@ -114,8 +156,38 @@ namespace glasssix
 				tensoroperation::flip_cpu(src->data, dst->data, flipType::H_Wise);
 				break;
 			default:
+				NOT_IMPLEMENTED;
 				break;
 			}
+		}
+
+		void tensorcv::rgb2gray_cpu(Tensor^ src, Tensor^ %dst)
+		{
+			tensoroperation::rgb2gray_cpu(src->data, dst->data);
+		}
+
+		void tensorcv::copy_make_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom,
+			int left, int right, BorderType type, float v)
+		{
+			switch (type)
+			{
+			case glasssix::gilgamesh::BorderType::Border_Constant:
+				tensoroperation::copy_make_border_cpu(src->data, dst->data, top, bottom, 
+					left, right, borderType::Border_Constant, v);
+				break;
+			case glasssix::gilgamesh::BorderType::Border_Replicate:
+				tensoroperation::copy_make_border_cpu(src->data, dst->data, top, bottom,
+					left, right, borderType::Border_Replicate, v);
+				break;
+			default:
+				NOT_IMPLEMENTED;
+				break;
+			}
+		}
+
+		void tensorcv::copy_cut_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right)
+		{
+			tensoroperation::copy_cut_border_cpu(src->data, dst->data, top, bottom, left, right);
 		}
 	}
 }
