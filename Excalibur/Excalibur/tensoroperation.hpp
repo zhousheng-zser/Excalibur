@@ -189,28 +189,36 @@ namespace excalibur
 					//top
 					if (h>=rect.y - outer_thickness && h<= rect.y + inner_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler, 
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//2 sides
 					if (h>rect.y + inner_thickness && h<rect.y +rect.h -inner_thickness)
 					{
 						//left part
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::max(std::min(thickness, rect.x + inner_thickness), 0); i++)
+						{
+							temp[i] = filler;
+						}
 						//right part
-						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-							filler,
-							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						temp = dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width);
+						for (size_t i = 0; i < std::min(thickness, width - rect.x - rect.w + inner_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//bottom
 					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x , 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 				}
 			}
@@ -228,28 +236,36 @@ namespace excalibur
 						//top
 						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+ 							}
 						}
 						//2 sides
 						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
 						{
 							//left part
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::max(std::min(thickness, rect.x + inner_thickness), 0); i++)
+							{
+								temp[i] = filler[c];
+							}
 							//right part
-							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-								filler[c],
-								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+							temp = dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width);
+							for (size_t i = 0; i < std::min(thickness, width - rect.x - rect.w + inner_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//bottom
 						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 					}
 				}
@@ -262,8 +278,8 @@ namespace excalibur
 		}
 
 		template <typename Dtype, typename Rtype>
-		static void draw_rectangle_cpu(tensor<Dtype>* dst, rectangle<Rtype> rect,
-			int thickness, color color_)
+		static void draw_rectangle_cpu(tensor<Dtype>* dst, rectangle<Rtype>* rect,
+			int thickness, color* color_)
 		{
 			if (thickness <= 0)
 			{
@@ -277,84 +293,100 @@ namespace excalibur
 			int width = dst->width();
 			int height = dst->height();
 			int offset = width * height;
-			if (rect.x>width || rect.y>height || rect.x + rect.w < 0 || rect.y + rect.h<0)
+			if (rect->x>width || rect->y>height || rect->x + rect->w < 0 || rect->y + rect->h<0)
 			{
 				LOG(WARNING) << "Illegal rectangle input. Return without any changes.";
 				return;
 			}
+			/// CANNOT use memset, this will cause an undefined behavior.
 			if (channels == 1)
 			{
-				Dtype filler = Dtype(color_.g / 3 + color_.b / 3 + color_.r / 3);
+				Dtype filler = Dtype(color_->g / 3 + color_->b / 3 + color_->r / 3);
 				for (int h = 0; h < height; h++)
 				{
 					//top
-					if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+					if (h >= rect->y - outer_thickness && h <= rect->y + inner_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//2 sides
-					if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+					if (h>rect->y + inner_thickness && h<rect->y + rect->h - inner_thickness)
 					{
 						//left part
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::max(std::min(thickness, rect->x + inner_thickness), 0); i++)
+						{
+							temp[i] = filler;
+						}
 						//right part
-						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-							filler,
-							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						temp = dst_data + h * width + std::min(rect->x + rect->w - inner_thickness, width);
+						for (size_t i = 0; i < std::min(thickness, width - rect->x - rect->w + inner_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//bottom
-					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+					if (h >= rect->y + rect->h - inner_thickness && h <= rect->y + rect->h + outer_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 				}
 			}
 			else if (channels == 3)
 			{
-				Dtype* filler = new Dtype[3];
-				filler[0] = color_.r;
-				filler[1] = color_.g;
-				filler[2] = color_.b;
+				Dtype filler[3];
+				filler[0] = Dtype(color_->r);
+				filler[1] = Dtype(color_->g);
+				filler[2] = Dtype(color_->b);
 				for (int c = 0; c < 3; c++)
 				{
 					int c_offset = c * offset;
 					for (int h = 0; h < height; h++)
 					{
 						//top
-						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+						if (h >= rect->y - outer_thickness && h <= rect->y + inner_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype * temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//2 sides
-						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+						if (h>rect->y + inner_thickness && h<rect->y + rect->h - inner_thickness)
 						{
 							//left part
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::max(std::min(thickness, rect->x + inner_thickness), 0); i++)
+							{
+								temp[i] = filler[c];
+							}
 							//right part
-							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-								filler[c],
-								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+							temp = dst_data + c_offset + h * width + std::min(rect->x + rect->w - inner_thickness, width);
+							for (size_t i = 0; i < std::min(thickness, width - rect->x - rect->w + inner_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//bottom
-						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+						if (h >= rect->y + rect->h - inner_thickness && h <= rect->y + rect->h + outer_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 					}
 				}
-				delete filler;
 			}
 			else
 			{
@@ -514,7 +546,6 @@ namespace excalibur
 					}
 				}
 			}
-			showimage(dst);
 		}
 
 		template <typename Dtype>

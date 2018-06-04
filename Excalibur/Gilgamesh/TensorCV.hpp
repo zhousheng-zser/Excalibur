@@ -28,6 +28,8 @@ namespace glasssix
 
 			static void copy_cut_border(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right, int device);
 
+			static void draw_rectangle(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device);
+
 		private:
 			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
 
@@ -42,6 +44,8 @@ namespace glasssix
 				int left, int right, BorderType type, float v);
 
 			static void copy_cut_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right);
+
+			static void draw_rectangle_cpu(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_);
 		};
 	}
 }
