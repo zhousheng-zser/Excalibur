@@ -11,6 +11,8 @@ using namespace System::Collections::Generic;
 using namespace System::IO;
 using namespace System::Drawing;
 using namespace System::Drawing::Imaging;
+// #pragma make_public directive is currently supported for native non-template types only
+// #pragma make_public(excalibur::tensor<float>) 
 
 namespace glasssix
 {
@@ -117,6 +119,7 @@ namespace glasssix
 					this->device = device;
 				}
 			}
+
 		};
 	}
 }

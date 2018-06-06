@@ -73,7 +73,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <TargetName>$(ProjectName)_CPU</TargetName>
+    <TargetName>$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>$(ProjectName)</TargetName>
@@ -139,6 +139,9 @@
   <ItemGroup>
     <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
       <Project>{e0af50ac-048c-412f-ba26-13b4f408c96d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Gilgamesh\Gilgamesh.vcxproj">
+      <Project>{5a642d01-4204-4515-81a3-e4645d44e00a}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
