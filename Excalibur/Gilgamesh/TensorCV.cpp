@@ -114,16 +114,16 @@ namespace glasssix
 			switch (type)
 			{
 			case glasssix::gilgamesh::InterpolationType::Nearest:
-				tensoroperation::resize_cpu(src->data, dst->data,
+				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
 					new_height, new_width, interpolationType::Nearest);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Bilinear:
-				tensoroperation::resize_cpu(src->data,
-					dst->data,
+				tensoroperation::resize_cpu(src->data->getdata(),
+					dst->data->getdata(),
 					new_height, new_width, interpolationType::Bilinear);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Cubic:
-				tensoroperation::resize_cpu(src->data, dst->data,
+				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
 					new_height, new_width, interpolationType::Cubic);
 				break;
 			default:
@@ -138,15 +138,15 @@ namespace glasssix
 			switch (type)
 			{
 			case glasssix::gilgamesh::InterpolationType::Nearest:
-				tensoroperation::rotate_cpu(src->data, dst->data,
+				tensoroperation::rotate_cpu(src->data->getdata(), dst->data->getdata(),
 					theta, center_x, center_y, interpolationType::Nearest, v);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Bilinear:
-				tensoroperation::rotate_cpu(src->data, dst->data,
+				tensoroperation::rotate_cpu(src->data->getdata(), dst->data->getdata(),
 					theta, center_x, center_y, interpolationType::Bilinear, v);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Cubic:
-				tensoroperation::rotate_cpu(src->data, dst->data,
+				tensoroperation::rotate_cpu(src->data->getdata(), dst->data->getdata(),
 					theta, center_x, center_y, interpolationType::Cubic, v);
 				break;
 			default:
@@ -160,13 +160,13 @@ namespace glasssix
 			switch (axis)
 			{
 			case glasssix::gilgamesh::FlipType::C_Wise:
-				tensoroperation::flip_cpu(src->data, dst->data, flipType::C_Wise);
+				tensoroperation::flip_cpu(src->data->getdata(), dst->data->getdata(), flipType::C_Wise);
 				break;
 			case glasssix::gilgamesh::FlipType::W_Wise:
-				tensoroperation::flip_cpu(src->data, dst->data, flipType::W_Wise);
+				tensoroperation::flip_cpu(src->data->getdata(), dst->data->getdata(), flipType::W_Wise);
 				break;
 			case glasssix::gilgamesh::FlipType::H_Wise:
-				tensoroperation::flip_cpu(src->data, dst->data, flipType::H_Wise);
+				tensoroperation::flip_cpu(src->data->getdata(), dst->data->getdata(), flipType::H_Wise);
 				break;
 			default:
 				NOT_IMPLEMENTED;
@@ -176,7 +176,7 @@ namespace glasssix
 
 		void tensorcv::rgb2gray_cpu(Tensor^ src, Tensor^ %dst)
 		{
-			tensoroperation::rgb2gray_cpu(src->data, dst->data);
+			tensoroperation::rgb2gray_cpu(src->data->getdata(), dst->data->getdata());
 		}
 
 		void tensorcv::copy_make_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom,
@@ -185,11 +185,11 @@ namespace glasssix
 			switch (type)
 			{
 			case glasssix::gilgamesh::BorderType::Border_Constant:
-				tensoroperation::copy_make_border_cpu(src->data, dst->data, top, bottom, 
+				tensoroperation::copy_make_border_cpu(src->data->getdata(), dst->data->getdata(), top, bottom,
 					left, right, borderType::Border_Constant, v);
 				break;
 			case glasssix::gilgamesh::BorderType::Border_Replicate:
-				tensoroperation::copy_make_border_cpu(src->data, dst->data, top, bottom,
+				tensoroperation::copy_make_border_cpu(src->data->getdata(), dst->data->getdata(), top, bottom,
 					left, right, borderType::Border_Replicate, v);
 				break;
 			default:
@@ -200,12 +200,12 @@ namespace glasssix
 
 		void tensorcv::copy_cut_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right)
 		{
-			tensoroperation::copy_cut_border_cpu(src->data, dst->data, top, bottom, left, right);
+			tensoroperation::copy_cut_border_cpu(src->data->getdata(), dst->data->getdata(), top, bottom, left, right);
 		}
 
 		void tensorcv::draw_rectangle_cpu(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_)
 		{
-			tensoroperation::draw_rectangle_cpu(dst->data, (rect->rect), thickness, (color_->c));
+			tensoroperation::draw_rectangle_cpu(dst->data->getdata(), (rect->rect), thickness, (color_->c));
 		}
 	}
 }

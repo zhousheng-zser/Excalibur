@@ -154,6 +154,7 @@
     <ClInclude Include="cudnn.hpp" />
     <ClInclude Include="eltwise.hpp" />
     <ClInclude Include="flip.hpp" />
+    <ClInclude Include="ftensor.hpp" />
     <ClInclude Include="im2col.hpp" />
     <ClInclude Include="inner_product.hpp" />
     <ClInclude Include="io.hpp" />

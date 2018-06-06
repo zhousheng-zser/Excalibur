@@ -2,7 +2,7 @@
 #define _TENSOR_CLI_HPP_
 
 #include <msclr\marshal_cppstd.h>
-#include "../Excalibur/tensor.hpp"
+#include "../Excalibur/ftensor.hpp"
 #include "TensorCVUtils.hpp"
 
 using namespace System;
@@ -12,7 +12,7 @@ using namespace System::IO;
 using namespace System::Drawing;
 using namespace System::Drawing::Imaging;
 // #pragma make_public directive is currently supported for native non-template types only
-// #pragma make_public(excalibur::tensor<float>) 
+#pragma make_public(excalibur::ftensor) 
 
 namespace glasssix
 {
@@ -28,7 +28,7 @@ namespace glasssix
 			int device;
 
 		public:
-			excalibur::tensor<float>* data;
+			excalibur::ftensor* data;
 
 			Tensor();
 

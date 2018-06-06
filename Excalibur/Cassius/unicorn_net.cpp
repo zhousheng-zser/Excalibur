@@ -521,11 +521,11 @@ namespace glasssix
 	}
 #endif
 #endif
-	void unicorn_net::Forward(tensor<float>* input_data)
+	void unicorn_net::Forward(ftensor* input_data)
 	{
-		tensoroperation::preprocess_tensors_cpu(input_data);
+		tensoroperation::preprocess_tensors_cpu(input_data->getdata());
 		const std::shared_ptr<tensor<float>> input_data_ptr =
-			std::make_shared<tensor<float>>(*input_data);
+			std::make_shared<tensor<float>>(*input_data->getdata());
 		Forward(input_data_ptr);
 	}
 
