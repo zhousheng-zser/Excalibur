@@ -1,5 +1,6 @@
 #include <msclr\marshal_cppstd.h>
 #include "unicorn_net.hpp"
+#include "fTensor.hpp"
 
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -7,6 +8,8 @@ using namespace System::Collections::Generic;
 using namespace System::IO;
 using namespace System::Drawing;
 using namespace System::Drawing::Imaging;
+
+//#include "../Gilgamesh/Tensor.hpp"
 
 #define MARSHAL_ARRAY(n_array, m_array, n_array_size) \
   auto m_array = gcnew array<float>(n_array_size); \
@@ -57,6 +60,15 @@ namespace glasssix
 				String^ description()
 				{
 					return gcnew String("Baseline version, with quality score supoort with cudnn.");
+				}
+
+ 				array<float>^ ExtractTensorOutputs(glasssix::gilgamesh::fTensor^ tensors)
+				{
+					net_->Forward(tensors->data);
+					const float* intermediate = net_->get_pool5()->cpu_data();
+					int output_size = net_->get_pool5()->count();
+					MARSHAL_ARRAY(intermediate, outputs, output_size);
+					return outputs;
 				}
 
 				array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas)

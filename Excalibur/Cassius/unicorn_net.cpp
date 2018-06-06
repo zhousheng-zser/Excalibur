@@ -1,5 +1,6 @@
 #include "unicorn_net.hpp"
 #include <iostream>
+#include "../Excalibur/tensoroperation.hpp"
 
 namespace glasssix
 {
@@ -520,6 +521,13 @@ namespace glasssix
 	}
 #endif
 #endif
+	void unicorn_net::Forward(tensor<float>* input_data)
+	{
+		tensoroperation::preprocess_tensors_cpu(input_data);
+		const std::shared_ptr<tensor<float>> input_data_ptr =
+			std::make_shared<tensor<float>>(*input_data);
+		Forward(input_data_ptr);
+	}
 
 	void unicorn_net::Forward(const std::shared_ptr<tensor<float>> input_data)
 	{

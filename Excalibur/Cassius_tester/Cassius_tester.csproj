@@ -83,6 +83,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Cassius\Cassius.vcxproj">
+      <Project>{8432fa67-f974-46c7-a792-dcfb77624f35}</Project>
+      <Name>Cassius</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Gilgamesh\Gilgamesh.vcxproj">
       <Project>{5a642d01-4204-4515-81a3-e4645d44e00a}</Project>
       <Name>Gilgamesh</Name>

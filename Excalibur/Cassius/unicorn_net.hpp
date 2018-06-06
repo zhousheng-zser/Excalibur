@@ -1,4 +1,3 @@
-#pragma once
 #ifndef _UNICORN_NET_HPP_
 #define _UNICORN_NET_HPP_
 
@@ -290,6 +289,8 @@ namespace glasssix
 		~unicorn_net();
 
 		void Forward(const std::shared_ptr<tensor<float>> input_data);
+
+		void Forward(tensor<float>* input_data);
 
 		static int get_input_channel()
 		{

@@ -516,8 +516,35 @@ namespace excalibur
 			}
 		}
 
-		//rgba2rgb()
-		//compression()
+		template <typename Dtype>
+		static void preprocess_tensors_cpu(tensor<Dtype>* dst)
+		{
+			int num = dst->num();
+			int channel = dst->channels();
+			CHECK_EQ(channel, 3);
+			int height = dst->height();
+			int width = dst->width();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			float means[] = { 104.f, 117.0f, 124.f };
+			float var = 0.0078125f;
+			for (size_t n = 0; n < num; n++)
+			{
+				int offset = n * 3 * height * width;
+				for (size_t c = 0; c < 3; c++)
+				{
+					int sub_offset = c * height * width;
+					for (size_t h = 0; h < height; h++)
+					{
+						int subsub_offset = h * width;
+						for (size_t w = 0; w < width; w++)
+						{
+							dst_data[offset + sub_offset + subsub_offset + w] =
+								Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+						}
+					}
+				}
+			}
+		}
 
 		template <typename Dtype>
 		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
