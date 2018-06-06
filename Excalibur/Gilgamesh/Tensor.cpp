@@ -210,12 +210,14 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
+				int stride = (width * channel + 3) & -4;
 				for (int h = 0; h < this->height; h++)
 				{
 					int offset = h * this->width;
+					int h_stride = h * stride;
 					for (int w = 0; w < this->width; w++)
 					{
-						dst_data[offset + w] = (float)pBmp[offset + w];
+						dst_data[offset + w] = (float)pBmp[h_stride + w];
 					}
 				}
 				bmp->UnlockBits(bmpd);
@@ -230,16 +232,19 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
-				for (int c = 0; c < this->channel; c++)
+				int stride = (width * channel + 3) & -4;
+				int offset = this->width * this->height;
+				for (int c = 0; c < channel; c++)
 				{
-					int offset = this->width * this->height * c;
+					int c_offset = offset * c;
 					for (int h = 0; h < this->height; h++)
 					{
 						int sub_offset = h * this->width;
+						int h_stride = h * stride;
 						for (int w = 0; w < this->width; w++)
 						{
-							dst_data[offset + sub_offset + w] =
-								(float)pBmp[(sub_offset + w) * 3 + c];
+							dst_data[c_offset + sub_offset + w]
+								= (float)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -280,16 +285,19 @@ namespace glasssix
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
-				for (int c = 0; c < this->channel; c++)
+				int stride = (width * channel + 3) & -4;
+				int offset = this->width * this->height;
+				for (int c = 0; c < channel; c++)
 				{
-					int offset = this->width * this->height * c;
+					int c_offset = offset * c;
 					for (int h = 0; h < this->height; h++)
 					{
 						int sub_offset = h * this->width;
+						int h_stride = h * stride;
 						for (int w = 0; w < this->width; w++)
 						{
-							dst_data[offset + sub_offset + w] =
-								(float)pBmp[(sub_offset + w) * 3 + c];
+							dst_data[c_offset + sub_offset + w]
+								= (float)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
