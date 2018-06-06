@@ -173,6 +173,7 @@
     <ClInclude Include="syncedmem.hpp" />
     <ClInclude Include="tensor.hpp" />
     <ClInclude Include="tensoroperation.hpp" />
+    <ClInclude Include="utensor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="accelerator.cpp">
