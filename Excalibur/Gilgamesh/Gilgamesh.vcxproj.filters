@@ -21,6 +21,9 @@
     <ClCompile Include="TensorCV.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="UTensor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tensor.hpp">
@@ -30,6 +33,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TensorCVUtils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UTensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

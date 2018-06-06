@@ -2,6 +2,7 @@
 #define _TENSOR_CV_HPP_
 
 #include "Tensor.hpp"
+#include "UTensor.hpp"
 #include "../Excalibur/tensoroperation.hpp"
 
 namespace glasssix
@@ -30,6 +31,23 @@ namespace glasssix
 
 			static void draw_rectangle(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device);
 
+			//
+			static void resize(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
+
+			static void rotate(UTensor^ src, UTensor^ %dst, float theta,
+				int center_x, int center_y, InterpolationType type, unsigned char v, int device);
+
+			static void flip(UTensor^ src, UTensor^ %dst, FlipType axis, int device);
+
+			static void rgb2gray(UTensor^ src, UTensor^ %dst, int device);
+
+			static void copy_make_border(UTensor^ src, UTensor^ %dst, int top, int bottom,
+				int left, int right, BorderType type, unsigned char v, int device);
+
+			static void copy_cut_border(UTensor^ src, UTensor^ %dst, int top, int bottom, int left, int right, int device);
+
+			static void draw_rectangle(UTensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device);
+
 		private:
 			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
 
@@ -46,6 +64,23 @@ namespace glasssix
 			static void copy_cut_border_cpu(Tensor^ src, Tensor^ %dst, int top, int bottom, int left, int right);
 
 			static void draw_rectangle_cpu(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_);
+
+			//
+			static void resize_cpu(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type);
+
+			static void rotate_cpu(UTensor^ src, UTensor^ %dst, float theta,
+				int center_x, int center_y, InterpolationType type, unsigned char v);
+
+			static void flip_cpu(UTensor^ src, UTensor^ %dst, FlipType axis);
+
+			static void rgb2gray_cpu(UTensor^ src, UTensor^ %dst);
+
+			static void copy_make_border_cpu(UTensor^ src, UTensor^ %dst, int top, int bottom,
+				int left, int right, BorderType type, unsigned char v);
+
+			static void copy_cut_border_cpu(UTensor^ src, UTensor^ %dst, int top, int bottom, int left, int right);
+
+			static void draw_rectangle_cpu(UTensor^ %dst, rectangle^ rect, int thickness, color^ color_);
 		};
 	}
 }
