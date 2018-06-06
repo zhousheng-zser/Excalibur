@@ -12,7 +12,7 @@ namespace glasssix
 			width = 0;
 			height = 0;
 			device = -1;
-			data = nullptr;
+			data = new ftensor();
 		}
 
 		Tensor::!Tensor()
@@ -43,7 +43,7 @@ namespace glasssix
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new tensor<float>(std::vector<int>
+			data = new ftensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
@@ -54,7 +54,7 @@ namespace glasssix
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new tensor<float>(std::vector<int>
+			data = new ftensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
@@ -65,7 +65,7 @@ namespace glasssix
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new tensor<float>(std::vector<int>
+			data = new ftensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
@@ -76,7 +76,7 @@ namespace glasssix
 			this->width = 1;
 			this->height = 1;
 			this->device = device;
-			data = new tensor<float>(std::vector<int>
+			data = new ftensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
@@ -91,9 +91,9 @@ namespace glasssix
 			if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
 			{
 				this->channel = 1;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -113,9 +113,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 			{
 				this->channel = 3;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -141,9 +141,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
 			{
 				this->channel = 4;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -166,9 +166,9 @@ namespace glasssix
 			else
 			{
 				this->channel = 3;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -204,9 +204,9 @@ namespace glasssix
 			if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
 			{
 				this->channel = 1;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -224,9 +224,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 			{
 				this->channel = 3;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -249,9 +249,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
 			{
 				this->channel = 4;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -274,9 +274,9 @@ namespace glasssix
 			else
 			{
 				this->channel = 3;
-				data = new tensor<float>(std::vector<int>
+				data = new ftensor(std::vector<int>
 				{this->num, this->channel, this->width, this->height}, this->device);
-				float* dst_data = data->mutable_cpu_data();
+				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -309,7 +309,7 @@ namespace glasssix
 			{
 				// rgba32, the data pointer is aligned by itself
 				unsigned char* dst_data = new unsigned char[width * height * 4];
-				const float* src_data = data->cpu_data();
+				const float* src_data = data->getdata()->cpu_data();
 				for (int c = 0; c < channel; c++)
 				{
 					int offset = this->width * this->height * c;
@@ -335,7 +335,7 @@ namespace glasssix
 				// rgb24 or gray8, alignment check is neccessary
 				// pointer aligned to 4's multiple
 				System::Drawing::Bitmap^ bmp;
-				const float* src_data = data->cpu_data();
+				const float* src_data = data->getdata()->cpu_data();
 				int* offset = new int[channel];
 				for (int c = 0; c < channel; c++)
 				{
@@ -439,6 +439,11 @@ namespace glasssix
 				// Fix it in next version without GDI+ solution.
 				// Now, return directly.
 				// https://stackoverflow.com/questions/4679827/c-sharp-why-bitmap-save-ignores-pixelformat-of-bitmap
+				return;
+			}
+			if (this->data->empty())
+			{
+				LOG(ERROR) << "Try to save empty tensor.";
 				return;
 			}
 			Bitmap^ bmp = ToBitmap();

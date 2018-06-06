@@ -140,6 +140,9 @@
     <ClInclude Include="tensoroperation.hpp">
       <Filter>include\tensor_utils</Filter>
     </ClInclude>
+    <ClInclude Include="ftensor.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="caffe.pb.cc">
