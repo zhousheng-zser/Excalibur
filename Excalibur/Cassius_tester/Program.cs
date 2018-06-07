@@ -32,17 +32,9 @@ namespace Cassius_tester
             Tensor a = new Tensor(@"C:\Users\BALTHASAR\Desktop\0.jpg", -1);
             Tensor b = new Tensor();
             b = a;
-            glasssix.gilgamesh.Image XAPY = new glasssix.gilgamesh.Image(@"C:\Users\BALTHASAR\Desktop\0.jpg", -1);
-            //tensorcv.copy_make_border(a, ref b, 20, 20, 20, 20,glasssix.gilgamesh.BorderType.Border_Constant, 0, -1);
-            //tensorcv.copy_cut_border(a, ref b, 20, 20, 20, 20, -1);
-            tensorcv.resize(XAPY, ref XAPY, 128, 128, InterpolationType.Bilinear, -1);
-            //tensorcv.draw_rectangle(ref a, new rectangle(20, 40, 100, 100), 3, new color(107, 128, 132), -1);
-            //Unicorn uc = new Unicorn(0);
-            //float[] tf = uc.ExtractTensorOutputs(b);
-            //float[] bf = uc.ExtractBitmapOutputs(new[] { bmp1 });
-            //float prob = Unicorn.CosineDistanceProb(tf, bf);
-            //Console.WriteLine(prob);
-            XAPY.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
+            Tensor uten = new Tensor(new Bitmap(@"C:\Users\BALTHASAR\Desktop\测试图片\122296944289749009.jpg"), -1);
+            tensorcv.copy_cut_border(uten, ref uten, 40, 40, 40, 40, -1);
+            uten.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
@@ -251,4 +243,5 @@ namespace Cassius_tester
             return bmp;
         }
     }
+    
 }
