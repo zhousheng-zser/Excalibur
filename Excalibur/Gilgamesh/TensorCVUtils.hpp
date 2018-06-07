@@ -72,8 +72,9 @@ namespace glasssix
 				c = c_.c;
 			}
 
-			color(unsigned char r, unsigned char g, unsigned char b)
+			color(unsigned char b, unsigned char g, unsigned char r)
 			{
+				// To keep compatibility with OpenCV(RGB2BGR)
 				c = new excalibur::color(r, g, b);
 			}
 		};
