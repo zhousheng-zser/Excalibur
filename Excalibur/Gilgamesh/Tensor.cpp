@@ -92,7 +92,7 @@ namespace glasssix
 			{
 				this->channel = 1;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -114,7 +114,7 @@ namespace glasssix
 			{
 				this->channel = 3;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -142,7 +142,7 @@ namespace glasssix
 			{
 				this->channel = 4;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -167,7 +167,7 @@ namespace glasssix
 			{
 				this->channel = 3;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
@@ -205,7 +205,7 @@ namespace glasssix
 			{
 				this->channel = 1;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -227,7 +227,7 @@ namespace glasssix
 			{
 				this->channel = 3;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -255,7 +255,7 @@ namespace glasssix
 			{
 				this->channel = 4;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
@@ -280,7 +280,7 @@ namespace glasssix
 			{
 				this->channel = 3;
 				data = new ftensor(std::vector<int>
-				{this->num, this->channel, this->width, this->height}, this->device);
+				{this->num, this->channel, this->height, this->width}, this->device);
 				float* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
