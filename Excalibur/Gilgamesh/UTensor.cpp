@@ -338,11 +338,15 @@ namespace glasssix
 					ptr);
 				return bmp;
 			}
-			else if (this->channel == 3 || this->channel == 1)
+			else if (this->channel == 3)
 			{
-				// rgb24 or gray8, alignment check is neccessary
-				// pointer aligned to 4's multiple
-				System::Drawing::Bitmap^ bmp;
+				System::Drawing::Bitmap^ bmp =
+					gcnew Bitmap(width, height, PixelFormat::Format24bppRgb);
+				BitmapData^ bmpdata = bmp->LockBits(
+					System::Drawing::Rectangle(Point::Empty, Size(width, height)),
+					ImageLockMode::WriteOnly,
+					PixelFormat::Format24bppRgb);
+				unsigned char* dst_data = (unsigned char*)bmpdata->Scan0.ToPointer();
 				const unsigned char* src_data = data->getdata()->cpu_data();
 				int* offset = new int[channel];
 				for (int c = 0; c < channel; c++)
@@ -350,85 +354,72 @@ namespace glasssix
 					offset[c] = c * this->width * this->height;
 				}
 				int stride = width * channel;
-				if (stride % 4 != 0)
+				int aligned_stride = (width * channel + 3) & -4;
+				int dst_aligned_offset = 0;
+				for (int h = 0; h < height; h++)
 				{
-					unsigned char* dst_data = new unsigned char[((width * channel + 3) & -4) * height];
-					int aligned_stride = (width * channel + 3) & -4;
-					int dst_aligned_offset = 0;
-					for (int h = 0; h < height; h++)
+					int sub_offset = h * this->width;
+					int aligned_stride_h = aligned_stride * h;
+					for (int w = 0; w < width; w++)
 					{
-						int sub_offset = h * this->width;
-						int aligned_stride_h = aligned_stride * h;
-						for (int w = 0; w < width; w++)
+						for (int c = 0; c < channel; c++)
 						{
-							for (int c = 0; c < channel; c++)
-							{
-								dst_data[aligned_stride_h + w * channel + c] =
-									(unsigned char)src_data[offset[c] + sub_offset + w];
-							}
-						}
-						int stride_offset_counter = stride;
-						//fill the offset
-						do
-						{
-							dst_aligned_offset += 1;
-							dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
-							stride_offset_counter += 1;
-						} while (stride_offset_counter % 4 != 0);
-					}
-					System::IntPtr ptr = (System::IntPtr)dst_data;
-					//aligned_stride = (width * channel + 3) & -4;
-					if (channel == 1)
-					{
-						// gray 8
-						bmp = gcnew System::Drawing::Bitmap(width, height,
-							aligned_stride,
-							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
-							ptr);
-					}
-					else
-					{
-						// rgb24
-						bmp = gcnew System::Drawing::Bitmap(width, height,
-							aligned_stride,
-							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
-							ptr);
-					}
-				}
-				else
-				{
-					unsigned char* dst_data = new unsigned char[width * channel * height];
-					for (int h = 0; h < height; h++)
-					{
-						int sub_offset = h * this->width;
-						for (int w = 0; w < width; w++)
-						{
-							for (int c = 0; c < channel; c++)
-							{
-								dst_data[(sub_offset + w) * channel + c] =
-									(unsigned char)src_data[offset[c] + sub_offset + w];
-							}
+							dst_data[aligned_stride_h + w * channel + c] =
+								(unsigned char)src_data[offset[c] + sub_offset + w];
 						}
 					}
-					System::IntPtr ptr = (System::IntPtr)dst_data;
-					if (channel == 1)
+					int stride_offset_counter = stride;
+					//fill the offset
+					while (stride_offset_counter % 4 != 0)
 					{
-						// gray 8
-						bmp = gcnew System::Drawing::Bitmap(width, height,
-							stride,
-							System::Drawing::Imaging::PixelFormat::Format8bppIndexed,
-							ptr);
-					}
-					else
-					{
-						// rgb24
-						bmp = gcnew System::Drawing::Bitmap(width, height,
-							stride,
-							System::Drawing::Imaging::PixelFormat::Format24bppRgb,
-							ptr);
+						dst_aligned_offset += 1;
+						dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
+						stride_offset_counter += 1;
 					}
 				}
-				delete offset;
+				bmp->UnlockBits(bmpdata);
+				return bmp;
+			}
+			else if (this->channel == 1)
+			{
+				System::Drawing::Bitmap^ bmp =
+					gcnew Bitmap(width, height, PixelFormat::Format8bppIndexed);
+				BitmapData^ bmpdata = bmp->LockBits(
+					System::Drawing::Rectangle(Point::Empty, Size(width, height)),
+					ImageLockMode::WriteOnly,
+					PixelFormat::Format8bppIndexed);
+				unsigned char* dst_data = (unsigned char*)bmpdata->Scan0.ToPointer();
+				const unsigned char* src_data = data->getdata()->cpu_data();
+				int* offset = new int[3];
+				for (int c = 0; c < 3; c++)
+				{
+					offset[c] = 0 * this->width * this->height;
+				}
+				int stride = width * 1;
+				int aligned_stride = (width * 1 + 3) & -4;
+				int dst_aligned_offset = 0;
+				for (int h = 0; h < height; h++)
+				{
+					int sub_offset = h * this->width;
+					int aligned_stride_h = aligned_stride * h;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < 1; c++)
+						{
+							dst_data[aligned_stride_h + w * 1 + c] =
+								(unsigned char)src_data[offset[c] + sub_offset + w];
+						}
+					}
+					int stride_offset_counter = stride;
+					//fill the offset
+					while (stride_offset_counter % 4 != 0)
+					{
+						dst_aligned_offset += 1;
+						dst_data[(h + 1) * stride + dst_aligned_offset] = 0;
+						stride_offset_counter += 1;
+					}
+				}
+				bmp->UnlockBits(bmpdata);
 				return bmp;
 			}
 			else

@@ -598,7 +598,7 @@ namespace excalibur
 			for (int q = 0; q<channels; q++)
 			{
 				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
-					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					src->height(), src->width(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
 					dst->height(), dst->width(), top, left, type, v);
 			}
 		}
@@ -622,7 +622,7 @@ namespace excalibur
 			for (int q = 0; q<channels; q++)
 			{
 				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
-					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					src->height(), src->width(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
 					dst->height(), dst->width(), top, left, type, v);
 			}
 		}
@@ -1169,7 +1169,13 @@ namespace excalibur
 		static void rotate_cpu_nearset(const Dtype* src_data, int height, int width, int channels,
 			Dtype* dst_data, float theta, int center_x, int center_y, Dtype v)
 		{
-			memset(dst_data, v, height * width * channels * sizeof(Dtype));
+			// Cannot use memset, it's useless and will cause an undefined behavior
+			for (size_t i = 0; i < height * width * channels; i++)
+			{
+				dst_data[i] = v;
+			}
+			// To keep OpenCV API compatibility
+			theta = -1.f * theta;
 			float SinTheta = sin(theta);
 			float CosTheta = cos(theta);
 			float ConstX = -center_x*CosTheta + center_y*SinTheta + center_x + 0.5;
