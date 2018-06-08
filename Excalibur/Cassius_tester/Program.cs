@@ -35,9 +35,10 @@ namespace Cassius_tester
             Tensor uten = new Tensor(new Bitmap(@"C:\Users\BALTHASAR\Desktop\测试图片\下载.jpg"), -1);
             Tensor gten = new Tensor();
             //tensorcv.copy_make_border(uten, ref uten, 40, 40, 40, 40, glasssix.gilgamesh.BorderType.Border_Constant, 1, -1);
-            tensorcv.rotate(uten, ref uten, 3.14f/6, 0, 0, InterpolationType.Nearest, 255, -1);
+            //tensorcv.rotate(uten, ref uten, 3.14f/6, 0, 0, InterpolationType.Nearest, 255, -1);
             //tensorcv.rgb2gray(uten, ref gten, -1);
             //tensorcv.copy_cut_border(uten, ref uten, 40, 40, 40, 40, -1);
+            tensorcv.equalize_hist(uten, ref gten, -1);
             uten.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);

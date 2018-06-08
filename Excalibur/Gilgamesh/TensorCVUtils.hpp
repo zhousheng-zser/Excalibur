@@ -44,6 +44,11 @@ namespace glasssix
 			{
 				rect = new excalibur::rectangle<int>(x, y, h, w);
 			}
+
+			rectangle(System::Drawing::Rectangle^ r)
+			{
+				rect = new excalibur::rectangle<int>(r->X, r->Y, r->Height, r->Width);
+			}
 		};
 
 		public ref class color
@@ -76,6 +81,11 @@ namespace glasssix
 			{
 				// To keep compatibility with OpenCV(RGB2BGR)
 				c = new excalibur::color(r, g, b);
+			}
+
+			color(System::Drawing::Color^ c_)
+			{
+				c = new excalibur::color(c_->B, c_->G, c_->R);
 			}
 		};
 	}
