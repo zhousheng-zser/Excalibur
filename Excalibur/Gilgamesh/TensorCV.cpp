@@ -209,6 +209,65 @@ namespace glasssix
 			}
 		}
 
+		void tensorcv::convert2UTensor(Tensor^ src, UTensor^ %dst)
+		{
+			int device = src->Device;
+			dst = gcnew UTensor(src->Num, src->Channel, src->Height, src->Width, device);
+			if (device < 0)
+			{
+				tensoroperation::type_convertor_cpu(src->data->getdata(), dst->data->getdata());
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::convert2Tensor(UTensor^ src, Tensor^ %dst)
+		{
+			int device = src->Device;
+			dst = gcnew Tensor(src->Num, src->Channel, src->Height, src->Width, device);
+			if (device < 0)
+			{
+				tensoroperation::type_convertor_cpu(src->data->getdata(), dst->data->getdata());
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+
+
+		void tensorcv::equalize_hist(Tensor^ src, Tensor^ %dst, int device)
+		{
+			dst = gcnew Tensor(src->Num, src->Channel, src->Height, src->Width, device);
+			if (device < 0)
+			{
+				tensoroperation::equalize_hist_cpu(src->data->getdata(), dst->data->getdata());
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::equalize_hist(UTensor^ src, UTensor^ %dst, int device)
+		{
+			dst = gcnew UTensor(src->Num, src->Channel, src->Height, src->Width, device);
+			if (device < 0)
+			{
+				tensoroperation::equalize_hist_cpu(src->data->getdata(), dst->data->getdata());
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)
@@ -410,5 +469,6 @@ namespace glasssix
 		{
 			tensoroperation::draw_rectangle_cpu(dst->data->getdata(), (rect->rect), thickness, (color_->c));
 		}
+
 	}
 }

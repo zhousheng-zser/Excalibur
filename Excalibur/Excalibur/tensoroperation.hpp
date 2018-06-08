@@ -678,6 +678,79 @@ namespace excalibur
 			copy_cut_border_image_cpu(src->cpu_data(), src->height(), src->width(), src->channels(),
 				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
 		}
+
+		template <typename DtypeSRC, typename DtypeDST>
+		static void type_convertor_cpu(const tensor<DtypeSRC>* src, tensor<DtypeDST>* dst)
+		{
+			const DtypeSRC* src_data = src->cpu_data();
+			DtypeDST* dst_data = dst->mutable_cpu_data();
+			for (size_t i = 0; i < src->count(); i++)
+			{
+				dst_data[i] = DtypeDST(src_data[i]);
+			}
+		}
+
+		template <typename Dtype>
+		static void equalize_hist_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			int channel = src->channels();
+			int height = src->height();
+			int width = src->width();
+			// equalize hist will be done as channel wise
+			for (size_t c = 0; c < channel; c++)
+			{
+				//pixel number of each grayscale level
+				int gray[256] = { 0 };
+
+				//record grayscale distribution density
+				float gray_prob[256] = { 0 };
+
+				//record density integration
+				float gray_distribution[256] = { 0 };
+
+				//equalized grayscale value
+				int gray_equal[256] = { 0 };
+
+				int gray_sum = height * width;
+				int c_offset = c * gray_sum;
+
+				//Count the number of pixels in each grayscale
+				for (size_t i = 0; i < gray_sum; i++)
+				{
+					int value = static_cast<unsigned char>(src_data[c_offset + i]);
+					gray[value]++;
+				}
+
+				//count grayscale frequency
+				for (int i = 0; i < 256; i++)
+				{
+					gray_prob[i] = static_cast<float>(gray[i]) / gray_sum;
+				}
+
+				//calculate density integration
+				gray_distribution[0] = gray_prob[0];
+				for (int i = 1; i < 256; i++)
+				{
+					gray_distribution[i] = gray_distribution[i - 1] + gray_prob[i];
+				}
+
+				//(N-1)*T+0.5
+				for (int i = 0; i < 256; i++)
+				{
+					gray_equal[i] = static_cast<unsigned char>(255 * gray_distribution[i] + 0.5);
+				}
+
+				for (size_t i = 0; i < gray_sum; i++)
+				{
+					dst_data[c_offset + i] = Dtype(gray_equal[static_cast<unsigned char>(src_data[c_offset + i])]);
+				}
+			}
+			showimage(dst);
+		}
+
 #ifdef USE_OPENCV
 		template <typename Dtype>
 		static void convert2mat(std::shared_ptr<tensor<Dtype>> src, cv::Mat& dst)

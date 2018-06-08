@@ -31,6 +31,7 @@ namespace glasssix
 
 			static void draw_rectangle(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device);
 
+			static void equalize_hist(Tensor^ src, Tensor^ %dst, int device);
 			//
 			static void resize(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
 
@@ -48,6 +49,11 @@ namespace glasssix
 
 			static void draw_rectangle(UTensor^ %dst, rectangle^ rect, int thickness, color^ color_, int device);
 
+			static void convert2UTensor(Tensor^ src, UTensor^ %dst);
+
+			static void convert2Tensor(UTensor^ src, Tensor^ %dst);
+
+			static void equalize_hist(UTensor^ src, UTensor^ %dst, int device);
 		private:
 			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
 
