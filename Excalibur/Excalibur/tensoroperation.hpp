@@ -787,6 +787,62 @@ namespace excalibur
 			showimage(dst);
 		}
 
+		template <typename Dtype>
+		static void mblbp_feature_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, int block_h, 
+			int block_w, int stride_h, int stride_w)
+		{
+			CHECK_EQ(src->num(), 1);
+			CHECK_GE(block_h, 1);
+			CHECK_GE(block_w, 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			Dtype* integral_data = new Dtype[channels * (height + 1) * (width + 1)];
+			fast_integral_cpu(src_data, height, width, channels, integral_data);
+			int dst_height = dst->height();
+			int dst_width = dst->width();
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_offset = c * height * width;
+				int dst_offset = c * dst_height * dst_width;
+				int integral_offset = c * (height + 1) * (width + 1);
+				for (size_t h = 0; h < height - 3 * block_h + 1; h += stride_h)
+				{
+					int src_sub_offset = h * width;
+					int dst_sub_offset = h / stride_h * dst_width;
+					for (size_t w = 0; w < width - 3 * block_w + 1; w += stride_w)
+					{
+						Dtype block_values[9];
+						for (size_t i = 0; i < 9; i++)
+						{
+							int x1 = w + (i % 3) * block_w;
+							int y1 = h + (i / 3) * block_h;
+							int x2 = x1 + block_w;
+							int y2 = y1 + block_h;
+							Dtype A = integral_data[integral_offset + y1 * (height + 1) + x1];
+							Dtype B = integral_data[integral_offset + y1 * (height + 1) + x2];
+							Dtype C = integral_data[integral_offset + y2 * (height + 1) + x1];
+							Dtype D = integral_data[integral_offset + y2 * (height + 1) + x2];
+							block_values[i] = D - B - C + A;
+						}
+						unsigned char code = 0;
+						Dtype center = block_values[4];
+						code |= (block_values[0] >= center) << 0;
+						code |= (block_values[1] >= center) << 1;
+						code |= (block_values[2] >= center) << 2;
+						code |= (block_values[3] >= center) << 7;
+						code |= (block_values[5] >= center) << 3;
+						code |= (block_values[6] >= center) << 6;
+						code |= (block_values[7] >= center) << 5;
+						code |= (block_values[8] >= center) << 4;
+						dst_data[dst_offset + dst_sub_offset + w / stride_w] = Dtype(code);
+					}
+				}
+			}
+		}
+
 #ifdef USE_OPENCV
 		template <typename Dtype>
 		static void convert2mat(std::shared_ptr<tensor<Dtype>> src, cv::Mat& dst)
@@ -1311,6 +1367,47 @@ namespace excalibur
 					}
 				}
 			}
+		}
+
+		template <typename Dtype>
+		static void fast_integral_cpu(const Dtype* src_data, int height, int width, int channels, Dtype* dst_data)
+		{
+			memset(dst_data, 0, channels * (height + 1) * (width + 1));
+			/// sum of each column 
+			Dtype *columnSum = new Dtype[width + 1];
+			columnSum[0] = Dtype(0);
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_offset = c * width * height;
+				int dst_offset = c * (width + 1) * height;
+				/// calculate integral of the first line  
+				for (int w = 1; w < width + 1; w++) 
+				{
+					columnSum[w] = src_data[src_offset + w - 1];
+					dst_data[dst_offset + width + 1 + w] = src_data[src_offset + w - 1];
+					if (w > 1) 
+					{
+						dst_data[dst_offset + width + 1 + w] += 
+							dst_data[dst_offset + width + 1 + w - 1];
+					}
+				}
+				for (int h = 1; h < height + 1; h++) 
+				{
+					int src_sub_offset = (h - 1) * width;
+					int dst_sub_offset = h * (width + 1);
+					/// first column of each line  
+					columnSum[1] += src_data[src_offset + src_sub_offset];
+					dst_data[dst_offset + dst_sub_offset + 1] = columnSum[1];
+					/// other columns   
+					for (int w = 2; w < width + 1; w++) 
+					{
+						columnSum[w] += src_data[src_offset + src_sub_offset + w - 1];
+						dst_data[dst_offset + dst_sub_offset + w] = 
+							dst_data[dst_offset + dst_sub_offset + w - 1] + columnSum[w];
+					}
+				}
+			}
+			delete columnSum;
 		}
 
 		template <typename Dtype>
