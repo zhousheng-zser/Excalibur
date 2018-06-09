@@ -751,6 +751,42 @@ namespace excalibur
 			showimage(dst);
 		}
 
+		template <typename Dtype>
+		static void lbp_feature_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, lbpType type)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			switch (type)
+			{
+			case excalibur::Native:
+				lbp_feature_cpu_native(src_data, height, width, channels, dst_data);
+				break;
+			case excalibur::RI:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::U2:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::RIU2:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::HF:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::LTP:
+				NOT_IMPLEMENTED;
+				break;
+			default:
+				LOG(ERROR) << "Un-supported LBP type.";
+				break;
+			}
+			showimage(dst);
+		}
+
 #ifdef USE_OPENCV
 		template <typename Dtype>
 		static void convert2mat(std::shared_ptr<tensor<Dtype>> src, cv::Mat& dst)
@@ -1272,6 +1308,36 @@ namespace excalibur
 					for (int c = 0; c < channels; c++)
 					{
 						dst_data[c * offset + y * width + x] = src_data[c * offset + y0 * width + x0];
+					}
+				}
+			}
+		}
+
+		template <typename Dtype>
+		static void lbp_feature_cpu_native(const Dtype* src_data, int height, int width, int channels, Dtype* dst_data)
+		{
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_c_offset = c * height * width;
+				int dst_c_offset = c * (height - 2) * (width - 2);
+				for (size_t h = 1; h < height - 1; h++)
+				{
+					int offset = src_c_offset + h * width;
+					int offset_plus = offset + width;
+					int offset_minus = offset - width;
+					for (size_t w = 1; w < width - 1; w++)
+					{
+						Dtype center = src_data[offset + w];
+						unsigned char code = 0;
+						code |= (src_data[offset_minus + w - 1] >= center) << 7;
+						code |= (src_data[offset_minus + w - 0] >= center) << 6;
+						code |= (src_data[offset_minus + w + 1] >= center) << 5;
+						code |= (src_data[offset + w + 1] >= center) << 4;
+						code |= (src_data[offset_plus + w + 1] >= center) << 3;
+						code |= (src_data[offset_plus + w + 0] >= center) << 2;
+						code |= (src_data[offset_plus + w - 1] >= center) << 1;
+						code |= (src_data[offset + w - 1] >= center) << 0;
+						dst_data[dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(code);
 					}
 				}
 			}

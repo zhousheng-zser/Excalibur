@@ -268,6 +268,81 @@ namespace glasssix
 				return;
 			}
 		}
+
+		void tensorcv::lbp_feature(Tensor^ src, Tensor^ %dst, LbpType type, int device)
+		{
+			if (device < 0)
+			{
+				switch (type)
+				{
+				case glasssix::gilgamesh::LbpType::Native:
+					dst = gcnew Tensor(src->Num, src->Channel, src->Height - 2, src->Width - 2, device);
+					tensoroperation::lbp_feature_cpu(src->data->getdata(), dst->data->getdata(), lbpType::Native);
+					break;
+				case glasssix::gilgamesh::LbpType::RI:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::U2:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::RIU2:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::HF:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::LTP:
+					NOT_IMPLEMENTED;
+					break;
+				default:
+					LOG(ERROR) << "Un-supported LBP type.";
+					break;
+				}
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::lbp_feature(UTensor^ src, UTensor^ %dst, LbpType type, int device)
+		{
+			if (device < 0)
+			{
+				switch (type)
+				{
+				case glasssix::gilgamesh::LbpType::Native:
+					dst = gcnew UTensor(src->Num, src->Channel, src->Height - 2, src->Width - 2, device);
+					tensoroperation::lbp_feature_cpu(src->data->getdata(), dst->data->getdata(), lbpType::Native);
+					break;
+				case glasssix::gilgamesh::LbpType::RI:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::U2:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::RIU2:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::HF:
+					NOT_IMPLEMENTED;
+					break;
+				case glasssix::gilgamesh::LbpType::LTP:
+					NOT_IMPLEMENTED;
+					break;
+				default:
+					LOG(ERROR) << "Un-supported LBP type.";
+					break;
+				}
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)
