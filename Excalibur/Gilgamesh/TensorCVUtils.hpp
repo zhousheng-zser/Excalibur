@@ -14,6 +14,8 @@ namespace glasssix
 
 		public enum class FlipType : int { C_Wise, W_Wise, H_Wise };
 
+		public enum class LbpType : int { Native, RI, U2, RIU2, HF, LTP };
+
 		public ref class rectangle
 		{
 		public:
