@@ -34,6 +34,9 @@ namespace glasssix
 			static void equalize_hist(Tensor^ src, Tensor^ %dst, int device);
 
 			static void lbp_feature(Tensor^ src, Tensor^ %dst, LbpType type, int device);
+
+			static void mblbp_feature(Tensor^ src, Tensor^ %dst, int block_h, 
+				int block_w, int stride_h, int stride_w, int device);
 			//
 			static void resize(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
 
@@ -58,6 +61,9 @@ namespace glasssix
 			static void equalize_hist(UTensor^ src, UTensor^ %dst, int device);
 
 			static void lbp_feature(UTensor^ src, UTensor^ %dst, LbpType type, int device);
+
+			static void mblbp_feature(UTensor^ src, UTensor^ %dst, int block_h,
+				int block_w, int stride_h, int stride_w, int device);
 		private:
 			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
 
