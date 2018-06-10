@@ -343,6 +343,40 @@ namespace glasssix
 			}
 		}
 
+		void tensorcv::mblbp_feature(Tensor^ src, Tensor^ %dst, int block_h,
+			int block_w, int stride_h, int stride_w, int device)
+		{
+			dst = gcnew Tensor(src->Num, src->Channel, 
+				(src->Height - 3 * block_h) / stride_h + 1, (src->Width - 3 * block_w) / stride_w + 1, device);
+			if (device < 0)
+			{
+				tensoroperation::mblbp_feature_cpu(src->data->getdata(), dst->data->getdata(),
+					block_h, block_w, stride_h, stride_w);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
+		void tensorcv::mblbp_feature(UTensor^ src, UTensor^ %dst, int block_h,
+			int block_w, int stride_h, int stride_w, int device)
+		{
+			dst = gcnew UTensor(src->Num, src->Channel,
+				(src->Height - 3 * block_h) / stride_h + 1, (src->Width - 3 * block_w) / stride_w + 1, device);
+			if (device < 0)
+			{
+				tensoroperation::mblbp_feature_cpu(src->data->getdata(), dst->data->getdata(),
+					block_h, block_w, stride_h, stride_w);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)

@@ -797,6 +797,8 @@ namespace excalibur
 			int channels = src->channels();
 			int height = src->height();
 			int width = src->width();
+			CHECK_GE(height, 3 * block_h);
+			CHECK_GE(width, 3 * block_w);
 			const Dtype* src_data = src->cpu_data();
 			Dtype* dst_data = dst->mutable_cpu_data();
 			Dtype* integral_data = new Dtype[channels * (height + 1) * (width + 1)];
@@ -810,7 +812,6 @@ namespace excalibur
 				int integral_offset = c * (height + 1) * (width + 1);
 				for (size_t h = 0; h < height - 3 * block_h + 1; h += stride_h)
 				{
-					int src_sub_offset = h * width;
 					int dst_sub_offset = h / stride_h * dst_width;
 					for (size_t w = 0; w < width - 3 * block_w + 1; w += stride_w)
 					{
@@ -821,11 +822,11 @@ namespace excalibur
 							int y1 = h + (i / 3) * block_h;
 							int x2 = x1 + block_w;
 							int y2 = y1 + block_h;
-							Dtype A = integral_data[integral_offset + y1 * (height + 1) + x1];
-							Dtype B = integral_data[integral_offset + y1 * (height + 1) + x2];
-							Dtype C = integral_data[integral_offset + y2 * (height + 1) + x1];
-							Dtype D = integral_data[integral_offset + y2 * (height + 1) + x2];
-							block_values[i] = D - B - C + A;
+							float A = (float)integral_data[integral_offset + y1 * (height + 1) + x1];
+							float B = (float)integral_data[integral_offset + y1 * (height + 1) + x2];
+							float C = (float)integral_data[integral_offset + y2 * (height + 1) + x1];
+							float D = (float)integral_data[integral_offset + y2 * (height + 1) + x2];
+							block_values[i] = Dtype(D - B - C + A);
 						}
 						unsigned char code = 0;
 						Dtype center = block_values[4];
@@ -841,6 +842,7 @@ namespace excalibur
 					}
 				}
 			}
+			delete integral_data;
 		}
 
 #ifdef USE_OPENCV
