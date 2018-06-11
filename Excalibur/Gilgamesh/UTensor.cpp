@@ -1,32 +1,32 @@
-#include "Tensor.hpp"
+#include "UTensor.hpp"
 using namespace excalibur;
 
 namespace glasssix
 {
 	namespace gilgamesh
 	{
-		Tensor::Tensor()
+		UTensor::UTensor()
 		{
 			num = 0;
 			channel = 0;
 			width = 0;
 			height = 0;
 			device = -1;
-			data = new ftensor();
+			data = new utensor();
 		}
 
-		Tensor::!Tensor()
+		UTensor::!UTensor()
 		{
 			delete data;
 			data = nullptr;
 		}
 
-		Tensor::~Tensor()
+		UTensor::~UTensor()
 		{
-			this->!Tensor();
+			this->!UTensor();
 		}
 
-		Tensor::Tensor(const Tensor %t)
+		UTensor::UTensor(const UTensor %t)
 		{
 			num = t.num;
 			channel = t.channel;
@@ -36,51 +36,51 @@ namespace glasssix
 			data = &(t.data->clone());
 		}
 
-		Tensor::Tensor(int num, int channel, int height, int width, int device)
+		UTensor::UTensor(int num, int channel, int height, int width, int device)
 		{
 			this->num = num;
 			this->channel = channel;
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new ftensor(std::vector<int>
+			data = new utensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(int channel, int height, int width, int device)
+		UTensor::UTensor(int channel, int height, int width, int device)
 		{
 			this->num = 1;
 			this->channel = channel;
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new ftensor(std::vector<int>
+			data = new utensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(int height, int width, int device)
+		UTensor::UTensor(int height, int width, int device)
 		{
 			this->num = 1;
 			this->channel = 1;
 			this->width = width;
 			this->height = height;
 			this->device = device;
-			data = new ftensor(std::vector<int>
+			data = new utensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(int size, int device)
+		UTensor::UTensor(int size, int device)
 		{
 			this->num = 1;
 			this->channel = size;
 			this->width = 1;
 			this->height = 1;
 			this->device = device;
-			data = new ftensor(std::vector<int>
+			data = new utensor(std::vector<int>
 			{this->num, this->channel, this->height, this->width}, this->device);
 		}
 
-		Tensor::Tensor(Bitmap^ bmp, int device)
+		UTensor::UTensor(Bitmap^ bmp, int device)
 		{
 			this->num = 1;
 			this->width = bmp->Width;
@@ -91,9 +91,9 @@ namespace glasssix
 			if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
 			{
 				this->channel = 1;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -104,7 +104,7 @@ namespace glasssix
 					int h_stride = h * stride;
 					for (int w = 0; w < this->width; w++)
 					{
-						dst_data[offset + w] = (float)pBmp[h_stride + w];
+						dst_data[offset + w] = (unsigned char)pBmp[h_stride + w];
 					}
 				}
 				bmp->UnlockBits(bmpd);
@@ -113,9 +113,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 			{
 				this->channel = 3;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -131,7 +131,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[c_offset + sub_offset + w]
-								= (float)pBmp[h_stride + w * 3 + c];
+								= (unsigned char)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -141,9 +141,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
 			{
 				this->channel = 4;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -156,7 +156,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[offset + sub_offset + w] =
-								(float)pBmp[(sub_offset + w) * 4 + c];
+								(unsigned char)pBmp[(sub_offset + w) * 4 + c];
 						}
 					}
 				}
@@ -166,9 +166,9 @@ namespace glasssix
 			else
 			{
 				this->channel = 3;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -184,7 +184,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[c_offset + sub_offset + w]
-								= (float)pBmp[h_stride + w * 3 + c];
+								= (unsigned char)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -192,7 +192,7 @@ namespace glasssix
 			}
 		}
 
-		Tensor::Tensor(String^ path, int device)
+		UTensor::UTensor(String^ path, int device)
 		{
 			Bitmap^ bmp = gcnew Bitmap(path);
 			this->num = 1;
@@ -204,9 +204,9 @@ namespace glasssix
 			if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format8bppIndexed)
 			{
 				this->channel = 1;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -217,7 +217,7 @@ namespace glasssix
 					int h_stride = h * stride;
 					for (int w = 0; w < this->width; w++)
 					{
-						dst_data[offset + w] = (float)pBmp[h_stride + w];
+						dst_data[offset + w] = (unsigned char)pBmp[h_stride + w];
 					}
 				}
 				bmp->UnlockBits(bmpd);
@@ -226,9 +226,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format24bppRgb)
 			{
 				this->channel = 3;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -244,7 +244,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[c_offset + sub_offset + w]
-								= (float)pBmp[h_stride + w * 3 + c];
+								= (unsigned char)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -254,9 +254,9 @@ namespace glasssix
 			else if (bmp->PixelFormat == System::Drawing::Imaging::PixelFormat::Format32bppArgb)
 			{
 				this->channel = 4;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, bmp->PixelFormat);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -269,7 +269,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[offset + sub_offset + w] =
-								(float)pBmp[(sub_offset + w) * 4 + c];
+								(unsigned char)pBmp[(sub_offset + w) * 4 + c];
 						}
 					}
 				}
@@ -279,9 +279,9 @@ namespace glasssix
 			else
 			{
 				this->channel = 3;
-				data = new ftensor(std::vector<int>
+				data = new utensor(std::vector<int>
 				{this->num, this->channel, this->height, this->width}, this->device);
-				float* dst_data = data->getdata()->mutable_cpu_data();
+				unsigned char* dst_data = data->getdata()->mutable_cpu_data();
 				bmpd = bmp->LockBits(System::Drawing::Rectangle(0, 0, bmp->Width, bmp->Height),
 					System::Drawing::Imaging::ImageLockMode::ReadOnly, System::Drawing::Imaging::PixelFormat::Format24bppRgb);
 				unsigned char* pBmp = (unsigned char*)bmpd->Scan0.ToPointer();
@@ -297,7 +297,7 @@ namespace glasssix
 						for (int w = 0; w < this->width; w++)
 						{
 							dst_data[c_offset + sub_offset + w]
-								= (float)pBmp[h_stride + w * 3 + c];
+								= (unsigned char)pBmp[h_stride + w * 3 + c];
 						}
 					}
 				}
@@ -306,7 +306,7 @@ namespace glasssix
 			delete bmp;
 		}
 
-		Bitmap^ Tensor::ToBitmap()
+		Bitmap^ UTensor::ToBitmap()
 		{
 			if (this->channel > 4)
 			{
@@ -317,7 +317,7 @@ namespace glasssix
 			{
 				// rgba32, the data pointer is aligned by itself
 				unsigned char* dst_data = new unsigned char[width * height * 4];
-				const float* src_data = data->getdata()->cpu_data();
+				const unsigned char* src_data = data->getdata()->cpu_data();
 				for (int c = 0; c < channel; c++)
 				{
 					int offset = this->width * this->height * c;
@@ -347,7 +347,7 @@ namespace glasssix
 					ImageLockMode::WriteOnly,
 					PixelFormat::Format24bppRgb);
 				unsigned char* dst_data = (unsigned char*)bmpdata->Scan0.ToPointer();
-				const float* src_data = data->getdata()->cpu_data();
+				const unsigned char* src_data = data->getdata()->cpu_data();
 				int* offset = new int[channel];
 				for (int c = 0; c < channel; c++)
 				{
@@ -389,7 +389,7 @@ namespace glasssix
 					ImageLockMode::WriteOnly,
 					PixelFormat::Format8bppIndexed);
 				unsigned char* dst_data = (unsigned char*)bmpdata->Scan0.ToPointer();
-				const float* src_data = data->getdata()->cpu_data();
+				const unsigned char* src_data = data->getdata()->cpu_data();
 				int* offset = new int[3];
 				for (int c = 0; c < 3; c++)
 				{
@@ -429,7 +429,7 @@ namespace glasssix
 			}
 		}
 
-		void Tensor::Save(String^ path, ImageEncodingType type)
+		void UTensor::Save(String^ path, ImageEncodingType type)
 		{
 			if (this->Channel == 1)
 			{
@@ -442,11 +442,11 @@ namespace glasssix
 			}
 			if (this->data->empty())
 			{
-				LOG(ERROR) << "Try to save empty tensor.";
+				LOG(ERROR) << "Try to save empty UTensor.";
 				return;
 			}
 			Bitmap^ bmp = ToBitmap();
-			
+
 			switch (type)
 			{
 			case glasssix::gilgamesh::ImageEncodingType::Native:

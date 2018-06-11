@@ -1,8 +1,8 @@
-#ifndef _TENSOR_CLI_HPP_
-#define _TENSOR_CLI_HPP_
+#ifndef _IMAGE_CLI_HPP_
+#define _IMAGE_CLI_HPP_
 
 #include <msclr\marshal_cppstd.h>
-#include "../Excalibur/ftensor.hpp"
+#include "../Excalibur/utensor.hpp"
 #include "TensorCVUtils.hpp"
 
 using namespace System;
@@ -12,14 +12,14 @@ using namespace System::IO;
 using namespace System::Drawing;
 using namespace System::Drawing::Imaging;
 // #pragma make_public directive is currently supported for native non-template types only
-#pragma make_public(excalibur::ftensor) 
+#pragma make_public(excalibur::utensor) 
 
 namespace glasssix
 {
 	namespace gilgamesh
 	{
 
-		public ref class Tensor
+		public ref class UTensor
 		{
 			int num;
 			int channel;
@@ -28,28 +28,28 @@ namespace glasssix
 			int device;
 
 		public:
-			excalibur::ftensor* data;
+			excalibur::utensor* data;
 
-			Tensor();
+			UTensor();
 
-			!Tensor();
+			!UTensor();
 
-			~Tensor();
+			~UTensor();
 
 			// (deep) copy construct function
-			Tensor(const Tensor %t);
+			UTensor(const UTensor %t);
 
-			Tensor(int num, int channel, int width, int height, int device);
+			UTensor(int num, int channel, int width, int height, int device);
 
-			Tensor(int channel, int width, int height, int device);
+			UTensor(int channel, int width, int height, int device);
 
-			Tensor(int width, int height, int device);
+			UTensor(int width, int height, int device);
 
-			Tensor(int size, int device);
+			UTensor(int size, int device);
 
-			Tensor(Bitmap^ bmp, int device);
+			UTensor(Bitmap^ bmp, int device);
 
-			Tensor(String^ path, int device);
+			UTensor(String^ path, int device);
 
 			Bitmap^ ToBitmap();
 
@@ -124,4 +124,4 @@ namespace glasssix
 	}
 }
 
-#endif // !_TENSOR_CLI_HPP_
+#endif // !_IMAGE_CLI_HPP_

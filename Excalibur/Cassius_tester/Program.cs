@@ -27,12 +27,26 @@ namespace Cassius_tester
             //unicorntest();
             Banshee be = new Banshee(0);
             //Unicorn uc = new Unicorn(0);
-            bmp1 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471065472304142_155.jpg");
-            bmp2 = new Bitmap(@"F:\bing\detected_img\0\152612277\1471059678658332_47.jpg");
-            Tensor a = new Tensor(bmp2, -1);
+            bmp1 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\0.jpg");
+            //bmp2 = new Bitmap(@"C:\Users\BALTHASAR\Desktop\0.jpg");
+            Tensor a = new Tensor(@"C:\Users\BALTHASAR\Desktop\0.jpg", -1);
             Tensor b = new Tensor();
-            tensorcv.resize(a, ref a, 500, 500, InterpolationType.Nearest, -1);
-            a.Save(@"C:\Users\BALTHASAR\Desktop\00.png", ImageEncodingType.Png);
+            b = a;
+            Tensor uten = new Tensor(new Bitmap(@"C:\Users\BALTHASAR\Desktop\测试图片\mtvisible.jpg"), -1);
+            Tensor gten = new Tensor(new Bitmap(@"C:\Users\BALTHASAR\Desktop\测试图片\yswinfread.jpg"), -1);
+            //tensorcv.copy_make_border(uten, ref uten, 40, 40, 40, 40, glasssix.gilgamesh.BorderType.Border_Constant, 1, -1);
+            //tensorcv.rotate(uten, ref uten, 3.14f/6, 0, 0, InterpolationType.Nearest, 255, -1);
+            //tensorcv.rgb2gray(uten, ref uten, -1);
+            //tensorcv.copy_cut_border(uten, ref uten, 40, 40, 40, 40, -1);
+            //tensorcv.equalize_hist(uten, ref gten, -1);
+            //tensorcv.lbp_feature(uten, ref gten, LbpType.Native, -1);
+            //tensorcv.mblbp_feature(uten, ref uten, 1, 1, 1, 1, -1);
+            //tensorcv.mblbp_feature(gten, ref gten, 1, 1, 1, 1, -1);
+            tensorcv.safty_cut(uten, ref gten, new rectangle(20, 20, 100, 120), -1);
+            //var ugf = uc.ExtractTensorOutputs(uten);
+            //var ggf = uc.ExtractTensorOutputs(gten);
+            //Console.WriteLine(Unicorn.CosineDistanceProb(ugf, ggf));
+            gten.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
@@ -241,4 +255,5 @@ namespace Cassius_tester
             return bmp;
         }
     }
+    
 }

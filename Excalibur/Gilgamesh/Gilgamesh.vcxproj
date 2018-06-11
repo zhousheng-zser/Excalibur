@@ -128,14 +128,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
-    </ClCompile>
+    <ClCompile Include="UTensor.cpp" />
     <ClCompile Include="Tensor.cpp" />
     <ClCompile Include="TensorCV.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="UTensor.hpp" />
     <ClInclude Include="Tensor.hpp" />
     <ClInclude Include="TensorCV.hpp" />
     <ClInclude Include="TensorCVUtils.hpp" />

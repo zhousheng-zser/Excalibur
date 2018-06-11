@@ -18,11 +18,11 @@ As we described above, the implementation is able to be divided into 2 parts: CP
 
 ### Excalibur
 
-Core component of Excalibur. Mainly math, IO and CNN topology operations.
+Core component of Excalibur. Mainly math, image operation, IO and CNN topology operations.
 
 ### Cassius
 
-A C++/CLI wrapper of Unicorn Net.
+A C++/CLI wrapper of Unicorn Net. Now, it supports Gilgamesh format input.
 
 ### Longinus
 
@@ -39,6 +39,10 @@ A Excalibur based MTCNN implementation.
 ### libcufacedetection
 
 A C++ interface of all detection algorithms.
+
+### Gilgamesh
+
+A wrapper and test project of Tensor Operations in Excalibur.
 
 ### Romancia
 
@@ -143,6 +147,6 @@ however, this problem will also be exposed while confronted with variable input 
   * Accelerate CNN implementation, to get 2 times faster than now.
   * Add virtual class support to build CNN by meta-programming.
   * Add ARM NEON support.
-  * Support multi-machine~~, multi-uint(CPU) and multi-card(GPU)~~.
+  * Support multi-machine ~~, multi-uint(CPU) and multi-card(GPU)~~.
   * ~~Compress the model file.~~
   * [ONNX](https://github.com/onnx/onnx) support.
