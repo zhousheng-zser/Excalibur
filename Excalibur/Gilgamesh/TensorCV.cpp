@@ -377,6 +377,20 @@ namespace glasssix
 			}
 		}
 
+		void tensorcv::safty_cut(Tensor^ src, Tensor^ %dst, rectangle^ rect, int device)
+		{
+			dst = gcnew Tensor(src->Num, src->Channel, rect->rect->h, rect->rect->w, device);
+			if (device < 0)
+			{
+				tensoroperation::safty_cut_cpu(src->data->getdata(), dst->data->getdata(), rect->rect);
+			}
+			else
+			{
+				// No implementation
+				return;
+			}
+		}
+
 		///PRIVATE FUNCTIONS
 		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
 			int new_width, InterpolationType type)

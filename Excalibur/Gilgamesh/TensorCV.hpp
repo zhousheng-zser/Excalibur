@@ -37,6 +37,8 @@ namespace glasssix
 
 			static void mblbp_feature(Tensor^ src, Tensor^ %dst, int block_h, 
 				int block_w, int stride_h, int stride_w, int device);
+
+			static void safty_cut(Tensor^ src, Tensor^ %dst, rectangle^ rect, int device);
 			//
 			static void resize(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
 

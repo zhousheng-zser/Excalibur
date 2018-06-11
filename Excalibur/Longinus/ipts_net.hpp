@@ -4,6 +4,9 @@
 
 #include "ipts_v2_data.hpp"
 #include "../Excalibur/support_layers.hpp"
+#include "../Excalibur/tensoroperation.hpp"
+#include "../Excalibur/ftensor.hpp"
+#include "../Excalibur/utensor.hpp"
 
 using namespace excalibur;
 
@@ -54,19 +57,56 @@ namespace glasssix
 		Declear_Opration(inner_product, fc2);
 		Neuron_Name(fc2);
 
-	public:
 #ifdef USE_CUDA
-		//cublasHandle_t cublas_handle_ = nullptr;
-		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_);
+		cublasHandle_t cublas_handle_ = nullptr;
+		void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_);
+		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
 		void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 
-	
+	public:
 		ipts_net(int device);
 		~ipts_net();
+
+		void Forward(const std::shared_ptr<tensor<float>> input_data)
+		{
+			if (device_<0)
+			{
+				Forward_cpu(input_data);
+			}
+			else
+			{
+#ifdef USE_CUDA
+#ifdef USE_CUDNN
+				Forward_cudnn_gpu(input_data);
+				return;
+#endif
+				Forward_native_gpu(input_data);
+				return;
+#else
+				NO_GPU;
+#endif
+			}
+		}
+
+		void Forward(ftensor* input_data)
+		{
+			tensoroperation::preprocess_tensors_cpu(input_data->getdata());
+			tensor_data = std::make_shared<tensor<float>>(*input_data->getdata());
+			Forward(tensor_data);
+		}
+
+		void Forward(utensor* input_data)
+		{
+			ftensor * f_input_data = new ftensor(input_data->getdata()->data_shape(), input_data->getdata()->device());
+			tensoroperation::type_convertor_cpu(input_data->getdata(), f_input_data->getdata());
+			tensoroperation::preprocess_tensors_cpu(f_input_data->getdata());
+			tensor_data = std::make_shared<tensor<float>>(*f_input_data->getdata());
+			Forward(tensor_data);
+			delete f_input_data;
+		}
 
 		static int get_input_channel()
 		{

@@ -40,12 +40,13 @@ namespace Cassius_tester
             //tensorcv.copy_cut_border(uten, ref uten, 40, 40, 40, 40, -1);
             //tensorcv.equalize_hist(uten, ref gten, -1);
             //tensorcv.lbp_feature(uten, ref gten, LbpType.Native, -1);
-            tensorcv.mblbp_feature(uten, ref uten, 1, 1, 1, 1, -1);
-            tensorcv.mblbp_feature(gten, ref gten, 1, 1, 1, 1, -1);
+            //tensorcv.mblbp_feature(uten, ref uten, 1, 1, 1, 1, -1);
+            //tensorcv.mblbp_feature(gten, ref gten, 1, 1, 1, 1, -1);
+            tensorcv.safty_cut(uten, ref gten, new rectangle(20, 20, 100, 120), -1);
             //var ugf = uc.ExtractTensorOutputs(uten);
             //var ggf = uc.ExtractTensorOutputs(gten);
             //Console.WriteLine(Unicorn.CosineDistanceProb(ugf, ggf));
-            //gten.Save(@"C:\Users\BALTHASAR\Desktop\mtvisible.bmp", ImageEncodingType.Bmp);
+            gten.Save(@"C:\Users\BALTHASAR\Desktop\00.bmp", ImageEncodingType.Bmp);
             float[][] ipbbox = be.ExtractBitmapOutputs_IPBbox(new[] { bmp1 });
             var ccc = Aligement(new[] { bmp1 }, ipbbox, be);
             var aaa = be.align(new[] { bmp1 });
