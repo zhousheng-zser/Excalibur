@@ -189,28 +189,36 @@ namespace excalibur
 					//top
 					if (h>=rect.y - outer_thickness && h<= rect.y + inner_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler, 
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//2 sides
 					if (h>rect.y + inner_thickness && h<rect.y +rect.h -inner_thickness)
 					{
 						//left part
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::max(std::min(thickness, rect.x + inner_thickness), 0); i++)
+						{
+							temp[i] = filler;
+						}
 						//right part
-						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-							filler,
-							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						temp = dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width);
+						for (size_t i = 0; i < std::min(thickness, width - rect.x - rect.w + inner_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//bottom
 					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x , 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect.x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 				}
 			}
@@ -228,28 +236,36 @@ namespace excalibur
 						//top
 						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+ 							}
 						}
 						//2 sides
 						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
 						{
 							//left part
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::max(std::min(thickness, rect.x + inner_thickness), 0); i++)
+							{
+								temp[i] = filler[c];
+							}
 							//right part
-							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-								filler[c],
-								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+							temp = dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width);
+							for (size_t i = 0; i < std::min(thickness, width - rect.x - rect.w + inner_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//bottom
 						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 					}
 				}
@@ -262,8 +278,8 @@ namespace excalibur
 		}
 
 		template <typename Dtype, typename Rtype>
-		static void draw_rectangle_cpu(tensor<Dtype>* dst, rectangle<Rtype> rect,
-			int thickness, color color_)
+		static void draw_rectangle_cpu(tensor<Dtype>* dst, rectangle<Rtype>* rect,
+			int thickness, color* color_)
 		{
 			if (thickness <= 0)
 			{
@@ -277,84 +293,100 @@ namespace excalibur
 			int width = dst->width();
 			int height = dst->height();
 			int offset = width * height;
-			if (rect.x>width || rect.y>height || rect.x + rect.w < 0 || rect.y + rect.h<0)
+			if (rect->x>width || rect->y>height || rect->x + rect->w < 0 || rect->y + rect->h<0)
 			{
 				LOG(WARNING) << "Illegal rectangle input. Return without any changes.";
 				return;
 			}
+			/// CANNOT use memset, this will cause an undefined behavior.
 			if (channels == 1)
 			{
-				Dtype filler = Dtype(color_.g / 3 + color_.b / 3 + color_.r / 3);
+				Dtype filler = Dtype(color_->g / 3 + color_->b / 3 + color_->r / 3);
 				for (int h = 0; h < height; h++)
 				{
 					//top
-					if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+					if (h >= rect->y - outer_thickness && h <= rect->y + inner_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//2 sides
-					if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+					if (h>rect->y + inner_thickness && h<rect->y + rect->h - inner_thickness)
 					{
 						//left part
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::max(std::min(thickness, rect.x + inner_thickness), 0));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::max(std::min(thickness, rect->x + inner_thickness), 0); i++)
+						{
+							temp[i] = filler;
+						}
 						//right part
-						memset(dst_data + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-							filler,
-							std::min(thickness, width - rect.x - rect.w + inner_thickness));
+						temp = dst_data + h * width + std::min(rect->x + rect->w - inner_thickness, width);
+						for (size_t i = 0; i < std::min(thickness, width - rect->x - rect->w + inner_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 					//bottom
-					if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+					if (h >= rect->y + rect->h - inner_thickness && h <= rect->y + rect->h + outer_thickness)
 					{
-						memset(dst_data + h * width + std::max(0, rect.x - outer_thickness),
-							filler,
-							std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+						Dtype* temp = dst_data + h * width + std::max(0, rect->x - outer_thickness);
+						for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+						{
+							temp[i] = filler;
+						}
 					}
 				}
 			}
 			else if (channels == 3)
 			{
-				Dtype* filler = new Dtype[3];
-				filler[0] = color_.r;
-				filler[1] = color_.g;
-				filler[2] = color_.b;
+				Dtype filler[3];
+				filler[0] = Dtype(color_->r);
+				filler[1] = Dtype(color_->g);
+				filler[2] = Dtype(color_->b);
 				for (int c = 0; c < 3; c++)
 				{
 					int c_offset = c * offset;
 					for (int h = 0; h < height; h++)
 					{
 						//top
-						if (h >= rect.y - outer_thickness && h <= rect.y + inner_thickness)
+						if (h >= rect->y - outer_thickness && h <= rect->y + inner_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype * temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//2 sides
-						if (h>rect.y + inner_thickness && h<rect.y + rect.h - inner_thickness)
+						if (h>rect->y + inner_thickness && h<rect->y + rect->h - inner_thickness)
 						{
 							//left part
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::max(std::min(thickness, rect.x + inner_thickness), 0));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::max(std::min(thickness, rect->x + inner_thickness), 0); i++)
+							{
+								temp[i] = filler[c];
+							}
 							//right part
-							memset(dst_data + c_offset + h * width + std::min(rect.x + rect.w - inner_thickness, width),
-								filler[c],
-								std::min(thickness, width - rect.x - rect.w + inner_thickness));
+							temp = dst_data + c_offset + h * width + std::min(rect->x + rect->w - inner_thickness, width);
+							for (size_t i = 0; i < std::min(thickness, width - rect->x - rect->w + inner_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 						//bottom
-						if (h >= rect.y + rect.h - inner_thickness && h <= rect.y + rect.h + outer_thickness)
+						if (h >= rect->y + rect->h - inner_thickness && h <= rect->y + rect->h + outer_thickness)
 						{
-							memset(dst_data + c_offset + h * width + std::max(0, rect.x - outer_thickness),
-								filler[c],
-								std::min(rect.w + 2 * outer_thickness + std::min(rect.x, 1), width - rect.x + outer_thickness) * sizeof(Dtype));
+							Dtype* temp = dst_data + c_offset + h * width + std::max(0, rect->x - outer_thickness);
+							for (size_t i = 0; i < std::min(rect->w + 2 * outer_thickness + std::min(rect->x, 1), width - rect->x + outer_thickness); i++)
+							{
+								temp[i] = filler[c];
+							}
 						}
 					}
 				}
-				delete filler;
 			}
 			else
 			{
@@ -414,7 +446,6 @@ namespace excalibur
 			int channels = src->channels();
 			int height = src->height();
 			int width = src->width();
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device());
 			const Dtype* src_data = src->cpu_data();
 			Dtype* dst_data = dst->mutable_cpu_data();
 			if (axis == W_Wise || axis == H_Wise)
@@ -485,9 +516,6 @@ namespace excalibur
 			}
 		}
 
-		//rgba2rgb()
-		//compression()
-
 		template <typename Dtype>
 		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
 		{
@@ -501,7 +529,6 @@ namespace excalibur
 			{
 				int height = src->height();
 				int width = src->width();
-				dst = new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device());
 				int channel_offset = height*width;
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst->mutable_cpu_data();
@@ -541,7 +568,7 @@ namespace excalibur
 			for (int q = 0; q<channels; q++)
 			{
 				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
-					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					src->height(), src->width(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
 					dst->height(), dst->width(), top, left, type, v);
 			}
 		}
@@ -555,21 +582,17 @@ namespace excalibur
 			int h = src->height() + top + bottom;
 			if (w == src->width() && h == src->height())
 			{
-				dst = src;
+				memcpy(src->mutable_cpu_data(), dst->cpu_data(), src->count() * sizeof(Dtype));
 				return;
 			}
 			int channels = src->channels();
-
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
-			if (dst->empty())
-				return;
 
 			// unroll image channel
 			//#pragma omp parallel for
 			for (int q = 0; q<channels; q++)
 			{
 				copy_make_border_image_cpu(src->cpu_data() + q * src->width() * src->height(),
-					src->width(), src->height(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
+					src->height(), src->width(), src->channels(), dst->mutable_cpu_data() + q*dst->width()*dst->height(),
 					dst->height(), dst->width(), top, left, type, v);
 			}
 		}
@@ -611,7 +634,7 @@ namespace excalibur
 
 			if (w == src->width() && h == src->height())
 			{
-				dst = src;
+				memcpy(src->mutable_cpu_data(), dst->cpu_data(), src->count() * sizeof(Dtype));
 				LOG(WARNING) << "Just copy from the source.";
 				return;
 			}
@@ -622,11 +645,228 @@ namespace excalibur
 			}
 			int channels = src->channels();
 
-			dst = new tensor<Dtype>(std::vector<int>{1, channels, h, w}, src->device());
-
 			copy_cut_border_image_cpu(src->cpu_data(), src->height(), src->width(), src->channels(),
 				dst->mutable_cpu_data(), dst->height(), dst->width(), top, left);
 		}
+
+		template <typename DtypeSRC, typename DtypeDST>
+		static void type_convertor_cpu(const tensor<DtypeSRC>* src, tensor<DtypeDST>* dst)
+		{
+			const DtypeSRC* src_data = src->cpu_data();
+			DtypeDST* dst_data = dst->mutable_cpu_data();
+			for (size_t i = 0; i < src->count(); i++)
+			{
+				dst_data[i] = DtypeDST(src_data[i]);
+			}
+		}
+
+		template <typename Dtype>
+		static void equalize_hist_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			int channel = src->channels();
+			int height = src->height();
+			int width = src->width();
+			// equalize hist will be done as channel wise
+			for (size_t c = 0; c < channel; c++)
+			{
+				//pixel number of each grayscale level
+				int gray[256] = { 0 };
+
+				//record grayscale distribution density
+				float gray_prob[256] = { 0 };
+
+				//record density integration
+				float gray_distribution[256] = { 0 };
+
+				//equalized grayscale value
+				int gray_equal[256] = { 0 };
+
+				int gray_sum = height * width;
+				int c_offset = c * gray_sum;
+
+				//Count the number of pixels in each grayscale
+				for (size_t i = 0; i < gray_sum; i++)
+				{
+					int value = static_cast<unsigned char>(src_data[c_offset + i]);
+					gray[value]++;
+				}
+
+				//count grayscale frequency
+				for (int i = 0; i < 256; i++)
+				{
+					gray_prob[i] = static_cast<float>(gray[i]) / gray_sum;
+				}
+
+				//calculate density integration
+				gray_distribution[0] = gray_prob[0];
+				for (int i = 1; i < 256; i++)
+				{
+					gray_distribution[i] = gray_distribution[i - 1] + gray_prob[i];
+				}
+
+				//(N-1)*T+0.5
+				for (int i = 0; i < 256; i++)
+				{
+					gray_equal[i] = static_cast<unsigned char>(255 * gray_distribution[i] + 0.5);
+				}
+
+				for (size_t i = 0; i < gray_sum; i++)
+				{
+					dst_data[c_offset + i] = Dtype(gray_equal[static_cast<unsigned char>(src_data[c_offset + i])]);
+				}
+			}
+			showimage(dst);
+		}
+
+		template <typename Dtype>
+		static void lbp_feature_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, lbpType type)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			switch (type)
+			{
+			case excalibur::Native:
+				lbp_feature_cpu_native(src_data, height, width, channels, dst_data);
+				break;
+			case excalibur::RI:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::U2:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::RIU2:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::HF:
+				NOT_IMPLEMENTED;
+				break;
+			case excalibur::LTP:
+				NOT_IMPLEMENTED;
+				break;
+			default:
+				LOG(ERROR) << "Un-supported LBP type.";
+				break;
+			}
+			showimage(dst);
+		}
+
+		template <typename Dtype>
+		static void mblbp_feature_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, int block_h, 
+			int block_w, int stride_h, int stride_w)
+		{
+			CHECK_EQ(src->num(), 1);
+			CHECK_GE(block_h, 1);
+			CHECK_GE(block_w, 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			CHECK_GE(height, 3 * block_h);
+			CHECK_GE(width, 3 * block_w);
+			const Dtype* src_data = src->cpu_data();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			Dtype* integral_data = new Dtype[channels * (height + 1) * (width + 1)];
+			fast_integral_cpu(src_data, height, width, channels, integral_data);
+			int dst_height = dst->height();
+			int dst_width = dst->width();
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_offset = c * height * width;
+				int dst_offset = c * dst_height * dst_width;
+				int integral_offset = c * (height + 1) * (width + 1);
+				for (size_t h = 0; h < height - 3 * block_h + 1; h += stride_h)
+				{
+					int dst_sub_offset = h / stride_h * dst_width;
+					for (size_t w = 0; w < width - 3 * block_w + 1; w += stride_w)
+					{
+						Dtype block_values[9];
+						for (size_t i = 0; i < 9; i++)
+						{
+							int x1 = w + (i % 3) * block_w;
+							int y1 = h + (i / 3) * block_h;
+							int x2 = x1 + block_w;
+							int y2 = y1 + block_h;
+							float A = (float)integral_data[integral_offset + y1 * (height + 1) + x1];
+							float B = (float)integral_data[integral_offset + y1 * (height + 1) + x2];
+							float C = (float)integral_data[integral_offset + y2 * (height + 1) + x1];
+							float D = (float)integral_data[integral_offset + y2 * (height + 1) + x2];
+							block_values[i] = Dtype(D - B - C + A);
+						}
+						unsigned char code = 0;
+						Dtype center = block_values[4];
+						code |= (block_values[0] >= center) << 0;
+						code |= (block_values[1] >= center) << 1;
+						code |= (block_values[2] >= center) << 2;
+						code |= (block_values[3] >= center) << 7;
+						code |= (block_values[5] >= center) << 3;
+						code |= (block_values[6] >= center) << 6;
+						code |= (block_values[7] >= center) << 5;
+						code |= (block_values[8] >= center) << 4;
+						dst_data[dst_offset + dst_sub_offset + w / stride_w] = Dtype(code);
+					}
+				}
+			}
+			delete integral_data;
+		}
+
+		template <typename Dtype>
+		static void preprocess_tensors_cpu(tensor<Dtype>* dst)
+		{
+			int num = dst->num();
+			int channel = dst->channels();
+			CHECK_EQ(channel, 3);
+			int height = dst->height();
+			int width = dst->width();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			float means[] = { 104.f, 117.0f, 124.f };
+			float var = 0.0078125f;
+			for (size_t n = 0; n < num; n++)
+			{
+				int offset = n * 3 * height * width;
+				for (size_t c = 0; c < 3; c++)
+				{
+					int sub_offset = c * height * width;
+					for (size_t h = 0; h < height; h++)
+					{
+						int subsub_offset = h * width;
+						for (size_t w = 0; w < width; w++)
+						{
+							dst_data[offset + sub_offset + subsub_offset + w] =
+								Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+						}
+					}
+				}
+			}
+		}
+
+		template <typename Dtype, typename Rtype>
+		static void safty_cut_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, rectangle<Rtype>* rect)
+		{
+			if (rect->x >= 0 && rect->y >=0 && (rect->x + rect->w <= src->width()) && (rect->y + rect->h <= src->height()))
+			{
+				copy_cut_border_cpu(src, dst, rect->y, (src->height() - rect->y - rect->h), rect->x, (src->width() - rect->x - rect->w));
+			}
+			else
+			{
+				int top = std::max(0, -1 * rect->x);
+				int bottom = std::max(rect->y + rect->h - src->height(), 0);
+				int left = std::max(0, -1 * rect->y);
+				int right = std::max(rect->x + rect->w - src->width(), 0);
+				tensor<Dtype>* temp = new tensor<Dtype>(
+					std::vector<int>{src->num(), src->channels(), src->height() + top + bottom, src->width() + left + right}, 
+					src->device());
+				copy_make_border_cpu(src, temp, top, bottom, left, right, Border_Constant, Dtype(0));
+				copy_cut_border_cpu(temp, dst, rect->y + top, temp->height() - rect->y - rect->h - top, rect->x + left, temp->width() - rect->x - rect->w - left);
+				delete temp;
+			}
+		}
+
 #ifdef USE_OPENCV
 		template <typename Dtype>
 		static void convert2mat(std::shared_ptr<tensor<Dtype>> src, cv::Mat& dst)
@@ -1118,7 +1358,13 @@ namespace excalibur
 		static void rotate_cpu_nearset(const Dtype* src_data, int height, int width, int channels,
 			Dtype* dst_data, float theta, int center_x, int center_y, Dtype v)
 		{
-			memset(dst_data, v, height * width * channels * sizeof(Dtype));
+			// Cannot use memset, it's useless and will cause an undefined behavior
+			for (size_t i = 0; i < height * width * channels; i++)
+			{
+				dst_data[i] = v;
+			}
+			// To keep OpenCV API compatibility
+			theta = -1.f * theta;
 			float SinTheta = sin(theta);
 			float CosTheta = cos(theta);
 			float ConstX = -center_x*CosTheta + center_y*SinTheta + center_x + 0.5;
@@ -1147,7 +1393,89 @@ namespace excalibur
 			}
 		}
 
+		template <typename Dtype>
+		static void fast_integral_cpu(const Dtype* src_data, int height, int width, int channels, Dtype* dst_data)
+		{
+			memset(dst_data, 0, channels * (height + 1) * (width + 1));
+			/// sum of each column 
+			Dtype *columnSum = new Dtype[width + 1];
+			columnSum[0] = Dtype(0);
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_offset = c * width * height;
+				int dst_offset = c * (width + 1) * height;
+				/// calculate integral of the first line  
+				for (int w = 1; w < width + 1; w++) 
+				{
+					columnSum[w] = src_data[src_offset + w - 1];
+					dst_data[dst_offset + width + 1 + w] = src_data[src_offset + w - 1];
+					if (w > 1) 
+					{
+						dst_data[dst_offset + width + 1 + w] += 
+							dst_data[dst_offset + width + 1 + w - 1];
+					}
+				}
+				for (int h = 1; h < height + 1; h++) 
+				{
+					int src_sub_offset = (h - 1) * width;
+					int dst_sub_offset = h * (width + 1);
+					/// first column of each line  
+					columnSum[1] += src_data[src_offset + src_sub_offset];
+					dst_data[dst_offset + dst_sub_offset + 1] = columnSum[1];
+					/// other columns   
+					for (int w = 2; w < width + 1; w++) 
+					{
+						columnSum[w] += src_data[src_offset + src_sub_offset + w - 1];
+						dst_data[dst_offset + dst_sub_offset + w] = 
+							dst_data[dst_offset + dst_sub_offset + w - 1] + columnSum[w];
+					}
+				}
+			}
+			delete columnSum;
+		}
+
+		template <typename Dtype>
+		static void lbp_feature_cpu_native(const Dtype* src_data, int height, int width, int channels, Dtype* dst_data)
+		{
+			for (size_t c = 0; c < channels; c++)
+			{
+				int src_c_offset = c * height * width;
+				int dst_c_offset = c * (height - 2) * (width - 2);
+				for (size_t h = 1; h < height - 1; h++)
+				{
+					int offset = src_c_offset + h * width;
+					int offset_plus = offset + width;
+					int offset_minus = offset - width;
+					for (size_t w = 1; w < width - 1; w++)
+					{
+						Dtype center = src_data[offset + w];
+						unsigned char code = 0;
+						code |= (src_data[offset_minus + w - 1] >= center) << 7;
+						code |= (src_data[offset_minus + w - 0] >= center) << 6;
+						code |= (src_data[offset_minus + w + 1] >= center) << 5;
+						code |= (src_data[offset + w + 1] >= center) << 4;
+						code |= (src_data[offset_plus + w + 1] >= center) << 3;
+						code |= (src_data[offset_plus + w + 0] >= center) << 2;
+						code |= (src_data[offset_plus + w - 1] >= center) << 1;
+						code |= (src_data[offset + w - 1] >= center) << 0;
+						dst_data[dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(code);
+					}
+				}
+			}
+		}
+
 #ifdef USE_OPENCV
+		template <typename Dtype>
+		static void showimage(tensor<Dtype>* dst)
+		{
+			cv::Mat mat;
+			convert2mat(dst, mat);
+			cv::Mat showmat;
+			mat.convertTo(showmat, CV_8U);
+			cv::imshow("test", showmat);
+			cv::waitKey();
+		}
+
 		template <typename Dtype>
 		static int get_cv_type()
 		{

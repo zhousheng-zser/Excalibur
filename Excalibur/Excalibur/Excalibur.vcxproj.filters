@@ -19,6 +19,9 @@
     <Filter Include="include\tensor_utils">
       <UniqueIdentifier>{560bc25c-02ad-40a5-8599-31a7eaf970a4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="include\cli_wrapper">
+      <UniqueIdentifier>{aa9da7ec-6d8c-4023-82c6-082a3f6edb97}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="convolution.cu">
@@ -139,6 +142,12 @@
     </ClInclude>
     <ClInclude Include="tensoroperation.hpp">
       <Filter>include\tensor_utils</Filter>
+    </ClInclude>
+    <ClInclude Include="ftensor.hpp">
+      <Filter>include\cli_wrapper</Filter>
+    </ClInclude>
+    <ClInclude Include="utensor.hpp">
+      <Filter>include\cli_wrapper</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

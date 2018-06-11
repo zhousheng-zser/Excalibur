@@ -1,10 +1,12 @@
-#pragma once
 #ifndef _UNICORN_NET_HPP_
 #define _UNICORN_NET_HPP_
 
 #include "unicorn_9722_halfdata.hpp"//
 #include "../Excalibur/support_layers.hpp"
+#include "../Excalibur/ftensor.hpp"
 #include <glasssix/Timer.hpp>
+
+
 using namespace excalibur;
 
 namespace glasssix
@@ -290,6 +292,8 @@ namespace glasssix
 		~unicorn_net();
 
 		void Forward(const std::shared_ptr<tensor<float>> input_data);
+
+		void Forward(ftensor* input_data);
 
 		static int get_input_channel()
 		{

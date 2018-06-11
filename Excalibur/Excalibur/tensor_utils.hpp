@@ -9,6 +9,9 @@ namespace excalibur
 
 	enum flipType { C_Wise, W_Wise, H_Wise };
 
+	///Rotation_Invariant(RI)
+	enum lbpType { Native, RI, U2, RIU2, HF, LTP };
+
 	template <typename Dtype>
 	class point
 	{

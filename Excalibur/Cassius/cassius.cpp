@@ -59,6 +59,15 @@ namespace glasssix
 					return gcnew String("Baseline version, with quality score supoort with cudnn.");
 				}
 
+ 				array<float>^ ExtractTensorOutputs(glasssix::gilgamesh::Tensor^ tensors)
+				{
+					net_->Forward(tensors->data);
+					const float* intermediate = net_->get_pool5()->cpu_data();
+					int output_size = net_->get_pool5()->count();
+					MARSHAL_ARRAY(intermediate, outputs, output_size);
+					return outputs;
+				}
+
 				array<float>^ ExtractBitmapOutputs(array<Bitmap^>^ imgDatas)
 				{
 					std::shared_ptr<tensor<float>> tensor_data = nullptr;
