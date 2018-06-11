@@ -517,36 +517,6 @@ namespace excalibur
 		}
 
 		template <typename Dtype>
-		static void preprocess_tensors_cpu(tensor<Dtype>* dst)
-		{
-			int num = dst->num();
-			int channel = dst->channels();
-			CHECK_EQ(channel, 3);
-			int height = dst->height();
-			int width = dst->width();
-			Dtype* dst_data = dst->mutable_cpu_data();
-			float means[] = { 104.f, 117.0f, 124.f };
-			float var = 0.0078125f;
-			for (size_t n = 0; n < num; n++)
-			{
-				int offset = n * 3 * height * width;
-				for (size_t c = 0; c < 3; c++)
-				{
-					int sub_offset = c * height * width;
-					for (size_t h = 0; h < height; h++)
-					{
-						int subsub_offset = h * width;
-						for (size_t w = 0; w < width; w++)
-						{
-							dst_data[offset + sub_offset + subsub_offset + w] =
-								Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
-						}
-					}
-				}
-			}
-		}
-
-		template <typename Dtype>
 		static void rgb2gray_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst)
 		{
 			CHECK_EQ(src->num(), 1);
@@ -843,6 +813,58 @@ namespace excalibur
 				}
 			}
 			delete integral_data;
+		}
+
+		template <typename Dtype>
+		static void preprocess_tensors_cpu(tensor<Dtype>* dst)
+		{
+			int num = dst->num();
+			int channel = dst->channels();
+			CHECK_EQ(channel, 3);
+			int height = dst->height();
+			int width = dst->width();
+			Dtype* dst_data = dst->mutable_cpu_data();
+			float means[] = { 104.f, 117.0f, 124.f };
+			float var = 0.0078125f;
+			for (size_t n = 0; n < num; n++)
+			{
+				int offset = n * 3 * height * width;
+				for (size_t c = 0; c < 3; c++)
+				{
+					int sub_offset = c * height * width;
+					for (size_t h = 0; h < height; h++)
+					{
+						int subsub_offset = h * width;
+						for (size_t w = 0; w < width; w++)
+						{
+							dst_data[offset + sub_offset + subsub_offset + w] =
+								Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+						}
+					}
+				}
+			}
+		}
+
+		template <typename Dtype, typename Rtype>
+		static void safty_cut_cpu(const tensor<Dtype>* src, tensor<Dtype>* dst, rectangle<Rtype>* rect)
+		{
+			if (rect->x >= 0 && rect->y >=0 && (rect->x + rect->w <= src->width()) && (rect->y + rect->h <= src->height()))
+			{
+				copy_cut_border_cpu(src, dst, rect->y, (src->height() - rect->y - rect->h), rect->x, (src->width() - rect->x - rect->w));
+			}
+			else
+			{
+				int top = std::max(0, -1 * rect->x);
+				int bottom = std::max(rect->y + rect->h - src->height(), 0);
+				int left = std::max(0, -1 * rect->y);
+				int right = std::max(rect->x + rect->w - src->width(), 0);
+				tensor<Dtype>* temp = new tensor<Dtype>(
+					std::vector<int>{src->num(), src->channels(), src->height() + top + bottom, src->width() + left + right}, 
+					src->device());
+				copy_make_border_cpu(src, temp, top, bottom, left, right, Border_Constant, Dtype(0));
+				copy_cut_border_cpu(temp, dst, rect->y + top, temp->height() - rect->y - rect->h - top, rect->x + left, temp->width() - rect->x - rect->w - left);
+				delete temp;
+			}
 		}
 
 #ifdef USE_OPENCV

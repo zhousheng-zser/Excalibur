@@ -25,11 +25,11 @@ namespace glasssix
 		Copy_Params(fc3_bias, IPBBox_v2, quantize_level);
 		//
 		device_ = device;
-//#ifdef USE_CUDA
-//		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-//			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-//		}
-//#endif
+#ifdef USE_CUDA
+		if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
+			LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
+		}
+#endif
 		//
 		Init_Conv_Params(conv1, 3, 10, 5, 1, 0, true);
 		Init_PReLU_Params(prelu1, 10, false);
@@ -66,12 +66,12 @@ namespace glasssix
 		delete prelu5;
 		delete fc2;
 		delete fc3;
-//#ifdef USE_CUDA
-//		if (cublas_handle_)
-//		{
-//			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
-//		}
-//#endif
+#ifdef USE_CUDA
+		if (cublas_handle_)
+		{
+			CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+		}
+#endif
 	}
 
 	void ipbbox_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
@@ -99,7 +99,7 @@ namespace glasssix
 	}
 
 #ifdef USE_CUDA
-	void ipbbox_net::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_)
+	void ipbbox_net::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
 #ifdef _DEBUG
 		CHECK_EQ(input_data->width(), 60);
@@ -123,7 +123,7 @@ namespace glasssix
 		fc3->Forward_native_gpu(cublas_handle_, fc1_top_data, fc3_top_data);
 	}
 #ifdef USE_CUDNN
-	void ipbbox_net::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data, cublasHandle_t cublas_handle_)
+	void ipbbox_net::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
 	{
 #ifdef _DEBUG
 		CHECK_EQ(input_data->width(), 60);
