@@ -7,7 +7,13 @@ namespace excalibur
 
 	enum borderType { Border_Constant, Border_Replicate };
 
-	enum flipType { C_Wise, W_Wise, H_Wise };
+	enum flipType { Channel_Wise, Width_Wise, Height_Wise, Center_Wise };
+
+	enum thresholdType { binary, binary_inv, small_trunc, big_trunc, small_to_zero, big_to_zero };
+
+	enum morphType { Dilate, Erode };
+
+	enum tensorType { NHWC, NCHW };
 
 	///Rotation_Invariant(RI)
 	enum lbpType { Native, RI, U2, RIU2, HF, LTP };
