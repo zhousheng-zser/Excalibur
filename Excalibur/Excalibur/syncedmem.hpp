@@ -2,6 +2,8 @@
 #ifndef _SYNCEDMEM_HPP_
 #define _SYNCEDMEM_HPP_
 #include "math_functions.hpp"
+#include <cuda_runtime.h>
+#include "device_launch_parameters.h"
 
 namespace excalibur
 {

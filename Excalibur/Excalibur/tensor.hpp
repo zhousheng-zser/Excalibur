@@ -2,6 +2,8 @@
 #ifndef _TENSOR_HPP_
 #define _TENSOR_HPP_
 #include "syncedmem.hpp"
+#include "tensor_utils.hpp"
+
 namespace excalibur
 {
 	template <typename Dtype>
@@ -11,14 +13,15 @@ namespace excalibur
 		std::vector<int> shape_;
 		int count_;
 		int device_;
+		tensorType type_;
 
 	public:
 		// empty
-		tensor();
+		tensor(tensorType Ttype = NCHW);
 		// universal constructor
-		tensor(const std::vector<int>& shape, int device);
+		tensor(const std::vector<int>& shape, int device, tensorType Ttype = NCHW);
 		// external vector
-		tensor(const int shape, int device = -1);
+		tensor(const int shape, int device = -1, tensorType Ttype = NCHW);
 		// copy constructor
 		tensor(const tensor& t);
 		// assign
@@ -50,32 +53,68 @@ namespace excalibur
 
 		int channels() const
 		{
-			if (shape_.size()<2)
+			if (type_ == NCHW)
 			{
-				LOG(ERROR) << "out of index.";
-				return 0;
+				if (shape_.size()<2)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[1];
 			}
-			return shape_[1];
+			else
+			{
+				if (shape_.size()<4)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[3];
+			}
 		}
 
 		int height() const
 		{
-			if (shape_.size()<3)
+			if (type_ == NCHW)
 			{
-				LOG(ERROR) << "out of index.";
-				return 0;
+				if (shape_.size()<3)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[2];
 			}
-			return shape_[2];
+			else
+			{
+				if (shape_.size()<2)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[1];
+			}
 		}
 
 		int width() const
 		{
-			if (shape_.size()<4)
+			if (type_ == NCHW)
 			{
-				LOG(ERROR) << "out of index.";
-				return 0;
+				if (shape_.size()<4)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[3];
 			}
-			return shape_[3];
+			else
+			{
+				if (shape_.size()<3)
+				{
+					LOG(ERROR) << "out of index.";
+					return 0;
+				}
+				return shape_[2];
+			}
 		}
 
 		int count(int start_axis, int end_axis) const
@@ -97,9 +136,22 @@ namespace excalibur
 			return device_;
 		}
 
+		tensorType type() const
+		{
+			return type_;
+		}
+
 		int offset(const int n, const int c = 0,
-			const int h = 0, const int w = 0) const {
-			return ((n * channels() + c) * height() + h) * width() + w;
+			const int h = 0, const int w = 0) const 
+		{
+			if (type_ == NCHW)
+			{
+				return ((n * channels() + c) * height() + h) * width() + w;
+			}
+			else
+			{
+				return ((n * height() + h) * width() + w) * channels() + c;
+			}
 		}
 
 		std::vector<int> data_shape() const
