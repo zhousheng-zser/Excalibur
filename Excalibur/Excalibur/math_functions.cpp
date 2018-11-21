@@ -48,6 +48,7 @@ namespace excalibur
 
 	template void math_functions::excalibur_copy<float>(const int N, const float* X, float* Y, int device);
 	template void math_functions::excalibur_copy<unsigned char>(const int N, const unsigned char* X, unsigned char* Y, int device);
+	template void math_functions::excalibur_copy<unsigned int>(const int N, const unsigned int* X, unsigned int* Y, int device);
 	template void math_functions::excalibur_copy<int>(const int N, const int* X, int* Y, int device);
 	template void math_functions::excalibur_copy<char>(const int N, const char* X, char* Y, int device);
 
