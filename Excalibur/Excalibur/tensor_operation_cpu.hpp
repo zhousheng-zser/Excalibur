@@ -14,14 +14,314 @@
 #define PI 3.141592
 namespace excalibur
 {
-	class tensoroperation
+	class tensor_operation_cpu
 	{
 	public:
-		tensoroperation(){};
-		~tensoroperation() {};
+		tensor_operation_cpu(){};
+		~tensor_operation_cpu() {};
 
 
-		
+
+#ifdef USE_OPENCV
+
+		/// <summary>
+		/// tensor转换为mat
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">转换得到的mat数据</param>
+		template <typename Dtype>
+		static void tensor2mat(const std::shared_ptr<tensor<Dtype>> &src, cv::Mat& dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channel = src->channels();
+			if (channel>4)
+			{
+				LOG(ERROR) << "Too many channels.";
+				return;
+			}
+			int width = src->width();
+			int height = src->height();
+			int type = get_cv_type<Dtype>();
+			if (type<0)
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+			dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
+			const Dtype* src_data = src->cpu_data();
+
+			if (src->type() == NCHW)
+			{
+				int src_offset = width * height;
+				int* c_src_offset = new int[channel];
+				for (int c = 0; c < channel; c++)
+				{
+					c_src_offset[c] = c * src_offset;
+				}
+				for (int h = 0; h < height; h++)
+				{
+					Dtype* dst_data = dst.ptr<Dtype>(h);
+					int src_sub_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channel; c++)
+						{
+							dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
+						}
+					}
+				}
+				delete c_src_offset;
+			}
+			else
+			{
+				std::memcpy(dst.data, src->cpu_data(), height * width * channel * sizeof(Dtype));
+			}
+		}
+
+
+
+		/// <summary>
+		/// tensor转换为mat
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">转换得到的mat数据</param>
+		template <typename Dtype>
+		static void tensor2mat(const tensor<Dtype>& src, cv::Mat& dst)
+		{
+			CHECK_EQ(src.num(), 1);
+			int channel = src.channels();
+			if (channel>4)
+			{
+				LOG(ERROR) << "Too many channels.";
+				return;
+			}
+			int width = src.width();
+			int height = src.height();
+			int type = get_cv_type<Dtype>();
+			if (type<0)
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+			dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
+
+			if (src.type() == NCHW)
+			{
+				const Dtype* src_data = src.cpu_data();
+				int src_offset = width * height;
+				int* c_src_offset = new int[channel];
+				for (int c = 0; c < channel; c++)
+				{
+					c_src_offset[c] = c * src_offset;
+				}
+				for (int h = 0; h < height; h++)
+				{
+					Dtype* dst_data = dst.ptr<Dtype>(h);
+					int src_sub_offset = h * width;
+					for (int w = 0; w < width; w++)
+					{
+						for (int c = 0; c < channel; c++)
+						{
+							dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
+						}
+					}
+				}
+				delete c_src_offset;
+			}
+			else
+			{
+				std::memcpy(dst.data, src.cpu_data(), height * width * channel * sizeof(Dtype));
+			}
+		}
+
+
+
+		/// <summary>
+		/// mat转换为tensor
+		/// </summary>
+		/// <param name="src">mat数据</param>
+		/// <param name="dst">转换得到的tensor</param>
+		/// <param name="Ttype">指定tensor类型，默认为NHWC</param>
+		template <typename Dtype>
+		static void mat2tensor(const cv::Mat &src, std::shared_ptr<tensor<Dtype>>& dst, tensorType Ttype = NHWC)
+		{
+			int channels = src.channels();
+			int width = src.cols;
+			int height = src.rows;
+			if (src.data == nullptr)
+			{
+				LOG(ERROR) << "No data.";
+				return;
+			}
+			int type_id = src.type() % 8;
+			auto type_name = std::string(typeid(Dtype).name());
+			if (type_id == 0)
+			{
+				if (type_name != std::string("unsigned char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("int"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("float"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+			if (Ttype == NCHW)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, -1, NCHW));
+				Dtype* dst_data = dst->mutable_cpu_data();
+				int dst_offset = width * height;
+				int* c_dst_offset = new int[channels];
+				for (int c = 0; c < channels; c++)
+				{
+					c_dst_offset[c] = c * dst_offset;
+				}
+				for (int c = 0; c < channels; c++)
+				{
+					for (int h = 0; h < height; h++)
+					{
+						const Dtype* src_data = src.ptr<Dtype>(h);
+						int dst_sub_offset = h * width;
+						for (int w = 0; w < width; w++)
+						{
+							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
+								src_data[w * channels + c];
+						}
+					}
+				}
+				delete c_dst_offset;
+			}
+			else
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, -1, NHWC));
+				Dtype* dst_data = dst->mutable_cpu_data();
+				memcpy(dst_data, src.data, height * width * channels * sizeof(Dtype));
+			}
+		}
+
+
+
+		/// <summary>
+		/// mat转换为tensor
+		/// </summary>
+		/// <param name="src">mat数据</param>
+		/// <param name="dst">转换得到的tensor</param>
+		/// <param name="Ttype">指定tensor类型，默认为NHWC</param>
+		template <typename Dtype>
+		static void mat2tensor(const cv::Mat &src, tensor<Dtype>& dst, tensorType Ttype = NHWC)
+		{
+			int channel = src.channels();
+			int width = src.cols;
+			int height = src.rows;
+			if (src.data == nullptr)
+			{
+				LOG(ERROR) << "No data.";
+				return;
+			}
+			int type_id = src.type() % 8;
+			auto type_name = std::string(typeid(Dtype).name());
+			if (type_id == 0)
+			{
+				if (type_name != std::string("unsigned char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("char"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("int"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("float"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+			if (Ttype == NCHW)
+			{
+				dst = tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1, NCHW);
+				Dtype* dst_data = dst.mutable_cpu_data();
+				int dst_offset = width * height;
+				int* c_dst_offset = new int[channel];
+				for (int c = 0; c < channel; c++)
+				{
+					c_dst_offset[c] = c * dst_offset;
+				}
+				for (int c = 0; c < channel; c++)
+				{
+					for (int h = 0; h < height; h++)
+					{
+						const Dtype* src_data = src.ptr<Dtype>(h);
+						int dst_sub_offset = h * width;
+						for (int w = 0; w < width; w++)
+						{
+							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
+								src_data[w * channel + c];
+						}
+					}
+				}
+				delete c_dst_offset;
+			}
+			else
+			{
+				dst = tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, NHWC);
+				Dtype* dst_data = dst.mutable_cpu_data();
+				memcpy(dst_data, src.data, height * width * channel * sizeof(Dtype));
+			}
+		}
+
+#endif
+
+
+
 		/// <summary>
 		/// 将NCHW排列的tensor转换为NHWC排列
 		/// </summary>
@@ -633,7 +933,7 @@ namespace excalibur
 			if (fabs(theta) <= 1e-6)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src.clone());
+				dst = src.clone();
 				return;
 			}
 
@@ -964,7 +1264,7 @@ namespace excalibur
 			if (fabs(theta) <= 1e-6)
 			{
 				LOG(WARNING) << "Just copy from the source.";
-				dst = std::make_shared<tensor<Dtype>>(src.clone());
+				dst = src.clone();
 				return;
 			}
 
@@ -1747,7 +2047,7 @@ namespace excalibur
 							fill_color[1] = color_.g;
 							fill_color[2] = color_.b;
 
-							if (dst->type() == NCHW)
+							if (dst.type() == NCHW)
 							{
 								for (int ch = 0; ch < 3; ++ch)
 								{
@@ -1846,7 +2146,7 @@ namespace excalibur
 						fill_color[1] = color_.g;
 						fill_color[2] = color_.b;
 
-						if (dst->type() == NCHW)
+						if (dst.type() == NCHW)
 						{
 							for (int ch = 0; ch < 3; ++ch)
 							{
@@ -2604,7 +2904,7 @@ namespace excalibur
 				return;
 			}
 
-			if (src->type() == NCHW)
+			if (src.type() == NCHW)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
 				Dtype* dst_data = dst.mutable_cpu_data();
@@ -4367,7 +4667,7 @@ namespace excalibur
 		/// </summary>
 		/// <param name="src">包含原图像数据的tensor</param>
 		/// <param name="dst">高斯滤波后的tensor</param>
-		/// <param name="ksize">高斯核的尺寸，只能为奇数，默认为3。实际使用的高斯模板规格为ksize×ksize</param>
+		/// <param name="ksize">高斯核的尺寸，只能为奇数，默认为3。实际使用的高斯模板规格为ksize×ksize的矩形窗</param>
 		template <typename Dtype>
 		static void gaussian_blur_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3)
 		{
@@ -4550,7 +4850,7 @@ namespace excalibur
 		/// </summary>
 		/// <param name="src">包含原图像数据的tensor</param>
 		/// <param name="dst">高斯滤波后的tensor</param>
-		/// <param name="ksize">高斯核的尺寸，只能为奇数，默认为3。实际使用的高斯模板规格为ksize×ksize</param>
+		/// <param name="ksize">高斯核的尺寸，只能为奇数，默认为3。实际使用的高斯模板规格为ksize×ksize的矩形窗</param>
 		template <typename Dtype>
 		static void gaussian_blur_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3)
 		{
@@ -4593,7 +4893,7 @@ namespace excalibur
 				convolution_kernel[col] /= sum;
 			}
 
-			const Dtype* src_data = src->cpu_data();
+			const Dtype* src_data = src.cpu_data();
 
 			if (src.type() == NCHW)
 			{
@@ -6047,302 +6347,7 @@ namespace excalibur
 			}
 		}
 
-#ifdef USE_OPENCV
-		
-		/// <summary>
-		/// tensor转换为mat
-		/// </summary>
-		/// <param name="src">包含原图像数据的tensor</param>
-		/// <param name="dst">转换得到的mat数据</param>
-		template <typename Dtype>
-		static void tensor2mat(const std::shared_ptr<tensor<Dtype>> &src, cv::Mat& dst)
-		{
-			CHECK_EQ(src->num(), 1);
-			int channel = src->channels();
-			if (channel>4)
-			{
-				LOG(ERROR) << "Too many channels.";
-				return;
-			}
-			int width = src->width();
-			int height = src->height();
-			int type = get_cv_type<Dtype>();
-			if (type<0)
-			{
-				LOG(ERROR) << "Un-support data type.";
-				return;
-			}
-			dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
-			const Dtype* src_data = src->cpu_data();
 
-			if (src->type() == NCHW)
-			{
-				int src_offset = width * height;
-				int* c_src_offset = new int[channel];
-				for (int c = 0; c < channel; c++)
-				{
-					c_src_offset[c] = c * src_offset;
-				}
-				for (int h = 0; h < height; h++)
-				{
-					Dtype* dst_data = dst.ptr<Dtype>(h);
-					int src_sub_offset = h * width;
-					for (int w = 0; w < width; w++)
-					{
-						for (int c = 0; c < channel; c++)
-						{
-							dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
-						}
-					}
-				}
-				delete c_src_offset;
-			}
-			else
-			{
-				std::memcpy(dst.data, src->cpu_data(), height * width * channel * sizeof(Dtype));
-			}
-		}
-
-		
-
-		/// <summary>
-		/// tensor转换为mat
-		/// </summary>
-		/// <param name="src">包含原图像数据的tensor</param>
-		/// <param name="dst">转换得到的mat数据</param>
-		template <typename Dtype>
-		static void tensor2mat(const tensor<Dtype>& src, cv::Mat& dst)
-		{
-			CHECK_EQ(src.num(), 1);
-			int channel = src.channels();
-			if (channel>4)
-			{
-				LOG(ERROR) << "Too many channels.";
-				return;
-			}
-			int width = src.width();
-			int height = src.height();
-			int type = get_cv_type<Dtype>();
-			if (type<0)
-			{
-				LOG(ERROR) << "Un-support data type.";
-				return;
-			}
-			dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
-			
-			if (src.type() == NCHW)
-			{
-				const Dtype* src_data = src.cpu_data();
-				int src_offset = width * height;
-				int* c_src_offset = new int[channel];
-				for (int c = 0; c < channel; c++)
-				{
-					c_src_offset[c] = c * src_offset;
-				}
-				for (int h = 0; h < height; h++)
-				{
-					Dtype* dst_data = dst.ptr<Dtype>(h);
-					int src_sub_offset = h * width;
-					for (int w = 0; w < width; w++)
-					{
-						for (int c = 0; c < channel; c++)
-						{
-							dst_data[w*channel + c] = src_data[c_src_offset[c] + src_sub_offset + w];
-						}
-					}
-				}
-				delete c_src_offset;
-			}
-			else
-			{
-				std::memcpy(dst.data, src.cpu_data(), height * width * channel * sizeof(Dtype));
-			}
-		}
-
-
-		
-		/// <summary>
-		/// mat转换为tensor
-		/// </summary>
-		/// <param name="src">mat数据</param>
-		/// <param name="dst">转换得到的tensor</param>
-		/// <param name="Ttype">指定tensor类型，默认为NHWC</param>
-		template <typename Dtype>
-		static void mat2tensor(const cv::Mat &src, std::shared_ptr<tensor<Dtype>>& dst, tensorType Ttype = NHWC)
-		{
-			int channel = src.channels();
-			int width = src.cols;
-			int height = src.rows;
-			if (src.data == nullptr)
-			{
-				LOG(ERROR) << "No data.";
-				return;
-			}
-			int type_id = src.type() % 8;
-			auto type_name = std::string(typeid(Dtype).name());
-			if (type_id == 0)
-			{
-				if (type_name != std::string("unsigned char"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 1)
-			{
-				if (type_name != std::string("char"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 4)
-			{
-				if (type_name != std::string("int"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 5)
-			{
-				if (type_name != std::string("float"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else
-			{
-				LOG(ERROR) << "Un-support data type.";
-				return;
-			}
-
-			if (Ttype == NCHW)
-			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1, NCHW));
-				Dtype* dst_data = dst->mutable_cpu_data();
-				int dst_offset = width * height;
-				int* c_dst_offset = new int[channel];
-				for (int c = 0; c < channel; c++)
-				{
-					c_dst_offset[c] = c * dst_offset;
-				}
-				for (int c = 0; c < channel; c++)
-				{
-					for (int h = 0; h < height; h++)
-					{
-						const Dtype* src_data = src.ptr<Dtype>(h);
-						int dst_sub_offset = h * width;
-						for (int w = 0; w < width; w++)
-						{
-							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
-								src_data[w * channel + c];
-						}
-					}
-				}
-				delete c_dst_offset;
-			}
-			else
-			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, NHWC));
-				Dtype* dst_data = dst->mutable_cpu_data();
-				memcpy(dst_data, src.data, height * width * channel * sizeof(Dtype));
-			}
-		}
-
-		
-
-		/// <summary>
-		/// mat转换为tensor
-		/// </summary>
-		/// <param name="src">mat数据</param>
-		/// <param name="dst">转换得到的tensor</param>
-		/// <param name="Ttype">指定tensor类型，默认为NHWC</param>
-		template <typename Dtype>
-		static void mat2tensor(const cv::Mat &src, tensor<Dtype>& dst, tensorType Ttype = NHWC)
-		{
-			int channel = src.channels();
-			int width = src.cols;
-			int height = src.rows;
-			if (src.data == nullptr)
-			{
-				LOG(ERROR) << "No data.";
-				return;
-			}
-			int type_id = src.type() % 8;
-			auto type_name = std::string(typeid(Dtype).name());
-			if (type_id == 0)
-			{
-				if (type_name != std::string("unsigned char"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 1)
-			{
-				if (type_name != std::string("char"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 4)
-			{
-				if (type_name != std::string("int"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else if (type_id == 5)
-			{
-				if (type_name != std::string("float"))
-				{
-					LOG(ERROR) << "Un-matched data type.";
-					return;
-				}
-			}
-			else
-			{
-				LOG(ERROR) << "Un-support data type.";
-				return;
-			}
-
-			if (Ttype == NCHW)
-			{
-				dst = tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1, NCHW);
-				Dtype* dst_data = dst.mutable_cpu_data();
-				int dst_offset = width * height;
-				int* c_dst_offset = new int[channel];
-				for (int c = 0; c < channel; c++)
-				{
-					c_dst_offset[c] = c * dst_offset;
-				}
-				for (int c = 0; c < channel; c++)
-				{
-					for (int h = 0; h < height; h++)
-					{
-						const Dtype* src_data = src.ptr<Dtype>(h);
-						int dst_sub_offset = h * width;
-						for (int w = 0; w < width; w++)
-						{
-							dst_data[c_dst_offset[c] + dst_sub_offset + w] =
-								src_data[w * channel + c];
-						}
-					}
-				}
-				delete c_dst_offset;
-			}
-			else
-			{
-				dst = tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, NHWC);
-				Dtype* dst_data = dst.mutable_cpu_data();
-				memcpy(dst_data, src.data, height * width * channel * sizeof(Dtype));
-			}
-		}
-#endif
 
 
 
