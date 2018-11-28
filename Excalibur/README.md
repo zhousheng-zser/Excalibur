@@ -132,6 +132,47 @@ A gpu infomation infer tool, depends on NVIDIA driver only.
 | 3  |  15.31/-- |  --/--  |  30.61/47.51  |
 | 4  |  17.98/-- |  --/--  |  32.21/58.78  |
 | 5  |  22.03/-- |  --/--  |  38.89/71.02  |
+
+## functions in tensor_operation_cpu.hpp/tensor_operation_gpu.hpp
+tested with 1200(width)×900(height)×3(channels) picture
+
+|  FUNCTIONS  |   OPENCV(ms)  |   CPU(ms)   | GPU(ms) |
+| :------: | :------:| :------: | :------: |
+| nchw2nhwc | -- |  2  |  0  |
+| nhwc2nchw | -- |  2  |  0  |
+| mat2tensor | -- |  2  |  200  |
+| tensor2mat | -- |  1  |  1  |
+| resize | 3 |  8  |  0  |
+| rotate_with_center | -- |  16  |  0  |
+| rotate_with_points | 10 |  10  |  --  |
+| draw_rectangle | 0 |  0  |  --  |
+| draw_circle | 0 |  0  |  --  |
+| flip | 2 |  3  |  0  |
+| bgr2gray | 7 |  2  |  0  |
+| matrix_transpose | -- |  3  |  0  |
+| ROI | 0 |  0  |  0  |
+| make_border | 1 |  1  |  --  |
+| cut_border | -- |  1  |  --  |
+| fast_integral | 5 |  5  |  --  |
+| equalize_hist | 7 |  1  |  --  |
+| split_channel | 1 |  3  |  --  |
+| merge_channel | 1 |  1  |  --  |
+| threshold | 6 |  1  |  0  |
+| warp_affine | 8 |  10  |  0  |
+| gaussian_blur | 8 |  18  |  0  |
+| sobel | 6 |  8  |  0  |
+| morph | 1 |  16  |  0  |
+
+  - --: do not have this function;
+  - 0: time elapsed is less than 1ms;
+  - OPENCV: function in OPENCV edition;
+  - CPU: function in CPU edition;
+  - GPU: function in CUDA edition;
+  - GPU: function in CUDA edition;
+  
+  ## How to use
+  * First include "tensor_operation_cpu.hpp" and Excalibur.lib in your project, then invoke function as "tensor_operation_cpu::resize_cpu(src_ptr, dst_ptr, dst_height, dst_width, Bilinear)";
+  * First include "tensor_operation_gpu.hpp" and Excalibur.lib in your project, then invoke function as "tensor_operation_gpu::resize_gpu(src_ptr, dst_ptr, dst_height, dst_width, Bilinear)".
   
 ## Known bugs
   - Due to an unknown reason, the performance of OpenBLAS is very unstable(on Intel i7-7700k). When swtich to Intel MKL, it's slightly faster than caffe 
