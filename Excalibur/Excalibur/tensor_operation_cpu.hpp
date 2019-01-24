@@ -20,6 +20,24 @@ namespace excalibur
 		tensor_operation_cpu(){};
 		~tensor_operation_cpu() {};
 
+#define ICV_WARP_SHIFT          10
+#define ICV_WARP_SHIFT2         15
+#define ICV_SHIFT_DIFF          (ICV_WARP_SHIFT2-ICV_WARP_SHIFT)
+#define ICV_WARP_MASK           ((1 << ICV_WARP_SHIFT) - 1)
+
+#define  CV_DESCALE(x,n)     (((x) + (1 << ((n)-1))) >> (n))
+
+#define ICV_WARP_MUL_ONE_8U(x)  ((x) << ICV_WARP_SHIFT)
+#define ICV_WARP_DESCALE_8U(x)  CV_DESCALE((x), ICV_WARP_SHIFT*2)
+#define CV_SWAP(a,b,t) ((t) = (a), (a) = (b), (b) = (t))
+
+		typedef struct CvResizeAlpha
+		{
+			int idx;
+			int ialpha;
+
+		}CvResizeAlpha;
+
 
 
 #ifdef USE_OPENCV
@@ -148,7 +166,7 @@ namespace excalibur
 			int channels = src.channels();
 			int width = src.cols;
 			int height = src.rows;
-			if (src.data == nullptr)
+			if (src.data == NULL)
 			{
 				LOG(ERROR) << "No data.";
 				return;
@@ -323,6 +341,42 @@ namespace excalibur
 
 
 		/// <summary>
+		/// tensor类型转换
+		/// </summary>
+		/// <param name="src">源tensor</param>
+		/// <param name="dst">转换后的tensor</param>
+		template <typename DtypeSRC, typename DtypeDST>
+		static void type_convertor_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
+		{
+			const DtypeSRC* src_data = src->cpu_data();
+			DtypeDST* dst_data = dst->mutable_cpu_data();
+			for (size_t i = 0; i < src->count(); i++)
+			{
+				dst_data[i] = DtypeDST(src_data[i]);
+			}
+		}
+
+
+
+		/// <summary>
+		/// tensor类型转换
+		/// </summary>
+		/// <param name="src">源tensor</param>
+		/// <param name="dst">转换后的tensor</param>
+		template <typename DtypeSRC, typename DtypeDST>
+		static void type_convertor_cpu(const tensor<DtypeSRC>* src, tensor<DtypeDST>* dst)
+		{
+			const DtypeSRC* src_data = src->cpu_data();
+			DtypeDST* dst_data = dst->mutable_cpu_data();
+			for (size_t i = 0; i < src->count(); i++)
+			{
+				dst_data[i] = DtypeDST(src_data[i]);
+			}
+		}
+
+
+
+		/// <summary>
 		/// 将NCHW排列的tensor转换为NHWC排列
 		/// </summary>
 		/// <param name="src">NCHW排列的tensor</param>
@@ -459,11 +513,11 @@ namespace excalibur
 				}
 			}
 		}
-
+		
 
 
 		/// <summary>
-		/// 根据新尺寸变换图像大小
+		/// 根据新尺寸变换图像大小，如果图像为单通道灰度图，使用gray_resize_cpu替代
 		/// </summary>
 		/// <param name="src">包含原图像数据的tensor</param>
 		/// <param name="dst">尺寸变换后的tensor</param>
@@ -492,69 +546,89 @@ namespace excalibur
 				return;
 			}
 
-			float width_ratio = (float)width / dst_width;
-			float height_ratio = (float)height / dst_height;
-			float beta = 0.5f;
-
-			if (src->type() == NCHW)
+			if (src->type() == NCHW || channels == 1)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->type()));
+				if (src->type() == NCHW)
+				{
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->type()));
+				}
+				else
+				{
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->type()));
+				}
+				
 				Dtype* dst_data = dst->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
-
 				int src_offset = height * width;
 				int dst_offset = dst_height * dst_width;
+
+				void* temp_buf = 0;
+				int scale_x, scale_y;
+				int sx, sy, dx, dy;
+				int xmax = dst_width, buf_size;
+				int *buf0, *buf1;
+				CvResizeAlpha *xofs, *yofs;
+				int fx_1024x, fy_1024x;
+
+				scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
+				scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
+
+				buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
+				temp_buf = buf0 = (int*)malloc(buf_size);
+				buf1 = buf0 + dst_width;
+				xofs = (CvResizeAlpha*)(buf1 + dst_width);
+				yofs = xofs + dst_width;
+
+				for (dx = 0; dx < dst_width; dx++)
+				{
+					fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
+					sx = (fx_1024x >> ICV_WARP_SHIFT2);
+					fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+
+					if (sx < 0)
+						sx = 0, fx_1024x = 0;
+
+					if (sx >= width - 1)
+					{
+						fx_1024x = 0, sx = width - 1;
+						if (xmax >= dst_width)
+							xmax = dx;
+					}
+
+					xofs[dx].idx = sx;
+					xofs[dx].ialpha = fx_1024x;
+				}
+
+				for (dy = 0; dy < dst_height; dy++)
+				{
+					fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
+					sy = (fy_1024x >> ICV_WARP_SHIFT2);
+					fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+
+					if (sy < 0)
+						sy = 0, fy_1024x = 0;
+
+					yofs[dy].idx = sy;
+					yofs[dy].ialpha = fy_1024x;
+				}
 
 				for (int ch = 0; ch < channels; ++ch)
 				{
 					int src_channel_offset = ch * src_offset;
 					int dst_channel_offset = ch * dst_offset;
 
-#pragma omp parallel for
-					for (int row = 0; row < dst_height; ++row)
-					{
-						float yf = row * height_ratio + beta;
-						int y = (int)yf;
-						float ydiff = yf - y;
-
-						int src_pos1 = src_channel_offset + y * width;
-						int dst_pos1 = dst_channel_offset + row * dst_width;
-
-						for (int col = 0; col < dst_width; ++col)
-						{
-							float xf = col * width_ratio + beta;
-							int x = (int)xf;
-							float xdiff = xf - x;
-
-							int src_pos2 = src_pos1 + x;
-							int dst_pos2 = dst_pos1 + col;
-
-							if (type == Nearest)
-							{
-								dst_data[dst_pos2] = src_data[src_pos2];
-							}
-							else if (type == Bilinear)
-							{
-								int src_pos3 = src_pos2 + width;
-								Dtype A = src_data[src_pos2];
-								Dtype B = src_data[src_pos2 + 1];
-								Dtype C = src_data[src_pos3];
-								Dtype D = src_data[src_pos3 + 1];
-								dst_data[dst_pos2] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
-									static_cast<float>(B) * xdiff * (1 - ydiff) +
-									static_cast<float>(C) * ydiff * (1 - xdiff) +
-									static_cast<float>(D) * xdiff * ydiff);
-							}
-							else
-							{
-								LOG(ERROR) << "Un-support interpolation type.";
-							}
-						}
-					}
+					icvResize_Bilinear_8u_C1(&src_data[src_channel_offset], width * sizeof(Dtype), width, height, &dst_data[dst_channel_offset],
+						dst_width * sizeof(Dtype), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
 				}
+
+				free(temp_buf);
 			}
 			else
 			{
+				float width_ratio = (float)width / dst_width;
+				float height_ratio = (float)height / dst_height;
+				float beta = 0.5f;
+
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->type()));
 				Dtype* dst_data = dst->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
@@ -609,10 +683,10 @@ namespace excalibur
 			}
 		}
 
-		
+
 
 		/// <summary>
-		/// 根据新尺寸变换图像大小
+		/// 根据新尺寸变换图像大小，如果图像为单通道灰度图，使用gray_resize_cpu替代
 		/// </summary>
 		/// <param name="src">包含原图像数据的tensor</param>
 		/// <param name="dst">尺寸变换后的tensor</param>
@@ -641,69 +715,89 @@ namespace excalibur
 				return;
 			}
 
-			float width_ratio = (float)width / dst_width;
-			float height_ratio = (float)height / dst_height;
-			float beta = 0.5f;
-
-			if (src.type() == NCHW)
+			if (src.type() == NCHW || channels == 1)
 			{
-				dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
+				if (src.type() == NCHW)
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
+				}
+				else
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
+				}
+
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
-
 				int src_offset = height * width;
 				int dst_offset = dst_height * dst_width;
+
+				void* temp_buf = 0;
+				int scale_x, scale_y;
+				int sx, sy, dx, dy;
+				int xmax = dst_width, buf_size;
+				int *buf0, *buf1;
+				CvResizeAlpha *xofs, *yofs;
+				int fx_1024x, fy_1024x;
+
+				scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
+				scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
+
+				buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
+				temp_buf = buf0 = (int*)malloc(buf_size);
+				buf1 = buf0 + dst_width;
+				xofs = (CvResizeAlpha*)(buf1 + dst_width);
+				yofs = xofs + dst_width;
+
+				for (dx = 0; dx < dst_width; dx++)
+				{
+					fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
+					sx = (fx_1024x >> ICV_WARP_SHIFT2);
+					fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+
+					if (sx < 0)
+						sx = 0, fx_1024x = 0;
+
+					if (sx >= width - 1)
+					{
+						fx_1024x = 0, sx = width - 1;
+						if (xmax >= dst_width)
+							xmax = dx;
+					}
+
+					xofs[dx].idx = sx;
+					xofs[dx].ialpha = fx_1024x;
+				}
+
+				for (dy = 0; dy < dst_height; dy++)
+				{
+					fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
+					sy = (fy_1024x >> ICV_WARP_SHIFT2);
+					fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+
+					if (sy < 0)
+						sy = 0, fy_1024x = 0;
+
+					yofs[dy].idx = sy;
+					yofs[dy].ialpha = fy_1024x;
+				}
 
 				for (int ch = 0; ch < channels; ++ch)
 				{
 					int src_channel_offset = ch * src_offset;
 					int dst_channel_offset = ch * dst_offset;
 
-#pragma omp parallel for
-					for (int row = 0; row < dst_height; ++row)
-					{
-						float yf = row * height_ratio + beta;
-						int y = (int)yf;
-						float ydiff = yf - y;
-
-						int src_pos1 = src_channel_offset + y * width;
-						int dst_pos1 = dst_channel_offset + row * dst_width;
-
-						for (int col = 0; col < dst_width; ++col)
-						{
-							float xf = col * width_ratio + beta;
-							int x = (int)xf;
-							float xdiff = xf - x;
-
-							int src_pos2 = src_pos1 + x;
-							int dst_pos2 = dst_pos1 + col;
-
-							if (type == Nearest)
-							{
-								dst_data[dst_pos2] = src_data[src_pos2];
-							}
-							else if (type == Bilinear)
-							{
-								int src_pos3 = src_pos2 + width;
-								Dtype A = src_data[src_pos2];
-								Dtype B = src_data[src_pos2 + 1];
-								Dtype C = src_data[src_pos3];
-								Dtype D = src_data[src_pos3 + 1];
-								dst_data[dst_pos2] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
-									static_cast<float>(B) * xdiff * (1 - ydiff) +
-									static_cast<float>(C) * ydiff * (1 - xdiff) +
-									static_cast<float>(D) * xdiff * ydiff);
-							}
-							else
-							{
-								LOG(ERROR) << "Un-support interpolation type.";
-							}
-						}
-					}
+					icvResize_Bilinear_8u_C1(&src_data[src_channel_offset], width * sizeof(Dtype), width, height, &dst_data[dst_channel_offset],
+						dst_width * sizeof(Dtype), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
 				}
+
+				free(temp_buf);
 			}
 			else
 			{
+				float width_ratio = (float)width / dst_width;
+				float height_ratio = (float)height / dst_height;
+				float beta = 0.5f;
+
 				dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
@@ -6152,53 +6246,75 @@ namespace excalibur
 		/// </summary>
 		/// <param name="dst">包含图像数据的tensor</param>
 		template <typename Dtype>
-		static void preprocess_tensors_cpu(std::shared_ptr<tensor<Dtype>> &dst)
+		static void preprocess_tensors_cpu(std::shared_ptr<tensor<Dtype>> dst)
 		{
 			int num = dst->num();
 			int channel = dst->channels();
-			CHECK_EQ(channel, 3);
 			int height = dst->height();
 			int width = dst->width();
-			Dtype* dst_data = dst->mutable_cpu_data();
-			float means[] = { 104.f, 117.0f, 124.f };
-			float var = 0.0078125f;
-
-			if (dst->type() == NCHW)
+			if (channel == 3)
 			{
-				for (size_t n = 0; n < num; n++)
+				Dtype* dst_data = dst->mutable_cpu_data();
+				float means[] = { 104.f, 117.0f, 124.f };
+				float var = 0.0078125f;
+
+				if (dst->type() == NCHW)
 				{
-					int offset = n * 3 * height * width;
-					for (size_t c = 0; c < 3; c++)
+					for (size_t n = 0; n < num; n++)
 					{
-						int sub_offset = c * height * width;
+						int offset = n * 3 * height * width;
+						for (size_t c = 0; c < 3; c++)
+						{
+							int sub_offset = c * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + sub_offset + subsub_offset + w] =
+										Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					for (size_t n = 0; n < num; n++)
+					{
+						int offset = n * 3 * height * width;
 						for (size_t h = 0; h < height; h++)
 						{
-							int subsub_offset = h * width;
+							int sub_offset = h * width * 3;
 							for (size_t w = 0; w < width; w++)
 							{
-								dst_data[offset + sub_offset + subsub_offset + w] =
-									Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+								int subsub_offset = w * 3;
+								for (size_t c = 0; c < 3; c++)
+								{
+									dst_data[offset + sub_offset + subsub_offset + c] =
+										Dtype((dst_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+								}
 							}
 						}
 					}
 				}
 			}
-			else
+			else if (channel == 1)
 			{
+				Dtype* dst_data = dst->mutable_cpu_data();
+				float means[] = { 127.5f };
+				float var = 0.0078125f;
+
 				for (size_t n = 0; n < num; n++)
 				{
-					int offset = n * 3 * height * width;
+					int offset = n * height * width;
 					for (size_t h = 0; h < height; h++)
 					{
-						int sub_offset = h * width * 3;
+						int subsub_offset = h * width;
 						for (size_t w = 0; w < width; w++)
 						{
-							int subsub_offset = w * 3;
-							for (size_t c = 0; c < 3; c++)
-							{
-								dst_data[offset + sub_offset + subsub_offset + c] =
-									Dtype((dst_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
-							}
+							dst_data[offset + subsub_offset + w] =
+								Dtype((dst_data[offset + subsub_offset + w] - means[0]) * var);
 						}
 					}
 				}
@@ -6212,32 +6328,55 @@ namespace excalibur
 		/// </summary>
 		/// <param name="dst">包含图像数据的tensor</param>
 		template <typename Dtype>
-		static void preprocess_tensors_cpu(tensor<Dtype>& dst)
+		static void preprocess_tensors_cpu(tensor<Dtype>* dst)
 		{
-			int num = dst.num();
-			int channel = dst.channels();
-			CHECK_EQ(channel, 3);
-			int height = dst.height();
-			int width = dst.width();
-			Dtype* dst_data = dst.mutable_cpu_data();
-			float means[] = { 104.f, 117.0f, 124.f };
-			float var = 0.0078125f;
+			int num = dst->num();
+			int channel = dst->channels();
+			int height = dst->height();
+			int width = dst->width();
 
-			if (dst.type() == NCHW)
+			if (channel == 3)
 			{
-				for (size_t n = 0; n < num; n++)
+				Dtype* dst_data = dst->mutable_cpu_data();
+				float means[] = { 104.f, 117.0f, 124.f };
+				float var = 0.0078125f;
+
+				if (dst->type() == NCHW)
 				{
-					int offset = n * 3 * height * width;
-					for (size_t c = 0; c < 3; c++)
+					for (size_t n = 0; n < num; n++)
 					{
-						int sub_offset = c * height * width;
+						int offset = n * 3 * height * width;
+						for (size_t c = 0; c < 3; c++)
+						{
+							int sub_offset = c * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + sub_offset + subsub_offset + w] =
+										Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					for (size_t n = 0; n < num; n++)
+					{
+						int offset = n * 3 * height * width;
 						for (size_t h = 0; h < height; h++)
 						{
-							int subsub_offset = h * width;
+							int sub_offset = h * width * 3;
 							for (size_t w = 0; w < width; w++)
 							{
-								dst_data[offset + sub_offset + subsub_offset + w] =
-									Dtype((dst_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+								int subsub_offset = w * 3;
+								for (size_t c = 0; c < 3; c++)
+								{
+									dst_data[offset + sub_offset + subsub_offset + c] =
+										Dtype((dst_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+								}
 							}
 						}
 					}
@@ -6245,20 +6384,20 @@ namespace excalibur
 			}
 			else
 			{
+				Dtype* dst_data = dst->mutable_cpu_data();
+				float means[] = { 127.5f };
+				float var = 0.0078125f;
+
 				for (size_t n = 0; n < num; n++)
 				{
-					int offset = n * 3 * height * width;
+					int offset = n * height * width;
 					for (size_t h = 0; h < height; h++)
 					{
-						int sub_offset = h * width * 3;
+						int subsub_offset = h * width;
 						for (size_t w = 0; w < width; w++)
 						{
-							int subsub_offset = w * 3;
-							for (size_t c = 0; c < 3; c++)
-							{
-								dst_data[offset + sub_offset + subsub_offset + c] =
-									Dtype((dst_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
-							}
+							dst_data[offset + subsub_offset + w] =
+								Dtype((dst_data[offset + subsub_offset + w] - means[0]) * var);
 						}
 					}
 				}
@@ -6420,6 +6559,73 @@ namespace excalibur
 		}
 
 #endif
+
+		static int icvResize_Bilinear_8u_C1(const unsigned char* src, int srcstep, int swidth, int sheight,
+			unsigned char* dst, int dststep, int dwidth, int dheight,
+			int xmax,
+			const CvResizeAlpha* xofs,
+			const CvResizeAlpha* yofs,
+			int* buf0, int* buf1)
+		{
+			int prev_sy0 = -1, prev_sy1 = -1;
+			int k, dx, dy;
+
+			srcstep /= sizeof(src[0]);
+			dststep /= sizeof(dst[0]);
+
+			for (dy = 0; dy < dheight; dy++, dst += dststep)
+			{
+				int fy = yofs[dy].ialpha, *swap_t;
+				int sy0 = yofs[dy].idx, sy1 = sy0 + (fy > 0 && sy0 < sheight - 1);
+
+				if (sy0 == prev_sy0 && sy1 == prev_sy1)
+					k = 2;
+				else if (sy0 == prev_sy1)
+				{
+					CV_SWAP(buf0, buf1, swap_t);
+					k = 1;
+				}
+				else
+					k = 0;
+
+				for (; k < 2; k++)
+				{
+					int* _buf = k == 0 ? buf0 : buf1;
+					const unsigned char* _src;
+					int sy = k == 0 ? sy0 : sy1;
+					if (k == 1 && sy1 == sy0)
+					{
+						memcpy(buf1, buf0, dwidth * sizeof(buf0[0]));
+						continue;
+					}
+
+					_src = src + sy * srcstep;
+					for (dx = 0; dx < xmax; dx++)
+					{
+						int sx = xofs[dx].idx;
+						int fx = xofs[dx].ialpha;
+						int t = _src[sx];
+						_buf[dx] = ICV_WARP_MUL_ONE_8U(t) + fx * (_src[sx + 1] - t);
+					}
+
+					for (; dx < dwidth; dx++)
+						_buf[dx] = ICV_WARP_MUL_ONE_8U(_src[xofs[dx].idx]);
+				}
+
+				prev_sy0 = sy0;
+				prev_sy1 = sy1;
+
+				if (sy0 == sy1)
+					for (dx = 0; dx < dwidth; dx++)
+						dst[dx] = (unsigned char)ICV_WARP_DESCALE_8U(ICV_WARP_MUL_ONE_8U(buf0[dx]));
+				else
+					for (dx = 0; dx < dwidth; dx++)
+						dst[dx] = (unsigned char)ICV_WARP_DESCALE_8U(ICV_WARP_MUL_ONE_8U(buf0[dx]) +
+							fy * (buf1[dx] - buf0[dx]));
+			}
+
+			return 1;
+		}
 	};
 }
 #endif // !_TENSOROPERATION_HPP_
