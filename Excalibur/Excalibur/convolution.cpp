@@ -41,6 +41,45 @@ namespace excalibur
 #endif
 	}
 
+	convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device)
+	{
+		
+		CHECK_EQ(output_Channel % group , 0);
+		CHECK_EQ(input_Channel % group, 0);
+		input_Channel_ = input_Channel;
+		output_Channel_ = output_Channel;
+		kernelSize_ = kernelSize;
+		stride_ = stride;
+		pad_ = pad;
+		bias_term_ = bias_term;
+		device_ = device;
+		weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_ / group}, device_));
+		bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
+		setup_internal_params(group);
+#ifdef USE_CUDNN
+		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+		{
+			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+		}
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+		CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+		CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+		CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+		// set params descriptor
+		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+			output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+		CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+			1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+		if (bias_term_)
+		{
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+			CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+				1, output_Channel_ / group_, 1, 1));
+		}
+		current_size = 0;
+#endif
+	}
+
 	convolution::~convolution()
 	{
 #ifdef USE_CUDNN
@@ -107,7 +146,15 @@ namespace excalibur
 	{
 		kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
 		group_ = 1;
-		weight_offset_ = output_Channel_ * kernel_dim_ / group_;
+		weight_offset_ = kernelSize_ * kernelSize_;
+		isfirst = true;
+	}
+
+	void convolution::setup_internal_params(int group)
+	{
+		kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
+		group_ = group;
+		weight_offset_ = kernelSize_*kernelSize_;
 		isfirst = true;
 	}
 
@@ -122,9 +169,18 @@ namespace excalibur
 		}
 		for (int g = 0; g < group_; ++g)
 		{
-			math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_ ,
-				conv_out_spatial_dim_, kernel_dim_, 1.0f,
-				weights + weight_offset_ * g, col_buff + col_offset_ * g, 0.0f, output + output_offset_ * g);
+			if (group_ == 1)
+			{
+				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
+					conv_out_spatial_dim_, kernel_dim_, 1.0f,
+					weights, col_buff, 0.0f, output);
+			}
+			else 
+			{
+				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
+					conv_out_spatial_dim_, kernelSize_ * kernelSize_, 1.0f,
+					weights + kernelSize_ * kernelSize_ * g, col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
+			}
 		}
 	}
 
@@ -195,6 +251,5 @@ namespace excalibur
 			}
 		}
 	}
-
 }
 

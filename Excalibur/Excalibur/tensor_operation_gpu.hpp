@@ -9,7 +9,9 @@
 #include "tensor_utils.hpp"
 #include "tensor.hpp"
 #include <iostream>
+#ifdef USE_OPENCV
 #include <opencv2\opencv.hpp>
+#endif
 #include <glasssix\timer.hpp>
 using namespace excalibur;
 
@@ -26,6 +28,7 @@ namespace excalibur
 		static void tensor2mat_gpu(const std::shared_ptr<tensor<Dtype>> &src, cv::Mat& dst);
 
 		template <typename Dtype>
+
 		static void tensor2mat_gpu(const tensor<Dtype>& src, cv::Mat& dst);
 
 
