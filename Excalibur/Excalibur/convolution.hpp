@@ -66,9 +66,12 @@ namespace excalibur
 		void conv_col2im_gpu(const float* col_buff, float* data);
 #endif
 		void setup_internal_params();
+		void setup_internal_params(int group);
 	public:
 		convolution(int input_Channel, int output_Channel, int kernelSize,
 			int stride, int pad, bool bias_term,  int device);
+		convolution(int input_Channel, int output_Channel, int kernelSize, int group,
+			int stride, int pad, bool bias_term, int device);
 		~convolution();
 		void set_weights(float* weights);
 		void set_bias(float* bias);
