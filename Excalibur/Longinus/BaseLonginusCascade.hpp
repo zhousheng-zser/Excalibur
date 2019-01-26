@@ -1,5 +1,5 @@
-#ifndef BASECASCADE_HPP
-#define BASECASCADE_HPP
+#ifndef BASELONGINUS_HPP
+#define BASELONGINUS_HPP
 #include <vector>
 #include "common.hpp"
 
@@ -7,7 +7,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		typedef enum RomanciaCascadeType
+		typedef enum LonginusCascadeType
 		{
 			FRONTAL,
 			FRONTAL_REINFORCE,
@@ -15,13 +15,13 @@ namespace glasssix
 			LEFT_PROFILE_REINFORCE,
 			RIGHT_PROFILE,
 			RIGHT_PROFILE_REINFORCE
-		}RomanciaCascadeType;
+		}LonginusCascadeType;
 
-		class BaseRomanciaCascade
+		class BaseLonginusCascade
 		{
 		public:
-			virtual ~BaseRomanciaCascade() {}
-			virtual void LoadCascade(RomanciaCascadeType cascadeType, int device = -1) = 0;
+			virtual ~BaseLonginusCascade() {}
+			virtual void LoadCascade(LonginusCascadeType cascadeType, int device = -1) = 0;
 			virtual int getWinWidth() const = 0;
 			virtual int getWinHeight() const = 0;
 			virtual bool isEmpty() = 0;
