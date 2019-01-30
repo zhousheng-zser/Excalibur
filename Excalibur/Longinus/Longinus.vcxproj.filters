@@ -85,8 +85,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ImageOperation.cu" />
-    <None Include="InternalRomanciaCascade.cu" />
     <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="ImageOperation.cu" />
+    <CudaCompile Include="InternalLonginusCascade.cu" />
   </ItemGroup>
 </Project>

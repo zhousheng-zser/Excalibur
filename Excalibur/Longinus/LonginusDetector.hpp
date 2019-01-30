@@ -57,6 +57,7 @@ namespace glasssix
 #endif
 			void set(DetectionType detectionType, int device = -1);
 
+
 		private:
 			int device_;
 			std::vector<std::shared_ptr<BaseLonginusCascade>> *cascades_;

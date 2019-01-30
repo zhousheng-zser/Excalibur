@@ -2,32 +2,36 @@
 #ifndef _SLICE_HPP_
 #define _SLICE_HPP_
 
-#include "tensor.hpp"
+#include <glasssix\tensor.hpp>
 #include "math_functions.hpp"
 
-namespace excalibur
+namespace glasssix
 {
-	class slice
+	namespace excalibur
 	{
-		int count_;
-		int num_slices_;
-		int slice_size_;
-		int slice_axis_;
-		std::vector<int> slice_point_;
+		class slice
+		{
+			int count_;
+			int num_slices_;
+			int slice_size_;
+			int slice_axis_;
+			std::vector<int> slice_point_;
 
-		int device_;
-	public:
-		slice(int slice_axis, int device);
+			int device_;
+		public:
+			slice(int slice_axis, int device);
 
-		~slice();
+			~slice();
 
-		void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
+			void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
 
-		void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::shared_ptr<tensor<float>>& top1, std::shared_ptr<tensor<float>>& top2);
+			void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::shared_ptr<tensor<float>>& top1, std::shared_ptr<tensor<float>>& top2);
 #ifdef USE_CUDA
-		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
+			void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
 #endif
-	};
+		};
+	}
 }
+
 
 #endif

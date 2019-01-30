@@ -90,7 +90,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_MBCS;$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Romancia.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\lib\x64\*.lib;Excalibur.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -116,7 +116,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -131,7 +131,7 @@
   <ItemGroup>
     <ClInclude Include="include\baseNet.hpp" />
     <ClInclude Include="include\landmarkNet.hpp" />
-    <ClInclude Include="include\landmarkNetData.hpp" />
+    <ClInclude Include="include\landmarkNet_data.hpp" />
     <ClInclude Include="include\Romancia.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

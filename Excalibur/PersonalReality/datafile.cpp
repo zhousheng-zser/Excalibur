@@ -217,15 +217,19 @@ void datafile::writedatahpp(std::string netpath, std::string netname, std::strin
 		{
 			std::string layer_name = layer_param.name();
 			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-			writedatahead(netname, layer_name + "_weights", "float");
+			writedatahead(netname, layer_name + "_weights", "unsigned short");
+			//writedatahead(netname, layer_name + "_weights", "float");
 			const BlobProto& blob = layer_param.blobs(0);
-			writedata(blob.data().data(), blob.data_size(), "float");
+			writedata(blob.data().data(), blob.data_size(), "unsigned short");
+			//writedata(blob.data().data(), blob.data_size(), "float");
+			
 			writedataend();
 			if (n>1)
 			{
 				writedatahead(netname, layer_name + "_bias", "float");
 				const BlobProto& bias = layer_param.blobs(1);
-				writedata(bias.data().data(), bias.data_size(), "float");
+				writedata(bias.data().data(), bias.data_size(), "unsigned short");
+				//writedata(bias.data().data(), bias.data_size(), "float");
 				writedataend();
 			}
 		}

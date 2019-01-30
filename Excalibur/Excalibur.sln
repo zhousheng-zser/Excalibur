@@ -9,6 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "fastfacedetection", "fastfa
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cassius", "Cassius\Cassius.vcxproj", "{8432FA67-F974-46C7-A792-DCFB77624F35}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E0AF50AC-048C-412F-BA26-13B4F408C96D} = {E0AF50AC-048C-412F-BA26-13B4F408C96D}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "exfastfacedetection", "exfastfacedetection\exfastfacedetection.vcxproj", "{829563A2-6123-4ECE-818A-81CC5EB03B5D}"
 EndProject
@@ -31,6 +34,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Longinus", "Longinus\Longinus.vcxproj", "{9EE0E226-E717-4987-A2EA-CDAF97A9CAAB}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestLonginus", "TestLonginus\TestLonginus.vcxproj", "{EB0DB128-D5A8-4A85-9C20-B2E0A1958344}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestCassius", "TestCassius\TestCassius.vcxproj", "{8B54CF3C-52FD-456C-921A-DB43DAA86474}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -172,6 +177,16 @@ Global
 		{EB0DB128-D5A8-4A85-9C20-B2E0A1958344}.Release|x64.Build.0 = Release|x64
 		{EB0DB128-D5A8-4A85-9C20-B2E0A1958344}.Release|x86.ActiveCfg = Release|Win32
 		{EB0DB128-D5A8-4A85-9C20-B2E0A1958344}.Release|x86.Build.0 = Release|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Debug|x64.ActiveCfg = Debug|x64
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Debug|x64.Build.0 = Debug|x64
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Debug|x86.ActiveCfg = Debug|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Debug|x86.Build.0 = Debug|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Release|Any CPU.ActiveCfg = Release|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Release|x64.ActiveCfg = Release|x64
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Release|x64.Build.0 = Release|x64
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Release|x86.ActiveCfg = Release|Win32
+		{8B54CF3C-52FD-456C-921A-DB43DAA86474}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

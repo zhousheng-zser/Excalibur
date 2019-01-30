@@ -3,253 +3,257 @@
 #include <iostream>
 #include <filesystem>
 
-namespace excalibur
+namespace glasssix
 {
-	convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device)
+	namespace excalibur
 	{
-		input_Channel_ = input_Channel;
-		output_Channel_ = output_Channel;
-		kernelSize_ = kernelSize;
-		stride_ = stride;
-		pad_ = pad;
-		bias_term_ = bias_term;
-		device_ = device;
-		weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_));
-		bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
-		setup_internal_params();
+		convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device)
+		{
+			input_Channel_ = input_Channel;
+			output_Channel_ = output_Channel;
+			kernelSize_ = kernelSize;
+			stride_ = stride;
+			pad_ = pad;
+			bias_term_ = bias_term;
+			device_ = device;
+			weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_));
+			bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
+			setup_internal_params();
 #ifdef USE_CUDNN
-		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) 
-		{
-			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-		}
-		CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
-		CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
-		CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
-		CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-		// set params descriptor
-		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
-			output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
-		CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
-			1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
-		if (bias_term_)
-		{
-			CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
-			CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
-				1, output_Channel_ / group_, 1, 1));
-		}
-		current_size = 0;
-#endif
-	}
-
-	convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device)
-	{
-		
-		CHECK_EQ(output_Channel % group , 0);
-		CHECK_EQ(input_Channel % group, 0);
-		input_Channel_ = input_Channel;
-		output_Channel_ = output_Channel;
-		kernelSize_ = kernelSize;
-		stride_ = stride;
-		pad_ = pad;
-		bias_term_ = bias_term;
-		device_ = device;
-		weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_ / group}, device_));
-		bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
-		setup_internal_params(group);
-#ifdef USE_CUDNN
-		if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
-		{
-			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-		}
-		CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
-		CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
-		CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
-		CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
-		// set params descriptor
-		CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
-			output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
-		CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
-			1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
-		if (bias_term_)
-		{
-			CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
-			CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
-				1, output_Channel_ / group_, 1, 1));
-		}
-		current_size = 0;
-#endif
-	}
-
-	convolution::~convolution()
-	{
-#ifdef USE_CUDNN
-		if (cudnn_handle_)
-		{
-			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
-		}
-		CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
-		CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
-		CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
-		CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
-		if (bias_term_)
-		{
-			CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
-		}
-		if (extra!=nullptr)
-		{
-			cudaFree(extra);
-		}
-#endif
-	}
-
-	void convolution::set_bias(float* bias)
-	{
-		if (bias_term_)
-		{
-			bias_->set_cpu_data(bias);
-		}
-	}
-
-	void convolution::set_weights(float* weights)
-	{
-		weights_->set_cpu_data(weights);
-	}
-
-	void convolution::conv_im2col_cpu(const float* data, float* col_buff)
-	{
-		im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
-			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff);
-	}
-
-	void convolution::conv_col2im_cpu(const float* col_buff, float* data)
-	{
-		col2im_cpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
-			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
-	}
-
-#ifdef USE_CUDA
-	void convolution::conv_im2col_gpu(const float* data, float* col_buff)
-	{
-		im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
-			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff);
-	}
-
-	void convolution::conv_col2im_gpu(const float* col_buff, float* data)
-	{
-		col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
-			kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
-	}
-
-#endif
-
-	void convolution::setup_internal_params()
-	{
-		kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
-		group_ = 1;
-		weight_offset_ = kernelSize_ * kernelSize_;
-		isfirst = true;
-	}
-
-	void convolution::setup_internal_params(int group)
-	{
-		kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
-		group_ = group;
-		weight_offset_ = kernelSize_*kernelSize_;
-		isfirst = true;
-	}
-
-
-	void convolution::forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col)
-	{
-		const float* col_buff = input;
-		if (kernelSize_!=1)
-		{
-			conv_im2col_cpu(input, col_buffer_->mutable_cpu_data());
-			col_buff = col_buffer_->cpu_data();
-		}
-		for (int g = 0; g < group_; ++g)
-		{
-			if (group_ == 1)
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
 			{
-				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
-					conv_out_spatial_dim_, kernel_dim_, 1.0f,
-					weights, col_buff, 0.0f, output);
+				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
 			}
-			else 
-			{
-				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
-					conv_out_spatial_dim_, kernelSize_ * kernelSize_, 1.0f,
-					weights + kernelSize_ * kernelSize_ * g, col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
-			}
-		}
-	}
-
-	void convolution::forward_cpu_bias(float* output, const float* bias)
-	{
-		math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
-			out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
-			1.0f, output);
-	}
-
-
-#ifdef USE_CUDA
-	void convolution::forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col)
-	{
-		const float* col_buff = input;
-		if (kernelSize_ != 1)
-		{
-			conv_im2col_gpu(input, gpu_temp_col_buffer_);
-			col_buff = col_buffer_->gpu_data();
-		}
-		for (int g = 0; g < group_; ++g)
-		{
-			math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
-				conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
-				0.0f, output + output_offset_ * g);
-		}
-	}
-
-	void convolution::forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
-	{
-		math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_,
-			out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
-	}
-
-#endif
-
-	void convolution::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
-	{
-		const int num = bottom->data_shape()[0];
-		const float* bottom_data = bottom->cpu_data();
-		const float* weights = weights_->cpu_data();
-		const float* bias = bias_->cpu_data();
-		//
-		intput_shape_.clear();
-		intput_shape_ = bottom->data_shape();
-		int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
-		int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
-		top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
-		//
-
-		float* top_data = (top)->mutable_cpu_data();
-		col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
-		bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-		conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-		out_spatial_dim_ = output_dim_w_*output_dim_h_;
-		col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-		output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
-		math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
-		//
-		int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];
-		int top_dim = (top)->count(1, 4);
-		for (int n = 0; n < num; n++)
-		{
-			forward_cpu_gemm(bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+			CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+			CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+			// set params descriptor
+			CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+				output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+			CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+				1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
 			if (bias_term_)
 			{
-				forward_cpu_bias(top_data + n * top_dim, bias);
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+				CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+					1, output_Channel_ / group_, 1, 1));
+			}
+			current_size = 0;
+#endif
+		}
+
+		convolution::convolution(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device)
+		{
+
+			CHECK_EQ(output_Channel % group, 0);
+			CHECK_EQ(input_Channel % group, 0);
+			input_Channel_ = input_Channel;
+			output_Channel_ = output_Channel;
+			kernelSize_ = kernelSize;
+			stride_ = stride;
+			pad_ = pad;
+			bias_term_ = bias_term;
+			device_ = device;
+			weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_ / group}, device_));
+			bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
+			setup_internal_params(group);
+#ifdef USE_CUDNN
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+			{
+				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+			}
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+			CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+			CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+			CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+			// set params descriptor
+			CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+				output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+			CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+				1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+			if (bias_term_)
+			{
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+				CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+					1, output_Channel_ / group_, 1, 1));
+			}
+			current_size = 0;
+#endif
+		}
+
+		convolution::~convolution()
+		{
+#ifdef USE_CUDNN
+			if (cudnn_handle_)
+			{
+				CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+			}
+			CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+			CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
+			CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
+			CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+			if (bias_term_)
+			{
+				CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+			}
+			if (extra != nullptr)
+			{
+				cudaFree(extra);
+			}
+#endif
+		}
+
+		void convolution::set_bias(float* bias)
+		{
+			if (bias_term_)
+			{
+				bias_->set_cpu_data(bias);
+			}
+		}
+
+		void convolution::set_weights(float* weights)
+		{
+			weights_->set_cpu_data(weights);
+		}
+
+		void convolution::conv_im2col_cpu(const float* data, float* col_buff)
+		{
+			im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff);
+		}
+
+		void convolution::conv_col2im_cpu(const float* col_buff, float* data)
+		{
+			col2im_cpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
+		}
+
+#ifdef USE_CUDA
+		void convolution::conv_im2col_gpu(const float* data, float* col_buff)
+		{
+			im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff);
+		}
+
+		void convolution::conv_col2im_gpu(const float* col_buff, float* data)
+		{
+			col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
+		}
+
+#endif
+
+		void convolution::setup_internal_params()
+		{
+			kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
+			group_ = 1;
+			weight_offset_ = kernelSize_ * kernelSize_;
+			isfirst = true;
+		}
+
+		void convolution::setup_internal_params(int group)
+		{
+			kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
+			group_ = group;
+			weight_offset_ = kernelSize_*kernelSize_;
+			isfirst = true;
+		}
+
+
+		void convolution::forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col)
+		{
+			const float* col_buff = input;
+			if (kernelSize_ != 1)
+			{
+				conv_im2col_cpu(input, col_buffer_->mutable_cpu_data());
+				col_buff = col_buffer_->cpu_data();
+			}
+			for (int g = 0; g < group_; ++g)
+			{
+				if (group_ == 1)
+				{
+					math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
+						conv_out_spatial_dim_, kernel_dim_, 1.0f,
+						weights, col_buff, 0.0f, output);
+				}
+				else
+				{
+					math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
+						conv_out_spatial_dim_, kernelSize_ * kernelSize_, 1.0f,
+						weights + kernelSize_ * kernelSize_ * g, col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
+				}
+			}
+		}
+
+		void convolution::forward_cpu_bias(float* output, const float* bias)
+		{
+			math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_,
+				out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
+				1.0f, output);
+		}
+
+
+#ifdef USE_CUDA
+		void convolution::forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col)
+		{
+			const float* col_buff = input;
+			if (kernelSize_ != 1)
+			{
+				conv_im2col_gpu(input, gpu_temp_col_buffer_);
+				col_buff = col_buffer_->gpu_data();
+			}
+			for (int g = 0; g < group_; ++g)
+			{
+				math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
+					conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
+					0.0f, output + output_offset_ * g);
+			}
+		}
+
+		void convolution::forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
+		{
+			math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_,
+				out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
+		}
+
+#endif
+
+		void convolution::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		{
+			const int num = bottom->data_shape()[0];
+			const float* bottom_data = bottom->cpu_data();
+			const float* weights = weights_->cpu_data();
+			const float* bias = bias_->cpu_data();
+			//
+			intput_shape_.clear();
+			intput_shape_ = bottom->data_shape();
+			int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
+			int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
+			top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
+			//
+
+			float* top_data = (top)->mutable_cpu_data();
+			col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+			bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+			conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
+			out_spatial_dim_ = output_dim_w_*output_dim_h_;
+			col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+			output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+			math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+			//
+			int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];
+			int top_dim = (top)->count(1, 4);
+			for (int n = 0; n < num; n++)
+			{
+				forward_cpu_gemm(bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
+				if (bias_term_)
+				{
+					forward_cpu_bias(top_data + n * top_dim, bias);
+				}
 			}
 		}
 	}
 }
+
 
