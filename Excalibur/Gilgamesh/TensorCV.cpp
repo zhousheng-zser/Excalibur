@@ -6,13 +6,13 @@ namespace glasssix
 {
 	namespace gilgamesh
 	{
-		void tensorcv::resize(Tensor^ src, Tensor^ %dst, int new_height,
+		void tensorcv::resize(Tensor^ src, Tensor^ %dst, int dst_height,
 			int new_width, InterpolationType type, int device)
 		{
 			if (device < 0)
 			{
-				dst = gcnew Tensor(src->Num, src->Channel, new_height, new_width, device);
-				resize_cpu(src, dst, new_height, new_width, type);
+				dst = gcnew Tensor(src->Num, src->Channel, dst_height, new_width, device);
+				resize_cpu(src, dst, dst_height, new_width, type);
 			}
 			else
 			{
@@ -108,13 +108,13 @@ namespace glasssix
 		}
 
 		//
-		void tensorcv::resize(UTensor^ src, UTensor^ %dst, int new_height,
+		void tensorcv::resize(UTensor^ src, UTensor^ %dst, int dst_height,
 			int new_width, InterpolationType type, int device)
 		{
 			if (device < 0)
 			{
-				dst = gcnew UTensor(src->Num, src->Channel, new_height, new_width, device);
-				resize_cpu(src, dst, new_height, new_width, type);
+				dst = gcnew UTensor(src->Num, src->Channel, dst_height, new_width, device);
+				resize_cpu(src, dst, dst_height, new_width, type);
 			}
 			else
 			{
@@ -215,7 +215,7 @@ namespace glasssix
 			dst = gcnew UTensor(src->Num, src->Channel, src->Height, src->Width, device);
 			if (device < 0)
 			{
-				tensoroperation::type_convertor_cpu(src->data->getdata(), dst->data->getdata());
+				tensoroperation::type_converter_cpu(src->data->getdata(), dst->data->getdata());
 			}
 			else
 			{
@@ -230,7 +230,7 @@ namespace glasssix
 			dst = gcnew Tensor(src->Num, src->Channel, src->Height, src->Width, device);
 			if (device < 0)
 			{
-				tensoroperation::type_convertor_cpu(src->data->getdata(), dst->data->getdata());
+				tensoroperation::type_converter_cpu(src->data->getdata(), dst->data->getdata());
 			}
 			else
 			{
@@ -392,23 +392,23 @@ namespace glasssix
 		}
 
 		///PRIVATE FUNCTIONS
-		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int new_height,
+		void tensorcv::resize_cpu(Tensor^ src, Tensor^ %dst, int dst_height,
 			int new_width, InterpolationType type)
 		{
 			switch (type)
 			{
 			case glasssix::gilgamesh::InterpolationType::Nearest:
 				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
-					new_height, new_width, interpolationType::Nearest);
+					dst_height, new_width, interpolationType::Nearest);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Bilinear:
 				tensoroperation::resize_cpu(src->data->getdata(),
 					dst->data->getdata(),
-					new_height, new_width, interpolationType::Bilinear);
+					dst_height, new_width, interpolationType::Bilinear);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Cubic:
 				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
-					new_height, new_width, interpolationType::Cubic);
+					dst_height, new_width, interpolationType::Cubic);
 				break;
 			default:
 				NOT_IMPLEMENTED;
@@ -493,23 +493,23 @@ namespace glasssix
 		}
 
 		//
-		void tensorcv::resize_cpu(UTensor^ src, UTensor^ %dst, int new_height,
+		void tensorcv::resize_cpu(UTensor^ src, UTensor^ %dst, int dst_height,
 			int new_width, InterpolationType type)
 		{
 			switch (type)
 			{
 			case glasssix::gilgamesh::InterpolationType::Nearest:
 				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
-					new_height, new_width, interpolationType::Nearest);
+					dst_height, new_width, interpolationType::Nearest);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Bilinear:
 				tensoroperation::resize_cpu(src->data->getdata(),
 					dst->data->getdata(),
-					new_height, new_width, interpolationType::Bilinear);
+					dst_height, new_width, interpolationType::Bilinear);
 				break;
 			case glasssix::gilgamesh::InterpolationType::Cubic:
 				tensoroperation::resize_cpu(src->data->getdata(), dst->data->getdata(),
-					new_height, new_width, interpolationType::Cubic);
+					dst_height, new_width, interpolationType::Cubic);
 				break;
 			default:
 				NOT_IMPLEMENTED;

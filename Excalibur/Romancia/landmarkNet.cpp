@@ -1,5 +1,5 @@
 #include "./include/landmarkNet.hpp"
-#include "./include/landmarkNetData.hpp"
+#include "./include/landmarkNet_data.hpp"
 
 namespace glasssix
 {

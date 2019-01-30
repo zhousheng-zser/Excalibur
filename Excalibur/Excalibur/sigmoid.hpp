@@ -1,26 +1,30 @@
 #pragma once
 #ifndef _SIGMOID_HPP_
 #define _SIGMOID_HPP_
-#include "tensor.hpp"
+#include <glasssix\tensor.hpp>
 #include <memory>
 
-namespace excalibur
+namespace glasssix
 {
-	class sigmoid
+	namespace excalibur
 	{
-		int channel_;
-		int device_;
+		class sigmoid
+		{
+			int channel_;
+			int device_;
 
-	public:
-		sigmoid(int input_channel, int device = -1);
+		public:
+			sigmoid(int input_channel, int device = -1);
 
-		~sigmoid();
+			~sigmoid();
 
-		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
+			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
 #ifdef USE_CUDA
-		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom);
+			void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom);
 #endif
-	};
+		};
+	}
 }
+
 
 #endif

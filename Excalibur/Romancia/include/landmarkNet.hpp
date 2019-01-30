@@ -116,9 +116,8 @@ namespace glasssix
 				}
 				else
 				{
-					float* tensor_data = tensor_float_data->mutable_gpu_data();
-					
 #ifdef USE_CUDA
+					float* tensor_data = tensor_float_data->mutable_gpu_data();
 					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDeviceToDevice);
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN

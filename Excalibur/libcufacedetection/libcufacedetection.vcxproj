@@ -127,9 +127,6 @@
     <ProjectReference Include="..\fastfacedetection\fastfacedetection.vcxproj">
       <Project>{678e0224-db49-47dc-a5a5-8c5a61abb711}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\Romancia\Romancia.vcxproj">
-      <Project>{1947f6d0-bf84-4f17-94a3-c8f5bc4b3d58}</Project>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="libcufacedetection.hpp" />

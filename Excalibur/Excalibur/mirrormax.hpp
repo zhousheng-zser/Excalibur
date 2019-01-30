@@ -1,25 +1,30 @@
 #pragma once
 #ifndef _MIRRORMAX_HPP_
 #define _MIRRORMAX_HPP_
-#include "tensor.hpp"
+#include <glasssix\tensor.hpp>
 #include "math_functions.hpp"
 
-namespace excalibur
+
+namespace glasssix
 {
-	class mirrormax
+	namespace excalibur
 	{
-		int mirror_axis_;
-		int device_;
+		class mirrormax
+		{
+			int mirror_axis_;
+			int device_;
 
-	public:
-		mirrormax(int mirror_axis, int device);
-		~mirrormax();
+		public:
+			mirrormax(int mirror_axis, int device);
+			~mirrormax();
 
-		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
-		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
-	};
+		};
+	}
 }
+
 
 #endif

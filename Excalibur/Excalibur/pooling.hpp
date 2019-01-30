@@ -1,44 +1,49 @@
 #pragma once
 #ifndef _POOLING_HPP_
 #define _POOLING_HPP_
-#include "tensor.hpp"
+#include <glasssix\tensor.hpp>
 #ifdef USE_CUDNN
 #include "cudnn.hpp"
 #endif
-namespace excalibur
+
+namespace glasssix
 {
-	class pooling
+	namespace excalibur
 	{
-		int channels_;
-		int height_, width_;
-		int pooled_height_, pooled_width_;
-		int kernel_;
-		int stride_;
-		int pad_;
-		int device_;
-		enum pooling_type { MAX, AVE };
-		pooling_type type_;
+		class pooling
+		{
+			int channels_;
+			int height_, width_;
+			int pooled_height_, pooled_width_;
+			int kernel_;
+			int stride_;
+			int pad_;
+			int device_;
+			enum pooling_type { MAX, AVE };
+			pooling_type type_;
 
-	public:
-		pooling(int kernel, int stride, int pad, int type, int device);
-		~pooling();
+		public:
+			pooling(int kernel, int stride, int pad, int type, int device);
+			~pooling();
 
-		void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 
 #ifdef USE_CUDA
-		void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDNN
-	private:
-		float one = 1.0, zero = 0.0;
-		cudnnHandle_t cudnn_handle_ = nullptr;
-		cudnnTensorDescriptor_t bottom_desc_, top_desc_;
-		cudnnPoolingDescriptor_t  pooling_desc_;
-		cudnnPoolingMode_t        mode_;
-	public:
-		void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+		private:
+			float one = 1.0, zero = 0.0;
+			cudnnHandle_t cudnn_handle_ = nullptr;
+			cudnnTensorDescriptor_t bottom_desc_, top_desc_;
+			cudnnPoolingDescriptor_t  pooling_desc_;
+			cudnnPoolingMode_t        mode_;
+		public:
+			void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 #endif
-	};
+		};
+	}
 }
+
 
 #endif
