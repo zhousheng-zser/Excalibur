@@ -59,5 +59,14 @@
 *.pb.cc
 *.pb.h
 *.asv
+*_version.hpp
 *_halfdata.hpp
 *_data_full.hpp
+*.docx
+*.xlsx
+*.vs
+backup/*
+/Excalibur/TestCassius/*
+/Excalibur/TestLonginus/*
+/Excalibur/TestImages/*
+/Excalibur/x64/*

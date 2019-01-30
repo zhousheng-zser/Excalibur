@@ -12,59 +12,65 @@
 #include "concat.hpp"
 #include "normalize.hpp"
 #include "mirrormax.hpp"
+#include "sigmoid.hpp"
 
-namespace excalibur
+
+namespace glasssix
 {
-	// convert half precision floating point to float
-	static float half2float(unsigned short value)
+
+	namespace excalibur
 	{
-		// 1 : 5 : 10
-		unsigned short sign = (value & 0x8000) >> 15;
-		unsigned short exponent = (value & 0x7c00) >> 10;
-		unsigned short significand = value & 0x03FF;
-
-		//     fprintf(stderr, "%d %d %d\n", sign, exponent, significand);
-
-		// 1 : 8 : 23
-		union
+		// convert half precision floating point to float
+		static float half2float(unsigned short value)
 		{
-			unsigned int u;
-			float f;
-		} tmp;
-		if (exponent == 0)
-		{
-			if (significand == 0)
+			// 1 : 5 : 10
+			unsigned short sign = (value & 0x8000) >> 15;
+			unsigned short exponent = (value & 0x7c00) >> 10;
+			unsigned short significand = value & 0x03FF;
+
+			//     fprintf(stderr, "%d %d %d\n", sign, exponent, significand);
+
+			// 1 : 8 : 23
+			union
 			{
-				// zero
-				tmp.u = (sign << 31);
+				unsigned int u;
+				float f;
+			} tmp;
+			if (exponent == 0)
+			{
+				if (significand == 0)
+				{
+					// zero
+					tmp.u = (sign << 31);
+				}
+				else
+				{
+					// denormal
+					exponent = 0;
+					// find non-zero bit
+					while ((significand & 0x200) == 0)
+					{
+						significand <<= 1;
+						exponent++;
+					}
+					significand <<= 1;
+					significand &= 0x3FF;
+					tmp.u = (sign << 31) | ((-exponent + (-15 + 127)) << 23) | (significand << 13);
+				}
+			}
+			else if (exponent == 0x1F)
+			{
+				// infinity or NaN
+				tmp.u = (sign << 31) | (0xFF << 23) | (significand << 13);
 			}
 			else
 			{
-				// denormal
-				exponent = 0;
-				// find non-zero bit
-				while ((significand & 0x200) == 0)
-				{
-					significand <<= 1;
-					exponent++;
-				}
-				significand <<= 1;
-				significand &= 0x3FF;
-				tmp.u = (sign << 31) | ((-exponent + (-15 + 127)) << 23) | (significand << 13);
+				// normalized
+				tmp.u = (sign << 31) | ((exponent + (-15 + 127)) << 23) | (significand << 13);
 			}
-		}
-		else if (exponent == 0x1F)
-		{
-			// infinity or NaN
-			tmp.u = (sign << 31) | (0xFF << 23) | (significand << 13);
-		}
-		else
-		{
-			// normalized
-			tmp.u = (sign << 31) | ((exponent + (-15 + 127)) << 23) | (significand << 13);
-		}
 
-		return tmp.f;
+			return tmp.f;
+		}
 	}
 }
 
@@ -105,7 +111,7 @@ conv_name->set_weights(conv_name##_##weights);\
 conv_name->set_bias(conv_name##_##bias);
 
 #define Init_DepthConv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
-conv_name = new convolution(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name = new convolution(input_channel, output_channel, kernel_size, output_channel, stride, pad, bias_term, device_);\
 conv_name->set_weights(conv_name##_##weights);\
 conv_name->set_bias(conv_name##_##bias);\
 conv_name->set_depthwise();

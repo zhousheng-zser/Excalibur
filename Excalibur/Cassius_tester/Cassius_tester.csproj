@@ -82,16 +82,6 @@
   <ItemGroup>
     <None Include="App.config" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Gilgamesh\Gilgamesh.vcxproj">
-      <Project>{5a642d01-4204-4515-81a3-e4645d44e00a}</Project>
-      <Name>Gilgamesh</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Longinus\Longinus.vcxproj">
-      <Project>{1cc44456-c9d8-42cf-82fc-c3740099f2a1}</Project>
-      <Name>Longinus</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

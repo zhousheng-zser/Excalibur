@@ -15,7 +15,7 @@ namespace glasssix
 			tensorcv() {}
 			~tensorcv() {}
 
-			static void resize(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
+			static void resize(Tensor^ src, Tensor^ %dst, int dst_height, int new_width, InterpolationType type, int device);
 
 			static void rotate(Tensor^ src, Tensor^ %dst, float theta,
 				int center_x, int center_y, InterpolationType type, float v, int device);
@@ -40,7 +40,7 @@ namespace glasssix
 
 			static void safty_cut(Tensor^ src, Tensor^ %dst, rectangle^ rect, int device);
 			//
-			static void resize(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type, int device);
+			static void resize(UTensor^ src, UTensor^ %dst, int dst_height, int new_width, InterpolationType type, int device);
 
 			static void rotate(UTensor^ src, UTensor^ %dst, float theta,
 				int center_x, int center_y, InterpolationType type, unsigned char v, int device);
@@ -67,7 +67,7 @@ namespace glasssix
 			static void mblbp_feature(UTensor^ src, UTensor^ %dst, int block_h,
 				int block_w, int stride_h, int stride_w, int device);
 		private:
-			static void resize_cpu(Tensor^ src, Tensor^ %dst, int new_height, int new_width, InterpolationType type);
+			static void resize_cpu(Tensor^ src, Tensor^ %dst, int dst_height, int new_width, InterpolationType type);
 
 			static void rotate_cpu(Tensor^ src, Tensor^ %dst, float theta,
 				int center_x, int center_y, InterpolationType type, float v);
@@ -84,7 +84,7 @@ namespace glasssix
 			static void draw_rectangle_cpu(Tensor^ %dst, rectangle^ rect, int thickness, color^ color_);
 
 			//
-			static void resize_cpu(UTensor^ src, UTensor^ %dst, int new_height, int new_width, InterpolationType type);
+			static void resize_cpu(UTensor^ src, UTensor^ %dst, int dst_height, int new_width, InterpolationType type);
 
 			static void rotate_cpu(UTensor^ src, UTensor^ %dst, float theta,
 				int center_x, int center_y, InterpolationType type, unsigned char v);

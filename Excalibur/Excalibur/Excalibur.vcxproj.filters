@@ -24,56 +24,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="convolution.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="im2col.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="pooling.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="prelu.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="inner_product.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="math_functions.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="softmax.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="eltwise.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="flip.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="concat.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="normalize.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="pca.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="slice.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="mirrormax.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="accelerator.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="caffe.pb.h">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="convolution.hpp">
       <Filter>include</Filter>
     </ClInclude>
@@ -102,12 +52,6 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="support_layers.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="syncedmem.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
-    <ClInclude Include="tensor.hpp">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="math_functions.hpp">
@@ -140,20 +84,26 @@
     <ClInclude Include="tensor_utils.hpp">
       <Filter>include\tensor_utils</Filter>
     </ClInclude>
-    <ClInclude Include="tensoroperation.hpp">
-      <Filter>include\tensor_utils</Filter>
-    </ClInclude>
     <ClInclude Include="ftensor.hpp">
       <Filter>include\cli_wrapper</Filter>
     </ClInclude>
     <ClInclude Include="utensor.hpp">
       <Filter>include\cli_wrapper</Filter>
     </ClInclude>
+    <ClInclude Include="tensor_operation_cpu.hpp">
+      <Filter>include\tensor_utils</Filter>
+    </ClInclude>
+    <ClInclude Include="tensor_operation_gpu.hpp">
+      <Filter>include\tensor_utils</Filter>
+    </ClInclude>
+    <ClInclude Include="sigmoid.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="caffe.pb.h">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="caffe.pb.cc">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="convolution.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -181,12 +131,6 @@
     <ClCompile Include="softmax.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="syncedmem.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
-    <ClCompile Include="tensor.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="accelerator.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -211,8 +155,61 @@
     <ClCompile Include="mirrormax.cpp">
       <Filter>src</Filter>
     </ClCompile>
-    <ClCompile Include="tensoroperation.cpp">
+    <ClCompile Include="sigmoid.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="caffe.pb.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="tensor_operation_gpu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="concat.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="convolution.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="eltwise.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="flip.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="im2col.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="inner_product.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="math_functions.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="mirrormax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="normalize.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pca.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="pooling.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="prelu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="sigmoid.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="slice.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="softmax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
