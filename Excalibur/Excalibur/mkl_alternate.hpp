@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _MKL_ALTERNATE_HPP_
 #define _MKL_ALTERNATE_HPP_
-#include  "accelerator.hpp"
+#include  <glasssix\accelerator.hpp>
 #ifdef USE_MKL
 
 #include <mkl.h>

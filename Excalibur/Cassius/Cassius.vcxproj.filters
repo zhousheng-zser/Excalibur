@@ -15,12 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="unicorn_net.hpp">
+    <ClInclude Include="unicornNet.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="baseNet.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cassius.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="unicorn_net.cpp">
+    <ClCompile Include="unicornNet.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="cassius.cpp">
