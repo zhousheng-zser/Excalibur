@@ -20,8 +20,22 @@ namespace glasssix
 				int channels = bottom->channels();
 				int height = bottom->height();
 				int width = bottom->width();
+				order_ = bottom->order();
 				CHECK_EQ(num % 2, 0);
-				top.reset(new tensor<float>(std::vector<int>{num / 2, channels, height, width}, device_));
+
+				if (order_ == NCHW)
+				{
+					top.reset(new tensor<float>(std::vector<int>{num / 2, channels, height, width}, device_, order_));
+				}
+				else if (order_ == NHWC)
+				{
+					top.reset(new tensor<float>(std::vector<int>{num / 2, height, width, channels}, device_, order_));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+				
 				const float* bottom_data = bottom->gpu_data();
 				float* top_data = top->mutable_gpu_data();
 				const int mirror_offset = num / 2 * channels * height * width;

@@ -84,10 +84,12 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;USE_CUDA;USE_CUDNN;HARDCODE_TRANSFORM</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(CUDA_PATH_V9_2)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OmpLibDir)\*.lib;$(MKLLibDir)\*.lib;$(CUDA_PATH_V9_2)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OmpLibDir);$(MKLLibDir);%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -110,12 +112,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;USE_CUDA;USE_CUDNN;HARDCODE_TRANSFORM</PreprocessorDefinitions>
+      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
+      <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(CUDA_PATH_V9_2)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OmpLibDir)\*.lib;$(MKLLibDir)\*.lib;$(CUDA_PATH_V9_2)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OmpLibDir);$(MKLLibDir);%(AdditionalLibraryDirectories);$(CudaToolkitLibDir)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

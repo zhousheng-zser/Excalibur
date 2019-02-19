@@ -186,6 +186,29 @@ namespace glasssix
 			template <typename Dtype>
 			static void preprocess_tensors_gpu(tensor<Dtype>* dst);
 
+
+
+			template <typename Dtype>
+			static void make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+				int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+
+
+			template <typename Dtype>
+			static void cut_border_gpu(const std::shared_ptr<tensor<Dtype>> &src,
+				std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right);
+
+
+			template <typename Dtype, typename Rtype>
+			static void safty_cut_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, rectangle<Rtype>* rect);
+
+
+			template <typename Dtype>
+			static void equalize_hist_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
+
+
+			template <typename Dtype>
+			static void merge_channel_gpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst);
+
 		};
 	}
 }

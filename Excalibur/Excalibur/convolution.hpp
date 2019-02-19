@@ -19,6 +19,7 @@ namespace glasssix
 			std::shared_ptr<tensor<float>> bias_;
 			std::shared_ptr<tensor<float>> col_buffer_;
 			int device_;
+			orderType order_;
 			/// parameters
 			int input_Channel_;
 			int output_Channel_;
@@ -29,6 +30,8 @@ namespace glasssix
 			std::vector<int> intput_shape_;
 			std::vector<int> output_shape_;
 			int group_;
+			int output_dim_h_;
+			int output_dim_w_;
 			int out_spatial_dim_;
 			int weight_offset_;
 			bool bias_term_;

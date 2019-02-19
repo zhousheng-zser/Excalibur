@@ -2,6 +2,7 @@
 #include "./include/landmarkNet.hpp"
 
 
+
 namespace glasssix
 {
 	namespace longinus
@@ -29,6 +30,11 @@ namespace glasssix
 		void Romancia::getParam(std::vector<std::vector<float> > &keypointParam, unsigned num)
 		{
 			baseNet_->getParam(keypointParam, num);
+		}
+
+		std::vector<unsigned char> Romancia::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks)
+		{
+			return baseNet_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 		}
 	}
 }

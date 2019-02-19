@@ -38,32 +38,63 @@ namespace glasssix
 		{
 			int num = (bottom)->data_shape()[0];
 			float* bottom_data = (bottom)->mutable_cpu_data();
-			for (int i = 0; i < num; ++i)
-			{
-				CHECK_EQ(channel_, (bottom)->data_shape()[1]);
-				for (int j = 0; j < channel_; j++)
-				{
-					const float slop = slope_data_->cpu_data()[j];
-					int dim;
-					if (bottom->data_shape().size() <= 2)
-					{
-						dim = 1;
-					}
-					else
-					{
-						dim = (bottom)->height()*(bottom)->width();
-					}
+			height_ = (bottom)->height();
+			width_ = (bottom)->width();
+			order_ = (bottom)->order();
 
-					for (int k = 0; k < dim; k++)
+			if (order_ == NCHW)
+			{
+				for (int i = 0; i < num; ++i)
+				{
+					CHECK_EQ(channel_, (bottom)->data_shape()[1]);
+					for (int j = 0; j < channel_; j++)
 					{
-						*bottom_data = std::max(*bottom_data, 0.0f) + slop * std::min(*bottom_data, 0.0f);
-						bottom_data++;
+						const float slop = slope_data_->cpu_data()[j];
+						int dim;
+						if (bottom->data_shape().size() <= 2)
+						{
+							dim = 1;
+						}
+						else
+						{
+							dim = (bottom)->height()*(bottom)->width();
+						}
+
+						for (int k = 0; k < dim; k++)
+						{
+							*bottom_data = std::max(*bottom_data, 0.0f) + slop * std::min(*bottom_data, 0.0f);
+							bottom_data++;
+						}
 					}
 				}
 			}
+			else if (order_ == NHWC)
+			{
+				CHECK_EQ(channel_, (bottom)->data_shape()[3]);
+
+				for (int n = 0; n < num; ++n)
+				{
+					int index1 = n * height_ * width_ * channel_;
+					for (int row = 0; row < (bottom)->height(); ++row)
+					{
+						int index2 = index1 + row * width_ * channel_;
+						for (int col = 0; col < (bottom)->width(); ++col)
+						{
+							int index3 = index2 + col * channel_;
+							for (int ch = 0; ch < channel_; ch++)
+							{
+								const float slop = slope_data_->cpu_data()[ch];
+								bottom_data[index3 + ch] = std::max(bottom_data[index3 + ch], 0.0f) + slop * std::min(bottom_data[index3 + ch], 0.0f);
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
 		}
-
-
 	}
 }
 

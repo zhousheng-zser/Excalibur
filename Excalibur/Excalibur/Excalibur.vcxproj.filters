@@ -90,17 +90,17 @@
     <ClInclude Include="utensor.hpp">
       <Filter>include\cli_wrapper</Filter>
     </ClInclude>
-    <ClInclude Include="tensor_operation_cpu.hpp">
-      <Filter>include\tensor_utils</Filter>
-    </ClInclude>
-    <ClInclude Include="tensor_operation_gpu.hpp">
-      <Filter>include\tensor_utils</Filter>
-    </ClInclude>
     <ClInclude Include="sigmoid.hpp">
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="caffe.pb.h">
       <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="tensor_operation_cpu.hpp">
+      <Filter>include\tensor_utils</Filter>
+    </ClInclude>
+    <ClInclude Include="tensor_operation_gpu.hpp">
+      <Filter>include\tensor_utils</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -163,9 +163,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="tensor_operation_gpu.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
     <CudaCompile Include="concat.cu">
       <Filter>cu</Filter>
     </CudaCompile>
@@ -209,6 +206,9 @@
       <Filter>cu</Filter>
     </CudaCompile>
     <CudaCompile Include="softmax.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="tensor_operation_gpu.cu">
       <Filter>cu</Filter>
     </CudaCompile>
   </ItemGroup>
