@@ -18,6 +18,7 @@ namespace glasssix
 			enum normalize_type { L1, L2 };
 			normalize_type type_;
 			int device_;
+			orderType order_;
 		public:
 			normalize(int type, bool rescale, int device);
 			~normalize();

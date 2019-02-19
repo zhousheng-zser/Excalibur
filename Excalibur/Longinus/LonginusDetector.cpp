@@ -13,6 +13,7 @@ LonginusDetector::LonginusDetector(): device_(-1)
 {
 	cascades_ = new std::vector<std::shared_ptr<BaseLonginusCascade>>();
 	landmarkNet_.reset(new LandmarkNet(device_));
+	matcher_.reset(new Matcher());
 	int dstep = (((48 * 8 + 7) / 8) * 4 - 1) &(~(4 - 1));
 	data_.resize(dstep * 48);
 }
@@ -298,4 +299,8 @@ std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRect> &faceRec
 	return matcher_->match(faceRect, frame_extract_frequency);
 }
 
+std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks)
+{
+	return landmarkNet_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
+}
 

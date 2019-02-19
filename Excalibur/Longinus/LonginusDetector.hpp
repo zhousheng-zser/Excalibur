@@ -52,6 +52,9 @@ namespace glasssix
 
 			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency);
 
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks);
+
+
 #ifdef Internal_SDK
 			void load(std::vector<std::string> cascades, int device = -1);
 #endif

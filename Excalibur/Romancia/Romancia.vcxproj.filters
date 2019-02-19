@@ -29,10 +29,10 @@
     <ClInclude Include="include\landmarkNet.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\Romancia.hpp">
+    <ClInclude Include="include\landmarkNet_data.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\landmarkNet_data.hpp">
+    <ClInclude Include="include\Romancia.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -13,6 +13,7 @@ namespace glasssix
 		{
 			int mirror_axis_;
 			int device_;
+			orderType order_;
 
 		public:
 			mirrormax(int mirror_axis, int device);

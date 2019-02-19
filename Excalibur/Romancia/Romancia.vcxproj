@@ -71,12 +71,12 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>c:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(MKLIncludeDir);c:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>D:\projects\MCL_Forward\Excalibur\Romancia\x64\Release;D:\projects\MCL_Forward\Excalibur\x64\Release;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LibraryPath>D:\projects\MCL_Forward\Excalibur\Romancia\x64\Debug;D:\projects\MCL_Forward\Excalibur\x64\Debug;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
-    <IncludePath>c:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>$(MKLIncludeDir);c:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

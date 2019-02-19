@@ -1,8 +1,10 @@
-#ifndef _TENSOROPERATION_HPP_
-#define _TENSOROPERATION_HPP_
+#ifndef _TENSOR_OPERATION_CPU_HPP_
+#define _TENSOR_OPERATION_CPU_HPP_
 
 #include <glasssix\tensor.hpp>
 #include "tensor_utils.hpp"
+#include "math_functions.hpp"
+#include <algorithm>
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
@@ -12,6 +14,8 @@
 #endif
 
 #define PI 3.141592
+
+
 namespace glasssix
 {
 	namespace excalibur
@@ -39,7 +43,6 @@ namespace glasssix
 				int ialpha;
 
 			}CvResizeAlpha;
-
 
 
 #ifdef USE_OPENCV
@@ -92,9 +95,13 @@ namespace glasssix
 					}
 					delete c_src_offset;
 				}
-				else
+				else if(src->order() == NHWC)
 				{
 					std::memcpy(dst.data, src->cpu_data(), height * width * channel * sizeof(Dtype));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -125,7 +132,7 @@ namespace glasssix
 				}
 				dst = cv::Mat(height, width, CV_MAKETYPE(type, channel));
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					const Dtype* src_data = src.cpu_data();
 					int src_offset = width * height;
@@ -148,9 +155,13 @@ namespace glasssix
 					}
 					delete c_src_offset;
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					std::memcpy(dst.data, src.cpu_data(), height * width * channel * sizeof(Dtype));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -238,11 +249,15 @@ namespace glasssix
 					}
 					delete c_dst_offset;
 				}
-				else
+				else if (order == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, -1, NHWC));
 					Dtype* dst_data = dst->mutable_cpu_data();
 					memcpy(dst_data, src.data, height * width * channels * sizeof(Dtype));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -330,125 +345,18 @@ namespace glasssix
 					}
 					delete c_dst_offset;
 				}
-				else
+				else if (order == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, NHWC);
 					Dtype* dst_data = dst.mutable_cpu_data();
 					memcpy(dst_data, src.data, height * width * channel * sizeof(Dtype));
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
-
-
-			///// <summary>
-			///// mat转换为tensor
-			///// </summary>
-			///// <param name="src">mat数据</param>
-			///// <param name="dst">转换得到的tensor</param>
-			///// <param name="order">指定tensor类型，默认为NHWC</param>
-			//template <typename Dtype>
-			//static void mat2tensor(const std::vector<cv::Mat> &src, std::shared_ptr<tensor<Dtype>>& dst, orderType order = NHWC)
-			//{
-			//	int num = src.size();
-			//	CHECK_GT(num, 0);
-
-			//	int channels, width, height;
-			//	bool isFirst = true;
-			//	for (size_t i = 0; i < num; i++)
-			//	{
-			//		if (isFirst)
-			//		{
-			//			channels = src[i].channels();
-			//			width = src[i].cols;
-			//			height = src[i].rows;
-			//			isFirst = false;
-			//		}
-			//		else
-			//		{
-			//			CHECK_EQ(channels, src[i].channels());
-			//			CHECK_EQ(width, src[i].cols);
-			//			CHECK_EQ(height, src[i].rows);
-			//		}
-			//	}
-
-
-			//	if (src.data == NULL)
-			//	{
-			//		LOG(ERROR) << "No data.";
-			//		return;
-			//	}
-			//	int type_id = src.type() % 8;
-			//	auto type_name = std::string(typeid(Dtype).name());
-			//	if (type_id == 0)
-			//	{
-			//		if (type_name != std::string("unsigned char"))
-			//		{
-			//			LOG(ERROR) << "Un-matched data type.";
-			//			return;
-			//		}
-			//	}
-			//	else if (type_id == 1)
-			//	{
-			//		if (type_name != std::string("char"))
-			//		{
-			//			LOG(ERROR) << "Un-matched data type.";
-			//			return;
-			//		}
-			//	}
-			//	else if (type_id == 4)
-			//	{
-			//		if (type_name != std::string("int"))
-			//		{
-			//			LOG(ERROR) << "Un-matched data type.";
-			//			return;
-			//		}
-			//	}
-			//	else if (type_id == 5)
-			//	{
-			//		if (type_name != std::string("float"))
-			//		{
-			//			LOG(ERROR) << "Un-matched data type.";
-			//			return;
-			//		}
-			//	}
-			//	else
-			//	{
-			//		LOG(ERROR) << "Un-support data type.";
-			//		return;
-			//	}
-
-			//	if (order == NCHW)
-			//	{
-			//		dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, -1, NCHW));
-			//		Dtype* dst_data = dst->mutable_cpu_data();
-			//		int dst_offset = width * height;
-			//		int* c_dst_offset = new int[channels];
-			//		for (int c = 0; c < channels; c++)
-			//		{
-			//			c_dst_offset[c] = c * dst_offset;
-			//		}
-			//		for (int c = 0; c < channels; c++)
-			//		{
-			//			for (int h = 0; h < height; h++)
-			//			{
-			//				const Dtype* src_data = src.ptr<Dtype>(h);
-			//				int dst_sub_offset = h * width;
-			//				for (int w = 0; w < width; w++)
-			//				{
-			//					dst_data[c_dst_offset[c] + dst_sub_offset + w] =
-			//						src_data[w * channels + c];
-			//				}
-			//			}
-			//		}
-			//		delete c_dst_offset;
-			//	}
-			//	else
-			//	{
-			//		dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, -1, NHWC));
-			//		Dtype* dst_data = dst->mutable_cpu_data();
-			//		memcpy(dst_data, src.data, height * width * channels * sizeof(Dtype));
-			//	}
-			//}
 
 #endif
 
@@ -499,28 +407,33 @@ namespace glasssix
 			static void nchw2nhwc(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst)
 			{
 				CHECK_EQ(src->order(), NCHW);
-				CHECK_EQ(src->num(), 1);
+				int num = src->num();
 				int height = src->height();
 				int width = src->width();
 				int channels = src->channels();
 				int offset = height * width;
 
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), NHWC));
+				dst.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
 				Dtype* dst_data = dst->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
-				for (int ch = 0; ch < channels; ++ch)
+				for (int n = 0; n < num; n++)
 				{
-					int channel_offset = ch * offset;
-					for (int row = 0; row < height; ++row)
+					int n_offset = n * channels * offset;
+					for (int ch = 0; ch < channels; ++ch)
 					{
-						int row_offset = row * width;
-						for (int col = 0; col < width; ++col)
+						int channel_offset = ch * offset;
+						for (int row = 0; row < height; ++row)
 						{
-							dst_data[(row_offset + col) * channels + ch] = src_data[channel_offset + row_offset + col];
+							int row_offset = row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								dst_data[n_offset + (row_offset + col) * channels + ch] = src_data[n_offset + channel_offset + row_offset + col];
+							}
 						}
 					}
 				}
+
 			}
 
 
@@ -533,8 +446,8 @@ namespace glasssix
 			template <typename Dtype>
 			static void nchw2nhwc(const tensor<Dtype> &src, tensor<Dtype> &dst)
 			{
-				CHECK_EQ(src.type(), NCHW);
-				CHECK_EQ(src.num(), 1);
+				CHECK_EQ(src.order(), NCHW);
+				int num = src.num();
 				int height = src.height();
 				int width = src.width();
 				int channels = src.channels();
@@ -544,15 +457,19 @@ namespace glasssix
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
-				for (int ch = 0; ch < channels; ++ch)
+				for (int n = 0; n < num; n++)
 				{
-					int channel_offset = ch * offset;
-					for (int row = 0; row < height; ++row)
+					int n_offset = n * channels * offset;
+					for (int ch = 0; ch < channels; ++ch)
 					{
-						int row_offset = row * width;
-						for (int col = 0; col < width; ++col)
+						int channel_offset = ch * offset;
+						for (int row = 0; row < height; ++row)
 						{
-							dst_data[(row_offset + col) * channels + ch] = src_data[channel_offset + row_offset + col];
+							int row_offset = row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								dst_data[n_offset + (row_offset + col) * channels + ch] = src_data[n_offset + channel_offset + row_offset + col];
+							}
 						}
 					}
 				}
@@ -569,7 +486,7 @@ namespace glasssix
 			static void nhwc2nchw(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst)
 			{
 				CHECK_EQ(src->order(), NHWC);
-				CHECK_EQ(src->num(), 1);
+				int num = src->num();
 				int height = src->height();
 				int width = src->width();
 				int channels = src->channels();
@@ -579,15 +496,19 @@ namespace glasssix
 				Dtype* dst_data = dst->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
-				for (int ch = 0; ch < channels; ++ch)
+				for (int n = 0; n < num; n++)
 				{
-					int channel_offset = ch * offset;
-					for (int row = 0; row < height; ++row)
+					int n_offset = n * channels * offset;
+					for (int ch = 0; ch < channels; ++ch)
 					{
-						int row_offset = row * width;
-						for (int col = 0; col < width; ++col)
+						int channel_offset = ch * offset;
+						for (int row = 0; row < height; ++row)
 						{
-							dst_data[channel_offset + row_offset + col] = src_data[(row_offset + col) * channels + ch];
+							int row_offset = row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								dst_data[n_offset + channel_offset + row_offset + col] = src_data[n_offset + (row_offset + col) * channels + ch];
+							}
 						}
 					}
 				}
@@ -603,8 +524,8 @@ namespace glasssix
 			template <typename Dtype>
 			static void nhwc2nchw(const tensor<Dtype> &src, tensor<Dtype> &dst)
 			{
-				CHECK_EQ(src.type(), NHWC);
-				CHECK_EQ(src.num(), 1);
+				CHECK_EQ(src.order(), NHWC);
+				int num = src.num();
 				int height = src.height();
 				int width = src.width();
 				int channels = src.channels();
@@ -614,19 +535,24 @@ namespace glasssix
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
-				for (int ch = 0; ch < channels; ++ch)
+				for (int n = 0; n < num; n++)
 				{
-					int channel_offset = ch * offset;
-					for (int row = 0; row < height; ++row)
+					int n_offset = n * channels * offset;
+					for (int ch = 0; ch < channels; ++ch)
 					{
-						int row_offset = row * width;
-						for (int col = 0; col < width; ++col)
+						int channel_offset = ch * offset;
+						for (int row = 0; row < height; ++row)
 						{
-							dst_data[channel_offset + row_offset + col] = src_data[(row_offset + col) * channels + ch];
+							int row_offset = row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								dst_data[n_offset + channel_offset + row_offset + col] = src_data[n_offset + (row_offset + col) * channels + ch];
+							}
 						}
 					}
 				}
 			}
+
 
 
 
@@ -652,6 +578,7 @@ namespace glasssix
 				int channels = src->channels();
 				int height = src->height();
 				int width = src->width();
+				unsigned maxIndex = height * width * channels - 1;
 
 				if (dst_width == width && dst_height == height)
 				{
@@ -660,16 +587,9 @@ namespace glasssix
 					return;
 				}
 
-				if (src->order() == NCHW || channels == 1)
+				if (src->order() == NCHW)
 				{
-					if (src->order() == NCHW)
-					{
-						dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
-					}
-					else
-					{
-						dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
-					}
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
 
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
@@ -737,7 +657,7 @@ namespace glasssix
 
 					free(temp_buf);
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					float width_ratio = (float)width / dst_width;
 					float height_ratio = (float)height / dst_height;
@@ -777,11 +697,15 @@ namespace glasssix
 								}
 								else if (type == Bilinear)
 								{
-									int src_pos4 = src_pos3 + width * channels;
-									Dtype A = src_data[src_pos3];
-									Dtype B = src_data[src_pos3 + channels];
-									Dtype C = src_data[src_pos4];
-									Dtype D = src_data[src_pos4 + channels];
+									unsigned indexA = std::min(unsigned(src_pos3), maxIndex);
+									unsigned indexB = std::min(unsigned(src_pos3 + channels), maxIndex);
+									unsigned indexC = std::min(unsigned(src_pos3 + width * channels), maxIndex);
+									unsigned indexD = std::min(unsigned(src_pos3 + (width + 1) * channels), maxIndex);
+									Dtype A = src_data[indexA];
+									Dtype B = src_data[indexB];
+									Dtype C = src_data[indexC];
+									Dtype D = src_data[indexD];
+
 									dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 										static_cast<float>(B) * xdiff * (1 - ydiff) +
 										static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -794,6 +718,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -821,6 +749,7 @@ namespace glasssix
 				int channels = src.channels();
 				int height = src.height();
 				int width = src.width();
+				unsigned maxIndex = height * width * channels - 1;
 
 				if (dst_width == width && dst_height == height)
 				{
@@ -829,16 +758,9 @@ namespace glasssix
 					return;
 				}
 
-				if (src.type() == NCHW || channels == 1)
+				if (src.order() == NCHW)
 				{
-					if (src.type() == NCHW)
-					{
-						dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
-					}
-					else
-					{
-						dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
-					}
+					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.order());
 
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
@@ -906,7 +828,7 @@ namespace glasssix
 
 					free(temp_buf);
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					float width_ratio = (float)width / dst_width;
 					float height_ratio = (float)height / dst_height;
@@ -946,11 +868,15 @@ namespace glasssix
 								}
 								else if (type == Bilinear)
 								{
-									int src_pos4 = src_pos3 + width * channels;
-									Dtype A = src_data[src_pos3];
-									Dtype B = src_data[src_pos3 + channels];
-									Dtype C = src_data[src_pos4];
-									Dtype D = src_data[src_pos4 + channels];
+									unsigned indexA = std::min(unsigned(src_pos3), maxIndex);
+									unsigned indexB = std::min(unsigned(src_pos3 + channels), maxIndex);
+									unsigned indexC = std::min(unsigned(src_pos3 + width * channels), maxIndex);
+									unsigned indexD = std::min(unsigned(src_pos3 + (width + 1) * channels), maxIndex);
+									Dtype A = src_data[indexA];
+									Dtype B = src_data[indexB];
+									Dtype C = src_data[indexC];
+									Dtype D = src_data[indexD];
+
 									dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 										static_cast<float>(B) * xdiff * (1 - ydiff) +
 										static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -963,6 +889,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -993,6 +923,7 @@ namespace glasssix
 				int channels = src->channels();
 				int height = src->height();
 				int width = src->width();
+				unsigned maxIndex = height * width * channels - 1;
 
 				float rad = -1 * theta * (PI / 180);//逆时针方向为正
 				float cosa = cos(rad);
@@ -1043,11 +974,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos2 = src_pos1 + width;
-										Dtype A = src_data[src_pos1];
-										Dtype B = src_data[src_pos1 + 1];
-										Dtype C = src_data[src_pos2];
-										Dtype D = src_data[src_pos2 + 1];
+										unsigned indexA = std::min(unsigned(src_pos1), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos1 + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos1 + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos1 + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos2] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1062,7 +997,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -1101,11 +1036,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos3 = src_pos2 + width * channels;
-										Dtype A = src_data[src_pos2];
-										Dtype B = src_data[src_pos2 + channels];
-										Dtype C = src_data[src_pos3];
-										Dtype D = src_data[src_pos3 + channels];
+										unsigned indexA = std::min(unsigned(src_pos2), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos2 + channels), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos2 + width * channels), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos2 + (width + 1) * channels), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1119,6 +1058,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -1149,6 +1092,7 @@ namespace glasssix
 				int channels = src.channels();
 				int height = src.height();
 				int width = src.width();
+				unsigned maxIndex = height * width * channels - 1;
 
 				float rad = -1 * theta * (PI / 180);//逆时针方向为正
 				float cosa = cos(rad);
@@ -1160,7 +1104,7 @@ namespace glasssix
 				float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 				float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -1199,11 +1143,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos2 = src_pos1 + width;
-										Dtype A = src_data[src_pos1];
-										Dtype B = src_data[src_pos1 + 1];
-										Dtype C = src_data[src_pos2];
-										Dtype D = src_data[src_pos2 + 1];
+										unsigned indexA = std::min(unsigned(src_pos1), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos1 + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos1 + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos1 + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos2] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1218,7 +1166,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -1257,11 +1205,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos3 = src_pos2 + width * channels;
-										Dtype A = src_data[src_pos2];
-										Dtype B = src_data[src_pos2 + channels];
-										Dtype C = src_data[src_pos3];
-										Dtype D = src_data[src_pos3 + channels];
+										unsigned indexA = std::min(unsigned(src_pos2), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos2 + channels), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos2 + width * channels), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos2 + (width + 1) * channels), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1275,6 +1227,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -1306,6 +1262,7 @@ namespace glasssix
 				int height = src->height();
 				int width = src->width();
 				int offset = height * width;
+				unsigned maxIndex = height * width * channels - 1;
 
 				double rad = theta*(PI / 180);
 				double cosa = cos(rad);
@@ -1313,22 +1270,30 @@ namespace glasssix
 
 				double a = scale * cosa;
 				double b = scale * sina;
-				double M_data[9];
-				M_data[0] = a;
-				M_data[1] = b;
-				M_data[2] = (1 - a) * (double)center.x - b * (double)center.y;
-				M_data[3] = -1 * b;
-				M_data[4] = a;
-				M_data[5] = b * (double)center.x + (1 - a) * (double)center.y;
-				M_data[6] = 0;
-				M_data[7] = 0;
-				M_data[8] = 1;
+				std::vector<std::vector<double> > M;
+				std::vector<std::vector<double> > reverse_M;
+				M.resize(3);
+				for (size_t i = 0; i < M.size(); i++)
+				{
+					M[i].resize(3);
+				}
 
-				cv::Mat M(3, 3, CV_64F, M_data);
-				cv::Mat reverse_M(3, 3, CV_64F);
-				cv::invert(M, reverse_M);
-				double reverse_M_data[9];
-				memcpy(reverse_M_data, reverse_M.data, 9 * sizeof(double));
+				M[0][0] = a;
+				M[0][1] = b;
+				M[0][2] = (1 - a) * (double)center.x - b * (double)center.y;
+				M[1][0] = -1 * b;
+				M[1][1] = a;
+				M[1][2] = b * (double)center.x + (1 - a) * (double)center.y;
+				M[2][0] = 0;
+				M[2][1] = 0;
+				M[2][2] = 1;
+
+				bool isInverted = math_functions::GetMatrixInverse(M, reverse_M);
+				if (!isInverted)
+				{
+					LOG(FATAL) << "cannot rotate!!!";
+					return;
+				}
 
 				if (src->order() == NCHW)
 				{
@@ -1343,14 +1308,14 @@ namespace glasssix
 #pragma omp parallel for
 						for (int row = 0; row < height; ++row)
 						{
-							double temp_xf = reverse_M_data[1] * row + reverse_M_data[2];
-							double temp_yf = reverse_M_data[4] * row + reverse_M_data[5];
+							double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
+							double temp_yf = reverse_M[1][1] * row + reverse_M[1][2];
 							int temp_dst_index = channel_offset + row * width;
 
 							for (int col = 0; col < width; ++col)
 							{
-								double xf = reverse_M_data[0] * col + temp_xf;
-								double yf = reverse_M_data[3] * col + temp_yf;
+								double xf = reverse_M[0][0] * col + temp_xf;
+								double yf = reverse_M[1][0] * col + temp_yf;
 								int x = (int)xf;
 								int y = (int)yf;
 								float xdiff = xf - x;
@@ -1371,10 +1336,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										Dtype A = src_data[src_index];
-										Dtype B = src_data[src_index + 1];
-										Dtype C = src_data[src_index + width];
-										Dtype D = src_data[src_index + width + 1];
+										unsigned indexA = std::min(unsigned(src_index), maxIndex);
+										unsigned indexB = std::min(unsigned(src_index + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_index + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_index + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1389,7 +1359,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
@@ -1398,14 +1368,14 @@ namespace glasssix
 #pragma omp parallel for
 					for (int row = 0; row < height; ++row)
 					{
-						double temp_xf = reverse_M_data[1] * row + reverse_M_data[2];
-						double temp_yf = reverse_M_data[4] * row + reverse_M_data[5];
+						double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
+						double temp_yf = reverse_M[1][1] * row + reverse_M[1][2];
 						int dst_pos1 = row * width * channels;
 
 						for (int col = 0; col < width; ++col)
 						{
-							double xf = reverse_M_data[0] * col + temp_xf;
-							double yf = reverse_M_data[3] * col + temp_yf;
+							double xf = reverse_M[0][0] * col + temp_xf;
+							double yf = reverse_M[1][0] * col + temp_yf;
 							int x = (int)xf;
 							int y = (int)yf;
 							float xdiff = xf - x;
@@ -1431,12 +1401,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos3 = src_pos2 + width * channels;
+										unsigned indexA = std::min(unsigned(src_pos2), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos2 + channels), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos2 + width * channels), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos2 + (width + 1) * channels), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
 
-										Dtype A = src_data[src_pos2];
-										Dtype B = src_data[src_pos2 + channels];
-										Dtype C = src_data[src_pos3];
-										Dtype D = src_data[src_pos3 + channels];
 										dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1450,6 +1423,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -1481,6 +1458,7 @@ namespace glasssix
 				int height = src.height();
 				int width = src.width();
 				int offset = height * width;
+				unsigned maxIndex = height * width * channels - 1;
 
 				double rad = theta*(PI / 180);
 				double cosa = cos(rad);
@@ -1488,26 +1466,35 @@ namespace glasssix
 
 				double a = scale * cosa;
 				double b = scale * sina;
-				double M_data[9];
-				M_data[0] = a;
-				M_data[1] = b;
-				M_data[2] = (1 - a) * (double)center.x - b * (double)center.y;
-				M_data[3] = -1 * b;
-				M_data[4] = a;
-				M_data[5] = b * (double)center.x + (1 - a) * (double)center.y;
-				M_data[6] = 0;
-				M_data[7] = 0;
-				M_data[8] = 1;
 
-				cv::Mat M(3, 3, CV_64F, M_data);
-				cv::Mat reverse_M(3, 3, CV_64F);
-				cv::invert(M, reverse_M);
-				double reverse_M_data[9];
-				memcpy(reverse_M_data, reverse_M.data, 9 * sizeof(double));
-
-				if (src.type() == NCHW)
+				std::vector<std::vector<double> > M;
+				std::vector<std::vector<double> > reverse_M;
+				M.resize(3);
+				for (size_t i = 0; i < M.size(); i++)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
+					M[i].resize(3);
+				}
+
+				M[0][0] = a;
+				M[0][1] = b;
+				M[0][2] = (1 - a) * (double)center.x - b * (double)center.y;
+				M[1][0] = -1 * b;
+				M[1][1] = a;
+				M[1][2] = b * (double)center.x + (1 - a) * (double)center.y;
+				M[2][0] = 0;
+				M[2][1] = 0;
+				M[2][2] = 1;
+
+				bool isInverted = math_functions::GetMatrixInverse(M, reverse_M);
+				if (!isInverted)
+				{
+					LOG(FATAL) << "cannot rotate!!!";
+					return;
+				}
+
+				if (src.order() == NCHW)
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 
@@ -1518,14 +1505,14 @@ namespace glasssix
 #pragma omp parallel for
 						for (int row = 0; row < height; ++row)
 						{
-							double temp_xf = reverse_M_data[1] * row + reverse_M_data[2];
-							double temp_yf = reverse_M_data[4] * row + reverse_M_data[5];
+							double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
+							double temp_yf = reverse_M[1][1] * row + reverse_M[1][2];
 							int temp_dst_index = channel_offset + row * width;
 
 							for (int col = 0; col < width; ++col)
 							{
-								double xf = reverse_M_data[0] * col + temp_xf;
-								double yf = reverse_M_data[3] * col + temp_yf;
+								double xf = reverse_M[0][0] * col + temp_xf;
+								double yf = reverse_M[1][0] * col + temp_yf;
 								int x = (int)xf;
 								int y = (int)yf;
 								float xdiff = xf - x;
@@ -1546,10 +1533,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										Dtype A = src_data[src_index];
-										Dtype B = src_data[src_index + 1];
-										Dtype C = src_data[src_index + width];
-										Dtype D = src_data[src_index + width + 1];
+										unsigned indexA = std::min(unsigned(src_index), maxIndex);
+										unsigned indexB = std::min(unsigned(src_index + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_index + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_index + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1564,23 +1556,23 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
+					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 
 #pragma omp parallel for
 					for (int row = 0; row < height; ++row)
 					{
-						double temp_xf = reverse_M_data[1] * row + reverse_M_data[2];
-						double temp_yf = reverse_M_data[4] * row + reverse_M_data[5];
+						double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
+						double temp_yf = reverse_M[1][1] * row + reverse_M[1][2];
 						int dst_pos1 = row * width * channels;
 
 						for (int col = 0; col < width; ++col)
 						{
-							double xf = reverse_M_data[0] * col + temp_xf;
-							double yf = reverse_M_data[3] * col + temp_yf;
+							double xf = reverse_M[0][0] * col + temp_xf;
+							double yf = reverse_M[1][0] * col + temp_yf;
 							int x = (int)xf;
 							int y = (int)yf;
 							float xdiff = xf - x;
@@ -1606,12 +1598,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos3 = src_pos2 + width * channels;
+										unsigned indexA = std::min(unsigned(src_pos2), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos2 + channels), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos2 + width * channels), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos2 + (width + 1) * channels), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
 
-										Dtype A = src_data[src_pos2];
-										Dtype B = src_data[src_pos2 + channels];
-										Dtype C = src_data[src_pos3];
-										Dtype D = src_data[src_pos3 + channels];
 										dst_data[dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1625,6 +1620,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -1740,7 +1739,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (dst->order() == NHWC)
 					{
 						//top
 						for (int row = rect.y; row < rect.y + thickness; ++row)
@@ -1791,11 +1790,16 @@ namespace glasssix
 							}
 						}
 					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+
 					delete fill_color;
 				}
 				else
 				{
-					LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+					LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 				}
 			}
 
@@ -1879,7 +1883,7 @@ namespace glasssix
 					fill_color[1] = color_.g;
 					fill_color[2] = color_.b;
 
-					if (dst.type() == NCHW)
+					if (dst.order() == NCHW)
 					{
 						for (int ch = 0; ch < 3; ++ch)
 						{
@@ -1911,7 +1915,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (dst.order() == NHWC)
 					{
 						//top
 						for (int row = rect.y; row < rect.y + thickness; ++row)
@@ -1962,11 +1966,16 @@ namespace glasssix
 							}
 						}
 					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+
 					delete fill_color;
 				}
 				else
 				{
-					LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+					LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 				}
 			}
 
@@ -2053,7 +2062,7 @@ namespace glasssix
 										memset(tptr1 + x22, fill_color[ch], 2 * sizeof(Dtype));
 									}
 								}
-								else
+								else if (dst->order() == NHWC)
 								{
 									int pos_x11_y11 = (y11 * width + x11) * 3;
 									int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2081,12 +2090,16 @@ namespace glasssix
 										}
 									}
 								}
+								else
+								{
+									NOT_IMPLEMENTED;
+								}
 
 								delete fill_color;
 							}
 							else
 							{
-								LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+								LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 							}
 
 							dy++;
@@ -2148,7 +2161,7 @@ namespace glasssix
 									memset(tptr1 + x21, fill_color[ch], (x22 - x21) * sizeof(Dtype));
 								}
 							}
-							else
+							else if (dst->order() == NHWC)
 							{
 								int pos_x11_y11 = (y11 * width + x11) * 3;
 								int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2172,12 +2185,16 @@ namespace glasssix
 									}
 								}
 							}
+							else
+							{
+								NOT_IMPLEMENTED;
+							}
 
 							delete fill_color;
 						}
 						else
 						{
-							LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+							LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 						}
 
 						dy++;
@@ -2255,7 +2272,7 @@ namespace glasssix
 								fill_color[1] = color_.g;
 								fill_color[2] = color_.b;
 
-								if (dst.type() == NCHW)
+								if (dst.order() == NCHW)
 								{
 									for (int ch = 0; ch < 3; ++ch)
 									{
@@ -2276,7 +2293,7 @@ namespace glasssix
 										memset(tptr1 + x22, fill_color[ch], 2 * sizeof(Dtype));
 									}
 								}
-								else
+								else if (dst.order() == NHWC)
 								{
 									int pos_x11_y11 = (y11 * width + x11) * 3;
 									int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2304,12 +2321,16 @@ namespace glasssix
 										}
 									}
 								}
+								else
+								{
+									NOT_IMPLEMENTED;
+								}
 
 								delete fill_color;
 							}
 							else
 							{
-								LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+								LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 							}
 
 							dy++;
@@ -2354,7 +2375,7 @@ namespace glasssix
 							fill_color[1] = color_.g;
 							fill_color[2] = color_.b;
 
-							if (dst.type() == NCHW)
+							if (dst.order() == NCHW)
 							{
 								for (int ch = 0; ch < 3; ++ch)
 								{
@@ -2371,7 +2392,7 @@ namespace glasssix
 									memset(tptr1 + x21, fill_color[ch], (x22 - x21) * sizeof(Dtype));
 								}
 							}
-							else
+							else if (dst.order() == NHWC)
 							{
 								int pos_x11_y11 = (y11 * width + x11) * 3;
 								int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2395,12 +2416,16 @@ namespace glasssix
 									}
 								}
 							}
+							else
+							{
+								NOT_IMPLEMENTED;
+							}
 
 							delete fill_color;
 						}
 						else
 						{
-							LOG(WARNING) << "Illegal channel numbers. Return without any changes.";
+							LOG(FATAL) << "Illegal channel numbers. Return without any changes.";
 						}
 
 						dy++;
@@ -2507,7 +2532,7 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
@@ -2583,6 +2608,10 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -2602,7 +2631,7 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2676,7 +2705,7 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2752,6 +2781,10 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -2796,7 +2829,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
@@ -2817,6 +2850,10 @@ namespace glasssix
 								src_data[src_pos2 + 2] * 0.299f);
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -2842,7 +2879,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2862,7 +2899,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2883,6 +2920,10 @@ namespace glasssix
 								src_data[src_pos2 + 2] * 0.299f);
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -2920,7 +2961,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, width, height, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
@@ -2941,6 +2982,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -2959,7 +3004,7 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, width, height}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2977,7 +3022,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, width, height, channels}, src.device(), src.type());
 					const Dtype* src_data = src.cpu_data();
@@ -2997,6 +3042,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3053,7 +3102,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -3075,6 +3124,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3112,7 +3165,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3132,7 +3185,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3154,6 +3207,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3211,7 +3268,14 @@ namespace glasssix
 							int dst_channel_offset = ch * dst_offset;
 
 							//top
-							memset(dst_data + dst_channel_offset, (Dtype)fill, top * dst_width * sizeof(Dtype));
+							for (int row = 0; row < top; row++)
+							{
+								int dst_index = dst_channel_offset + row * dst_width;
+								for (int col = 0; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = (Dtype)fill;
+								}
+							}
 
 							//center
 							for (int row = top; row < top + height; ++row)
@@ -3219,13 +3283,28 @@ namespace glasssix
 								int src_index = src_channel_offset + (row - top) * width;
 								int dst_index = dst_channel_offset + row * dst_width;
 
-								memset(dst_data + dst_index, (Dtype)fill, left * sizeof(Dtype));
+								for (int col = 0; col < left; col++)
+								{
+									dst_data[dst_index + col] = (Dtype)fill;
+								}
+
 								memcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype));
-								memset(dst_data + dst_index + left + width, (Dtype)fill, right * sizeof(Dtype));
+
+								for (int col = left + width; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = (Dtype)fill;
+								}
 							}
 
 							//bottom
-							memset(dst_data + dst_channel_offset + (top + height) * dst_width, (Dtype)fill, bottom * dst_width * sizeof(Dtype));
+							for (int row = top + height; row < dst_height; row++)
+							{
+								int dst_index = dst_channel_offset + row * dst_width;
+								for (int col = 0; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = (Dtype)fill;
+								}
+							}
 						}
 					}
 					else if (type == Border_Replicate)
@@ -3239,9 +3318,21 @@ namespace glasssix
 							for (int row = 0; row < top; ++row)
 							{
 								int dst_index = dst_channel_offset + row * dst_width;
-								memset(dst_data + dst_index, src_data[src_channel_offset], left * sizeof(Dtype));
+
+								//left
+								for (int col = 0; col < left; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_channel_offset];
+								}
+
+								//center
 								memcpy(dst_data + dst_index + left, src_data + src_channel_offset, width * sizeof(Dtype));
-								memset(dst_data + dst_index + left + width, src_data[src_channel_offset + width - 1], right * sizeof(Dtype));
+
+								//right
+								for (int col = left + width; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_channel_offset + width - 1];
+								}
 							}
 
 							//center
@@ -3250,9 +3341,20 @@ namespace glasssix
 								int src_index = src_channel_offset + (row - top) * width;
 								int dst_index = dst_channel_offset + row * dst_width;
 
-								memset(dst_data + dst_index, src_data[src_index], left * sizeof(Dtype));
+								//left
+								for (int col = 0; col < left; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_index];
+								}
+
+								//center
 								memcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype));
-								memset(dst_data + dst_index + left + width, src_data[src_index + width - 1], right * sizeof(Dtype));
+
+								//right
+								for (int col = left + width; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_index + width - 1];
+								}
 							}
 
 							//bottom
@@ -3261,9 +3363,188 @@ namespace glasssix
 								int src_index = src_channel_offset + (height - 1) * width;
 								int dst_index = dst_channel_offset + row * dst_width;
 
-								memset(dst_data + dst_index, src_data[src_index], left * sizeof(Dtype));
+								//left
+								for (int col = 0; col < left; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_index];
+								}
+
+								//center
 								memcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype));
-								memset(dst_data + dst_index + left + width, src_data[src_index + width - 1], right * sizeof(Dtype));
+
+								//right
+								for (int col = left + width; col < dst_width; col++)
+								{
+									dst_data[dst_index + col] = src_data[src_index + width - 1];
+								}
+							}
+						}
+					}
+					else
+					{
+						LOG(ERROR) << "Un-support border type.";
+						return;
+					}
+				}
+				else if (src->order() == NHWC)
+				{
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+					Dtype* dst_data = dst->mutable_cpu_data();
+					const Dtype* src_data = src->cpu_data();
+
+					if (type == Border_Constant)
+					{
+						//top
+						for (int row = 0; row < top; row++)
+						{
+							int dst_index1 = row * dst_width * channels;
+							for (int col = 0; col < dst_width; col++)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ch++)
+								{
+									dst_data[dst_index2 + ch] = (Dtype)fill;
+								}
+							}
+						}
+
+						//center
+						for (int row = top; row < top + height; ++row)
+						{
+							int src_index = (row - top) * width * channels;
+
+							//left
+							int dst_index1 = row * dst_width * channels;
+							for (int col = 0; col < left; col++)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ch++)
+								{
+									dst_data[dst_index2 + ch] = (Dtype)fill;
+								}
+							}
+
+							//center
+							memcpy(dst_data + dst_index1 + left * channels, src_data + src_index, width * channels * sizeof(Dtype));
+
+							//right
+							for (int col = left + width; col < dst_width; col++)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ch++)
+								{
+									dst_data[dst_index2 + ch] = (Dtype)fill;
+								}
+							}
+						}
+
+						//bottom
+						for (int row = top + height; row < dst_height; row++)
+						{
+							int dst_index1 = row * dst_width * channels;
+							for (int col = 0; col < dst_width; col++)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ch++)
+								{
+									dst_data[dst_index2 + ch] = (Dtype)fill;
+								}
+							}
+						}
+					}
+					else if (type == Border_Replicate)
+					{
+						//top
+						for (int row = 0; row < top; ++row)
+						{
+							int dst_index1 = row * dst_width * channels;
+
+							//left
+							for (int col = 0; col < left; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[ch];
+								}
+							}
+
+							//center
+							memcpy(dst_data + dst_index1 + left * channels, src_data, width * channels * sizeof(Dtype));
+
+							//right
+							for (int col = left + width; col < dst_width; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								int src_index = (width - 1) * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[src_index + ch];
+								}
+							}
+						}
+
+
+						//center
+						for (int row = top; row < top + height; ++row)
+						{
+							int src_index1 = (row - top) * width * channels;
+							int dst_index1 = row * dst_width * channels;
+
+							//left
+							for (int col = 0; col < left; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[src_index1 + ch];
+								}
+							}
+
+							//center
+							memcpy(dst_data + dst_index1 + left * channels, src_data + src_index1, width * channels * sizeof(Dtype));
+
+							//right
+							int src_index2 = src_index1 + (width - 1) * channels;
+							for (int col = left + width; col < dst_width; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[src_index2 + ch];
+								}
+							}
+						}
+
+
+						//bottom
+						for (int row = top + height; row < dst_height; ++row)
+						{
+							int dst_index1 = row * dst_width * channels;
+							int src_index1 = (height - 1) * width * channels;
+
+							//left
+							for (int col = 0; col < left; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[src_index1 + ch];
+								}
+							}
+
+							//center
+							memcpy(dst_data + dst_index1 + left * channels, src_data + src_index1, width * channels * sizeof(Dtype));
+
+							//right
+							int src_index2 = src_index1 + (width - 1) * channels;
+							for (int col = left + width; col < dst_width; ++col)
+							{
+								int dst_index2 = dst_index1 + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									dst_data[dst_index2 + ch] = src_data[src_index2 + ch];
+								}
 							}
 						}
 					}
@@ -3275,143 +3556,7 @@ namespace glasssix
 				}
 				else
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
-					const Dtype* src_data = src->cpu_data();
-
-					if (type == Border_Constant)
-					{
-						//top
-						memset(dst_data, (Dtype)fill, top * dst_width * channels * sizeof(Dtype));
-
-						//center
-						for (int row = top; row < top + height; ++row)
-						{
-							int src_pos = (row - top) * width * channels;
-
-							//left
-							int dst_pos1 = row * dst_width * channels;
-							memset(dst_data + dst_pos1, (Dtype)fill, left * channels * sizeof(Dtype));
-
-							//center
-							int dst_pos2 = dst_pos1 + left * channels;
-							memcpy(dst_data + dst_pos2, src_data + src_pos, width * channels * sizeof(Dtype));
-
-							//right
-							int dst_pos3 = dst_pos2 + width * channels;
-							memset(dst_data + dst_pos3, (Dtype)fill, right * channels * sizeof(Dtype));
-						}
-
-						//bottom
-						memset(dst_data + (top + height) * dst_width * channels, (Dtype)fill, bottom * dst_width * channels * sizeof(Dtype));
-					}
-					else if (type == Border_Replicate)
-					{
-						//top
-						for (int row = 0; row < top; ++row)
-						{
-							int dst_pos1 = row * dst_width * channels;
-
-							//left
-							for (int col = 0; col < left; ++col)
-							{
-								int dst_index = dst_pos1 + col * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[ch];
-								}
-							}
-
-							//center
-							int dst_pos2 = dst_pos1 + left * channels;
-							memcpy(dst_data + dst_pos2, src_data, width * channels * sizeof(Dtype));
-
-							//right
-							int dst_pos3 = dst_pos2 + width * channels;
-							for (int col = 0; col < right; ++col)
-							{
-								int dst_index = dst_pos3 + col * channels;
-								int src_index = (width - 1) * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[src_index + ch];
-								}
-							}
-						}
-
-
-						//center
-						for (int row = top; row < top + height; ++row)
-						{
-							int src_pos1 = (row - top) * width * channels;
-							int dst_pos1 = row * dst_width * channels;
-
-							//left
-							for (int col = 0; col < left; ++col)
-							{
-								int dst_index = dst_pos1 + col * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[src_pos1 + ch];
-								}
-							}
-
-							//center
-							int dst_pos2 = dst_pos1 + left * channels;
-							memcpy(dst_data + dst_pos2, src_data + src_pos1, width * channels * sizeof(Dtype));
-
-							//right
-							int src_pos2 = src_pos1 + width * channels;
-							int dst_pos3 = dst_pos2 + width * channels;
-							for (int col = 0; col < right; ++col)
-							{
-								int dst_index = dst_pos3 + col * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[src_pos2 + ch];
-								}
-							}
-						}
-
-
-						//bottom
-						for (int row = top + height; row < dst_height; ++row)
-						{
-							int dst_pos1 = row * dst_width * channels;
-							int src_pos1 = (height - 1) * width * channels;
-
-							//left
-							for (int col = 0; col < left; ++col)
-							{
-								int dst_index = dst_pos1 + col * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[src_pos1 + ch];
-								}
-							}
-
-							//center
-							int dst_pos2 = dst_pos1 + left * channels;
-							memcpy(dst_data + dst_pos2, src_data + src_pos1, width * channels * sizeof(Dtype));
-
-							//right
-							int dst_pos3 = dst_pos2 + width * channels;
-							int src_pos2 = src_pos1 + width * channels;
-							for (int col = 0; col < right; ++col)
-							{
-								int dst_index = dst_pos3 + col * channels;
-								for (int ch = 0; ch < channels; ++ch)
-								{
-									dst_data[dst_index + ch] = src_data[src_pos2 + ch];
-								}
-							}
-						}
-					}
-					else
-					{
-						LOG(ERROR) << "Un-support border type.";
-						return;
-					}
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3455,7 +3600,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3531,7 +3676,7 @@ namespace glasssix
 						return;
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3670,6 +3815,10 @@ namespace glasssix
 						LOG(ERROR) << "Un-support border type.";
 						return;
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3736,7 +3885,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -3748,6 +3897,10 @@ namespace glasssix
 						int dst_index = row * dst_width * channels;
 						memcpy(dst_data + dst_index, src_data + src_index, dst_width * channels * sizeof(Dtype));
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3795,7 +3948,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3814,7 +3967,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -3826,6 +3979,10 @@ namespace glasssix
 						int dst_index = row * dst_width * channels;
 						memcpy(dst_data + dst_index, src_data + src_index, dst_width * channels * sizeof(Dtype));
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -3884,7 +4041,7 @@ namespace glasssix
 
 					delete columnSum;
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height + 1, width + 1, channels}, src->device(), src->order()));
 					const Stype* src_data = src->cpu_data();
@@ -3921,6 +4078,10 @@ namespace glasssix
 
 					delete columnSum;
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -3938,7 +4099,7 @@ namespace glasssix
 				int height = src.height();
 				int width = src.width();
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, height + 1, width + 1}, src.device(), src.type());
 					const Stype* src_data = src.cpu_data();
@@ -3978,7 +4139,7 @@ namespace glasssix
 
 					delete columnSum;
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height + 1, width + 1, channels}, src.device(), src.type());
 					const Stype* src_data = src.cpu_data();
@@ -4015,6 +4176,10 @@ namespace glasssix
 
 					delete columnSum;
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -4032,8 +4197,10 @@ namespace glasssix
 				int height = src->height();
 				int width = src->width();
 				int offset = height * width;
-
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device()));
+				if (dst->count() != src->count())
+				{
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device()));
+				}
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst->mutable_cpu_data();
 
@@ -4090,7 +4257,11 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device());
+				if (dst.count() != src.count())
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device());
+				}
+				
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst.mutable_cpu_data();
 
@@ -4162,7 +4333,7 @@ namespace glasssix
 						dst_vector.push_back(temp_ptr);
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst_vector.resize(channels);
 					std::vector<Dtype *> ptr_arr(channels);
@@ -4187,6 +4358,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -4208,7 +4383,7 @@ namespace glasssix
 				const Dtype* src_data = src.cpu_data();
 				dst_vector.clear();
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					for (int ch = 0; ch < channels; ++ch)
 					{
@@ -4219,7 +4394,7 @@ namespace glasssix
 						dst_vector.push_back(temp_ptr);
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst_vector.resize(channels);
 					std::vector<Dtype *> ptr_arr(channels);
@@ -4244,6 +4419,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -4256,11 +4435,12 @@ namespace glasssix
 			template <typename Dtype>
 			static void merge_channel_cpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst)
 			{
-				int num = 0, height, width, device;
+				CHECK_EQ(src_vector.size(), 3);
+				int height, width, device;
 				orderType type;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
-					num += src_vector.at(i)->num() * src_vector.at(i)->channels();
+					CHECK_EQ(src_vector.at(i)->channels(), 1);
 					if (i == 0)
 					{
 						height = src_vector.at(i)->height();
@@ -4283,23 +4463,24 @@ namespace glasssix
 
 				if (type == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, 1, height, width}, device, type));
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, type));
+				}
+				else if (type == NHWC)
+				{
+					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, type));
 				}
 				else
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, height, width, 1}, device, type));
+					NOT_IMPLEMENTED;
 				}
 
 				Dtype* dst_data = dst->mutable_cpu_data();
 				int offset = height * width;
 
-				unsigned total_length = 0;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
 					const Dtype* temp_data = src_vector.at(i)->cpu_data();
-					unsigned length = src_vector.at(i)->num() * src_vector.at(i)->channels() * offset;
-					std::memcpy((void*)(dst_data + total_length), (void*)(temp_data), length * sizeof(Dtype));
-					total_length += length;
+					std::memcpy((void*)(dst_data + i * offset), (void*)(temp_data), offset * sizeof(Dtype));
 				}
 			}
 
@@ -4313,11 +4494,12 @@ namespace glasssix
 			template <typename Dtype>
 			static void merge_channel_cpu(const std::vector<tensor<Dtype>> &src_vector, tensor<Dtype> &dst)
 			{
-				int num = 0, height, width, device;
+				CHECK_EQ(src_vector.size(), 3);
+				int height, width, device;
 				orderType type;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
-					num += src_vector.at(i).num() * src_vector.at(i).channels();
+					CHECK_EQ(src_vector.at(i)->channels(), 1);
 					if (i == 0)
 					{
 						height = src_vector.at(i).height();
@@ -4340,23 +4522,24 @@ namespace glasssix
 
 				if (type == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, 1, height, width}, device, type);
+					dst = tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, type);
+				}
+				else if (type == NHWC)
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, type);
 				}
 				else
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, height, width, 1}, device, type);
+					NOT_IMPLEMENTED;
 				}
 
 				Dtype* dst_data = dst.mutable_cpu_data();
 				int offset = height * width;
 
-				unsigned total_length = 0;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
 					const Dtype* temp_data = src_vector.at(i).cpu_data();
-					unsigned length = src_vector.at(i).num() * src_vector.at(i).channels() * offset;
-					std::memcpy((void*)(dst_data + total_length), (void*)(temp_data), length * sizeof(Dtype));
-					total_length += length;
+					std::memcpy((void*)(dst_data + i * offset), (void*)(temp_data), offset * sizeof(Dtype));
 				}
 			}
 
@@ -4388,9 +4571,13 @@ namespace glasssix
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device(), src->order()));
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 
 				Dtype* dst_data = dst->mutable_cpu_data();
@@ -4470,13 +4657,17 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.type());
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.type());
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 
 				Dtype* dst_data = dst.mutable_cpu_data();
@@ -4534,6 +4725,9 @@ namespace glasssix
 
 
 
+
+
+
 			/// <summary>
 			/// 仿射变换
 			/// </summary>
@@ -4553,31 +4747,41 @@ namespace glasssix
 					return;
 				}
 
-				double a[6 * 6], b[6];
-				for (int i = 0; i < 3; i++)
-				{
-					int j = i * 12;
-					int k = i * 12 + 6;
-					a[j] = a[k + 3] = (double)dst_point[i].x;
-					a[j + 1] = a[k + 4] = (double)dst_point[i].y;
-					a[j + 2] = a[k + 5] = 1;
-					a[j + 3] = a[j + 4] = a[j + 5] = 0;
-					a[k] = a[k + 1] = a[k + 2] = 0;
-					b[i * 2] = (double)src_point[i].x;
-					b[i * 2 + 1] = (double)src_point[i].y;
-				}
-
-				Mat A(6, 6, CV_64F, a), B(6, 1, CV_64F, b);
-				Mat M(2, 3, CV_64F), X(6, 1, CV_64F, M.ptr());
-				cv::solve(A, B, X);
-				double *M_data = (double*)malloc(6 * sizeof(double));
-				memcpy(M_data, M.data, 6 * sizeof(double));
-
 				CHECK_EQ(src->num(), 1);
 				int channels = src->channels();
 				int height = src->height();
 				int width = src->width();
 				int offset = height * width;
+				unsigned maxIndex = height * width * channels - 1;
+
+				//AX=B，先扩充至6×6和6×1
+				std::vector<std::vector<float> > A;
+				std::vector<float> B, X;
+				A.resize(6);
+				for (size_t i = 0; i < 6; i = i + 2)
+				{
+					A[i].push_back(float(dst_point[i / 2].x));
+					A[i].push_back(float(dst_point[i / 2].y));
+					A[i].push_back(1.0f);
+					A[i].push_back(0.0f);
+					A[i].push_back(0.0f);
+					A[i].push_back(0.0f);
+
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(float(dst_point[i / 2].x));
+					A[i + 1].push_back(float(dst_point[i / 2].y));
+					A[i + 1].push_back(1.0f);
+				}
+
+				for (size_t i = 0; i < 3; i++)
+				{
+					B.push_back(float(src_point[i].x));
+					B.push_back(float(src_point[i].y));
+				}
+
+				X = math_functions::gauss_all(A, B);
 
 				if (src->order() == NCHW)
 				{
@@ -4589,17 +4793,17 @@ namespace glasssix
 					{
 						int channel_offset = ch * offset;
 
-#pragma omp parallel for
+			#pragma omp parallel for
 						for (int row = 0; row < height; ++row)
 						{
-							double temp_xf = M_data[1] * row + M_data[2];
-							double temp_yf = M_data[4] * row + M_data[5];
+							double temp_xf = X[1] * row + X[2];
+							double temp_yf = X[4] * row + X[5];
 							int temp_dst_index = channel_offset + row * width;
 
 							for (int col = 0; col < width; ++col)
 							{
-								double xf = M_data[0] * col + temp_xf;
-								double yf = M_data[3] * col + temp_yf;
+								double xf = X[0] * col + temp_xf;
+								double yf = X[3] * col + temp_yf;
 								int x = (int)xf;
 								int y = (int)yf;
 								float xdiff = xf - x;
@@ -4620,10 +4824,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										Dtype A = src_data[src_index];
-										Dtype B = src_data[src_index + 1];
-										Dtype C = src_data[src_index + width];
-										Dtype D = src_data[src_index + width + 1];
+										unsigned indexA = std::min(unsigned(src_index), maxIndex);
+										unsigned indexB = std::min(unsigned(src_index + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_index + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_index + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -4638,23 +4847,23 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
 					Dtype* dst_data = dst->mutable_cpu_data();
 
-#pragma omp parallel for
+			#pragma omp parallel for
 					for (int row = 0; row < height; ++row)
 					{
-						double temp_xf = M_data[1] * row + M_data[2];
-						double temp_yf = M_data[4] * row + M_data[5];
+						double temp_xf = X[1] * row + X[2];
+						double temp_yf = X[4] * row + X[5];
 						int dst_pos1 = row * width * channels;
 
 						for (int col = 0; col < width; ++col)
 						{
-							double xf = M_data[0] * col + temp_xf;
-							double yf = M_data[3] * col + temp_yf;
+							double xf = X[0] * col + temp_xf;
+							double yf = X[3] * col + temp_yf;
 							int x = (int)xf;
 							int y = (int)yf;
 							float xdiff = xf - x;
@@ -4677,11 +4886,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos2 = src_pos1 + width * channels;
-										Dtype A = src_data[src_pos1 + ch];
-										Dtype B = src_data[src_pos1 + channels + ch];
-										Dtype C = src_data[src_pos2 + ch];
-										Dtype D = src_data[src_pos2 + channels + ch];
+										unsigned indexA = std::min(unsigned(src_pos1 + ch), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos1 + channels + ch), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos1 + width * channels + ch), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos1 + (width + 1) * channels + ch), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos2 + ch] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -4696,8 +4909,11 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 
-				delete M_data;
 			}
 
 
@@ -4721,35 +4937,45 @@ namespace glasssix
 					return;
 				}
 
-				double a[6 * 6], b[6];
-				for (int i = 0; i < 3; i++)
-				{
-					int j = i * 12;
-					int k = i * 12 + 6;
-					a[j] = a[k + 3] = (double)dst_point[i].x;
-					a[j + 1] = a[k + 4] = (double)dst_point[i].y;
-					a[j + 2] = a[k + 5] = 1;
-					a[j + 3] = a[j + 4] = a[j + 5] = 0;
-					a[k] = a[k + 1] = a[k + 2] = 0;
-					b[i * 2] = (double)src_point[i].x;
-					b[i * 2 + 1] = (double)src_point[i].y;
-				}
-
-				Mat A(6, 6, CV_64F, a), B(6, 1, CV_64F, b);
-				Mat M(2, 3, CV_64F), X(6, 1, CV_64F, M.ptr());
-				cv::solve(A, B, X);
-				double *M_data = (double*)malloc(6 * sizeof(double));
-				memcpy(M_data, M.data, 6 * sizeof(double));
-
 				CHECK_EQ(src.num(), 1);
 				int channels = src.channels();
 				int height = src.height();
 				int width = src.width();
 				int offset = height * width;
+				unsigned maxIndex = height * width * channels - 1;
 
-				if (src.type() == NCHW)
+				//AX=B，先扩充至6×6和6×1
+				std::vector<std::vector<float> > A;
+				std::vector<float> B, X;
+				A.resize(6);
+				for (size_t i = 0; i < 6; i = i + 2)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
+					A[i].push_back(float(dst_point[i / 2].x));
+					A[i].push_back(float(dst_point[i / 2].y));
+					A[i].push_back(1.0f);
+					A[i].push_back(0.0f);
+					A[i].push_back(0.0f);
+					A[i].push_back(0.0f);
+
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(0.0f);
+					A[i + 1].push_back(float(dst_point[i / 2].x));
+					A[i + 1].push_back(float(dst_point[i / 2].y));
+					A[i + 1].push_back(1.0f);
+				}
+
+				for (size_t i = 0; i < 3; i++)
+				{
+					B.push_back(float(src_point[i].x));
+					B.push_back(float(src_point[i].y));
+				}
+
+				X = math_functions::gauss_all(A, B);
+
+				if (src.order() == NCHW)
+				{
+					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 
@@ -4760,14 +4986,14 @@ namespace glasssix
 #pragma omp parallel for
 						for (int row = 0; row < height; ++row)
 						{
-							double temp_xf = M_data[1] * row + M_data[2];
-							double temp_yf = M_data[4] * row + M_data[5];
+							double temp_xf = X[1] * row + X[2];
+							double temp_yf = X[4] * row + X[5];
 							int temp_dst_index = channel_offset + row * width;
 
 							for (int col = 0; col < width; ++col)
 							{
-								double xf = M_data[0] * col + temp_xf;
-								double yf = M_data[3] * col + temp_yf;
+								double xf = X[0] * col + temp_xf;
+								double yf = X[3] * col + temp_yf;
 								int x = (int)xf;
 								int y = (int)yf;
 								float xdiff = xf - x;
@@ -4788,10 +5014,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										Dtype A = src_data[src_index];
-										Dtype B = src_data[src_index + 1];
-										Dtype C = src_data[src_index + width];
-										Dtype D = src_data[src_index + width + 1];
+										unsigned indexA = std::min(unsigned(src_index), maxIndex);
+										unsigned indexB = std::min(unsigned(src_index + 1), maxIndex);
+										unsigned indexC = std::min(unsigned(src_index + width), maxIndex);
+										unsigned indexD = std::min(unsigned(src_index + width + 1), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -4806,23 +5037,23 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
+					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 
 #pragma omp parallel for
 					for (int row = 0; row < height; ++row)
 					{
-						double temp_xf = M_data[1] * row + M_data[2];
-						double temp_yf = M_data[4] * row + M_data[5];
+						double temp_xf = X[1] * row + X[2];
+						double temp_yf = X[4] * row + X[5];
 						int dst_pos1 = row * width * channels;
 
 						for (int col = 0; col < width; ++col)
 						{
-							double xf = M_data[0] * col + temp_xf;
-							double yf = M_data[3] * col + temp_yf;
+							double xf = X[0] * col + temp_xf;
+							double yf = X[3] * col + temp_yf;
 							int x = (int)xf;
 							int y = (int)yf;
 							float xdiff = xf - x;
@@ -4845,11 +5076,15 @@ namespace glasssix
 									}
 									else if (type == Bilinear)
 									{
-										int src_pos2 = src_pos1 + width * channels;
-										Dtype A = src_data[src_pos1 + ch];
-										Dtype B = src_data[src_pos1 + channels + ch];
-										Dtype C = src_data[src_pos2 + ch];
-										Dtype D = src_data[src_pos2 + channels + ch];
+										unsigned indexA = std::min(unsigned(src_pos1 + ch), maxIndex);
+										unsigned indexB = std::min(unsigned(src_pos1 + channels + ch), maxIndex);
+										unsigned indexC = std::min(unsigned(src_pos1 + width * channels + ch), maxIndex);
+										unsigned indexD = std::min(unsigned(src_pos1 + (width + 1) * channels + ch), maxIndex);
+										Dtype A = src_data[indexA];
+										Dtype B = src_data[indexB];
+										Dtype C = src_data[indexC];
+										Dtype D = src_data[indexD];
+
 										dst_data[dst_pos2 + ch] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 											static_cast<float>(B) * xdiff * (1 - ydiff) +
 											static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -4864,8 +5099,10 @@ namespace glasssix
 						}
 					}
 				}
-
-				delete M_data;
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -4986,7 +5223,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -5049,6 +5286,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -5103,7 +5344,7 @@ namespace glasssix
 
 				const Dtype* src_data = src.cpu_data();
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5168,7 +5409,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5229,6 +5470,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -5310,7 +5555,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -5362,6 +5607,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -5388,7 +5637,7 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5442,7 +5691,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5493,6 +5742,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -5621,7 +5874,7 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
@@ -5712,6 +5965,10 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -5746,7 +6003,7 @@ namespace glasssix
 				int offset = height * width;
 				int half = (ksize - 1) * 0.5;
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5839,7 +6096,7 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.type());
 					Dtype* dst_data = dst.mutable_cpu_data();
@@ -5930,6 +6187,10 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -5980,7 +6241,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (src->order() == NHWC)
 					{
 						for (size_t h = 1; h < height - 1; h++)
 						{
@@ -6005,6 +6266,10 @@ namespace glasssix
 								}
 							}
 						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
 					}
 
 					break;
@@ -6078,7 +6343,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (src->order() == NHWC)
 					{
 						for (size_t h = 1; h < height - 1; h++)
 						{
@@ -6103,6 +6368,10 @@ namespace glasssix
 								}
 							}
 						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
 					}
 
 					break;
@@ -6202,7 +6471,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src->order() == NHWC)
 				{
 					for (size_t h = 0; h < height - 3 * block_h + 1; h += stride_h)
 					{
@@ -6239,6 +6508,10 @@ namespace glasssix
 						}
 					}
 				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 			}
 
 
@@ -6274,7 +6547,7 @@ namespace glasssix
 				int dst_height = dst.height();
 				int dst_width = dst.width();
 
-				if (src.type() == NCHW)
+				if (src.order() == NCHW)
 				{
 					for (size_t c = 0; c < channels; c++)
 					{
@@ -6314,7 +6587,7 @@ namespace glasssix
 						}
 					}
 				}
-				else
+				else if (src.order() == NHWC)
 				{
 					for (size_t h = 0; h < height - 3 * block_h + 1; h += stride_h)
 					{
@@ -6350,6 +6623,10 @@ namespace glasssix
 							}
 						}
 					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
 				}
 			}
 
@@ -6392,7 +6669,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (dst->order() == NHWC)
 					{
 						for (size_t n = 0; n < num; n++)
 						{
@@ -6411,6 +6688,10 @@ namespace glasssix
 								}
 							}
 						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
 					}
 				}
 				else if (channel == 1)
@@ -6475,7 +6756,7 @@ namespace glasssix
 							}
 						}
 					}
-					else
+					else if (dst->order() == NHWC)
 					{
 						for (size_t n = 0; n < num; n++)
 						{
@@ -6494,6 +6775,10 @@ namespace glasssix
 								}
 							}
 						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
 					}
 				}
 				else
@@ -6535,27 +6820,30 @@ namespace glasssix
 				}
 				else
 				{
-					int top = std::max(0, -1 * rect->x);
-					int bottom = std::max(rect->y + rect->h - src->height(), 0);
-					int left = std::max(0, -1 * rect->y);
-					int right = std::max(rect->x + rect->w - src->width(), 0);
-
+					int top = std::max(int(0), int(-1 * rect->y));
+					int bottom = std::max(int(rect->y + rect->h - src->height()), int(0));
+					int left = std::max(int(0), int(-1 * rect->x));
+					int right = std::max(int(rect->x + rect->w - src->width()), int(0));
+					std::shared_ptr<tensor<Dtype>> temp;
 					if (src->order() == NCHW)
 					{
-						tensor<Dtype>* temp = new tensor<Dtype>(
+						temp.reset(new tensor<Dtype>(
 							std::vector<int>{src->num(), src->channels(), src->height() + top + bottom, src->width() + left + right},
-							src->device(), src->order());
+							src->device(), src->order()));
+					}
+					else if (src->order() == NHWC)
+					{
+						temp.reset(new tensor<Dtype>(
+							std::vector<int>{src->num(), src->height() + top + bottom, src->width() + left + right, src->channels()},
+							src->device(), src->order()));
 					}
 					else
 					{
-						tensor<Dtype>* temp = new tensor<Dtype>(
-							std::vector<int>{src->num(), src->height() + top + bottom, src->width() + left + right, src->channels()},
-							src->device(), src->order());
+						NOT_IMPLEMENTED;
 					}
 
 					make_border_cpu(src, temp, top, bottom, left, right, Border_Constant);
 					cut_border_cpu(temp, dst, rect->y + top, temp->height() - rect->y - rect->h - top, rect->x + left, temp->width() - rect->x - rect->w - left);
-					delete temp;
 				}
 			}
 
@@ -6576,22 +6864,26 @@ namespace glasssix
 				}
 				else
 				{
-					int top = std::max(0, -1 * rect->x);
+					int top = std::max(0, -1 * rect->y);
 					int bottom = std::max(rect->y + rect->h - src.height(), 0);
-					int left = std::max(0, -1 * rect->y);
+					int left = std::max(0, -1 * rect->x);
 					int right = std::max(rect->x + rect->w - src.width(), 0);
 
-					if (src.type() == NCHW)
+					if (src.order() == NCHW)
 					{
 						tensor<Dtype>* temp = new tensor<Dtype>(
 							std::vector<int>{src.num(), src.channels(), src.height() + top + bottom, src.width() + left + right},
 							src.device(), src.type());
 					}
-					else
+					else if (src.order() == NHWC)
 					{
 						tensor<Dtype>* temp = new tensor<Dtype>(
 							std::vector<int>{src.num(), src.height() + top + bottom, src.width() + left + right, src.channels()},
 							src.device(), src.type());
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
 					}
 
 					make_border_cpu(src, temp, top, bottom, left, right, Border_Constant);
@@ -6744,4 +7036,4 @@ namespace glasssix
 	}
 }
 
-#endif // !_TENSOROPERATION_HPP_
+#endif // !_TENSOR_OPERATION_CPU_HPP_
