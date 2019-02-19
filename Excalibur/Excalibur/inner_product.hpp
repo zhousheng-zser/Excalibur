@@ -3,6 +3,7 @@
 #define _INNER_PRODUCT_HPP_
 #include <glasssix\tensor.hpp>
 #include "math_functions.hpp"
+#include "im2col.hpp"
 
 namespace glasssix
 {
@@ -20,6 +21,7 @@ namespace glasssix
 			int N_;
 			int M_;
 			int device_;
+			orderType order_;
 		public:
 			inner_product(std::vector<int> input_shape_withpout_num, int num_output, bool bias_term, int device);
 

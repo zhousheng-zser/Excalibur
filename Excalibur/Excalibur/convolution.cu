@@ -51,6 +51,7 @@ namespace glasssix
 		void convolution::Forward_native_gpu(cublasHandle_t cublas_handle_,
 			const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
+			order_ = bottom->order();
 			if (group_>1)
 			{
 				forward_depthwise_native_gpu(bottom, top);
@@ -64,29 +65,15 @@ namespace glasssix
 			intput_shape_.clear();
 			intput_shape_ = bottom->data_shape();
 
-			int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
-			int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
-			top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
-			//
+			if (order_ == NCHW)
+			{
+				int output_dim_h_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
+				int output_dim_w_ = (bottom->data_shape()[3] + 2 * pad_ - kernelSize_) / stride_ + 1;
+				top.reset(new tensor<float>(std::vector<int>{num, output_Channel_, output_dim_h_, output_dim_w_}, device_));
+				//
 
-			float* top_data = (top)->mutable_gpu_data();
-			if (isfirst)
-			{
-				last_height = bottom->height();
-				last_width = bottom->width();
-				col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
-				gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
-				bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-				conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-				out_spatial_dim_ = output_dim_w_*output_dim_h_;
-				col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-				output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
-				math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
-				isfirst = false;
-			}
-			else
-			{
-				if (last_height != bottom->height() || last_width != bottom->width())
+				float* top_data = (top)->mutable_gpu_data();
+				if (isfirst)
 				{
 					last_height = bottom->height();
 					last_width = bottom->width();
@@ -98,20 +85,94 @@ namespace glasssix
 					col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
 					output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
 					math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+					isfirst = false;
 				}
-			}
-
-			int bottom_dim_ = bottom->count(1, 4);
-			int top_dim = top->count(1, 4);
-
-			for (int n = 0; n < num; n++)
-			{
-				forward_gpu_gemm(cublas_handle_, bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
-				if (bias_term_)
+				else
 				{
-					forward_gpu_bias(cublas_handle_, top_data + n * top_dim, bias);
+					if (last_height != bottom->height() || last_width != bottom->width())
+					{
+						last_height = bottom->height();
+						last_width = bottom->width();
+						col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+						gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
+						bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+						conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
+						out_spatial_dim_ = output_dim_w_*output_dim_h_;
+						col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+						output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+						math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+					}
+				}
+
+				int bottom_dim_ = bottom->count(1, 4);
+				int top_dim = top->count(1, 4);
+
+				for (int n = 0; n < num; n++)
+				{
+					forward_gpu_gemm(cublas_handle_, bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
+					if (bias_term_)
+					{
+						forward_gpu_bias(cublas_handle_, top_data + n * top_dim, bias);
+					}
 				}
 			}
+			else if (order_ == NHWC)
+			{
+				int output_dim_h_ = (bottom->data_shape()[1] + 2 * pad_ - kernelSize_) / stride_ + 1;
+				int output_dim_w_ = (bottom->data_shape()[2] + 2 * pad_ - kernelSize_) / stride_ + 1;
+				top.reset(new tensor<float>(std::vector<int>{num, output_dim_h_, output_dim_w_, output_Channel_}, device_));
+				//
+
+				float* top_data = (top)->mutable_gpu_data();
+				if (isfirst)
+				{
+					last_height = bottom->height();
+					last_width = bottom->width();
+					col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+					gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
+					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+					conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
+					out_spatial_dim_ = output_dim_w_*output_dim_h_;
+					col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+					output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+					math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+					isfirst = false;
+				}
+				else
+				{
+					if (last_height != bottom->height() || last_width != bottom->width())
+					{
+						last_height = bottom->height();
+						last_width = bottom->width();
+						col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
+						gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
+						bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
+						conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
+						out_spatial_dim_ = output_dim_w_*output_dim_h_;
+						col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+						output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+						math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+					}
+				}
+
+				int bottom_dim_ = bottom->count(1, 4);
+				int top_dim = top->count(1, 4);
+
+				for (int n = 0; n < num; n++)
+				{
+					forward_gpu_gemm(cublas_handle_, bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);
+					if (bias_term_)
+					{
+						forward_gpu_bias(cublas_handle_, top_data + n * top_dim, bias);
+					}
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+
+			
 		}
 
 		void convolution::forward_depthwise_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
@@ -144,6 +205,58 @@ namespace glasssix
 #ifdef USE_CUDNN
 		void convolution::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
+			order_ = bottom->order();
+			if (order_ == NCHW)
+			{
+				if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+				{
+					LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+				}
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+				CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+				CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				// set params descriptor
+				CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+					output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+				CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+					1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+				if (bias_term_)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+						1, output_Channel_ / group_, 1, 1));
+				}
+				current_size = 0;
+			}
+			else if (order_ == NHWC)
+			{
+				if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+				{
+					LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+				}
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+				CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+				CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				// set params descriptor
+				CUDNN_CHECK(cudnnSetFilter4dDescriptor(wdesc, CUDNN_DATA_FLOAT, CUDNN_TENSOR_NCHW,
+					output_Channel_ / group_, input_Channel_ / group_, kernelSize_, kernelSize_));
+				CUDNN_CHECK(cudnnSetConvolution2dDescriptor(conv_desc, pad_, pad_, stride_, stride_,
+					1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
+				if (bias_term_)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
+						1, output_Channel_ / group_, 1, 1));
+				}
+				current_size = 0;
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+
 			if (group_>1)
 			{
 				forward_depthwise_native_gpu(bottom, top);

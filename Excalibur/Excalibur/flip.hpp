@@ -14,6 +14,7 @@ namespace glasssix
 			int device_;
 			bool flip_height_;
 			bool flip_width_;
+			orderType order_;
 		public:
 			flip(bool flip_height, bool flip_width, int device);
 			~flip();

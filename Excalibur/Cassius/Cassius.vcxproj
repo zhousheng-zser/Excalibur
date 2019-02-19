@@ -42,7 +42,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
+    <UseIntelMKL>Parallel</UseIntelMKL>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -51,7 +51,7 @@
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
+    <UseIntelMKL>Parallel</UseIntelMKL>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -93,10 +93,11 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_NHWC;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Excalibur.lib;$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Excalibur.lib;$(CUDA_PATH)\lib\x64\*.lib;$(OmpLibDir)\*.lib;$(MKLLibDir)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OmpLibDir);$(MKLLibDir);%(AdditionalLibraryDirectories);$(VcpkgRoot)debug\lib;$(VcpkgRoot)debug\lib\manual-link</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -120,12 +121,13 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_NHWC;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>Excalibur.lib;$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Excalibur.lib;$(CUDA_PATH)\lib\x64\*.lib;$(OmpLibDir)\*.lib;$(MKLLibDir)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(OmpLibDir);$(MKLLibDir);%(AdditionalLibraryDirectories);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

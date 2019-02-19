@@ -6,12 +6,14 @@
 #include "device_launch_parameters.h"
 #include "tensor_utils.hpp"
 #include <glasssix\tensor.hpp>
+#include "math_functions.hpp"
 #include <iostream>
 #ifdef USE_OPENCV
 #include <opencv2\opencv.hpp>
 #endif
 #include <glasssix\timer.hpp>
 #include "tensor_operation_gpu.hpp"
+#include <algorithm>
 
 #define PI 3.1415926
 
@@ -489,6 +491,7 @@ namespace glasssix
 			int totalID = (blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int rowID = totalID / dst_width;
 			int colID = totalID % dst_width;
+			unsigned maxIndex = src_height * src_width * channels - 1;
 			float beta = 0.5f;
 
 			float width_ratio = (float)src_width / dst_width;
@@ -519,10 +522,15 @@ namespace glasssix
 					}
 					else if (type == Bilinear)
 					{
-						Dtype A = src_data[src_index];
-						Dtype B = src_data[src_index + 1];
-						Dtype C = src_data[src_index + src_width];
-						Dtype D = src_data[src_index + src_width + 1];
+						unsigned indexA = min(unsigned(src_index), maxIndex);
+						unsigned indexB = min(unsigned(src_index + 1), maxIndex);
+						unsigned indexC = min(unsigned(src_index + src_width), maxIndex);
+						unsigned indexD = min(unsigned(src_index + src_width + 1), maxIndex);
+						Dtype A = src_data[indexA];
+						Dtype B = src_data[indexB];
+						Dtype C = src_data[indexC];
+						Dtype D = src_data[indexD];
+
 						dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 							static_cast<float>(B) * xdiff * (1 - ydiff) +
 							static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -543,16 +551,25 @@ namespace glasssix
 					}
 					else if (type == Bilinear)
 					{
-						Dtype A = src_data[src_index];
-						Dtype B = src_data[src_index + channels];
-						Dtype C = src_data[src_index + src_width * channels];
-						Dtype D = src_data[src_index + src_width * channels + channels];
+						unsigned indexA = min(unsigned(src_index), maxIndex);
+						unsigned indexB = min(unsigned(src_index + channels), maxIndex);
+						unsigned indexC = min(unsigned(src_index + src_width * channels), maxIndex);
+						unsigned indexD = min(unsigned(src_index + (src_width + 1) * channels), maxIndex);
+						Dtype A = src_data[indexA];
+						Dtype B = src_data[indexB];
+						Dtype C = src_data[indexC];
+						Dtype D = src_data[indexD];
+
 						dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 							static_cast<float>(B) * xdiff * (1 - ydiff) +
 							static_cast<float>(C) * ydiff * (1 - xdiff) +
 							static_cast<float>(D) * xdiff * ydiff);
 					}
 				}
+			}
+			else
+			{
+				return;
 			}
 		}
 
@@ -592,9 +609,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -643,9 +664,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -689,6 +714,7 @@ namespace glasssix
 			int totalID = (blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int rowID = totalID / dst_width;
 			int colID = totalID % dst_width;
+			unsigned maxIndex = height * width * channels - 1;
 
 			float xf = cosa * colID + sina * rowID + varX;
 			float yf = -sina * colID + cosa * rowID + varY;
@@ -716,10 +742,15 @@ namespace glasssix
 					}
 					else
 					{
-						Dtype A = src_data[src_index];
-						Dtype B = src_data[src_index + 1];
-						Dtype C = src_data[src_index + width];
-						Dtype D = src_data[src_index + width + 1];
+						unsigned indexA = min(unsigned(src_index), maxIndex);
+						unsigned indexB = min(unsigned(src_index + 1), maxIndex);
+						unsigned indexC = min(unsigned(src_index + width), maxIndex);
+						unsigned indexD = min(unsigned(src_index + width + 1), maxIndex);
+						Dtype A = src_data[indexA];
+						Dtype B = src_data[indexB];
+						Dtype C = src_data[indexC];
+						Dtype D = src_data[indexD];
+
 						dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 							static_cast<float>(B) * xdiff * (1 - ydiff) +
 							static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -743,16 +774,25 @@ namespace glasssix
 					}
 					else
 					{
-						Dtype A = src_data[src_pos2];
-						Dtype B = src_data[src_pos2 + channels];
-						Dtype C = src_data[src_pos2 + width * channels];
-						Dtype D = src_data[src_pos2 + width * channels + channels];
+						unsigned indexA = min(unsigned(src_pos2), maxIndex);
+						unsigned indexB = min(unsigned(src_pos2 + channels), maxIndex);
+						unsigned indexC = min(unsigned(src_pos2 + width * channels), maxIndex);
+						unsigned indexD = min(unsigned(src_pos2 + (width + 1) * channels), maxIndex);
+						Dtype A = src_data[indexA];
+						Dtype B = src_data[indexB];
+						Dtype C = src_data[indexC];
+						Dtype D = src_data[indexD];
+
 						dst_data[dst_pos2] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 							static_cast<float>(B) * xdiff * (1 - ydiff) +
 							static_cast<float>(C) * ydiff * (1 - xdiff) +
 							static_cast<float>(D) * xdiff * ydiff);
 					}
 				}
+			}
+			else
+			{
+				return;
 			}
 		}
 
@@ -797,9 +837,13 @@ namespace glasssix
 			{
 				dst.reset(new excalibur::tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new excalibur::tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -853,9 +897,13 @@ namespace glasssix
 			{
 				dst = excalibur::tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = excalibur::tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -892,6 +940,7 @@ namespace glasssix
 			int totalID = (blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int rowID = totalID / width;
 			int colID = totalID % width;
+			unsigned maxIndex = height * width * channels - 1;
 
 			double xf = M_data[0] * colID + M_data[1] * rowID + M_data[2];
 			double yf = M_data[3] * colID + M_data[4] * rowID + M_data[5];
@@ -920,10 +969,15 @@ namespace glasssix
 						}
 						else if (type == excalibur::Bilinear)
 						{
-							Dtype A = src_data[src_index];
-							Dtype B = src_data[src_index + 1];
-							Dtype C = src_data[src_index + width];
-							Dtype D = src_data[src_index + width + 1];
+							unsigned indexA = min(unsigned(src_index), maxIndex);
+							unsigned indexB = min(unsigned(src_index + 1), maxIndex);
+							unsigned indexC = min(unsigned(src_index + width), maxIndex);
+							unsigned indexD = min(unsigned(src_index + width + 1), maxIndex);
+							Dtype A = src_data[indexA];
+							Dtype B = src_data[indexB];
+							Dtype C = src_data[indexC];
+							Dtype D = src_data[indexD];
+
 							dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 								static_cast<float>(B) * xdiff * (1 - ydiff) +
 								static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -951,10 +1005,15 @@ namespace glasssix
 						}
 						else if (type == excalibur::Bilinear)
 						{
-							Dtype A = src_data[src_index];
-							Dtype B = src_data[src_index + channels];
-							Dtype C = src_data[src_index + width * channels];
-							Dtype D = src_data[src_index + width * channels + channels];
+							unsigned indexA = min(unsigned(src_index), maxIndex);
+							unsigned indexB = min(unsigned(src_index + channels), maxIndex);
+							unsigned indexC = min(unsigned(src_index + width * channels), maxIndex);
+							unsigned indexD = min(unsigned(src_index + (width + 1) * channels), maxIndex);
+							Dtype A = src_data[indexA];
+							Dtype B = src_data[indexB];
+							Dtype C = src_data[indexC];
+							Dtype D = src_data[indexD];
+
 							dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 								static_cast<float>(B) * xdiff * (1 - ydiff) +
 								static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -962,6 +1021,10 @@ namespace glasssix
 						}
 					}
 				}
+			}
+			else
+			{
+				return;
 			}
 		}
 
@@ -1000,32 +1063,49 @@ namespace glasssix
 
 			double a = scale * cosa;
 			double b = scale * sina;
-			double M_data[9];
-			M_data[0] = a;
-			M_data[1] = b;
-			M_data[2] = (1 - a) * (double)center.x - b * (double)center.y;
-			M_data[3] = -1 * b;
-			M_data[4] = a;
-			M_data[5] = b * (double)center.x + (1 - a) * (double)center.y;
-			M_data[6] = 0;
-			M_data[7] = 0;
-			M_data[8] = 1;
-#ifdef USE_OPENCV
-			cv::Mat M(3, 3, CV_64F, M_data);
-			cv::Mat reverse_M(3, 3, CV_64F);
-			cv::invert(M, reverse_M);
+
+			std::vector<std::vector<double> > M;
+			std::vector<std::vector<double> > reverse_M;
+			M.resize(3);
+			for (size_t i = 0; i < M.size(); i++)
+			{
+				M[i].resize(3);
+			}
+
+			M[0][0] = a;
+			M[0][1] = b;
+			M[0][2] = (1 - a) * (double)center.x - b * (double)center.y;
+			M[1][0] = -1 * b;
+			M[1][1] = a;
+			M[1][2] = b * (double)center.x + (1 - a) * (double)center.y;
+			M[2][0] = 0;
+			M[2][1] = 0;
+			M[2][2] = 1;
+
+			bool isInverted = math_functions::GetMatrixInverse(M, reverse_M);
+			if (!isInverted)
+			{
+				LOG(FATAL) << "cannot rotate!!!";
+				return;
+			}
 
 			double *reverse_M_data = nullptr;
 			cudaMalloc(&reverse_M_data, 9 * sizeof(double));
-			cudaMemcpy(reverse_M_data, reverse_M.data, 9 * sizeof(double), cudaMemcpyHostToDevice);
+			cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault);
 
 			if (src->order() == NCHW)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -1036,7 +1116,7 @@ namespace glasssix
 
 			//按照设置的blockSize和gridSize启动内核函数
 			kernel_rotate_with_points << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, reverse_M_data, fill, type, src->order());
-#endif
+
 		}
 
 
@@ -1074,32 +1154,49 @@ namespace glasssix
 
 			double a = scale * cosa;
 			double b = scale * sina;
-			double M_data[9];
-			M_data[0] = a;
-			M_data[1] = b;
-			M_data[2] = (1 - a) * (double)center.x - b * (double)center.y;
-			M_data[3] = -1 * b;
-			M_data[4] = a;
-			M_data[5] = b * (double)center.x + (1 - a) * (double)center.y;
-			M_data[6] = 0;
-			M_data[7] = 0;
-			M_data[8] = 1;
-#ifdef USE_OPENCV
-			cv::Mat M(3, 3, CV_64F, M_data);
-			cv::Mat reverse_M(3, 3, CV_64F);
-			cv::invert(M, reverse_M);
+
+			std::vector<std::vector<double> > M;
+			std::vector<std::vector<double> > reverse_M;
+			M.resize(3);
+			for (size_t i = 0; i < M.size(); i++)
+			{
+				M[i].resize(3);
+			}
+
+			M[0][0] = a;
+			M[0][1] = b;
+			M[0][2] = (1 - a) * (double)center.x - b * (double)center.y;
+			M[1][0] = -1 * b;
+			M[1][1] = a;
+			M[1][2] = b * (double)center.x + (1 - a) * (double)center.y;
+			M[2][0] = 0;
+			M[2][1] = 0;
+			M[2][2] = 1;
+
+			bool isInverted = math_functions::GetMatrixInverse(M, reverse_M);
+			if (!isInverted)
+			{
+				LOG(FATAL) << "cannot rotate!!!";
+				return;
+			}
 
 			double *reverse_M_data = nullptr;
 			cudaMalloc(&reverse_M_data, 9 * sizeof(double));
-			cudaMemcpy(reverse_M_data, reverse_M.data, 9 * sizeof(double), cudaMemcpyHostToDevice);
+			cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault);
 
 			if (src.order() == NCHW)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -1110,7 +1207,7 @@ namespace glasssix
 
 			//按照设置的blockSize和gridSize启动内核函数
 			kernel_rotate_with_points << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, reverse_M_data, fill, type, src.order());
-#endif
+
 		}
 
 
@@ -1220,6 +1317,10 @@ namespace glasssix
 					}
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -1242,9 +1343,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -1277,9 +1382,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -1330,6 +1439,10 @@ namespace glasssix
 					static_cast<float>(src_data[3 * index + 1]) * 0.587f +
 					static_cast<float>(src_data[3 * index + 2]) * 0.299f);
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -1357,9 +1470,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -1397,9 +1514,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -1455,6 +1576,10 @@ namespace glasssix
 					dst_data[dst_index] = src_data[src_index];
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -1477,9 +1602,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, width, height}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, width, height, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -1512,9 +1641,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, width, height}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, width, height, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -1579,6 +1712,10 @@ namespace glasssix
 					dst_data[dst_index] = src_data[src_index];
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -1618,9 +1755,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -1670,9 +1811,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -1784,9 +1929,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -1827,9 +1976,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -1841,9 +1994,6 @@ namespace glasssix
 			//按照设置的blockSize和gridSize启动内核函数
 			kernel_threshold<Dtype> << <grid_size, block_size >> > (src_data, dst_data, height, width, thresh, maxval, type);
 		}
-
-
-
 
 
 
@@ -1861,14 +2011,15 @@ namespace glasssix
 		/// <param name="order">tensor类型：NHWC(tensor按NHWC排列)、NCHW(tensor按NCHW排列)</param>
 		template<typename Dtype>
 		__global__
-			void kernel_warp_affine(const Dtype* src_data, Dtype* dst_data, int channels, int height, int width, double* M_data, int fill, excalibur::interpolationType type, orderType order)
+			void kernel_warp_affine(const Dtype* src_data, Dtype* dst_data, int channels, int height, int width, float* X, int fill, interpolationType type, orderType order)
 		{
 			int totalID = (blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int rowID = totalID / width;
 			int colID = totalID % width;
+			unsigned maxIndex = height * width * channels - 1;
 
-			double xf = M_data[0] * colID + M_data[1] * rowID + M_data[2];
-			double yf = M_data[3] * colID + M_data[4] * rowID + M_data[5];
+			double xf = X[0] * colID + X[1] * rowID + X[2];
+			double yf = X[3] * colID + X[4] * rowID + X[5];
 			int x = (int)xf;
 			int y = (int)yf;
 			float xdiff = xf - x;
@@ -1888,16 +2039,21 @@ namespace glasssix
 					}
 					else
 					{
-						if (type == excalibur::Nearest)
+						if (type == Nearest)
 						{
 							dst_data[dst_index] = src_data[src_index];
 						}
-						else if (type == excalibur::Bilinear)
+						else if (type == Bilinear)
 						{
-							Dtype A = src_data[src_index];
-							Dtype B = src_data[src_index + 1];
-							Dtype C = src_data[src_index + width];
-							Dtype D = src_data[src_index + width + 1];
+							unsigned indexA = min(unsigned(src_index), maxIndex);
+							unsigned indexB = min(unsigned(src_index + 1), maxIndex);
+							unsigned indexC = min(unsigned(src_index + width), maxIndex);
+							unsigned indexD = min(unsigned(src_index + width + 1), maxIndex);
+							Dtype A = src_data[indexA];
+							Dtype B = src_data[indexB];
+							Dtype C = src_data[indexC];
+							Dtype D = src_data[indexD];
+
 							dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 								static_cast<float>(B) * xdiff * (1 - ydiff) +
 								static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1919,16 +2075,21 @@ namespace glasssix
 					}
 					else
 					{
-						if (type == excalibur::Nearest)
+						if (type == Nearest)
 						{
 							dst_data[dst_index] = src_data[src_index];
 						}
-						else if (type == excalibur::Bilinear)
+						else if (type == Bilinear)
 						{
-							Dtype A = src_data[src_index];
-							Dtype B = src_data[src_index + channels];
-							Dtype C = src_data[src_index + width * channels];
-							Dtype D = src_data[src_index + width * channels + channels];
+							unsigned indexA = min(unsigned(src_index), maxIndex);
+							unsigned indexB = min(unsigned(src_index + channels), maxIndex);
+							unsigned indexC = min(unsigned(src_index + width * channels), maxIndex);
+							unsigned indexD = min(unsigned(src_index + (width + 1) * channels), maxIndex);
+							Dtype A = src_data[indexA];
+							Dtype B = src_data[indexB];
+							Dtype C = src_data[indexC];
+							Dtype D = src_data[indexD];
+
 							dst_data[dst_index] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
 								static_cast<float>(B) * xdiff * (1 - ydiff) +
 								static_cast<float>(C) * ydiff * (1 - xdiff) +
@@ -1936,6 +2097,10 @@ namespace glasssix
 						}
 					}
 				}
+			}
+			else
+			{
+				return;
 			}
 		}
 
@@ -1952,7 +2117,7 @@ namespace glasssix
 		/// <param name="type">插值类型：Nearest（最近邻插值）、Bilinear（双线性插值，默认）</param>
 		template<typename Dtype, typename Ptype>
 		void tensor_operation_gpu::warp_affine_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-			const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill = 0, excalibur::interpolationType type = Bilinear)
+			const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill = 0, interpolationType type = Bilinear)
 		{
 			if (src_point.size() != 3 || dst_point.size() != 3)
 			{
@@ -1960,40 +2125,54 @@ namespace glasssix
 				return;
 			}
 
-			double a[6 * 6], b[6];
-			for (int i = 0; i < 3; i++)
-			{
-				int j = i * 12;
-				int k = i * 12 + 6;
-				a[j] = a[k + 3] = (double)dst_point[i].x;
-				a[j + 1] = a[k + 4] = (double)dst_point[i].y;
-				a[j + 2] = a[k + 5] = 1;
-				a[j + 3] = a[j + 4] = a[j + 5] = 0;
-				a[k] = a[k + 1] = a[k + 2] = 0;
-				b[i * 2] = (double)src_point[i].x;
-				b[i * 2 + 1] = (double)src_point[i].y;
-			}
-#ifdef USE_OPENCV
-			cv::Mat A(6, 6, CV_64F, a), B(6, 1, CV_64F, b);
-			cv::Mat M(2, 3, CV_64F), X(6, 1, CV_64F, M.ptr());
-			cv::solve(A, B, X);
-
-			double *M_data = nullptr;
-			cudaMalloc(&M_data, 6 * sizeof(double));
-			cudaMemcpy(M_data, M.data, 6 * sizeof(double), cudaMemcpyHostToDevice);
-
 			CHECK_EQ(src->num(), 1);
 			int channels = src->channels();
 			int height = src->height();
 			int width = src->width();
 
+			//AX=B，先扩充至6×6和6×1
+			std::vector<std::vector<float> > A;
+			std::vector<float> B, X;
+			A.resize(6);
+			for (size_t i = 0; i < 6; i = i + 2)
+			{
+				A[i].push_back(float(dst_point[i / 2].x));
+				A[i].push_back(float(dst_point[i / 2].y));
+				A[i].push_back(1.0f);
+				A[i].push_back(0.0f);
+				A[i].push_back(0.0f);
+				A[i].push_back(0.0f);
+
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(float(dst_point[i / 2].x));
+				A[i + 1].push_back(float(dst_point[i / 2].y));
+				A[i + 1].push_back(1.0f);
+			}
+
+			for (size_t i = 0; i < 3; i++)
+			{
+				B.push_back(float(src_point[i].x));
+				B.push_back(float(src_point[i].y));
+			}
+
+			X = math_functions::gauss_all(A, B);
+			float *X_data = nullptr;
+			cudaMalloc(&X_data, 6 * sizeof(float));
+			cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault);
+
 			if (src->order() == NCHW)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -2003,10 +2182,7 @@ namespace glasssix
 			const dim3 grid_size(width, height, 1);
 
 			//按照设置的blockSize和gridSize启动内核函数
-			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, M_data, fill, type, src->order());
-#else
-			// TODO:......
-#endif
+			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, X_data, fill, type, src->order());
 		}
 
 
@@ -2030,42 +2206,54 @@ namespace glasssix
 				return;
 			}
 
-			double a[6 * 6], b[6];
-			for (int i = 0; i < 3; i++)
-			{
-				int j = i * 12;
-				int k = i * 12 + 6;
-				a[j] = a[k + 3] = (double)dst_point[i].x;
-				a[j + 1] = a[k + 4] = (double)dst_point[i].y;
-				a[j + 2] = a[k + 5] = 1;
-				a[j + 3] = a[j + 4] = a[j + 5] = 0;
-				a[k] = a[k + 1] = a[k + 2] = 0;
-				b[i * 2] = (double)src_point[i].x;
-				b[i * 2 + 1] = (double)src_point[i].y;
-			}
-#ifdef USE_OPENCV
-
-			cv::Mat A(6, 6, CV_64F, a), B(6, 1, CV_64F, b);
-			cv::Mat M(2, 3, CV_64F), X(6, 1, CV_64F, M.ptr());
-			cv::solve(A, B, X);
-
-
-			double *M_data = nullptr;
-			cudaMalloc(&M_data, 6 * sizeof(double));
-			cudaMemcpy(M_data, M.data, 6 * sizeof(double), cudaMemcpyHostToDevice);
-
 			CHECK_EQ(src.num(), 1);
 			int channels = src.channels();
 			int height = src.height();
 			int width = src.width();
 
+			//AX=B，先扩充至6×6和6×1
+			std::vector<std::vector<float> > A;
+			std::vector<float> B, X;
+			A.resize(6);
+			for (size_t i = 0; i < 6; i = i + 2)
+			{
+				A[i].push_back(float(dst_point[i / 2].x));
+				A[i].push_back(float(dst_point[i / 2].y));
+				A[i].push_back(1.0f);
+				A[i].push_back(0.0f);
+				A[i].push_back(0.0f);
+				A[i].push_back(0.0f);
+
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(0.0f);
+				A[i + 1].push_back(float(dst_point[i / 2].x));
+				A[i + 1].push_back(float(dst_point[i / 2].y));
+				A[i + 1].push_back(1.0f);
+			}
+
+			for (size_t i = 0; i < 3; i++)
+			{
+				B.push_back(float(src_point[i].x));
+				B.push_back(float(src_point[i].y));
+			}
+
+			X = math_functions::gauss_all(A, B);
+			float *X_data = nullptr;
+			cudaMalloc(&X_data, 6 * sizeof(float));
+			cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault);
+
 			if (src.order() == NCHW)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -2075,10 +2263,7 @@ namespace glasssix
 			const dim3 grid_size(width, height, 1);
 
 			//按照设置的blockSize和gridSize启动内核函数
-			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, M_data, fill, type, src.order());
-#else
-			// TODO!
-#endif // USE_OPENCV
+			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, X_data, fill, type, src.order());
 		}
 
 
@@ -2161,6 +2346,10 @@ namespace glasssix
 					dst_data[index] = (Dtype)sum;
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -2228,9 +2417,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src->gpu_data();
@@ -2308,9 +2501,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			const Dtype* src_data = src.gpu_data();
@@ -2433,6 +2630,10 @@ namespace glasssix
 					dst_data[pos] = (Dtype)total;
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -2462,9 +2663,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -2504,9 +2709,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -2674,6 +2883,10 @@ namespace glasssix
 					}
 				}
 			}
+			else
+			{
+				return;
+			}
 		}
 
 
@@ -2710,9 +2923,13 @@ namespace glasssix
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 			}
-			else
+			else if (src->order() == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst->mutable_gpu_data();
@@ -2759,9 +2976,13 @@ namespace glasssix
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 			}
-			else
+			else if (src.order() == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 
 			Dtype* dst_data = dst.mutable_gpu_data();
@@ -2874,14 +3095,18 @@ namespace glasssix
 							dst_data[index] = Dtype((dst_data[index] - means[ch]) * var);
 						}
 					}
-					else
+					else if (order == NHWC)
 					{
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int index = num_offset + (rowID * width + colID) * channels + ch;
 							dst_data[index] = Dtype((dst_data[index] - means[ch]) * var);
 						}
-					}
+			        }
+			        else
+			        {
+				        return;
+			        }
 				}
 			}
 
@@ -2933,6 +3158,766 @@ namespace glasssix
 			//按照设置的blockSize和gridSize启动内核函数
 			kernel_preprocess_tensors << <grid_size, block_size >> > (dst_data, num, channels, height, width, dst->order());
 		}
+
+
+
+		/// <summary>
+		/// 边界填充
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">填充后的tensor</param>
+		/// <param name="top">图像上方的填充高度</param>
+		/// <param name="bottom">图像下方的填充高度</param>
+		/// <param name="left">图像左侧的填充宽度</param>
+		/// <param name="right">图像右侧的填充宽度</param>
+		/// <param name="type">边界类型：Border_Constant（用第8个参数fill设定的常量值进行填充，默认值）、Border_Replicate（复制相邻像素点的值进行填充）</param>
+		/// <param name="fill">边界类型为Border_Constant时有效，默认为0</param>
+		template <typename Dtype>
+		void tensor_operation_gpu::make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0)
+		{
+			CHECK_EQ(src->num(), 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			int src_offset = height * width;
+
+			int dst_height = height + top + bottom;
+			int dst_width = width + left + right;
+			int dst_offset = dst_height * dst_width;
+
+			if (top < 0 || bottom < 0 || left < 0 || right < 0)
+			{
+				LOG(ERROR) << "top, bottom, left, right: should all be non-negtive.";
+				return;
+			}
+
+			if (dst_height == height && dst_width == width)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+
+			if (src->order() == NCHW)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_gpu_data();
+				const Dtype* src_data = src->gpu_data();
+
+				if (type == Border_Constant)
+				{
+					for (int ch = 0; ch < channels; ++ch)
+					{
+						int src_channel_offset = ch * src_offset;
+						int dst_channel_offset = ch * dst_offset;
+
+						//top
+						for (int row = 0; row < top; row++)
+						{
+							int dst_index = dst_channel_offset + row * dst_width;
+							for (int col = 0; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = (Dtype)fill;
+							}
+						}
+
+						//center
+						for (int row = top; row < top + height; ++row)
+						{
+							int src_index = src_channel_offset + (row - top) * width;
+							int dst_index = dst_channel_offset + row * dst_width;
+
+							for (int col = 0; col < left; col++)
+							{
+								dst_data[dst_index + col] = (Dtype)fill;
+							}
+
+							cudaMemcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+
+							for (int col = left + width; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = (Dtype)fill;
+							}
+						}
+
+						//bottom
+						for (int row = top + height; row < dst_height; row++)
+						{
+							int dst_index = dst_channel_offset + row * dst_width;
+							for (int col = 0; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = (Dtype)fill;
+							}
+						}
+					}
+				}
+				else if (type == Border_Replicate)
+				{
+					for (int ch = 0; ch < channels; ++ch)
+					{
+						int src_channel_offset = ch * src_offset;
+						int dst_channel_offset = ch * dst_offset;
+
+						//top
+						for (int row = 0; row < top; ++row)
+						{
+							int dst_index = dst_channel_offset + row * dst_width;
+
+							//left
+							for (int col = 0; col < left; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_channel_offset];
+							}
+
+							//center
+							cudaMemcpy(dst_data + dst_index + left, src_data + src_channel_offset, width * sizeof(Dtype), cudaMemcpyDefault);
+
+							//right
+							for (int col = left + width; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_channel_offset + width - 1];
+							}
+						}
+
+						//center
+						for (int row = top; row < top + height; ++row)
+						{
+							int src_index = src_channel_offset + (row - top) * width;
+							int dst_index = dst_channel_offset + row * dst_width;
+
+							//left
+							for (int col = 0; col < left; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_index];
+							}
+
+							//center
+							cudaMemcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+
+							//right
+							for (int col = left + width; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_index + width - 1];
+							}
+						}
+
+						//bottom
+						for (int row = top + height; row < dst_height; ++row)
+						{
+							int src_index = src_channel_offset + (height - 1) * width;
+							int dst_index = dst_channel_offset + row * dst_width;
+
+							//left
+							for (int col = 0; col < left; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_index];
+							}
+
+							//center
+							cudaMemcpy(dst_data + dst_index + left, src_data + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+
+							//right
+							for (int col = left + width; col < dst_width; col++)
+							{
+								dst_data[dst_index + col] = src_data[src_index + width - 1];
+							}
+						}
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support border type.";
+					return;
+				}
+			}
+			else if (src->order() == NHWC)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_gpu_data();
+				const Dtype* src_data = src->gpu_data();
+
+				if (type == Border_Constant)
+				{
+					//top
+					for (int row = 0; row < top; row++)
+					{
+						int dst_index1 = row * dst_width * channels;
+						for (int col = 0; col < dst_width; col++)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ch++)
+							{
+								dst_data[dst_index2 + ch] = (Dtype)fill;
+							}
+						}
+					}
+
+					//center
+					for (int row = top; row < top + height; ++row)
+					{
+						int src_index = (row - top) * width * channels;
+
+						//left
+						int dst_index1 = row * dst_width * channels;
+						for (int col = 0; col < left; col++)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ch++)
+							{
+								dst_data[dst_index2 + ch] = (Dtype)fill;
+							}
+						}
+
+						//center
+						cudaMemcpy(dst_data + dst_index1 + left * channels, src_data + src_index, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+
+						//right
+						for (int col = left + width; col < dst_width; col++)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ch++)
+							{
+								dst_data[dst_index2 + ch] = (Dtype)fill;
+							}
+						}
+					}
+
+					//bottom
+					for (int row = top + height; row < dst_height; row++)
+					{
+						int dst_index1 = row * dst_width * channels;
+						for (int col = 0; col < dst_width; col++)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ch++)
+							{
+								dst_data[dst_index2 + ch] = (Dtype)fill;
+							}
+						}
+					}
+				}
+				else if (type == Border_Replicate)
+				{
+					//top
+					for (int row = 0; row < top; ++row)
+					{
+						int dst_index1 = row * dst_width * channels;
+
+						//left
+						for (int col = 0; col < left; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[ch];
+							}
+						}
+
+						//center
+						cudaMemcpy(dst_data + dst_index1 + left * channels, src_data, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+
+						//right
+						for (int col = left + width; col < dst_width; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							int src_index = (width - 1) * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[src_index + ch];
+							}
+						}
+					}
+
+
+					//center
+					for (int row = top; row < top + height; ++row)
+					{
+						int src_index1 = (row - top) * width * channels;
+						int dst_index1 = row * dst_width * channels;
+
+						//left
+						for (int col = 0; col < left; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[src_index1 + ch];
+							}
+						}
+
+						//center
+						cudaMemcpy(dst_data + dst_index1 + left * channels, src_data + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+
+						//right
+						int src_index2 = src_index1 + (width - 1) * channels;
+						for (int col = left + width; col < dst_width; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[src_index2 + ch];
+							}
+						}
+					}
+
+
+					//bottom
+					for (int row = top + height; row < dst_height; ++row)
+					{
+						int dst_index1 = row * dst_width * channels;
+						int src_index1 = (height - 1) * width * channels;
+
+						//left
+						for (int col = 0; col < left; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[src_index1 + ch];
+							}
+						}
+
+						//center
+						cudaMemcpy(dst_data + dst_index1 + left * channels, src_data + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+
+						//right
+						int src_index2 = src_index1 + (width - 1) * channels;
+						for (int col = left + width; col < dst_width; ++col)
+						{
+							int dst_index2 = dst_index1 + col * channels;
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								dst_data[dst_index2 + ch] = src_data[src_index2 + ch];
+							}
+						}
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support border type.";
+					return;
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+		}
+
+
+
+		/// <summary>
+		/// 边界裁剪
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">裁剪后的tensor</param>
+		/// <param name="top">图像上方的裁剪高度</param>
+		/// <param name="bottom">图像下方的裁剪高度</param>
+		/// <param name="left">图像左侧的裁剪宽度</param>
+		/// <param name="right">图像右侧的裁剪宽度</param>
+		template <typename Dtype>
+		void tensor_operation_gpu::cut_border_gpu(const std::shared_ptr<tensor<Dtype>> &src,
+			std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right)
+		{
+			if (top < 0 || bottom < 0 || left < 0 || right < 0)
+			{
+				LOG(ERROR) << "top, bottom, left, right: should all be non-negtive.";
+				return;
+			}
+
+			CHECK_EQ(src->num(), 1);
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+			int src_offset = height * width;
+
+			int dst_height = height - top - bottom;
+			int dst_width = width - left - right;
+			int dst_offset = dst_height * dst_width;
+
+			if (dst_height == height && dst_width == width)
+			{
+				LOG(WARNING) << "Just copy from the source.";
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+
+			if (dst_height <= 0 || dst_width <= 0)
+			{
+				LOG(ERROR) << "Illegal input size.";
+				return;
+			}
+
+			if (src->order() == NCHW)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, dst_height, dst_width}, src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_gpu_data();
+				const Dtype* src_data = src->gpu_data();
+
+				for (int ch = 0; ch < channels; ++ch)
+				{
+					int src_channel_offset = ch * src_offset;
+					int dst_channel_offset = ch * dst_offset;
+
+					for (int row = 0; row < dst_height; ++row)
+					{
+						int src_index = src_channel_offset + (row + top) * width + left;
+						int dst_index = dst_channel_offset + row * dst_width;
+						cudaMemcpy(dst_data + dst_index, src_data + src_index, dst_width * sizeof(Dtype), cudaMemcpyDefault);
+					}
+				}
+			}
+			else if (src->order() == NHWC)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, dst_height, dst_width, channels}, src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_gpu_data();
+				const Dtype* src_data = src->gpu_data();
+
+				for (int row = 0; row < dst_height; ++row)
+				{
+					int src_index = ((row + top) * width + left) * channels;
+					int dst_index = row * dst_width * channels;
+					cudaMemcpy(dst_data + dst_index, src_data + src_index, dst_width * channels * sizeof(Dtype), cudaMemcpyDefault);
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+		}
+
+
+
+		/// <summary>
+		/// 根据指定的矩形裁剪图像（类似于ROI），如果矩形超出图像边界，则用0填充对应像素值
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">裁剪后的tensor，包含了rect范围内的图像数据</param>
+		/// <param name="rect">指定的矩形</param>
+		template <typename Dtype, typename Rtype>
+		void tensor_operation_gpu::safty_cut_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, rectangle<Rtype>* rect)
+		{
+			if (rect->x >= 0 && rect->y >= 0 && (rect->x + rect->w <= src->width()) && (rect->y + rect->h <= src->height()))
+			{
+				cut_border_gpu(src, dst, rect->y, (src->height() - rect->y - rect->h), rect->x, (src->width() - rect->x - rect->w));
+			}
+			else
+			{
+				int top = std::max(int(0), int(-1 * rect->y));
+				int bottom = std::max(int(rect->y + rect->h - src->height()), int(0));
+				int left = std::max(int(0), int(-1 * rect->x));
+				int right = std::max(int(rect->x + rect->w - src->width()), int(0));
+				std::shared_ptr<tensor<Dtype>> temp;
+				if (src->order() == NCHW)
+				{
+					temp.reset(new tensor<Dtype>(
+						std::vector<int>{src->num(), src->channels(), src->height() + top + bottom, src->width() + left + right},
+						src->device(), src->order()));
+				}
+				else if (src->order() == NHWC)
+				{
+					temp.reset(new tensor<Dtype>(
+						std::vector<int>{src->num(), src->height() + top + bottom, src->width() + left + right, src->channels()},
+						src->device(), src->order()));
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+
+				make_border_gpu(src, temp, top, bottom, left, right, Border_Constant);
+				cut_border_gpu(temp, dst, rect->y + top, temp->height() - rect->y - rect->h - top, rect->x + left, temp->width() - rect->x - rect->w - left);
+			}
+		}
+
+
+
+		/// <summary>
+		/// tensor预处理，按通道对每个像素点进行相同的乘法和加法变换
+		/// </summary>
+		/// <param name="dst_data">输入及输出的图像数据</param>
+		/// <param name="channels">图像通道数</param>
+		/// <param name="height">图像高度</param>
+		/// <param name="width">图像宽度</param>
+		/// <param name="order">tensor类型：NHWC(tensor按NHWC排列)、NCHW(tensor按NCHW排列)</param>
+		template<typename Dtype>
+		__global__
+			void kernel_equalize_hist(int offset, const Dtype* src_data,  Dtype* dst_data, int height, int width, 
+				int* gray_value, int* normalized_gray_value, float* probability_distribution, float* accumulate_probability_distribution)
+		{
+			unsigned int *s_h;
+			cudaMalloc(&s_h, 256 * sizeof(unsigned int));
+			
+			for (int i = threadIdx.x; i < 256; i += blockDim.x)
+			{
+				s_h[i] = 0;
+			}
+			__syncthreads();
+
+
+			for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < offset; i += blockDim.x * gridDim.x)
+			{
+				unsigned char index = src_data[i];
+				atomicInc(s_h + index, 0xffffffff);
+			}
+			__syncthreads();
+
+			for (int i = threadIdx.x; i < 256; i += blockDim.x)
+			{
+				atomicAdd(gray_value + i, s_h[i]);
+			}
+
+			for (int i = 0; i < 256; i++)
+			{
+				//计算概率密度分布
+				probability_distribution[i] = static_cast<float>(gray_value[i]) / offset;
+
+				//计算累积概率密度分布
+				if (i > 0)
+				{
+					accumulate_probability_distribution[i] = accumulate_probability_distribution[i - 1] + probability_distribution[i];
+				}
+				else
+				{
+					accumulate_probability_distribution[0] = probability_distribution[0];
+				}
+
+				//计算归一化后的像素值
+				normalized_gray_value[i] = static_cast<unsigned char>(255 * accumulate_probability_distribution[i] + 0.5);
+			}
+
+			for (size_t i = 0; i < offset; i++)
+			{
+				dst_data[i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src_data[i])]);
+			}
+		}
+
+		///// <summary>
+		///// 直方图均衡化
+		///// </summary>
+		///// <param name="src">包含原图像数据的tensor</param>
+		///// <param name="dst">直方图均衡化后的tensor</param>
+		//template <typename Dtype>
+		//void tensor_operation_gpu::equalize_hist_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+		//{
+		//	CHECK_EQ(src->num(), 1);
+		//	CHECK_EQ(src->channels(), 1);
+		//	int height = src->height();
+		//	int width = src->width();
+		//	int offset = height * width;
+
+		//	if (dst->count() != src->count())
+		//	{
+		//		dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device()));
+		//	}
+		//	const Dtype* src_data = src->gpu_data();
+		//	Dtype* dst_data = dst->mutable_gpu_data();
+
+		//	int *gray_value, *normalized_gray_value;
+		//	float *probability_distribution, *accumulate_probability_distribution;
+
+		//	cudaMalloc(&gray_value, 256 * sizeof(int));
+		//	cudaMalloc(&normalized_gray_value, 256 * sizeof(int));
+		//	cudaMalloc(&probability_distribution, 256 * sizeof(float));
+		//	cudaMalloc(&accumulate_probability_distribution, 256 * sizeof(float));
+		//	cudaMemset(&gray_value, 0, 256 * sizeof(int));
+		//	cudaMemset(&normalized_gray_value, 0, 256 * sizeof(int));
+		//	cudaMemset(&probability_distribution, 0, 256 * sizeof(float));
+		//	cudaMemset(&accumulate_probability_distribution, 0, 256 * sizeof(float));
+
+		//	//按照设置的blockSize和gridSize启动内核函数
+		//	kernel_equalize_hist << <CUDA_GET_BLOCKS(offset),   >> >(
+		//		offset, src_data, dst_data, height, width, 
+		//		gray_value, normalized_gray_value, probability_distribution, accumulate_probability_distribution);
+		//}
+
+
+		/// <summary>
+		/// 直方图均衡化
+		/// </summary>
+		/// <param name="src">包含原图像数据的tensor</param>
+		/// <param name="dst">直方图均衡化后的tensor</param>
+		template <typename Dtype>
+		void tensor_operation_gpu::equalize_hist_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+		{
+			CHECK_EQ(src->num(), 1);
+			CHECK_EQ(src->channels(), 1);
+			int height = src->height();
+			int width = src->width();
+			int offset = height * width;
+			if (dst->count() != src->count())
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device()));
+			}
+			const Dtype* src_data = src->gpu_data();
+			Dtype* dst_data = dst->mutable_gpu_data();
+
+			unsigned char gray_value[256] = { 0 };//灰度值
+			float probability_distribution[256] = { 0 };//概率密度分布
+			float accumulate_probability_distribution[256] = { 0 };//累积概率密度
+			unsigned char normalized_gray_value[256] = { 0 };//归一化后的灰度值
+			Dtype* temp_dst = new Dtype[offset];
+
+			//Count the number of pixels in each grayscale
+			for (size_t i = 0; i < offset; i++)
+			{
+				int value = static_cast<unsigned char>(src->cpu_data()[i]);
+				gray_value[value]++;
+			}
+
+			for (int i = 0; i < 256; i++)
+			{
+				//计算概率密度分布
+				probability_distribution[i] = static_cast<float>(gray_value[i]) / offset;
+
+				//计算累积概率密度分布
+				if (i > 0)
+				{
+					accumulate_probability_distribution[i] = accumulate_probability_distribution[i - 1] + probability_distribution[i];
+				}
+				else
+				{
+					accumulate_probability_distribution[0] = probability_distribution[0];
+				}
+
+				//计算归一化后的像素值
+				normalized_gray_value[i] = static_cast<unsigned char>(255 * accumulate_probability_distribution[i] + 0.5);
+			}
+
+			for (size_t i = 0; i < offset; i++)
+			{
+				temp_dst[i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src->cpu_data()[i])]);
+			}
+
+			cudaMemcpy(dst_data, temp_dst, offset * sizeof(Dtype), cudaMemcpyDefault);
+			delete temp_dst;
+		}
+
+
+		/// <summary>
+		/// 将多个tensor图像数据按vector索引下标顺序堆叠在一起，各tensor图像之间仅需保证宽度、高度、GPU/CPU、排列方式相同；每个tensor可以有不同的图像数量和通道数量
+		/// </summary>
+		/// <param name="src_vector">一组tensor，每个tensor中包含了宽度、高度、GPU/CPU、排列方式相同的图像数据</param>
+		/// <param name="dst">堆叠后产生的tensor，按照vector索引下标顺序堆叠</param>
+		template <typename Dtype>
+		void tensor_operation_gpu::merge_channel_gpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst)
+		{
+			CHECK_EQ(src_vector.size(), 3);
+			int height, width, device;
+			orderType type;
+			for (int i = 0; i < src_vector.size(); ++i)
+			{
+				CHECK_EQ(src_vector.at(i)->channels(), 1);
+				if (i == 0)
+				{
+					height = src_vector.at(i)->height();
+					width = src_vector.at(i)->width();
+					device = src_vector.at(i)->device();
+					type = src_vector.at(i)->order();
+				}
+				else
+				{
+					if (height != src_vector.at(i)->height() ||
+						width != src_vector.at(i)->width() ||
+						device != src_vector.at(i)->device() ||
+						type != src_vector.at(i)->order())
+					{
+						LOG(WARNING) << "the element of vector<mat> should have the exact same height/width/device/type.";
+						return;
+					}
+				}
+			}
+
+			if (type == NCHW)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, type));
+			}
+			else if (type == NHWC)
+			{
+				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, type));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+
+			Dtype* dst_data = dst->mutable_gpu_data();
+			int offset = height * width;
+
+			for (int i = 0; i < src_vector.size(); ++i)
+			{
+				const Dtype* temp_data = src_vector.at(i)->gpu_data();
+				cudaMemcpy((void*)(dst_data + i * offset), (void*)(temp_data), offset * sizeof(Dtype), cudaMemcpyDefault);
+			}
+		}
+
+
+		template void tensor_operation_gpu::make_border_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+		template void tensor_operation_gpu::make_border_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+		template void tensor_operation_gpu::make_border_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+		template void tensor_operation_gpu::make_border_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+		template void tensor_operation_gpu::make_border_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>>& dst,
+			int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+
+
+
+		template void tensor_operation_gpu::cut_border_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src,
+			std::shared_ptr<tensor<unsigned char>>& dst, int top, int bottom, int left, int right);
+		template void tensor_operation_gpu::cut_border_gpu<char>(const std::shared_ptr<tensor<char>> &src,
+			std::shared_ptr<tensor<char>>& dst, int top, int bottom, int left, int right);
+		template void tensor_operation_gpu::cut_border_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src,
+			std::shared_ptr<tensor<unsigned int>>& dst, int top, int bottom, int left, int right);
+		template void tensor_operation_gpu::cut_border_gpu<int>(const std::shared_ptr<tensor<int>> &src,
+			std::shared_ptr<tensor<int>>& dst, int top, int bottom, int left, int right);
+		template void tensor_operation_gpu::cut_border_gpu<float>(const std::shared_ptr<tensor<float>> &src,
+			std::shared_ptr<tensor<float>>& dst, int top, int bottom, int left, int right);
+
+
+
+		template void tensor_operation_gpu::safty_cut_gpu<unsigned char, int>(const std::shared_ptr<tensor<unsigned char>> &src, 
+			std::shared_ptr<tensor<unsigned char>> &dst, rectangle<int>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<char, int>(const std::shared_ptr<tensor<char>> &src,
+			std::shared_ptr<tensor<char>> &dst, rectangle<int>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<unsigned int, int>(const std::shared_ptr<tensor<unsigned int>> &src,
+			std::shared_ptr<tensor<unsigned int>> &dst, rectangle<int>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<int, int>(const std::shared_ptr<tensor<int>> &src,
+			std::shared_ptr<tensor<int>> &dst, rectangle<int>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<float, int>(const std::shared_ptr<tensor<float>> &src,
+			std::shared_ptr<tensor<float>> &dst, rectangle<int>* rect);
+
+
+
+		template void tensor_operation_gpu::safty_cut_gpu<unsigned char, float>(const std::shared_ptr<tensor<unsigned char>> &src,
+			std::shared_ptr<tensor<unsigned char>> &dst, rectangle<float>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<char, float>(const std::shared_ptr<tensor<char>> &src,
+			std::shared_ptr<tensor<char>> &dst, rectangle<float>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<unsigned int, float>(const std::shared_ptr<tensor<unsigned int>> &src,
+			std::shared_ptr<tensor<unsigned int>> &dst, rectangle<float>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<int, float>(const std::shared_ptr<tensor<int>> &src,
+			std::shared_ptr<tensor<int>> &dst, rectangle<float>* rect);
+		template void tensor_operation_gpu::safty_cut_gpu<float, float>(const std::shared_ptr<tensor<float>> &src,
+			std::shared_ptr<tensor<float>> &dst, rectangle<float>* rect);
+
+
+		template void tensor_operation_gpu::equalize_hist_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst);
+		template void tensor_operation_gpu::equalize_hist_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>>& dst);
+		template void tensor_operation_gpu::equalize_hist_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>>& dst);
+		template void tensor_operation_gpu::equalize_hist_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>>& dst);
+		template void tensor_operation_gpu::equalize_hist_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>>& dst);
+
+
+
+		template void tensor_operation_gpu::merge_channel_gpu<unsigned char>(const std::vector<std::shared_ptr<tensor<unsigned char>>> &src_vector, std::shared_ptr<tensor<unsigned char>> &dst);
+		template void tensor_operation_gpu::merge_channel_gpu<char>(const std::vector<std::shared_ptr<tensor<char>>> &src_vector, std::shared_ptr<tensor<char>> &dst);
+		template void tensor_operation_gpu::merge_channel_gpu<unsigned int>(const std::vector<std::shared_ptr<tensor<unsigned int>>> &src_vector, std::shared_ptr<tensor<unsigned int>> &dst);
+		template void tensor_operation_gpu::merge_channel_gpu<int>(const std::vector<std::shared_ptr<tensor<int>>> &src_vector, std::shared_ptr<tensor<int>> &dst);
+		template void tensor_operation_gpu::merge_channel_gpu<float>(const std::vector<std::shared_ptr<tensor<float>>> &src_vector, std::shared_ptr<tensor<float>> &dst);
+
 
 
 		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned char>(std::shared_ptr<tensor<unsigned char>> dst);

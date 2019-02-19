@@ -21,6 +21,7 @@ namespace glasssix
 			int device_;
 			enum pooling_type { MAX, AVE };
 			pooling_type type_;
+			orderType order_;
 
 		public:
 			pooling(int kernel, int stride, int pad, int type, int device);

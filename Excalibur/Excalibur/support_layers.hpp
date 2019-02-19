@@ -97,10 +97,10 @@ layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #else
 #define Copy_Params(layer_para, netname, datatype)\
 if(datatype == INT_MAX){\
-layer_para =  (float*)malloc(sizeof(netname##_##layer_para)); \
+layer_para =  (float*)_aligned_malloc(sizeof(netname##_##layer_para), MALLOC_ALIGN); \
 memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
-if (datatype == USHRT_MAX) {\
-layer_para =  (float*)malloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float)); \
+if(datatype == USHRT_MAX) {\
+layer_para =  (float*)_aligned_malloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float), MALLOC_ALIGN); \
 for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++) {\
 layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #endif
