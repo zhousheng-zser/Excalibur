@@ -23,6 +23,7 @@ namespace glasssix
 			std::shared_ptr<tensor<float>> scale_;
 
 			int device_;
+			orderType order_;
 
 		public:
 			softmax(int input_channel, int device);

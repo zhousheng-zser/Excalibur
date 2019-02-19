@@ -28,7 +28,8 @@ namespace glasssix
 			}
 			else
 			{
-				dim = bottom->count(2, 4);
+				//dim = bottom->count(2, 4);
+				dim = (bottom)->height()*(bottom)->width();
 			}
 			const int channels = bottom->channels();
 			const float* slope_data = slope_data_->gpu_data();

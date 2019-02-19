@@ -26,90 +26,91 @@ namespace glasssix
 			
 #endif//HAL
 			
-			Copy_Params(conv1a_weights, unicorn_net, quantize_level);
-			Copy_Params(conv1a_bias, unicorn_net, quantize_level);
-			Copy_Params(relu1a_weights, unicorn_net, quantize_level);
-			Copy_Params(conv1b_weights, unicorn_net, quantize_level);
-			Copy_Params(conv1b_bias, unicorn_net, quantize_level);
-			Copy_Params(relu1b_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_1_bias, unicorn_net, quantize_level);
-			Copy_Params(relu2_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_2_bias, unicorn_net, quantize_level);
-			Copy_Params(relu2_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv2_bias, unicorn_net, quantize_level);
-			Copy_Params(relu2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_1_bias, unicorn_net, quantize_level);
-			Copy_Params(relu3_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_2_bias, unicorn_net, quantize_level);
-			Copy_Params(relu3_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_3_bias, unicorn_net, quantize_level);
-			Copy_Params(relu3_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_4_bias, unicorn_net, quantize_level);
-			Copy_Params(relu3_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv3_bias, unicorn_net, quantize_level);
-			Copy_Params(relu3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_1_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_2_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_3_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_4_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_5_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_5_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_5_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_6_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_6_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_6_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_7_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_7_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_7_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_8_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_8_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_8_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_9_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_9_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_9_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_10_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_10_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_10_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv4_bias, unicorn_net, quantize_level);
-			Copy_Params(relu4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_1_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_1_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_2_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_2_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_3_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_3_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_4_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_4_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_5_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_5_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_5_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_6_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_6_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_6_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_weights, unicorn_net, quantize_level);
-			Copy_Params(conv5_bias, unicorn_net, quantize_level);
-			Copy_Params(relu5_weights, unicorn_net, quantize_level);
+			Copy_Params(conv1a_weights, unicorn_net, quantize_level);//864
+			Copy_Params(conv1a_bias, unicorn_net, quantize_level);//64
+			Copy_Params(relu1a_weights, unicorn_net, quantize_level);//32
+			Copy_Params(conv1b_weights, unicorn_net, quantize_level);//18432
+			Copy_Params(conv1b_bias, unicorn_net, quantize_level);//128
+			Copy_Params(relu1b_weights, unicorn_net, quantize_level);//64
+			Copy_Params(conv2_1_weights, unicorn_net, quantize_level);//36864
+			Copy_Params(conv2_1_bias, unicorn_net, quantize_level);//128
+			Copy_Params(relu2_1_weights, unicorn_net, quantize_level);//64
+			Copy_Params(conv2_2_weights, unicorn_net, quantize_level);//36864
+			Copy_Params(conv2_2_bias, unicorn_net, quantize_level);//128
+			Copy_Params(relu2_2_weights, unicorn_net, quantize_level);//64
+			Copy_Params(conv2_weights, unicorn_net, quantize_level);//73728
+			Copy_Params(conv2_bias, unicorn_net, quantize_level);//256
+			Copy_Params(relu2_weights, unicorn_net, quantize_level);//128
+			Copy_Params(conv3_1_weights, unicorn_net, quantize_level);//147456
+			Copy_Params(conv3_1_bias, unicorn_net, quantize_level);//256
+			Copy_Params(relu3_1_weights, unicorn_net, quantize_level);//128
+			Copy_Params(conv3_2_weights, unicorn_net, quantize_level);//147456
+			Copy_Params(conv3_2_bias, unicorn_net, quantize_level);//256
+			Copy_Params(relu3_2_weights, unicorn_net, quantize_level);//128
+			Copy_Params(conv3_3_weights, unicorn_net, quantize_level);//147456
+			Copy_Params(conv3_3_bias, unicorn_net, quantize_level);//256
+			Copy_Params(relu3_3_weights, unicorn_net, quantize_level);//128
+			Copy_Params(conv3_4_weights, unicorn_net, quantize_level);//147456
+			Copy_Params(conv3_4_bias, unicorn_net, quantize_level);//256
+			Copy_Params(relu3_4_weights, unicorn_net, quantize_level);//128
+			Copy_Params(conv3_weights, unicorn_net, quantize_level);//294912
+			Copy_Params(conv3_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu3_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_1_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_1_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_1_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_2_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_2_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_2_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_3_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_3_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_3_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_4_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_4_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_4_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_5_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_5_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_5_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_6_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_6_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_6_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_7_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_7_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_7_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_8_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_8_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_8_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_9_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_9_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_9_weights, unicorn_net, quantize_level);//256
+			Copy_Params(conv4_10_weights, unicorn_net, quantize_level);//589824
+			Copy_Params(conv4_10_bias, unicorn_net, quantize_level);//512
+			Copy_Params(relu4_10_weights, unicorn_net, quantize_level);//256,512
+			Copy_Params(conv4_weights, unicorn_net, quantize_level);//1179648
+			Copy_Params(conv4_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu4_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_1_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_1_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_1_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_2_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_2_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_2_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_3_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_3_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_3_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_4_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_4_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_4_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_5_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_5_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_5_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_6_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_6_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_6_weights, unicorn_net, quantize_level);//512
+			Copy_Params(conv5_weights, unicorn_net, quantize_level);//2359296
+			Copy_Params(conv5_bias, unicorn_net, quantize_level);//1024
+			Copy_Params(relu5_weights, unicorn_net, quantize_level);//512
+
 			//
 			device_ = device;
 #ifdef USE_CUDA
@@ -291,10 +292,80 @@ namespace glasssix
 
 		void unicorn_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
+			std::cout << "input:" << std::endl;
+#ifdef USE_NHWC
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << input_data->cpu_data()[i * 3] << " ";
+			}
+#else
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << input_data->cpu_data()[i] << " ";
+			}
+#endif // USE_NHWC
+			std::cout << std::endl;
+
 			conv1a->Forward_cpu(input_data, conv1a_top_data);
+			std::cout << "conv1a:" << std::endl;
+#ifdef USE_NHWC
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1a_top_data->cpu_data()[i * 32] << " ";
+			}
+#else
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1a_top_data->cpu_data()[i] << " ";
+			}
+#endif // USE_NHWC
+			std::cout << std::endl;
+
 			relu1a->Forward_cpu(conv1a_top_data);
+			std::cout << "relu1a:" << std::endl;
+#ifdef USE_NHWC
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1a_top_data->cpu_data()[i * 32] << " ";
+			}
+#else
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1a_top_data->cpu_data()[i] << " ";
+			}
+#endif // USE_NHWC
+			std::cout << std::endl;
+
 			conv1b->Forward_cpu(conv1a_top_data, conv1b_top_data);
+			std::cout << "conv1b:" << std::endl;
+#ifdef USE_NHWC
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1b_top_data->cpu_data()[i * 64] << " ";
+			}
+#else
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1b_top_data->cpu_data()[i] << " ";
+			}
+#endif // USE_NHWC
+			std::cout << std::endl;
+
 			relu1b->Forward_cpu(conv1b_top_data);
+			std::cout << "relu1b:" << std::endl;
+#ifdef USE_NHWC
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1b_top_data->cpu_data()[i * 64] << " ";
+			}
+#else
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv1b_top_data->cpu_data()[i] << " ";
+			}
+#endif // USE_NHWC
+			std::cout << std::endl;
+
 			pool1b->Forward_cpu(conv1b_top_data, pool1b_top_data);
 			conv2_1->Forward_cpu(pool1b_top_data, conv2_1_top_data);
 			relu2_1->Forward_cpu(conv2_1_top_data);
@@ -526,7 +597,13 @@ namespace glasssix
 		std::vector<std::vector<float> > unicorn_net::Forward(const float* input_data, unsigned num)
 		{
 			std::vector<std::vector<float> > feature;
-			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_));
+
+#ifdef USE_NHWC
+			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
+#else
+			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_, NCHW));
+#endif // NHWC
+
 
 			if (device_ < 0)
 			{
@@ -537,7 +614,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -546,14 +623,14 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyHostToDevice);
+				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault);
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_cudnn_gpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -562,7 +639,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -588,7 +665,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -597,7 +674,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDeviceToDevice);
+				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
 				tensor_operation_gpu::type_converter_gpu(tensor_unsigned_char_data, tensor_float_data);
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
@@ -605,7 +682,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -614,7 +691,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data(), 512 * sizeof(float));
+					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;

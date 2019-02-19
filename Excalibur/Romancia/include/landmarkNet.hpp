@@ -118,7 +118,7 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					float* tensor_data = tensor_float_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDeviceToDevice);
+					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault);
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
 					Forward_cudnn_gpu(tensor_float_data);
@@ -134,9 +134,13 @@ namespace glasssix
 
 			void Forward(const unsigned char* input_data, unsigned num) override
 			{
-				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_));
-				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_));
-
+#ifdef USE_NHWC
+				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+#else
+				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+#endif // USE_NHWC
 
 				if (device_<0)
 				{
@@ -151,7 +155,7 @@ namespace glasssix
 
 #ifdef USE_CUDA
 					unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDeviceToDevice);
+					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault);
 					tensor_operation_gpu::type_converter_gpu(tensor_unsigned_char_data, tensor_float_data);
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
@@ -164,10 +168,12 @@ namespace glasssix
 					NO_GPU;
 #endif
 				}
-				}
+			}
 
 			void getParam(std::vector<std::vector<float> > &keypointParam, unsigned num) override;
-			};
+
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) override;
+		};
 	}
 }
 

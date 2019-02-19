@@ -25,18 +25,39 @@ namespace glasssix
 			int channels = bottom->channels();
 			int width = bottom->width();
 			int height = bottom->height();
-			for (int n = 0; n < num; n++) {
-				for (int c = 0; c < channels; c++) {
-					for (int h = 0; h < height; h++) {
-						for (int w = 0; w < width; w++) {
-							top_data[(((n * channels + c) * height + h) * width) + w] =
-								bottom_data[(((n * channels + c) * height + (flip_height_ ? (height - 1 - h) : h)) * width) + (flip_width_ ? (width - 1 - w) : w)];
+			order_ = bottom->order();
+
+			if (order_ == NCHW)
+			{
+				for (int n = 0; n < num; n++) {
+					for (int c = 0; c < channels; c++) {
+						for (int h = 0; h < height; h++) {
+							for (int w = 0; w < width; w++) {
+								top_data[(((n * channels + c) * height + h) * width) + w] =
+									bottom_data[(((n * channels + c) * height + (flip_height_ ? (height - 1 - h) : h)) * width) + (flip_width_ ? (width - 1 - w) : w)];
+							}
 						}
 					}
 				}
 			}
+			else if (order_ == NHWC)
+			{
+				for (int n = 0; n < num; n++) {
+					for (int h = 0; h < height; h++) {
+						for (int w = 0; w < width; w++) {
+							for (int c = 0; c < channels; c++) {
+								top_data[((n * height + h) * width + w) * channels + c] =
+									bottom_data[((n * height + (flip_height_ ? (height - 1 - h) : h)) * width + (flip_width_ ? (width - 1 - w) : w)) * channels + c];
+							}
+						}
+					}
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
 		}
-
 	}
 }
 

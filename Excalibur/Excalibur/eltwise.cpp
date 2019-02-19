@@ -21,7 +21,7 @@ namespace glasssix
 			for (int i = 1; i < bottom.size(); ++i) {
 				CHECK(bottom[i]->data_shape() == bottom[0]->data_shape());
 			}
-			top.reset(new tensor<float>(bottom[0]->data_shape(), device_));
+			top.reset(new tensor<float>(bottom[0]->data_shape(), device_, bottom[0]->order()));
 			//
 			const float* bottom_data_a = nullptr;
 			const float* bottom_data_b = nullptr;
