@@ -292,80 +292,10 @@ namespace glasssix
 
 		void unicorn_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
-			std::cout << "input:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << input_data->cpu_data()[i * 3] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << input_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv1a->Forward_cpu(input_data, conv1a_top_data);
-			std::cout << "conv1a:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1a_top_data->cpu_data()[i * 32] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1a_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			relu1a->Forward_cpu(conv1a_top_data);
-			std::cout << "relu1a:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1a_top_data->cpu_data()[i * 32] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1a_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv1b->Forward_cpu(conv1a_top_data, conv1b_top_data);
-			std::cout << "conv1b:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1b_top_data->cpu_data()[i * 64] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1b_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			relu1b->Forward_cpu(conv1b_top_data);
-			std::cout << "relu1b:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1b_top_data->cpu_data()[i * 64] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1b_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			pool1b->Forward_cpu(conv1b_top_data, pool1b_top_data);
 			conv2_1->Forward_cpu(pool1b_top_data, conv2_1_top_data);
 			relu2_1->Forward_cpu(conv2_1_top_data);
@@ -594,16 +524,18 @@ namespace glasssix
 #endif
 #endif
 
-		std::vector<std::vector<float> > unicorn_net::Forward(const float* input_data, unsigned num)
+		std::vector<std::vector<float> > unicorn_net::Forward(const float* input_data, unsigned num, int order)
 		{
 			std::vector<std::vector<float> > feature;
 
-#ifdef USE_NHWC
-			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
-#else
-			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_, NCHW));
-#endif // NHWC
-
+			if (order == 0)//NCHW
+			{
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_, NCHW));
+			}
+			else//NHWC
+			{
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
+			}
 
 			if (device_ < 0)
 			{
@@ -650,11 +582,21 @@ namespace glasssix
 			}
 		}
 
-		std::vector<std::vector<float> > unicorn_net::Forward(const unsigned char* input_data, unsigned num)
+		std::vector<std::vector<float> > unicorn_net::Forward(const unsigned char* input_data, unsigned num, int order)
 		{
 			std::vector<std::vector<float> > feature;
-			tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 3, 128, 128}, device_));
-			tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_));
+
+			if (order == 0)//NCHW
+			{
+				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 3, 128, 128}, device_, NCHW));
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 3, 128, 128}, device_, NCHW));
+			}
+			else//NHWC
+			{
+				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
+				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
+			}
+
 			if (device_ < 0)
 			{
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_cpu_data();

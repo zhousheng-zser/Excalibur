@@ -93,7 +93,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>USE_NHWC;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>Excalibur.lib;$(CUDA_PATH)\lib\x64\*.lib;$(OmpLibDir)\*.lib;$(MKLLibDir)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -121,7 +121,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(CUDA_PATH)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>USE_NHWC;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;GLOG_NO_ABBREVIATED_SEVERITIES;$(PROCESSOR_ARCHITECTURE);EXPORT_CASSIUS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

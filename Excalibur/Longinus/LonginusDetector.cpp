@@ -128,7 +128,7 @@ std::vector<FaceRect> LonginusDetector::detect(unsigned char *gray, int width, i
 }
 
 std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned char *gray, int width, int height, int step, int minSize, float scale, int min_neighbors, 
-	bool useMultiThreads, bool doEarlyReject)
+	bool useMultiThreads, bool doEarlyReject, int order)
 {
 	std::vector<FaceRect> rects = detect(gray, width, height, step, minSize, scale, min_neighbors, useMultiThreads, doEarlyReject);
 		
@@ -147,12 +147,11 @@ std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned 
 			{
 				memcpy(rect_tensor_data + row * rects[i].width, gray + (rects[i].y + row) * step + rects[i].x, rects[i].width * sizeof(unsigned char));
 			}
-
 			tensor_operation_cpu::resize_cpu(rect_tensor, rect48_tensor, 48, 48);
 			memcpy(group_rect_tensor->mutable_cpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->cpu_data(), 1 * 48 * 48 * sizeof(unsigned char));
 		}
 
-		landmarkNet_->Forward(group_rect_tensor->cpu_data(), rects.size());
+		landmarkNet_->Forward(group_rect_tensor->cpu_data(), rects.size(), order);
 		landmarkNet_->getParam(keypointParam, rects.size());
 	}
 	else
@@ -168,12 +167,11 @@ std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned 
 			{
 				cudaMemcpy(rect_tensor_data + row * rects[i].width, gray + (rects[i].y + row) * step + rects[i].x, rects[i].width * sizeof(unsigned char), cudaMemcpyHostToDevice);
 			}
-
 			tensor_operation_gpu::resize_gpu(rect_tensor, rect48_tensor, 48, 48);
 			cudaMemcpy(group_rect_tensor->mutable_gpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->gpu_data(), 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDeviceToDevice);
 		}
 
-		landmarkNet_->Forward(group_rect_tensor->gpu_data(), rects.size());
+		landmarkNet_->Forward(group_rect_tensor->gpu_data(), rects.size(), order);
 		landmarkNet_->getParam(keypointParam, rects.size());
 #else
 		NO_GPU;

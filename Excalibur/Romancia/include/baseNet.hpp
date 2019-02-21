@@ -19,9 +19,9 @@ namespace glasssix
 
 			virtual ~BaseNet() {}
 
-			virtual void Forward(const float* input_data, unsigned num) = 0;
+			virtual void Forward(const float* input_data, unsigned num, int order) = 0;
 
-			virtual void Forward(const unsigned char* input_data, unsigned num) = 0;
+			virtual void Forward(const unsigned char* input_data, unsigned num, int order) = 0;
 
 			virtual void getParam(std::vector<std::vector<float> > &keypointParam, unsigned num) = 0;
 

@@ -107,193 +107,25 @@ namespace glasssix
 			CHECK_EQ(input_data->height(), 48);
 			CHECK_EQ(input_data->channels(), 1);
 #endif
-			std::cout << "input:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << input_data->cpu_data()[i * 1] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << input_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv1->Forward_cpu(input_data, conv1_top_data);
-			std::cout << "conv1:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_top_data->cpu_data()[i * 16] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			prelu1->Forward_cpu(conv1_top_data);
-			std::cout << "prelu1:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_top_data->cpu_data()[i * 16] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv1_dw->Forward_cpu(conv1_top_data, conv1_dw_top_data);
-			std::cout << "conv1_dw:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_dw_top_data->cpu_data()[i * 16] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_dw_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			prelu1_dw->Forward_cpu(conv1_dw_top_data);
-			std::cout << "prelu1_dw:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_dw_top_data->cpu_data()[i * 16] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv1_dw_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv2->Forward_cpu(conv1_dw_top_data, conv2_top_data);
-			std::cout << "conv2:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_top_data->cpu_data()[i * 32] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv2_dw->Forward_cpu(conv2_top_data, conv2_dw_top_data);
-			std::cout << "conv2_dw:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_dw_top_data->cpu_data()[i * 32] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_dw_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			prelu2_dw->Forward_cpu(conv2_dw_top_data);
-			std::cout << "prelu2_dw:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_dw_top_data->cpu_data()[i * 32] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv2_dw_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv3->Forward_cpu(conv2_dw_top_data, conv3_top_data);
 			conv3_dw->Forward_cpu(conv3_top_data, conv3_dw_top_data);
 			prelu3_dw->Forward_cpu(conv3_dw_top_data);
 			conv4->Forward_cpu(conv3_dw_top_data, conv4_top_data);
 			conv4_dw->Forward_cpu(conv4_top_data, conv4_dw_top_data);
 			prelu4_dw->Forward_cpu(conv4_dw_top_data);
-			std::cout << "prelu4_dw:" << std::endl;
-#ifdef USE_NHWC
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv4_dw_top_data->cpu_data()[i * 64] << " ";
-			}
-#else
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv4_dw_top_data->cpu_data()[i] << " ";
-			}
-#endif // USE_NHWC
-			std::cout << std::endl;
-
 			conv5->Forward_cpu(conv4_dw_top_data, conv5_top_data);
-			std::cout << "conv5:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv5_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 			prelu5->Forward_cpu(conv5_top_data);
-			std::cout << "prelu5:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv5_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 			conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
-			std::cout << "conv6_1:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv6_1_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 			sigmoid1->Forward_cpu(conv6_1_top_data);
-			std::cout << "sigmoid1:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv6_1_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
-			std::cout << "conv6_2:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv6_2_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			std::cout << "conv6_3:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv6_3_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-
 		}
 
 #ifdef USE_CUDA
@@ -304,7 +136,6 @@ namespace glasssix
 			CHECK_EQ(input_data->height(), 48);
 			CHECK_EQ(input_data->channels(), 1);
 #endif
-
 			conv1->Forward_native_gpu(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_native_gpu(conv1_top_data);
 			conv1_dw->Forward_native_gpu(cublas_handle_, conv1_top_data, conv1_dw_top_data);
