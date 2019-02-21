@@ -48,7 +48,7 @@ namespace glasssix
 			std::vector<FaceRect> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
 			std::vector<FaceRectWithLandmark> detectWithLandmark(unsigned char *gray, int width, int height, int step, int minSize, float scale,
-				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
+				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false, int order = 0);
 
 			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency);
 

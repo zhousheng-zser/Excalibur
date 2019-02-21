@@ -103,9 +103,16 @@ namespace glasssix
 			LandmarkNet(int device);
 			virtual ~LandmarkNet();
 
-			void Forward(const float* input_data, unsigned num) override
+			void Forward(const float* input_data, unsigned num, int order = 0) override
 			{
-				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_));
+				if (order == 0)//NCHW
+				{
+					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+				}
+				else//NHWC
+				{
+					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+				}
 
 				if (device_<0)
 				{
@@ -132,15 +139,18 @@ namespace glasssix
 				}
 			}
 
-			void Forward(const unsigned char* input_data, unsigned num) override
+			void Forward(const unsigned char* input_data, unsigned num, int order = 0) override
 			{
-#ifdef USE_NHWC
-				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
-				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
-#else
-				tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
-				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
-#endif // USE_NHWC
+				if (order == 0)//NCHW
+				{
+					tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+				}
+				else//NHWC
+				{
+					tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+				}
 
 				if (device_<0)
 				{
@@ -152,7 +162,6 @@ namespace glasssix
 				}
 				else
 				{
-
 #ifdef USE_CUDA
 					unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
 					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault);

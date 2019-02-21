@@ -273,9 +273,9 @@ namespace glasssix
 			unicorn_net(int device);
 			virtual ~unicorn_net();
 
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num) override;
+			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) override;
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num) override;
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) override;
 
 
 			static int get_input_channel()

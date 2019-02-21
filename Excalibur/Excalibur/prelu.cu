@@ -9,10 +9,25 @@ namespace glasssix
 		// CUDA kernele for forward
 		__global__ void PReLUForward(const int n, const int channels, const int dim,
 			const float* in, float* out, const float* slope_data,
-			const int div_factor) {
-			CUDA_KERNEL_LOOP(index, n) {
-				int c = (index / dim) % channels / div_factor;
-				out[index] = in[index] > 0 ? in[index] : in[index] * slope_data[c];
+			const int div_factor, orderType order) {
+
+			if (order == NCHW)
+			{
+				CUDA_KERNEL_LOOP(index, n) {
+					int c = (index / dim) % channels / div_factor;
+					out[index] = in[index] > 0 ? in[index] : in[index] * slope_data[c];
+				}
+			}
+			else if (order == NHWC)
+			{
+				CUDA_KERNEL_LOOP(index, n) {
+					int c = index % channels / div_factor;
+					out[index] = in[index] > 0 ? in[index] : in[index] * slope_data[c];
+				}
+			}
+			else
+			{
+				return;
 			}
 		}
 
@@ -21,6 +36,7 @@ namespace glasssix
 			const float* bottom_data = bottom->gpu_data();
 			float* top_data = bottom->mutable_gpu_data();
 			const int count = bottom->count();
+			order_ = bottom->order();
 			int dim;
 			if (bottom->data_shape().size() <= 2)
 			{
@@ -37,7 +53,7 @@ namespace glasssix
 
 			// NOLINT_NEXT_LINE(whitespace/operators)
 			PReLUForward << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> >(
-				count, channels, dim, bottom_data, top_data, slope_data, div_factor);
+				count, channels, dim, bottom_data, top_data, slope_data, div_factor, order_);
 			CUDA_POST_KERNEL_CHECK;
 		}
 	}

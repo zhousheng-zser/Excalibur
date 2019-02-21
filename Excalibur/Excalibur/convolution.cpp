@@ -148,14 +148,6 @@ namespace glasssix
 			{
 				conv_im2col_cpu(input, col_buffer_->mutable_cpu_data());
 				col_buff = col_buffer_->cpu_data();
-
-				//std::cout << "im2col:" << std::endl;
-				//for (size_t i = 0; i < 10; i++)
-				//{
-				//	std::cout << col_buff[i] << " ";
-				//}
-				//std::cout << std::endl;
-
 			}
 
 			if (order_ == NCHW)
@@ -175,13 +167,6 @@ namespace glasssix
 							weights + kernelSize_ * kernelSize_ * g, col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
 					}
 				}
-
-				std::cout << "before bias:" << std::endl;
-				for (size_t i = 0; i < 10; i++)
-				{
-					std::cout << output[i] << " ";
-				}
-				std::cout << std::endl;
 			}
 			else if (order_ == NHWC)
 			{
@@ -189,9 +174,6 @@ namespace glasssix
 				{
 					if (group_ == 1)
 					{
-						//math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, conv_out_spatial_dim_, output_Channel_,
-						//    kernel_dim_, 1.0f,
-						//	col_buff, weights, 0.0f, output);
 						math_functions::cpu_sgemm(CblasTrans, CblasTrans, conv_out_spatial_dim_, output_Channel_,
 							kernel_dim_, 1.0f,
 							col_buff, weights, 0.0f, output);
@@ -201,33 +183,6 @@ namespace glasssix
 						math_functions::cpu_sgemm(CblasTrans, CblasTrans, conv_out_spatial_dim_, output_Channel_ / group_,
 							kernelSize_ * kernelSize_, 1.0f,
 							col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, weights + kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
-
-						//math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
-						//	conv_out_spatial_dim_, kernelSize_ * kernelSize_, 1.0f,
-						//	weights + kernelSize_ * kernelSize_ * g, col_buff + conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * g, 0.0f, output + conv_out_spatial_dim_ * g);
-						
-						//float* temp_col_data = (float*)malloc(conv_out_spatial_dim_ * kernelSize_ * kernelSize_ * sizeof(float));
-						//for (size_t i = 0; i < conv_out_spatial_dim_; i++)
-						//{
-						//	memcpy(temp_col_data + i * kernelSize_ * kernelSize_, col_buff + i * kernelSize_ * kernelSize_ * input_Channel_ + g * kernelSize_ * kernelSize_, kernelSize_ * kernelSize_ * sizeof(float));
-						//}
-
-						//float* temp_weights_data = (float*)malloc((output_Channel_ / group_) * kernelSize_ * kernelSize_ * sizeof(float));
-						//for (size_t i = 0; i < kernelSize_ * kernelSize_; i++)
-						//{
-						//	for (size_t j = 0; j < (output_Channel_ / group_); j++)
-						//	{
-						//		temp_weights_data[i * (output_Channel_ / group_) + j] = weights[kernelSize_ * kernelSize_ * g + i];
-						//	}
-						//}
-
-						//
-						//math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, conv_out_spatial_dim_, output_Channel_ / group_,
-						//	kernelSize_ * kernelSize_, 1.0f,
-						//	temp_col_data, temp_weights_data, 0.0f, output + output_Channel_ * g);
-
-						//delete temp_col_data;
-						//delete temp_weights_data;
 					}
 				}
 
@@ -250,19 +205,11 @@ namespace glasssix
 					memcpy(output, temp_data, conv_out_spatial_dim_ * output_Channel_ * sizeof(float));
 					delete temp_data;
 				}
-
-				std::cout << "before bias:" << std::endl;
-				for (size_t i = 0; i < 10; i++)
-				{
-					std::cout << output[i * output_Channel_] << " ";
-				}
-				std::cout << std::endl;
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
-			
 		}
 
 		void convolution::forward_cpu_bias(float* output, const float* bias)
@@ -283,7 +230,6 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
-
 		}
 
 
@@ -293,21 +239,52 @@ namespace glasssix
 			const float* col_buff = input;
 			if ((kernelSize_ != 1) || (order_ == NHWC))
 			{
-				conv_im2col_gpu(input, gpu_temp_col_buffer_);
+				conv_im2col_gpu(input, col_buffer_->mutable_gpu_data());
 				col_buff = col_buffer_->gpu_data();
 			}
-			for (int g = 0; g < group_; ++g)
+
+			if (order_ == NCHW)
 			{
-				math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
-					conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
-					0.0f, output + output_offset_ * g);
+				for (int g = 0; g < group_; ++g)
+				{
+					math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_ / group_,
+						conv_out_spatial_dim_, kernel_dim_, 1.0f, weights + weight_offset_ * g, col_buff + col_offset_ * g,
+						0.0f, output + output_offset_ * g);
+				}
+			}
+			else if (order_ == NHWC)
+			{
+				for (int g = 0; g < group_; ++g)
+				{
+					if (group_ == 1)
+					{
+						math_functions::gpu_sgemm(cublas_handle_, CblasTrans, CblasTrans, conv_out_spatial_dim_,
+							output_Channel_, kernel_dim_, 1.0f, col_buff, weights, 0.0f, output);
+					}
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
 			}
 		}
 
 		void convolution::forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
 		{
-			math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_,
-				out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
+			if (order_ == NCHW)
+			{
+				math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, output_Channel_,
+					out_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
+			}
+			else if (order_ == NHWC)
+			{
+				math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, out_spatial_dim_,
+					output_Channel_, 1, 1.0f, bias_multiplier_->gpu_data(), bias, 1.0f, output);
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
 		}
 
 #endif
@@ -366,8 +343,8 @@ namespace glasssix
 				bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
 				conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
 				out_spatial_dim_ = output_dim_w_*output_dim_h_;
-				//col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-				//output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+				col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
+				output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
 				math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 				//
 				int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];

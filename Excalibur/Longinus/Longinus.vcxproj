@@ -84,7 +84,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
@@ -112,7 +112,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;USE_CUDA;USE_CUDNN</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;LONGINUS_DLL;x86;Internal_SDK;HARDCODE_TRANSFORM;</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
