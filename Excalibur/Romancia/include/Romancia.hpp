@@ -19,9 +19,9 @@ namespace glasssix
 
 			~Romancia();
 
-			void Forward(const float* input_data, unsigned num);
+			void Forward(const float* input_data, unsigned num, int order);
 
-			void Forward(const unsigned char* input_data, unsigned num);
+			void Forward(const unsigned char* input_data, unsigned num, int order);
 
 			void getParam(std::vector<std::vector<float> > &keypointParam, unsigned num);
 

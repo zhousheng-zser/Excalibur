@@ -17,9 +17,9 @@ namespace glasssix
 
 			virtual ~BaseNet() {}
 
-			virtual std::vector<std::vector<float> > Forward(const float* input_data, unsigned num) = 0;
+			virtual std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order) = 0;
 
-			virtual std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num) = 0;
+			virtual std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order) = 0;
 
 		};
 	}
