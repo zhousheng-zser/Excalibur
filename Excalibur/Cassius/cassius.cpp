@@ -16,14 +16,14 @@ namespace glasssix
 			delete baseNet_;
 		}
 
-		std::vector<std::vector<float> > Cassius::Forward(const float* input_data, unsigned num)
+		std::vector<std::vector<float> > Cassius::Forward(const float* input_data, unsigned num, int order)
 		{
-			return baseNet_->Forward(input_data, num);
+			return baseNet_->Forward(input_data, num, order);
 		}
 
-		std::vector<std::vector<float> > Cassius::Forward(const unsigned char* input_data, unsigned num)
+		std::vector<std::vector<float> > Cassius::Forward(const unsigned char* input_data, unsigned num, int order)
 		{
-			return baseNet_->Forward(input_data, num);
+			return baseNet_->Forward(input_data, num, order);
 		}
 	}
 }

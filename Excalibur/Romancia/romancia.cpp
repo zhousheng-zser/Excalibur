@@ -17,14 +17,14 @@ namespace glasssix
 			delete baseNet_;
 		}
 
-		void Romancia::Forward(const float* input_data, unsigned num)
+		void Romancia::Forward(const float* input_data, unsigned num, int order)
 		{
-			baseNet_->Forward(input_data, num);
+			baseNet_->Forward(input_data, num, order);
 		}
 
-		void Romancia::Forward(const unsigned char* input_data, unsigned num)
+		void Romancia::Forward(const unsigned char* input_data, unsigned num, int order)
 		{
-			baseNet_->Forward(input_data, num);
+			baseNet_->Forward(input_data, num, order);
 		}
 
 		void Romancia::getParam(std::vector<std::vector<float> > &keypointParam, unsigned num)

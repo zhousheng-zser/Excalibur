@@ -3967,11 +3967,11 @@ namespace glasssix
 		template void tensor_operation_gpu::tensor2mat_gpu<float>(const tensor<float>& src, cv::Mat& dst);
 
 
-		template void tensor_operation_gpu::mat2tensor_gpu<unsigned char>(const cv::Mat &src, std::shared_ptr<tensor<unsigned char>>& dst, orderType order);
-		template void tensor_operation_gpu::mat2tensor_gpu<char>(const cv::Mat &src, std::shared_ptr<tensor<char>>& dst, orderType order);
-		template void tensor_operation_gpu::mat2tensor_gpu<unsigned int>(const cv::Mat &src, std::shared_ptr<tensor<unsigned int>>& dst, orderType order);
-		template void tensor_operation_gpu::mat2tensor_gpu<int>(const cv::Mat &src, std::shared_ptr<tensor<int>>& dst, orderType order);
-		template void tensor_operation_gpu::mat2tensor_gpu<float>(const cv::Mat &src, std::shared_ptr<tensor<float>>& dst, orderType order);
+		template void tensor_operation_gpu::mat2tensor_gpu<unsigned char>(const cv::Mat &src, std::shared_ptr<tensor<unsigned char>>& dst, orderType order = NHWC);
+		template void tensor_operation_gpu::mat2tensor_gpu<char>(const cv::Mat &src, std::shared_ptr<tensor<char>>& dst, orderType order = NHWC);
+		template void tensor_operation_gpu::mat2tensor_gpu<unsigned int>(const cv::Mat &src, std::shared_ptr<tensor<unsigned int>>& dst, orderType order = NHWC);
+		template void tensor_operation_gpu::mat2tensor_gpu<int>(const cv::Mat &src, std::shared_ptr<tensor<int>>& dst, orderType order = NHWC);
+		template void tensor_operation_gpu::mat2tensor_gpu<float>(const cv::Mat &src, std::shared_ptr<tensor<float>>& dst, orderType order = NHWC);
 
 
 		template void tensor_operation_gpu::mat2tensor_gpu<unsigned char>(const cv::Mat &src, tensor<unsigned char>& dst, orderType order = NHWC);

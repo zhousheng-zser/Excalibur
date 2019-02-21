@@ -63,31 +63,6 @@ namespace glasssix
 			}
 			else if (order == NHWC)
 			{
-				//for (int output_rows = 0; output_rows < output_h; output_rows++) {
-				//	for (int output_col = 0; output_col < output_w; output_col++) {
-				//		for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) {
-				//			int input_row = -pad_h + kernel_row * dilation_h + output_rows * stride_h;
-				//			for (int kernel_col = 0; kernel_col < kernel_w; kernel_col++) {
-				//				int input_col = -pad_w + kernel_col * dilation_w + output_col * stride_w;
-				//				if (!is_a_ge_zero_and_a_lt_b(input_row, height) || !is_a_ge_zero_and_a_lt_b(input_col, width)) {
-				//					for (int channel = 0; channel < channels; channel++) {
-				//						//*(data_col++) = 0;
-				//						data_col[output_rows * output_col * channels * kernel_h * kernel_w + channel * kernel_h * kernel_w + kernel_row * kernel_w + kernel_col] = 0;
-				//					}
-				//				}
-				//				else
-				//				{
-				//					for (int channel = 0; channel < channels; channel++)
-				//					{
-				//						//*(data_col++) = data_im[(input_row * width + input_col) * channels + channel];
-				//						data_col[output_rows * output_col * channels * kernel_h * kernel_w + channel * kernel_h * kernel_w + kernel_row * kernel_w + kernel_col] = data_im[(input_row * width + input_col) * channels + channel];
-				//					}
-				//				}
-				//			}
-				//		}
-				//	}
-				//}
-
 				for (int n = 0; n < num; n++)	{
 					for (int channel = 0; channel < channels; channel++) {
 						for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) {
