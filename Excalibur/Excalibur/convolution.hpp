@@ -20,6 +20,12 @@ namespace glasssix
 			std::shared_ptr<tensor<float>> col_buffer_;
 			int device_;
 			orderType order_;
+
+			//winograd
+			const float* BT;
+			const float* G;
+			const float* AT;
+
 			/// parameters
 			int input_Channel_;
 			int output_Channel_;
@@ -50,7 +56,7 @@ namespace glasssix
 			int output_offset_;
 			std::shared_ptr<tensor<float>> bias_multiplier_;
 			///
-			inline void conv_im2col_cpu(const float* data, float* col_buff);
+			inline void conv_im2col_cpu(const float* data, float* col_buff, int num = 1);
 			inline void conv_col2im_cpu(const float* col_buff, float* data);
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
@@ -95,6 +101,11 @@ namespace glasssix
 		private:
 			void forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false);
 			void forward_cpu_bias(float* output, const float* bias);
+#ifdef USE_MKL
+			void Forward_cpu_batch(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void forward_cpu_gemm_batch(const float* input, const float* weights, float* output, int top_dim, int num, bool skip_im2col = false);
+			void forward_cpu_bias_batch(float* output, const float* bias, int num);
+#endif
 #ifdef USE_CUDA
 			void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false);
 			void forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias);

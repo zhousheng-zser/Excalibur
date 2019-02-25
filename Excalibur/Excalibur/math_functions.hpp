@@ -19,6 +19,15 @@ namespace glasssix
 				const float alpha, const float* A, const float* B, const float beta,
 				float* C);
 
+			static void cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
+				const int N, const float alpha, const float* A, const float* x,
+				const float beta, float* y);
+
+#ifdef USE_MKL
+			static void cpu_batch_sgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB,
+				const int M, const int N, const int K, const float alpha, const float* A, const int A_offset, const float* B, const int B_offset, const float beta, float* C, const int C_offset, int num);
+#endif
+
 			template <typename Dtype>
 			static void excalibur_copy(const int N, const Dtype *X, Dtype *Y, int device)
 			{

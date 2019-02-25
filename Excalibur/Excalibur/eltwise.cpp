@@ -33,7 +33,11 @@ namespace glasssix
 				memset(top_data, 0, count * sizeof(float));
 				for (int i = 0; i < bottom.size(); ++i)
 				{
+#if (USE_MKL || USE_OPENBLAS)
 					cblas_saxpy(count, coeffs_[i], bottom[i]->cpu_data(), 1, top_data, 1);
+#else
+					julius::cblas_saxpby(count, coeffs_[i], bottom[i]->cpu_data(), 1, 0.0f, top_data, 1);
+#endif
 				}
 				break;
 			case MAX:

@@ -27,11 +27,14 @@
     <ClInclude Include="mtcnn.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="baseCNN.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Damocles.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="mtcnn.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -42,6 +45,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="mtcnn_rnet.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Damocles.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
