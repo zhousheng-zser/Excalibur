@@ -6,6 +6,7 @@
 #include <memory>
 #include "BaseLonginusCascade.hpp"
 #include "../Romancia/include/Romancia.hpp"
+#include "../fastfacedetection/Damocles.hpp"
 #include "matcher.hpp"
 
 namespace glasssix
@@ -50,6 +51,9 @@ namespace glasssix
 			std::vector<FaceRectWithLandmark> detectWithLandmark(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false, int order = 0);
 
+			std::vector<FaceInfoX> detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
+				const int minSize, const float* threshold, const float factor, const int stage);
+
 			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency);
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks);
@@ -65,6 +69,7 @@ namespace glasssix
 			int device_;
 			std::vector<std::shared_ptr<BaseLonginusCascade>> *cascades_;
 			std::unique_ptr<BaseNet> landmarkNet_;
+			std::unique_ptr<BaseCNN> baseCNN_;
 			std::vector<unsigned char> data_;
 			std::unique_ptr<Matcher> matcher_;
 		};

@@ -74,14 +74,14 @@ namespace glasssix
 								bottom_data[i * dim + j * inner_num_ + k]);
 						}
 					}
-					cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, channels, inner_num_,
-						1, -1.0f, sum_multiplier_->cpu_data(), 1, scale_data, inner_num_, 1.0f, top_data, inner_num_);
+					math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, channels, inner_num_,
+						1, -1.0f, sum_multiplier_->cpu_data(), scale_data, 1.0f, top_data);
 					for (int k = 0; k < dim; k++)
 					{
 						top_data[k] = exp(top_data[k]);
 					}
-					cblas_sgemv(CblasRowMajor, CblasTrans, channels, inner_num_, 1.0f,
-						top_data, inner_num_, sum_multiplier_->cpu_data(), 1, 0.0f, scale_data, 1);
+					math_functions::cpu_sgemv(CblasTrans, channels, inner_num_, 1.0f,
+						top_data, sum_multiplier_->cpu_data(), 0.0f, scale_data);
 					// division
 					for (int j = 0; j < channels; j++) {
 						for (int k = 0; k < inner_num_; k++)
