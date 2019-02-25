@@ -29,8 +29,7 @@ namespace glasssix
 			if (order == NCHW)
 			{
 				const int channel_size = height * width;
-				const int num_size = channels * channel_size;
-				for (int n = 0; n < num; n++, data_im += num_size) {
+				for (int n = 0; n < num; n++) {
 					for (int channel = channels; channel--; data_im += channel_size) {
 						for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) {
 							for (int kernel_col = 0; kernel_col < kernel_w; kernel_col++) {

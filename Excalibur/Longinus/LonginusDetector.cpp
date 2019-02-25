@@ -5,6 +5,7 @@
 #include "ImageOperation.hpp"
 #include "InternalLonginusCascade.hpp"
 #include "../Romancia/include/landmarkNet.hpp"
+#include "../fastfacedetection/mtcnn.hpp"
 
 using namespace glasssix::longinus;
 using namespace glasssix::excalibur;
@@ -13,6 +14,7 @@ LonginusDetector::LonginusDetector(): device_(-1)
 {
 	cascades_ = new std::vector<std::shared_ptr<BaseLonginusCascade>>();
 	landmarkNet_.reset(new LandmarkNet(device_));
+	baseCNN_.reset(new MTCNN(device_));
 	matcher_.reset(new Matcher());
 	int dstep = (((48 * 8 + 7) / 8) * 4 - 1) &(~(4 - 1));
 	data_.resize(dstep * 48);
@@ -302,3 +304,9 @@ std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_
 	return landmarkNet_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 }
 
+
+std::vector<FaceInfoX> LonginusDetector::detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
+	const int minSize, const float* threshold, const float factor, const int stage)
+{
+	return baseCNN_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
+}

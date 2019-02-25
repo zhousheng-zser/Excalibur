@@ -15,11 +15,13 @@
 
 #ifdef USE_ACCELERATE
 #include <Accelerate/Accelerate.h>
-#else
+#elif USE_OPENBLAS
 extern "C" {
 #include <cblas.h>
 }
-#endif  // USE_ACCELERATE
+#else // USE_JULIUSBLAS
+#include "../Julius/julius.hpp"
+#endif  
 #include <math.h>
 
 // A simple way to define the vsl unary functions. The operation should
@@ -73,6 +75,7 @@ DEFINE_VSL_BINARY_FUNC(Sub, y[i] = a[i] - b[i]);
 DEFINE_VSL_BINARY_FUNC(Mul, y[i] = a[i] * b[i]);
 DEFINE_VSL_BINARY_FUNC(Div, y[i] = a[i] / b[i]);
 
+#ifdef USE_OPENBLAS
 // In addition, MKL comes with an additional function axpby that is not present
 // in standard blas. We will simply use a two-step (inefficient, of course) way
 // to mimic that.
@@ -82,5 +85,6 @@ inline void cblas_saxpby(const int N, const float alpha, const float* X,
 	cblas_sscal(N, beta, Y, incY);
 	cblas_saxpy(N, alpha, X, incX, Y, incY);
 }
+#endif// !USE_OPENBLAS
 #endif // USE_MKL
 #endif

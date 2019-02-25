@@ -42,7 +42,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>Parallel</UseIntelMKL>
+    <UseIntelMKL>No</UseIntelMKL>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -51,7 +51,7 @@
     <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>Parallel</UseIntelMKL>
+    <UseIntelMKL>No</UseIntelMKL>
     <CLRSupport>false</CLRSupport>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -91,7 +91,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;$(UseIntelMKL);_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_OPENCV;USE_CUDNN;USE_CUDA;$(UseIntelMKL);_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <AdditionalOptions>/wd4146</AdditionalOptions>
       <AdditionalIncludeDirectories>$(VcpkgRoot)include;$(CUDA_PATH_V9_2)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -128,7 +128,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <PreprocessorDefinitions>USE_CUDNN;USE_CUDA;$(UseIntelMKL);_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_OPENCV;USE_CUDNN;USE_CUDA;$(UseIntelMKL);_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <AdditionalIncludeDirectories>$(MKLIncludeDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -324,6 +324,11 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Julius\Julius.vcxproj">
+      <Project>{5b59dc69-fc25-4816-9397-067b7fb597a4}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

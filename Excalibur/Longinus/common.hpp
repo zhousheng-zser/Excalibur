@@ -82,6 +82,20 @@ namespace glasssix
 			ScaledMatrix(int factor1024x_, int winStep_) :
 				factor1024x(factor1024x_), winStep(winStep_){}
 		}ScaledMatrix;
+
+		typedef struct FaceBox {
+			float xmin;
+			float ymin;
+			float xmax;
+			float ymax;
+			float score;
+		} FaceBox;
+
+		typedef struct FaceInfoX {
+			float bbox_reg[4];
+			float landmark[10];
+			FaceBox bbox;
+		} FaceInfoX;
 	}
 }
 
