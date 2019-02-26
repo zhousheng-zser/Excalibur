@@ -33,9 +33,33 @@
     <ClInclude Include="julius_saxpby.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="julius_axpby.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="julius_dot.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="julius_sdot.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="julius.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="julius_axpby.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="julius_dot.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="julius_gemm.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="julius_gemv.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="julius_sdot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

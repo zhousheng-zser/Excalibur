@@ -1,34 +1,79 @@
-#include "simd_helper.hpp"
-#include "julius.hpp"
-#include "julius_saxpby.hpp"
+#include "julius_dot.hpp"
+#include "julius_sdot.hpp"
+#include "julius_axpby.hpp"
 #include "julius_gemv.hpp"
 #include "julius_gemm.hpp"
+#include "julius.hpp"
 
 namespace glasssix
 {
 	namespace excalibur
 	{
-		julius::julius()
+		float  cblas_sdsdot(const int n, const float alpha, const float *x, const int incx, const float *y, const int incy)
 		{
+			if (n <= 0)
+			{
+				return alpha;
+			}
+			else
+			{
+				CHECK_GT(incx, 1);
+				CHECK_GT(incy, 1);
+				return juliusblas::cblas_sdsdot(n, alpha, x, incx, y, incy);
+			}
 		}
 
-		julius::~julius()
+		double cblas_dsdot(const int n, const float *x, const int incx, const float *y, const int incy)
 		{
+			if (n <= 0)
+			{
+				return 0.0;
+			}
+			else
+			{
+				CHECK_GT(incx, 1);
+				CHECK_GT(incy, 1);
+				return juliusblas::cblas_dsdot(n, x, incx, y, incy);
+			}
 		}
 
-		void julius::cblas_saxpby(const int N, const float alpha, const float* X,
+		float  cblas_sdot(const int n, const float  *x, const int incx, const float  *y, const int incy)
+		{
+			if (n <= 0)
+			{
+				return 0.0f;
+			}
+			else
+			{
+				return juliusblas::cblas_sdot(n, x, incx, y, incy);
+			}
+		}
+
+		double cblas_ddot(const int n, const double *x, const int incx, const double *y, const int incy)
+		{
+			if (n <= 0)
+			{
+				return 0.0;
+			}
+			else
+			{
+				return juliusblas::cblas_ddot(n, x, incx, y, incy);
+			}
+		}
+
+		void cblas_saxpby(const int N, const float alpha, const float* X,
 			const int incX, const float beta, float* Y, const int incY)
 		{
 			juliusblas::cblas_saxpby(N, alpha, X, incX, beta, Y, incY);
 		}
 
-		void julius::cblas_daxpby(const int N, const double alpha, const double* X,
+		void cblas_daxpby(const int N, const double alpha, const double* X,
 			const int incX, const double beta, double* Y, const int incY)
 		{
 			NOT_IMPLEMENTED;
 		}
 
-		void julius::cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,
+		void cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,
 			const float alpha, const float  *A, const int lda, const float  *x, const int incx, const float beta, float  *y, const int incy)
 		{
 			switch (order)
@@ -67,13 +112,13 @@ namespace glasssix
 			}
 		}
 
-		void julius::cblas_dgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int m, const int n,
+		void cblas_dgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int m, const int n,
 			const double alpha, const double  *a, const int lda, const double  *x, const int incx, const double beta, double  *y, const int incy)
 		{
 			NOT_IMPLEMENTED;
 		}
 
-		void julius::cblas_sgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
+		void cblas_sgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
 			const int M, const int N, const int K, const float alpha, const float* A, const int lda, const float* B, const int ldb,
 			const float beta, float* C, const int ldc)
 		{
@@ -129,7 +174,7 @@ namespace glasssix
 			}
 		}
 
-		void julius::cblas_dgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
+		void cblas_dgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
 			const int M, const int N, const int K, const double alpha, const double* A, const int lda, const double* B, const int ldb,
 			const double beta, double* C, const int ldc)
 		{

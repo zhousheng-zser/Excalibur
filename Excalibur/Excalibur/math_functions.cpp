@@ -20,26 +20,17 @@ namespace glasssix
 		{
 			int lda = (TransA == CblasNoTrans) ? K : M;
 			int ldb = (TransB == CblasNoTrans) ? N : K;
-#if (USE_MKL || USE_OPENBLAS)
 			cblas_sgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
 				ldb, beta, C, N);
-#else
-			julius::cblas_sgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
-				ldb, beta, C, N);
-#endif
 		}
 
 		void math_functions::cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 			const int N, const float alpha, const float* A, const float* x,
 			const float beta, float* y) 
 		{
-#if (USE_MKL || USE_OPENBLAS)
-			cblas_sgemv(CblasRowMajor, TransA, M, N, alpha, A, N, x, 1, beta, y, 1);
-#else
 			// ??! lda problem!
 			//int lda = (TransA == CblasNoTrans) ? N : M;
-			julius::cblas_sgemv(CblasRowMajor, TransA, M, N, alpha, A, N, x, 1, beta, y, 1);
-#endif
+			cblas_sgemv(CblasRowMajor, TransA, M, N, alpha, A, N, x, 1, beta, y, 1);
 		}
 
 #ifdef USE_MKL
