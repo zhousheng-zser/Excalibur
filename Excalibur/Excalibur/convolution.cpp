@@ -131,7 +131,7 @@ namespace glasssix
 			weight_offset_ = kernelSize_ * kernelSize_;
 			isfirst = true;
 
-			//winograd
+			////winograd
 			//BT{ 4, 0,-5, 0, 1, 0, 
 			//	0,-4,-4, 1, 1, 0, 
 			//	0, 4,-4,-1, 1, 0, 
@@ -145,7 +145,10 @@ namespace glasssix
 			//	1.0f/24,-1.0f/12, 1.0f/6,
 			//	   0.0f,    0.0f,   1.0f
 			//};
-			//AT{
+			//AT{ 1,1,1,1,1,0,
+			//	0,1,-1,2,-2,0,
+			//	0,1,1,4,4,0,
+			//	0,1,-1,8,-8,1 }
 
 			//}
 		}
