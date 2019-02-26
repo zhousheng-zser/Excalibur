@@ -114,13 +114,21 @@
   <ItemGroup>
     <ClInclude Include="instructionset.hpp" />
     <ClInclude Include="julius.hpp" />
+    <ClInclude Include="julius_axpby.hpp" />
+    <ClInclude Include="julius_dot.hpp" />
     <ClInclude Include="julius_gemm.hpp" />
     <ClInclude Include="julius_gemv.hpp" />
     <ClInclude Include="julius_saxpby.hpp" />
+    <ClInclude Include="julius_sdot.hpp" />
     <ClInclude Include="simd_helper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="julius.cpp" />
+    <ClCompile Include="julius_axpby.cpp" />
+    <ClCompile Include="julius_dot.cpp" />
+    <ClCompile Include="julius_gemm.cpp" />
+    <ClCompile Include="julius_gemv.cpp" />
+    <ClCompile Include="julius_sdot.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
