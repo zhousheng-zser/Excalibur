@@ -142,7 +142,7 @@ namespace glasssix
 			}
 		}
 
-		void pooling::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void pooling::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			int num = bottom->num();
 			channels_ = bottom->channels();
@@ -192,7 +192,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void pooling::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void pooling::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			int num = bottom->num();
 			channels_ = bottom->channels();

@@ -86,12 +86,12 @@ namespace glasssix
 			}
 		}
 
-		void convolution::Forward_native_gpu(cublasHandle_t cublas_handle_,
+		void convolution::Forward_gpu_native(cublasHandle_t cublas_handle_,
 			const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			if (group_>1)
 			{
-				forward_depthwise_native_gpu(bottom, top);
+				forward_gpu_depthwise_native(bottom, top);
 				return;
 			}
 			const int num = bottom->num();
@@ -211,7 +211,7 @@ namespace glasssix
 			}
 		}
 
-		void convolution::forward_depthwise_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void convolution::forward_gpu_depthwise_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			order_ = bottom->order();
 			const int height = bottom->height();
@@ -269,7 +269,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void convolution::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void convolution::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			order_ = bottom->order();
 
@@ -289,7 +289,7 @@ namespace glasssix
 #else
 				if (group_>1)
 				{
-					forward_depthwise_native_gpu(bottom, top);
+					forward_gpu_depthwise_native(bottom, top);
 					return;
 				}
 #endif
@@ -374,7 +374,7 @@ namespace glasssix
 #else
 				if (group_>1)
 				{
-					forward_depthwise_native_gpu(bottom, top);
+					forward_gpu_depthwise_native(bottom, top);
 					return;
 				}
 #endif
@@ -475,7 +475,7 @@ namespace glasssix
 //#else
 //	if (group_>1)
 //	{
-//		forward_depthwise_native_gpu(bottom, top);
+//		forward_gpu_depthwise_native(bottom, top);
 //		return;
 //	}
 //#endif

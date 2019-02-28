@@ -167,7 +167,7 @@ namespace glasssix
 			}
 		}
 
-		void softmax::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void softmax::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			outer_num_ = bottom->num();
 			order_ = bottom->order();
@@ -215,7 +215,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void softmax::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void softmax::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			outer_num_ = bottom->num();
 			order_ = bottom->order();

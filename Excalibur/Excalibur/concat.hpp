@@ -22,7 +22,7 @@ namespace glasssix
 			void Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
 
 #ifdef USE_CUDA
-			void Forward_native_gpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 		};
 	}

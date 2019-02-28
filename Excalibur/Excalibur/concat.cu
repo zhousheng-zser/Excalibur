@@ -24,7 +24,7 @@ namespace glasssix
 			}
 		}
 
-		void concat::Forward_native_gpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
+		void concat::Forward_gpu_native(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			if (bottom.size() <= 1)
 			{

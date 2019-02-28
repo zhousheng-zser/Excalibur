@@ -13,7 +13,7 @@ namespace glasssix
 			}
 		}
 
-		void sigmoid::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom)
+		void sigmoid::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom)
 		{
 			const float* bottom_data = bottom->gpu_data();
 			float* top_data = bottom->mutable_gpu_data();
