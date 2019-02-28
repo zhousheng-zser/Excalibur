@@ -40,7 +40,7 @@ namespace glasssix
 			}
 		}
 
-		void flip::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void flip::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			top.reset(new tensor<float>(bottom->data_shape(), device_));
 			const float* bottom_data = bottom->cpu_data();

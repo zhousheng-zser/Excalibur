@@ -59,7 +59,7 @@ namespace glasssix
 			}
 		}
 
-		void normalize::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom)
+		void normalize::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom)
 		{
 			int num = bottom->num();
 			int channels = bottom->channels();
