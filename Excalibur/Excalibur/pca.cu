@@ -5,7 +5,7 @@ namespace glasssix
 {
 	namespace excalibur
 	{
-		void pca::Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void pca::Forward_gpu_native(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			int num = bottom->num();
 			top.reset(new tensor<float>(std::vector<int>{num, final_dimensions}, device_));

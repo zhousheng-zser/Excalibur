@@ -24,7 +24,7 @@ namespace glasssix
 			}
 		}
 
-		void slice::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::vector<std::shared_ptr<tensor<float>>>& top)
+		void slice::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::vector<std::shared_ptr<tensor<float>>>& top)
 		{
 			std::vector<int> top_shape = bottom->data_shape();
 			const int bottom_slice_axis = bottom->data_shape()[slice_axis_];

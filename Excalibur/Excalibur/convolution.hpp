@@ -21,10 +21,82 @@ namespace glasssix
 			int device_;
 			orderType order_;
 
-			//winograd
-			const float* BT;
-			const float* G;
-			const float* AT;
+
+			int tile_size_;
+			int h_tile_num_;
+			int w_tile_num_;
+			int V_num_;//the quantity of V
+			int U_num_;//the quantity of U
+			float* U_;
+			float* V_;
+
+			////winograd F(4,3), error rate is 10%, abandon
+			//int m_ = 4;
+			//const float A_[24] = { 1.0f, 0.0f, 0.0f, 0.0f,
+			//	                   1.0f, 1.0f, 1.0f, 1.0f,
+			//	                   1.0f,-1.0f, 1.0f,-1.0f,
+			//	                   1.0f, 2.0f, 4.0f, 8.0f,
+			//	                   1.0f,-2.0f, 4.0f,-8.0f,
+			//	                   0.0f, 0.0f, 0.0f, 1.0f };
+
+			//const float AT_[24] = { 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+			//	                    0.0f, 1.0f,-1.0f, 2.0f,-2.0f, 0.0f,
+			//	                    0.0f, 1.0f, 1.0f, 4.0f, 4.0f, 0.0f,
+			//	                    0.0f, 1.0f,-1.0f, 8.0f,-8.0f, 1.0f };
+
+			//const float B_[36] = { 4.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+			//	                   0.0f,-4.0f, 4.0f,-2.0f, 2.0f, 4.0f,
+			//	                  -5.0f,-4.0f,-4.0f,-1.0f,-1.0f, 0.0f,
+			//	                   0.0f, 1.0f,-1.0f, 2.0f,-2.0f,-5.0f,
+			//	                   1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+			//	                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f };
+
+			//const float BT_[36] = { 4.0f, 0.0f,-5.0f, 0.0f, 1.0f, 0.0f,
+			//	                   0.0f,-4.0f,-4.0f, 1.0f, 1.0f, 0.0f,
+			//	                   0.0f, 4.0f,-4.0f,-1.0f, 1.0f, 0.0f,
+			//	                   0.0f,-2.0f,-1.0f, 2.0f, 1.0f, 0.0f,
+			//	                   0.0f, 2.0f,-1.0f,-2.0f, 1.0f, 0.0f,
+			//	                   0.0f, 4.0f, 0.0f,-5.0f, 0.0f, 1.0f };
+
+			//const float G_[18] = {  1.0f / 4,   0.0f,       0.0f,
+			//	                  -1.0f / 6,  -1.0f / 6,  -1.0f / 6,
+			//	                  -1.0f / 6,   1.0f / 6,  -1.0f / 6,
+			//	                   1.0f / 24,  1.0f / 12,  1.0f / 6,
+			//	                   1.0f / 24, -1.0f / 12,  1.0f / 6,
+			//	                   0.0f,       0.0f,       1.0f };
+
+			//const float GT_[18] = { 1.0f / 4, -1.0f / 6, -1.0f / 6, 1.0f / 24, 1.0f / 24, 0.0f,
+			//	                    0.0f,     -1.0f / 6,  1.0f / 6, 1.0f / 12,-1.0f / 12, 0.0f,
+			//	                    0.0f,     -1.0f / 6, -1.0f / 6, 1.0f / 6,  1.0f / 6,  1.0f };
+
+			//winograd F(2,3)
+			int m_ = 2;
+			const float A_[8] = { 1.0f,  0.0f,
+				                  1.0f,  1.0f,
+				                  1.0f, -1.0f,
+				                  0.0f, -1.0f };
+
+			const float AT_[8] = { 1.0f, 1.0f,  1.0f,  0.0f,
+				                   0.0f, 1.0f, -1.0f, -1.0f };
+
+			const float B_[16] = { 1.0f, 0.0f,  0.0f,  0.0f,
+				                   0.0f, 1.0f, -1.0f,  1.0f,
+				                  -1.0f, 1.0f,  1.0f,  0.0f,
+				                   0.0f, 0.0f,  0.0f, -1.0f };
+
+			const float BT_[16] = { 1.0f,  0.0f, -1.0f,  0.0f,
+				                    0.0f,  1.0f,  1.0f,  0.0f,
+				                    0.0f, -1.0f,  1.0f,  0.0f,
+				                    0.0f,  1.0f,  0.0f, -1.0f };
+
+			const float G_[12] = { 1.0f,  0.0f,  0.0f,
+				                   0.5f,  0.5f,  0.5f,
+				                   0.5f, -0.5f,  0.5f,
+				                   0.0f,  0.0f,  1.0f };
+
+			const float GT_[12] = { 1.0f, 0.5f,  0.5f, 0.0f,
+				                    0.0f, 0.5f, -0.5f, 0.0f,
+				                    0.0f, 0.5f,  0.5f, 1.0f };
 
 			/// parameters
 			int input_Channel_;
@@ -91,16 +163,21 @@ namespace glasssix
 			{
 				group_ = output_Channel_;
 			}
+
 			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu_winograd(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+
 #ifdef USE_CUDA
-			void Forward_native_gpu(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDNN
-			void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 #endif
 		private:
 			void forward_cpu_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false);
 			void forward_cpu_bias(float* output, const float* bias);
+
 #ifdef USE_MKL
 			void Forward_cpu_batch(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 			void forward_cpu_gemm_batch(const float* input, const float* weights, float* output, int top_dim, int num, bool skip_im2col = false);
@@ -109,7 +186,7 @@ namespace glasssix
 #ifdef USE_CUDA
 			void forward_gpu_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false);
 			void forward_gpu_bias(cublasHandle_t cublas_handle_, float* output, const float* bias);
-			void forward_depthwise_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void forward_gpu_depthwise_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
 		};
 	}

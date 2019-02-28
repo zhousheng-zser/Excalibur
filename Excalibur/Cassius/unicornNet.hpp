@@ -260,14 +260,13 @@ namespace glasssix
 
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
 			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
-
 
 		public:
 			unicorn_net(int device);
