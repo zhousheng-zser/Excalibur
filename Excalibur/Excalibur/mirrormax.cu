@@ -12,7 +12,7 @@ namespace glasssix
 			}
 		}
 
-		void mirrormax::Forward_native_gpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void mirrormax::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			if (mirror_axis_ == 0)
 			{

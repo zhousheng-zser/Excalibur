@@ -92,33 +92,33 @@ namespace glasssix
 
 
 #ifdef USE_CUDA
-		void mtcnn_pnet::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
+		void mtcnn_pnet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward_native_gpu(cublas_handle_, input_data, conv1_top_data);
-			prelu1->Forward_native_gpu(conv1_top_data);
-			pool1->Forward_native_gpu(conv1_top_data, pool1_top_data);
-			conv2->Forward_native_gpu(cublas_handle_, pool1_top_data, conv2_top_data);
-			prelu2->Forward_native_gpu(conv2_top_data);
-			conv3->Forward_native_gpu(cublas_handle_, conv2_top_data, conv3_top_data);
-			prelu3->Forward_native_gpu(conv3_top_data);
-			conv4_1->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_1_top_data);
-			conv4_2->Forward_native_gpu(cublas_handle_, conv3_top_data, conv4_2_top_data);
-			prob1->Forward_native_gpu(conv4_1_top_data, prob1_top_data);
+			conv1->Forward_gpu_native(cublas_handle_, input_data, conv1_top_data);
+			prelu1->Forward_gpu_native(conv1_top_data);
+			pool1->Forward_gpu_native(conv1_top_data, pool1_top_data);
+			conv2->Forward_gpu_native(cublas_handle_, pool1_top_data, conv2_top_data);
+			prelu2->Forward_gpu_native(conv2_top_data);
+			conv3->Forward_gpu_native(cublas_handle_, conv2_top_data, conv3_top_data);
+			prelu3->Forward_gpu_native(conv3_top_data);
+			conv4_1->Forward_gpu_native(cublas_handle_, conv3_top_data, conv4_1_top_data);
+			conv4_2->Forward_gpu_native(cublas_handle_, conv3_top_data, conv4_2_top_data);
+			prob1->Forward_gpu_native(conv4_1_top_data, prob1_top_data);
 		}
 
 #ifdef USE_CUDNN
-		void mtcnn_pnet::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
+		void mtcnn_pnet::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward_cudnn_gpu(input_data, conv1_top_data);
-			prelu1->Forward_native_gpu(conv1_top_data);
-			pool1->Forward_cudnn_gpu(conv1_top_data, pool1_top_data);
-			conv2->Forward_cudnn_gpu(pool1_top_data, conv2_top_data);
-			prelu2->Forward_native_gpu(conv2_top_data);
-			conv3->Forward_cudnn_gpu(conv2_top_data, conv3_top_data);
-			prelu3->Forward_native_gpu(conv3_top_data);
-			conv4_1->Forward_cudnn_gpu(conv3_top_data, conv4_1_top_data);
-			conv4_2->Forward_cudnn_gpu(conv3_top_data, conv4_2_top_data);
-			prob1->Forward_cudnn_gpu(conv4_1_top_data, prob1_top_data);
+			conv1->Forward_gpu_cudnn(input_data, conv1_top_data);
+			prelu1->Forward_gpu_native(conv1_top_data);
+			pool1->Forward_gpu_cudnn(conv1_top_data, pool1_top_data);
+			conv2->Forward_gpu_cudnn(pool1_top_data, conv2_top_data);
+			prelu2->Forward_gpu_native(conv2_top_data);
+			conv3->Forward_gpu_cudnn(conv2_top_data, conv3_top_data);
+			prelu3->Forward_gpu_native(conv3_top_data);
+			conv4_1->Forward_gpu_cudnn(conv3_top_data, conv4_1_top_data);
+			conv4_2->Forward_gpu_cudnn(conv3_top_data, conv4_2_top_data);
+			prob1->Forward_gpu_cudnn(conv4_1_top_data, prob1_top_data);
 		}
 
 #endif
@@ -134,10 +134,10 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
-				Forward_cudnn_gpu(input_data);
+				Forward_gpu_cudnn(input_data);
 				return;
 #endif
-				Forward_native_gpu(input_data);
+				Forward_gpu_native(input_data);
 				return;
 #else
 				NO_GPU;

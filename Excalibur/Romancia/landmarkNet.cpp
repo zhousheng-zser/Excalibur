@@ -126,39 +126,56 @@ namespace glasssix
 			sigmoid1->Forward_cpu(conv6_1_top_data);
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
+			std::cout << "conv6_1:" << std::endl;
+			for (size_t i = 0; i < 1; i++)
+			{
+				std::cout << conv6_1_top_data->cpu_data()[0] << std::endl;
+			}
+			std::cout << "conv6_2:" << std::endl;
+			for (size_t i = 0; i < 3; i++)
+			{
+				std::cout << conv6_2_top_data->cpu_data()[i] << " ";
+			}
+			std::cout << std::endl;
+			std::cout << "conv6_3:" << std::endl;
+			for (size_t i = 0; i < 10; i++)
+			{
+				std::cout << conv6_3_top_data->cpu_data()[i] << " ";
+			}
+			std::cout << std::endl;
 		}
 
 #ifdef USE_CUDA
-		void LandmarkNet::Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data)
+		void LandmarkNet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
 		{
 #ifdef _DEBUG
 			CHECK_EQ(input_data->width(), 48);
 			CHECK_EQ(input_data->height(), 48);
 			CHECK_EQ(input_data->channels(), 1);
 #endif
-			conv1->Forward_native_gpu(cublas_handle_, input_data, conv1_top_data);
-			prelu1->Forward_native_gpu(conv1_top_data);
-			conv1_dw->Forward_native_gpu(cublas_handle_, conv1_top_data, conv1_dw_top_data);
-			prelu1_dw->Forward_native_gpu(conv1_dw_top_data);
-			conv2->Forward_native_gpu(cublas_handle_, conv1_dw_top_data, conv2_top_data);
-			conv2_dw->Forward_native_gpu(cublas_handle_, conv2_top_data, conv2_dw_top_data);
-			prelu2_dw->Forward_native_gpu(conv2_dw_top_data);
-			conv3->Forward_native_gpu(cublas_handle_, conv2_dw_top_data, conv3_top_data);
-			conv3_dw->Forward_native_gpu(cublas_handle_, conv3_top_data, conv3_dw_top_data);
-			prelu3_dw->Forward_native_gpu(conv3_dw_top_data);
-			conv4->Forward_native_gpu(cublas_handle_, conv3_dw_top_data, conv4_top_data);
-			conv4_dw->Forward_native_gpu(cublas_handle_, conv4_top_data, conv4_dw_top_data);
-			prelu4_dw->Forward_native_gpu(conv4_dw_top_data);
-			conv5->Forward_native_gpu(cublas_handle_, conv4_dw_top_data, conv5_top_data);
-			prelu5->Forward_native_gpu(conv5_top_data);
-			conv6_1->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_1_top_data);
-			sigmoid1->Forward_native_gpu(conv6_1_top_data);
-			conv6_2->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_2_top_data);
-			conv6_3->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_3_top_data);
+			conv1->Forward_gpu_native(cublas_handle_, input_data, conv1_top_data);
+			prelu1->Forward_gpu_native(conv1_top_data);
+			conv1_dw->Forward_gpu_native(cublas_handle_, conv1_top_data, conv1_dw_top_data);
+			prelu1_dw->Forward_gpu_native(conv1_dw_top_data);
+			conv2->Forward_gpu_native(cublas_handle_, conv1_dw_top_data, conv2_top_data);
+			conv2_dw->Forward_gpu_native(cublas_handle_, conv2_top_data, conv2_dw_top_data);
+			prelu2_dw->Forward_gpu_native(conv2_dw_top_data);
+			conv3->Forward_gpu_native(cublas_handle_, conv2_dw_top_data, conv3_top_data);
+			conv3_dw->Forward_gpu_native(cublas_handle_, conv3_top_data, conv3_dw_top_data);
+			prelu3_dw->Forward_gpu_native(conv3_dw_top_data);
+			conv4->Forward_gpu_native(cublas_handle_, conv3_dw_top_data, conv4_top_data);
+			conv4_dw->Forward_gpu_native(cublas_handle_, conv4_top_data, conv4_dw_top_data);
+			prelu4_dw->Forward_gpu_native(conv4_dw_top_data);
+			conv5->Forward_gpu_native(cublas_handle_, conv4_dw_top_data, conv5_top_data);
+			prelu5->Forward_gpu_native(conv5_top_data);
+			conv6_1->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_1_top_data);
+			sigmoid1->Forward_gpu_native(conv6_1_top_data);
+			conv6_2->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_2_top_data);
+			conv6_3->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_3_top_data);
 		}
 
 #ifdef USE_CUDNN
-		void LandmarkNet::Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data)
+		void LandmarkNet::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
 		{
 #ifdef _DEBUG
 			CHECK_EQ(input_data->width(), 48);
@@ -166,25 +183,25 @@ namespace glasssix
 			CHECK_EQ(input_data->channels(), 1);
 #endif
 
-			conv1->Forward_cudnn_gpu(input_data, conv1_top_data);
-			prelu1->Forward_native_gpu(conv1_top_data);
-			conv1_dw->Forward_cudnn_gpu(conv1_top_data, conv1_dw_top_data);
-			prelu1_dw->Forward_native_gpu(conv1_dw_top_data);
-			conv2->Forward_cudnn_gpu(conv1_dw_top_data, conv2_top_data);
-			conv2_dw->Forward_cudnn_gpu(conv2_top_data, conv2_dw_top_data);
-			prelu2_dw->Forward_native_gpu(conv2_dw_top_data);
-			conv3->Forward_cudnn_gpu(conv2_dw_top_data, conv3_top_data);
-			conv3_dw->Forward_cudnn_gpu(conv3_top_data, conv3_dw_top_data);
-			prelu3_dw->Forward_native_gpu(conv3_dw_top_data);
-			conv4->Forward_cudnn_gpu(conv3_dw_top_data, conv4_top_data);
-			conv4_dw->Forward_cudnn_gpu(conv4_top_data, conv4_dw_top_data);
-			prelu4_dw->Forward_native_gpu(conv4_dw_top_data);
-			conv5->Forward_native_gpu(cublas_handle_, conv4_dw_top_data, conv5_top_data);
-			prelu5->Forward_native_gpu(conv5_top_data);
-			conv6_1->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_1_top_data);
-			sigmoid1->Forward_native_gpu(conv6_1_top_data);
-			conv6_2->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_2_top_data);
-			conv6_3->Forward_native_gpu(cublas_handle_, conv5_top_data, conv6_3_top_data);
+			conv1->Forward_gpu_cudnn(input_data, conv1_top_data);
+			prelu1->Forward_gpu_native(conv1_top_data);
+			conv1_dw->Forward_gpu_cudnn(conv1_top_data, conv1_dw_top_data);
+			prelu1_dw->Forward_gpu_native(conv1_dw_top_data);
+			conv2->Forward_gpu_cudnn(conv1_dw_top_data, conv2_top_data);
+			conv2_dw->Forward_gpu_cudnn(conv2_top_data, conv2_dw_top_data);
+			prelu2_dw->Forward_gpu_native(conv2_dw_top_data);
+			conv3->Forward_gpu_cudnn(conv2_dw_top_data, conv3_top_data);
+			conv3_dw->Forward_gpu_cudnn(conv3_top_data, conv3_dw_top_data);
+			prelu3_dw->Forward_gpu_native(conv3_dw_top_data);
+			conv4->Forward_gpu_cudnn(conv3_dw_top_data, conv4_top_data);
+			conv4_dw->Forward_gpu_cudnn(conv4_top_data, conv4_dw_top_data);
+			prelu4_dw->Forward_gpu_native(conv4_dw_top_data);
+			conv5->Forward_gpu_native(cublas_handle_, conv4_dw_top_data, conv5_top_data);
+			prelu5->Forward_gpu_native(conv5_top_data);
+			conv6_1->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_1_top_data);
+			sigmoid1->Forward_gpu_native(conv6_1_top_data);
+			conv6_2->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_2_top_data);
+			conv6_3->Forward_gpu_native(cublas_handle_, conv5_top_data, conv6_3_top_data);
 		}
 #endif 
 #endif

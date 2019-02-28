@@ -92,9 +92,9 @@ namespace glasssix
 
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_native_gpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-			void Forward_cudnn_gpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif
 			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
@@ -128,10 +128,10 @@ namespace glasssix
 					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault);
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
-					Forward_cudnn_gpu(tensor_float_data);
+					Forward_gpu_cudnn(tensor_float_data);
 					return;
 #endif
-					Forward_native_gpu(tensor_float_data);
+					Forward_gpu_native(tensor_float_data);
 					return;
 #else
 					NO_GPU;
@@ -168,10 +168,10 @@ namespace glasssix
 					tensor_operation_gpu::type_converter_gpu(tensor_unsigned_char_data, tensor_float_data);
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
 #ifdef USE_CUDNN
-					Forward_cudnn_gpu(tensor_float_data);
+					Forward_gpu_cudnn(tensor_float_data);
 					return;
 #endif
-					Forward_native_gpu(tensor_float_data);
+					Forward_gpu_native(tensor_float_data);
 					return;
 #else
 					NO_GPU;
