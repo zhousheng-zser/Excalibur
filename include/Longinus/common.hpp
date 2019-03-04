@@ -38,7 +38,7 @@ namespace glasssix
 		} FaceRect;
 
 		class BaseLonginusCascade;
-		class LONGINUS_DLL LonginusDetector;
+		class /*LONGINUS_DLL*/ LonginusDetector;
 
 		typedef struct CandidateRect : public FaceRect
 		{
