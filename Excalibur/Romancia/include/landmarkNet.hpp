@@ -2,9 +2,9 @@
 #define _LANDMARKNET_HPP_
 
 #include "baseNet.hpp"
-#include "../Excalibur/support_layers.hpp"
-#include "../Excalibur/tensor_operation_cpu.hpp"
-#include "../Excalibur/tensor_operation_gpu.hpp"
+#include "../../Excalibur/support_layers.hpp"
+#include "../../Excalibur/tensor_operation_cpu.hpp"
+#include "../../Excalibur/tensor_operation_gpu.hpp"
 
 using namespace glasssix::excalibur;
 
@@ -51,29 +51,29 @@ namespace glasssix
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			//
 
-			Declear_Opration(convolution, conv1);
+			Declear_Opration(baseconv, conv1);
 			Neuron_Name(conv1);
 			Declear_Opration(prelu, prelu1);
 			Neuron_Name(prelu1);
-			Declear_Opration(convolution, conv1_dw);
+			Declear_Opration(baseconv, conv1_dw);
 			Neuron_Name(conv1_dw);
 			Declear_Opration(prelu, prelu1_dw);
 			Neuron_Name(prelu1_dw);
-			Declear_Opration(convolution, conv2);
+			Declear_Opration(baseconv, conv2);
 			Neuron_Name(conv2);
-			Declear_Opration(convolution, conv2_dw);
+			Declear_Opration(baseconv, conv2_dw);
 			Neuron_Name(conv2_dw);
 			Declear_Opration(prelu, prelu2_dw);
 			Neuron_Name(prelu2_dw);
-			Declear_Opration(convolution, conv3);
+			Declear_Opration(baseconv, conv3);
 			Neuron_Name(conv3);
-			Declear_Opration(convolution, conv3_dw);
+			Declear_Opration(baseconv, conv3_dw);
 			Neuron_Name(conv3_dw);
 			Declear_Opration(prelu, prelu3_dw);
 			Neuron_Name(prelu3_dw);
-			Declear_Opration(convolution, conv4);
+			Declear_Opration(baseconv, conv4);
 			Neuron_Name(conv4);
-			Declear_Opration(convolution, conv4_dw);
+			Declear_Opration(baseconv, conv4_dw);
 			Neuron_Name(conv4_dw);
 			Declear_Opration(prelu, prelu4_dw);
 			Neuron_Name(prelu4_dw);
