@@ -150,11 +150,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </CudaCompile>
-    <CudaCompile Include="convolution.cu">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </CudaCompile>
+    <CudaCompile Include="conv_cudnn_gpu.cu" />
+    <CudaCompile Include="conv_depthwise_native_gpu.cu" />
+    <CudaCompile Include="conv_native_gpu.cu" />
     <CudaCompile Include="eltwise.cu">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -226,9 +224,15 @@
     </CudaCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="base_conv.hpp" />
     <ClInclude Include="caffe.pb.h" />
     <ClInclude Include="concat.hpp" />
-    <ClInclude Include="convolution.hpp" />
+    <ClInclude Include="conv_cudnn_gpu.hpp" />
+    <ClInclude Include="conv_depthwise_native_gpu.hpp" />
+    <ClInclude Include="conv_mkl_batch_cpu.hpp" />
+    <ClInclude Include="conv_native_cpu.hpp" />
+    <ClInclude Include="conv_native_gpu.hpp" />
+    <ClInclude Include="conv_winograd_cpu.hpp" />
     <ClInclude Include="cudnn.hpp" />
     <ClInclude Include="eltwise.hpp" />
     <ClInclude Include="flip.hpp" />
@@ -263,10 +267,9 @@
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
     </ClCompile>
-    <ClCompile Include="convolution.cpp">
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
-      <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
-    </ClCompile>
+    <ClCompile Include="conv_mkl_batch_cpu.cpp" />
+    <ClCompile Include="conv_native_cpu.cpp" />
+    <ClCompile Include="conv_winograd_cpu.cpp" />
     <ClCompile Include="cudnn.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</CompileAsManaged>
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</CompileAsManaged>
