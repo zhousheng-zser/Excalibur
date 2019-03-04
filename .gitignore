@@ -65,8 +65,4 @@
 *.docx
 *.xlsx
 *.vs
-backup/*
-/Excalibur/TestCassius/*
-/Excalibur/TestLonginus/*
-/Excalibur/TestImages/*
-/Excalibur/x64/*
+*.CopyComplete
