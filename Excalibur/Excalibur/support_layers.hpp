@@ -1,7 +1,13 @@
 #pragma once
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
-#include "convolution.hpp"
+#include "base_conv.hpp"
+#include "conv_cudnn_gpu.hpp"
+#include "conv_depthwise_native_gpu.hpp"
+#include "conv_mkl_batch_cpu.hpp"
+#include "conv_native_cpu.hpp"
+#include "conv_native_gpu.hpp"
+#include "conv_winograd_cpu.hpp"
 #include "prelu.hpp"
 #include "pooling.hpp"
 #include "eltwise.hpp"
@@ -105,16 +111,48 @@ for (int i = 0; i < sizeof(netname##_##layer_para) / sizeof(unsigned short); i++
 layer_para[i] = half2float(netname##_##layer_para[i]);}}
 #endif
 
-#define Init_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
-conv_name = new convolution(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+#define Init_Conv_CUDNN_GPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_cudnn_gpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
 conv_name->set_weights(conv_name##_##weights);\
 conv_name->set_bias(conv_name##_##bias);
 
-#define Init_DepthConv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
-conv_name = new convolution(input_channel, output_channel, kernel_size, output_channel, stride, pad, bias_term, device_);\
+#define Init_Conv_Depthwise_Native_GPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_depthwise_native_gpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
 conv_name->set_weights(conv_name##_##weights);\
-conv_name->set_bias(conv_name##_##bias);\
-conv_name->set_depthwise();
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_MKL_Batch_CPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_mkl_batch_cpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_Native_CPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_native_cpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_Depthwise_Native_CPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_native_cpu(input_channel, output_channel, kernel_size, output_channel, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_Native_GPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_native_gpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_Winograd_GPU_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+conv_name = new conv_winograd_cpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_);\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
+
+#define Init_Conv_Params(conv_name, input_channel, output_channel, kernel_size, stride, pad, bias_term) \
+if(device_ < 0){\
+conv_name = new conv_native_cpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_); }\
+else{\
+conv_name = new conv_native_gpu(input_channel, output_channel, kernel_size, stride, pad, bias_term, device_); }\
+conv_name->set_weights(conv_name##_##weights);\
+conv_name->set_bias(conv_name##_##bias);
 
 #define Init_PReLU_Params(prelu_name, input_channel, isrelu)\
 prelu_name = new prelu(input_channel, isrelu, device_);\

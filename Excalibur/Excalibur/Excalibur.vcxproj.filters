@@ -24,9 +24,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="convolution.hpp">
-      <Filter>include</Filter>
-    </ClInclude>
     <ClInclude Include="eltwise.hpp">
       <Filter>include</Filter>
     </ClInclude>
@@ -102,11 +99,29 @@
     <ClInclude Include="tensor_operation_gpu.hpp">
       <Filter>include\tensor_utils</Filter>
     </ClInclude>
+    <ClInclude Include="conv_winograd_cpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="conv_native_cpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="conv_mkl_batch_cpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="conv_native_gpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="conv_depthwise_native_gpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="conv_cudnn_gpu.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="base_conv.hpp">
+      <Filter>include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="convolution.cpp">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="eltwise.cpp">
       <Filter>src</Filter>
     </ClCompile>
@@ -161,12 +176,18 @@
     <ClCompile Include="caffe.pb.cc">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="conv_winograd_cpu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="conv_native_cpu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="conv_mkl_batch_cpu.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="concat.cu">
-      <Filter>cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="convolution.cu">
       <Filter>cu</Filter>
     </CudaCompile>
     <CudaCompile Include="eltwise.cu">
@@ -209,6 +230,15 @@
       <Filter>cu</Filter>
     </CudaCompile>
     <CudaCompile Include="tensor_operation_gpu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv_native_gpu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv_depthwise_native_gpu.cu">
+      <Filter>cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="conv_cudnn_gpu.cu">
       <Filter>cu</Filter>
     </CudaCompile>
   </ItemGroup>

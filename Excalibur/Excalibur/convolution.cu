@@ -118,10 +118,9 @@ namespace glasssix
 					col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 					gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
 					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-					conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-					out_spatial_dim_ = output_dim_w_*output_dim_h_;
-					col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-					output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+					output_spatial_dim_ = output_dim_w_*output_dim_h_;
+					col_offset_ = kernel_dim_ * output_spatial_dim_;
+					output_offset_ = output_Channel_ * output_spatial_dim_ / group_;
 					math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 					isfirst = false;
 				}
@@ -134,10 +133,10 @@ namespace glasssix
 						col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 						gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
 						bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-						conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-						out_spatial_dim_ = output_dim_w_*output_dim_h_;
-						col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-						output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+						output_spatial_dim_ = output_dim_w_*output_dim_h_;
+						output_spatial_dim_ = output_dim_w_*output_dim_h_;
+						col_offset_ = kernel_dim_ * output_spatial_dim_;
+						output_offset_ = output_Channel_ * output_spatial_dim_ / group_;
 						math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 					}
 				}
@@ -169,10 +168,10 @@ namespace glasssix
 					col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 					gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
 					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-					conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-					out_spatial_dim_ = output_dim_w_*output_dim_h_;
-					col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-					output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+					output_spatial_dim_ = output_dim_w_*output_dim_h_;
+					output_spatial_dim_ = output_dim_w_*output_dim_h_;
+					col_offset_ = kernel_dim_ * output_spatial_dim_;
+					output_offset_ = output_Channel_ * output_spatial_dim_ / group_;
 					math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 					isfirst = false;
 				}
@@ -185,10 +184,10 @@ namespace glasssix
 						col_buffer_.reset(new tensor<float>(std::vector<int>{kernel_dim_*group_, output_dim_h_, output_dim_w_}, device_));
 						gpu_temp_col_buffer_ = col_buffer_->mutable_gpu_data();
 						bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, device_));
-						conv_out_spatial_dim_ = output_dim_w_*output_dim_h_;
-						out_spatial_dim_ = output_dim_w_*output_dim_h_;
-						col_offset_ = kernel_dim_ * conv_out_spatial_dim_;
-						output_offset_ = output_Channel_ * conv_out_spatial_dim_ / group_;
+						output_spatial_dim_ = output_dim_w_*output_dim_h_;
+						output_spatial_dim_ = output_dim_w_*output_dim_h_;
+						col_offset_ = kernel_dim_ * output_spatial_dim_;
+						output_offset_ = output_Channel_ * output_spatial_dim_ / group_;
 						math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
 					}
 				}

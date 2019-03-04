@@ -173,9 +173,6 @@
     <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
       <Project>{e0af50ac-048c-412f-ba26-13b4f408c96d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\fastfacedetection\fastfacedetection.vcxproj">
-      <Project>{678e0224-db49-47dc-a5a5-8c5a61abb711}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Romancia\Romancia.vcxproj">
       <Project>{63d82e10-2b88-4f41-824b-cba389f7cf18}</Project>
     </ProjectReference>
