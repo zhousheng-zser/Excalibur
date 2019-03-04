@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\utils">
+      <UniqueIdentifier>{7d008de5-d425-4b1d-8c3f-c75382ed2b51}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\cu">
+      <UniqueIdentifier>{9b30e52f-e92e-4b71-9e27-fb6d3508a41e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\Excalibur\base_conv.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\concat.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_depthwise_native_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_mkl_batch_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\cudnn.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\eltwise.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\flip.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\ftensor.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\im2col.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\inner_product.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\mkl_alternate.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\normalize.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\pca.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\pooling.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\prelu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\slice.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\softmax.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\support_layers.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\tensor_operation_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\tensor_utils.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\utensor.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\io.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\math_functions.hpp">
+      <Filter>Header Files\utils</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\Excalibur\accelerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\concat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_mkl_batch_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\cudnn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\eltwise.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\flip.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\im2col.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\inner_product.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\io.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\math_functions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\mirrormax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\normalize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\pca.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\pooling.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\prelu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\slice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\softmax.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\src\Excalibur\concat.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\conv_depthwise_native_gpu.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\eltwise.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\flip.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\im2col.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\inner_product.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\math_functions.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\mirrormax.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\normalize.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\pca.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\pooling.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\prelu.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\slice.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\softmax.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+  </ItemGroup>
+</Project>
