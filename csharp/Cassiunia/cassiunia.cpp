@@ -26,7 +26,7 @@ namespace glasssix
 			cassius_wrapper = nullptr;
 		}
 
-		unsigned char* Cassiunia::Bitmaps2RGB(array<Bitmap^>^ bmps)
+		unsigned char* Cassiunia::Bitmaps2RGBs(array<Bitmap^>^ bmps)
 		{
 			int num = bmps->Length;
 			if (num <= 0)
@@ -83,7 +83,7 @@ namespace glasssix
 			{
 				return gcnew array<float>(0);
 			}
-			auto data = Bitmaps2RGB(imgDatas);
+			auto data = Bitmaps2RGBs(imgDatas);
 			if (!data)
 			{
 				return gcnew array<float>(0);

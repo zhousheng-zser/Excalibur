@@ -20,21 +20,21 @@ namespace glasssix
 			MULTIVIEW,
 			MULTIVIEW_REINFORCE
 		}DetectionType;
-		struct FaceRectWithLandmark : public FaceRect
+		struct FaceRectwithFaceInfo : public FaceRect
 		{
 			Point2f pts[5];
 			float yaw;
 			float pitch;
 			float roll;
-			float prob;
+			//float prob;
 
-			FaceRectWithLandmark() {}
-			FaceRectWithLandmark(const FaceRect& rect)
+			FaceRectwithFaceInfo() {}
+			FaceRectwithFaceInfo(const FaceRect& rect)
 			{
 				*dynamic_cast<FaceRect *>(this) = rect;
 			}
 
-			FaceRectWithLandmark &operator = (const FaceRect& rect)
+			FaceRectwithFaceInfo &operator = (const FaceRect& rect)
 			{
 				*dynamic_cast<FaceRect *>(this) = rect;
 				return *this;
@@ -48,16 +48,18 @@ namespace glasssix
 			virtual ~LonginusDetector();
 			std::vector<FaceRect> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
-			std::vector<FaceRectWithLandmark> detectWithLandmark(unsigned char *gray, int width, int height, int step, int minSize, float scale,
-				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false, int order = 0);
+			std::vector<FaceRectwithFaceInfo> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
+				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
 
-			std::vector<FaceInfomation> detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
+			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage) const;
 
-			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency);
+			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency) const;
+
+			std::vector<Match_Retval> match(std::vector<FaceRectwithFaceInfo> &faceRect, const int frame_extract_frequency) const;
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
-				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks);
+				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;
 
 
 #ifdef Internal_SDK

@@ -56,7 +56,7 @@ namespace glasssix
 				return output;
 			}
 
-			unsigned char* Bitmaps2RGB(array<Bitmap^>^ bmps);
+			unsigned char* Bitmaps2RGBs(array<Bitmap^>^ bmps);
 		};
 	}
 }
