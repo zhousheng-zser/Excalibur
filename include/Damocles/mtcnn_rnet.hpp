@@ -33,19 +33,19 @@ namespace glasssix
 			Declear_Params(conv5_3_bias);
 			//
 			std::shared_ptr<tensor<float>> tensor_data = nullptr;
-			Declear_Opration(convolution, conv1);
+			Declear_Opration(baseconv, conv1);
 			Neuron_Name(conv1);
 			Declear_Opration(prelu, prelu1);
 			Neuron_Name(prelu1);
 			Declear_Opration(pooling, pool1);
 			Neuron_Name(pool1);
-			Declear_Opration(convolution, conv2);
+			Declear_Opration(baseconv, conv2);
 			Neuron_Name(conv2);
 			Declear_Opration(prelu, prelu2);
 			Neuron_Name(prelu2);
 			Declear_Opration(pooling, pool2);
 			Neuron_Name(pool2);
-			Declear_Opration(convolution, conv3);
+			Declear_Opration(baseconv, conv3);
 			Neuron_Name(conv3);
 			Declear_Opration(prelu, prelu3);
 			Neuron_Name(prelu3);

@@ -1,8 +1,8 @@
-#ifdef USE_CUDA
 #ifndef _CONV_CUDNN_GPU_HPP_
 #define _CONV_CUDNN_GPU_HPP_
+#ifdef USE_CUDNN
 #include "base_conv.hpp"
-#include "conv_depthwise_native_gpu.hpp"
+
 namespace glasssix
 {
 	namespace excalibur
@@ -41,5 +41,5 @@ namespace glasssix
 	}
 }
 
-#endif // !_CONV_CUDNN_GPU_HPP_
 #endif // !USE_CUDA
+#endif // !_CONV_CUDNN_GPU_HPP_
