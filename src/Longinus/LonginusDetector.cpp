@@ -124,17 +124,15 @@ std::vector<FaceRect> LonginusDetector::detect(unsigned char *gray, int width, i
 		rects.push_back(candidateRects[i]);
 	}
 	GroupRects(rects, min_neighbors);
-
-	
 	return rects;
 }
 
-std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned char *gray, int width, int height, int step, int minSize, float scale, int min_neighbors, 
-	bool useMultiThreads, bool doEarlyReject, int order)
+std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, int width, int height, int step, int minSize, float scale, int min_neighbors,
+	int order, bool useMultiThreads, bool doEarlyReject)
 {
 	std::vector<FaceRect> rects = detect(gray, width, height, step, minSize, scale, min_neighbors, useMultiThreads, doEarlyReject);
 		
-	std::vector<std::vector<float> > keypointParam;
+	std::vector<std::vector<float> > infoParam;
 	std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 	group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));
 
@@ -152,13 +150,11 @@ std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned 
 			tensor_operation_cpu::resize_cpu(rect_tensor, rect48_tensor, 48, 48);
 			memcpy(group_rect_tensor->mutable_cpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->cpu_data(), 1 * 48 * 48 * sizeof(unsigned char));
 		}
-
 		bansheelia_->Forward(group_rect_tensor->cpu_data(), rects.size(), order);
-		bansheelia_->getParam(keypointParam, rects.size());
+		bansheelia_->getParam(infoParam, rects.size());
 	}
 	else
 	{
-
 #ifdef USE_CUDA
 		for (size_t i = 0; i < rects.size(); i++)
 		{
@@ -174,13 +170,13 @@ std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned 
 		}
 
 		bansheelia_->Forward(group_rect_tensor->gpu_data(), rects.size(), order);
-		bansheelia_->getParam(keypointParam, rects.size());
+		bansheelia_->getParam(infoParam, rects.size());
 #else
 		NO_GPU;
 #endif
 	}
 
-	std::vector<FaceRectWithLandmark> rectsWithLandmark;
+	std::vector<FaceRectwithFaceInfo> rectsWithLandmark;
 	rectsWithLandmark.resize(rects.size());
 	for (size_t i = 0; i < rects.size(); i++)
 	{
@@ -189,16 +185,16 @@ std::vector<FaceRectWithLandmark> LonginusDetector::detectWithLandmark(unsigned 
 		rectsWithLandmark[i].height = rects[i].height;
 		rectsWithLandmark[i].width = rects[i].width;
 
-		rectsWithLandmark[i].prob = keypointParam[i][0];
+		rectsWithLandmark[i].confidence = infoParam[i][0];
 
-		rectsWithLandmark[i].yaw = keypointParam[i][1];
-		rectsWithLandmark[i].pitch = keypointParam[i][2];
-		rectsWithLandmark[i].roll = keypointParam[i][3];
+		rectsWithLandmark[i].yaw = infoParam[i][1] * 90;
+		rectsWithLandmark[i].pitch = infoParam[i][2] * 90;
+		rectsWithLandmark[i].roll = infoParam[i][3] * 90;
 
 		for (size_t j = 0; j < 5; j++)
 		{
-			rectsWithLandmark[i].pts[j].x = keypointParam[i][4 + 2 * j];
-			rectsWithLandmark[i].pts[j].y = keypointParam[i][4 + 2 * j + 1];
+			rectsWithLandmark[i].pts[j].x = infoParam[i][4 + 2 * j] * rectsWithLandmark[i].width + rectsWithLandmark[i].x;
+			rectsWithLandmark[i].pts[j].y = infoParam[i][4 + 2 * j + 1] * rectsWithLandmark[i].height + rectsWithLandmark[i].y;
 		}
 	}
 
@@ -294,19 +290,47 @@ void LonginusDetector::set(DetectionType detectionType, int device)
 }
 
 
-std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency)
+std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency) const
 {
 	return matcher_->match(faceRect, frame_extract_frequency);
 }
 
-std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks)
+std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRectwithFaceInfo> &faceRectInfo, const int frame_extract_frequency) const
+{
+	std::vector<FaceRect> faceRect;
+	for (auto i = 0; i < faceRectInfo.size(); i++)
+	{
+		faceRect.push_back(FaceRect(faceRectInfo[i].x, faceRectInfo[i].y, faceRectInfo[i].width, faceRectInfo[i].height, 
+			faceRectInfo[i].neighbors, faceRectInfo[i].confidence));
+	}
+	return matcher_->match(faceRect, frame_extract_frequency);
+}
+
+std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width,
+	std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const
 {
 	return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 }
 
 
-std::vector<FaceInfomation> LonginusDetector::detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
+std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char* image, const int channels, const int height, const int width,
 	const int minSize, const float* threshold, const float factor, const int stage) const
 {
-	return diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
+	std::vector<FaceRectwithFaceInfo> output;
+	auto res =  diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
+	for (auto i = 0; i < res.size(); i++)
+	{
+		float w = res[i].bbox.xmax - res[i].bbox.xmin;
+		float h = res[i].bbox.ymax - res[i].bbox.ymin;
+		FaceRectwithFaceInfo info(FaceRect(res[i].bbox.xmin + w / 2 - h / 2, res[i].bbox.ymin, h, h, 0, res[i].bbox.score));
+		info.yaw = 0.0f;
+		info.pitch = 0.0f;
+		info.roll = 0.0f;
+		for (auto j = 0; j < 5; j++)
+		{
+			info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
+		}
+		output.push_back(info);
+	}
+	return output;
 }

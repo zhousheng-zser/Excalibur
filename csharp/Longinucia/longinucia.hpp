@@ -70,6 +70,7 @@ namespace glasssix
 		{
 			LonginusDetector* long_wrap;
 			unsigned char* Bitmap2Gray(System::Drawing::Bitmap^ bmp);
+			unsigned char* Bitmaps2RGB(System::Drawing::Bitmap^ bmp);
 			array<System::Drawing::Bitmap^>^ Uchar2Bitmaps(unsigned char* data, int num, int channel, int height, int width);
 			unsigned char* image_data;
 			int width;
@@ -85,6 +86,8 @@ namespace glasssix
 
 			List<FaceInfo>^ Face_Detect(System::Drawing::Bitmap^ bmp, int min_size, float scale, 
 				int minNeighbors, bool useMultiThreads, bool doEarlyReject, bool doLandmark);
+
+			List<FaceInfo>^ Face_DetectEx(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage);
 
 			void Match_Faces(List<FaceInfo>^% infos, int frame_extract_frequency);
 
