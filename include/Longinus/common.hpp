@@ -91,11 +91,11 @@ namespace glasssix
 			float score;
 		} FaceBox;
 
-		typedef struct FaceInfoX {
+		typedef struct FaceInfomation {
 			float bbox_reg[4];
 			float landmark[10];
 			FaceBox bbox;
-		} FaceInfoX;
+		} FaceInfomation;
 	}
 }
 

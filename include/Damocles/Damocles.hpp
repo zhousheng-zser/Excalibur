@@ -1,7 +1,7 @@
 #ifndef _DAMOCLES_HPP_
 #define _DAMOCLES_HPP_
 
-#include "baseCNN.hpp"
+#include "vdamocles.hpp"
 
 namespace glasssix
 {
@@ -17,11 +17,11 @@ namespace glasssix
 
 			~Damocles();
 
-			std::vector<FaceInfoX> Detect(const unsigned char* img, const int channels, const int height, const int width,
-				const int min_size, const float* threshold, const float factor, const int stage);
+			std::vector<FaceInfomation> Detect(const unsigned char* img, const int channels, const int height, const int width,
+				const int min_size, const float* threshold, const float factor, const int stage) const;
 
 		private:
-			BaseCNN *baseCNN_;
+			vDamocles *diodorus_;
 		};
 	}
 }

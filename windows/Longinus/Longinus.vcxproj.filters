@@ -85,11 +85,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\Longinus\ImageOperation.cu">
-      <Filter>Source Files\cu</Filter>
-    </None>
-    <None Include="..\..\src\Longinus\InternalLonginusCascade.cu">
-      <Filter>Source Files\cu</Filter>
-    </None>
+    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu" />
+    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu" />
   </ItemGroup>
 </Project>

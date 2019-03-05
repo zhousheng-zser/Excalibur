@@ -5,7 +5,7 @@
 #include "ImageOperation.hpp"
 #include "InternalLonginusCascade.hpp"
 #include "../../include/Romancia/banshee.hpp"
-//#include "../fastfacedetection/mtcnn.hpp"
+#include "../../include/Damocles/mtcnn.hpp"
 
 using namespace glasssix::longinus;
 using namespace glasssix::excalibur;
@@ -305,8 +305,8 @@ std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_
 }
 
 
-//std::vector<FaceInfoX> LonginusDetector::detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
-//	const int minSize, const float* threshold, const float factor, const int stage)
-//{
-//	return baseCNN_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
-//}
+std::vector<FaceInfomation> LonginusDetector::detectWithMTCNN(const unsigned char* image, const int channels, const int height, const int width,
+	const int minSize, const float* threshold, const float factor, const int stage) const
+{
+	return diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
+}
