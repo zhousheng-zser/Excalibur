@@ -1,7 +1,7 @@
 #ifndef _CASSIUS_HPP_
 #define _CASSIUS_HPP_
 
-#include "vUnicorn.hpp"
+#include "vunicorn.hpp"
 
 #ifdef EXPORT_CASSIUS
 #undef EXPORT_CASSIUS
@@ -22,19 +22,19 @@ namespace glasssix
 {
 	namespace cassius
 	{
-		class EXPORT_CASSIUS Cassius
+		class EXPORT_CASSIUS CassiusFeature
 		{
 		public:
 
-			Cassius() {}
+			CassiusFeature();
 
-			Cassius(int device);
+			CassiusFeature(int device);
 
-			~Cassius();
+			~CassiusFeature();
 
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0);
+			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const ;
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0);
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
 
 		private:
 			vUnicorn *unicornia_;
