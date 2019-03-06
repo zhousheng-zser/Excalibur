@@ -44,7 +44,6 @@
 *.ipch
 *.metagen
 *.res
-*.txt
 *.exp
 *.ipdb
 *.iobj
