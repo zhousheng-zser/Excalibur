@@ -4,7 +4,7 @@
 
 #include <msclr\marshal_cppstd.h>
 #include <msclr\marshal.h>
-#include "../../include/Cassius/cassius.hpp"
+#include "../../include/Cassius/CassiusFeature.hpp"
 
 using namespace System;
 using namespace System::Runtime::InteropServices;
@@ -43,7 +43,7 @@ namespace glasssix
 			}
 
 		private:
-			Cassius* cassius_wrapper;
+			CassiusFeature* cassius_wrapper;
 			int device_;
 
 			static double innerproduct(array<float>^ feature1, array<float>^ feature2)

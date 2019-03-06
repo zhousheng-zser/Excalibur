@@ -12,7 +12,7 @@ namespace glasssix
 		Cassiunia::Cassiunia(int device)
 		{
 			this->device_ = device;
-			cassius_wrapper = new Cassius(device_);
+			cassius_wrapper = new CassiusFeature(device_);
 		}
 
 		Cassiunia::~Cassiunia()

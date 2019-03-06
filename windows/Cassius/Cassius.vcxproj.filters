@@ -15,21 +15,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Cassius\cassius.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Cassius\vunicorn.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Cassius\unicorn.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Cassius\CassiusFeature.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Cassius\cassius.cpp">
+    <ClCompile Include="..\..\src\Cassius\unicorn.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Cassius\unicorn.cpp">
+    <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
