@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <random>
-#include <glasssix\timer.hpp>
 #include "distance.hpp"
 #ifdef _OPENMP
 #include <omp.h>
@@ -17,7 +16,6 @@
 #endif 
 
 using namespace std;
-//using namespace boost;
 
 namespace glasssix
 {
@@ -296,13 +294,13 @@ namespace glasssix
 
 			if (baseNum_ <= params.K)
 			{
-				cerr << "Warning: small dataset, shrinking params.K to " << baseNum_ - 1 << "." << endl;
+				LOG(WARNING) << "Warning: small dataset, shrinking params.K to " << baseNum_ - 1 << ".";
 				params.K = baseNum_ - 1;
 			}
 			//throw runtime_error("K larger than dataset size");
 			if (baseNum_ <= params.poolSize)
 			{
-				cerr << "Warning: small dataset, shrinking L to " << baseNum_ - 1 << "." << endl;
+				LOG(WARNING) << "Warning: small dataset, shrinking L to " << baseNum_ - 1 << ".";
 				params.poolSize = baseNum_ - 1;
 			}
 
@@ -490,18 +488,10 @@ namespace glasssix
 			init();
 
 			unsigned N = baseNum_;
-
-			glasssix::Timer calcTime;
-			double elapsedTimes = 0;
-
 			vector<Control> controls;
-
-			cerr << "Generating control..." << endl;
 			
 			int controlNum = 100 < N ? 100 : N;
 			generateControl(params.K, controlNum, &controls);
-
-			cerr << "indexing kgraph..." << endl;			
 			info.stopCondition = IndexInfo::ITERATION;
 			info.recall = 0;
 			info.iterations = 0;
@@ -520,8 +510,7 @@ namespace glasssix
 #endif // PROFILER
 
 			for (unsigned it = 0; (params.iterations <= 0) || (it < params.iterations); ++it)
-			{
-				calcTime.Start();				
+			{		
 				++info.iterations;
 
 				join();
@@ -542,32 +531,16 @@ namespace glasssix
 					if (info.delta <= params.delta)
 					{
 						info.stopCondition = IndexInfo::DELTA;
-						cerr << "recall: " << info.recall
-							<< " delta: " << info.delta
-							<< endl;
-
+						//LOG(INFO) << "recall: " << info.recall << " delta: " << info.delta;
 						break;
 					}
 					if (info.recall >= params.recall)
 					{
 						info.stopCondition = IndexInfo::RECALL;
-						cerr << "recall: " << info.recall
-							<< " delta: " << info.delta
-							<< endl;
-
+						//LOG(INFO) << "recall: " << info.recall << " delta: " << info.delta;
 						break;
 					}
-
 					update();
-
-					calcTime.Stop();
-					elapsedTimes += calcTime.GetElapsedMilliseconds() / 1000;
-
-					cerr << "iteration: " << info.iterations
-						<< " recall: " << info.recall
-						<< " delta: " << info.delta
-						<< " time: " << elapsedTimes
-						<< endl;
 				}
 			}
 

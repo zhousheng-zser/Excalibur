@@ -21,8 +21,6 @@ namespace glasssix
 			tmp2 = _mm256_loadu_ps(addr2);\
 			tmp1 = _mm256_sub_ps(tmp1, tmp2); \
 			dest = mm_fmadd_ps(tmp1, tmp1, dest);
-			/*tmp1 = _mm256_mul_ps(tmp1, tmp1); \
-			dest = _mm256_add_ps(dest, tmp1); */
 
 			__m256 sum = mm_setzero_ps();
 			__m256 l0, l1, l2, l3;
@@ -59,8 +57,6 @@ namespace glasssix
 			tmp2 = _mm_load_ps(addr2);\
 			tmp1 = _mm_sub_ps(tmp1, tmp2); \
 			dest = mm_fmadd_ps(tmp1, tmp1, dest);
-			/*tmp1 = _mm_mul_ps(tmp1, tmp1); \
-			dest = _mm_add_ps(dest, tmp1);*/
 
 			__m128 sum = mm_setzero_ps();
 			__m128 l0, l1, l2, l3;
@@ -124,8 +120,6 @@ namespace glasssix
 		  tmp1 = _mm256_loadu_ps(addr1);\
           tmp2 = _mm256_loadu_ps(addr2);\
 		  dest = mm_fmadd_ps(tmp1, tmp2, dest);
-          /*tmp1 = _mm256_mul_ps(tmp1, tmp2); \
-          dest = _mm256_add_ps(dest, tmp1);*/
 
 			__m256 sum = mm_setzero_ps();
 			__m256 l0, l1, l2, l3;
@@ -159,8 +153,8 @@ namespace glasssix
 #define SSE_DOT(addr1, addr2, dest, tmp1, tmp2) \
           tmp1 = _mm_loadu_ps(addr1);\
           tmp2 = _mm_loadu_ps(addr2);\
-          tmp1 = _mm_mul_ps(tmp1, tmp2); \
-          dest = _mm_add_ps(dest, tmp1);
+          dest = mm_fmadd_ps(tmp1, tmp2, dest);
+
 			__m128 sum = mm_setzero_ps();
 			__m128 l0, l1, l2, l3;
 			__m128 r0, r1, r2, r3;
@@ -222,8 +216,6 @@ namespace glasssix
 #define AVX_L2NORM(addr, dest, tmp) \
 	tmp = _mm256_loadu_ps(addr); \
 	dest = mm_fmadd_ps(tmp, tmp, dest);
-    /*tmp = _mm256_mul_ps(tmp, tmp); \
-    dest = _mm256_add_ps(dest, tmp);*/
 
 			__m256 sum = mm_setzero_ps();
 			__m256 l0, l1, l2, l3;
@@ -254,8 +246,6 @@ namespace glasssix
 #define SSE_L2NORM(addr, dest, tmp) \
     tmp = _mm_loadu_ps(addr); \
 	dest = mm_fmadd_ps(tmp, tmp, dest);
-    /*tmp = _mm_mul_ps(tmp, tmp); \
-    dest = _mm_add_ps(dest, tmp);*/
 
 			__m128 sum = mm_setzero_ps();
 			__m128 l0, l1, l2, l3;
@@ -322,8 +312,6 @@ namespace glasssix
 #define AVX_L2NORM2(addr, dest, tmp) \
 	tmp = _mm256_loadu_ps(addr); \
 	dest = mm_fmadd_ps(tmp, tmp, dest);
-    /*tmp = _mm256_mul_ps(tmp, tmp); \
-    dest = _mm256_add_ps(dest, tmp);*/
 
 			__m256 sum = mm_setzero_ps();
 			__m256 l0, l1, l2, l3;
@@ -354,8 +342,6 @@ namespace glasssix
 #define SSE_L2NORM2(addr, dest, tmp) \
     tmp = _mm_loadu_ps(addr); \
 	dest = mm_fmadd_ps(tmp, tmp, dest);
-    /*tmp = _mm_mul_ps(tmp, tmp); \
-    dest = _mm_add_ps(dest, tmp);*/
 
 			__m128 sum = mm_setzero_ps();
 			__m128 l0, l1, l2, l3;

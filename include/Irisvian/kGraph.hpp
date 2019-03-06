@@ -53,11 +53,6 @@ namespace glasssix
 			Nhoods nhoods;
 			std::vector<std::vector<Neighbor>> kgraph;
 
-			//instructionFlag_ = 0, NO_SIMD
-			//instructionFlag_ = 1, SSE
-			//instructionFlag_ = 2, AVX
-			unsigned instructionFlag_ = 0;
-
 			KGraph() : baseData_(nullptr), baseNum_(0), dimension_(0) {}
 			~KGraph() {}
 

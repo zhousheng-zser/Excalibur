@@ -21,6 +21,8 @@ namespace glasssix
 
 			virtual void loadGraph(const char* graphPath, const char *basedataPath) = 0;
 
+			virtual const std::vector<const float*>* getBasedata() = 0;
+
 			virtual void optimizeGraph() = 0;
 
 #ifdef PROFILER
@@ -28,7 +30,7 @@ namespace glasssix
 				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) = 0;
 #else
 			virtual void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnDistancesInPercentage) = 0;
+				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) = 0;
 #endif // !PROFILER
 			virtual void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) = 0;
 

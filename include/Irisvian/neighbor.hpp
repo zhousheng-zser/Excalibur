@@ -1,12 +1,10 @@
 #ifndef _NEIGHBOR_HPP_
 #define _NEIGHBOR_HPP_
-#define COSINE_DISTANCE
-//#define PROFILER
 
 #include <vector>
 #include <mutex>
+#include <glasssix\accelerator.hpp>
 #include "boost/smart_ptr/detail/spinlock.hpp"
-#include <iostream>
 
 namespace glasssix 
 {
