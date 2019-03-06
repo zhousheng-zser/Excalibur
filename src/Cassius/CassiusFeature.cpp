@@ -1,0 +1,34 @@
+#include "CassiusFeature.hpp"
+#include "unicorn.hpp"
+
+
+namespace glasssix
+{
+	namespace cassius
+	{
+		CassiusFeature::CassiusFeature()
+		{
+			unicornia_ = new Unicorn(-1);
+		}
+
+		CassiusFeature::CassiusFeature(int device)
+		{
+			unicornia_ = new Unicorn(device);
+		}
+
+		CassiusFeature::~CassiusFeature()
+		{
+			delete unicornia_;
+		}
+
+		std::vector<std::vector<float> > CassiusFeature::Forward(const float* input_data, unsigned num, int order) const
+		{
+			return unicornia_->Forward(input_data, num, order);
+		}
+
+		std::vector<std::vector<float> > CassiusFeature::Forward(const unsigned char* input_data, unsigned num, int order) const
+		{
+			return unicornia_->Forward(input_data, num, order);
+		}
+	}
+}

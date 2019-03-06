@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{546E42E9-516A-4D09-BBE0-D3D567AC1328}</ProjectGuid>
+    <RootNamespace>Excalibur</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\Excalibur\base_conv.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\concat.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_depthwise_native_gpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_mkl_batch_cpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\eltwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\flip.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\ftensor.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\im2col.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\inner_product.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\io.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\math_functions.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\mkl_alternate.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\normalize.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\pca.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\pooling.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\prelu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\slice.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\softmax.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\support_layers.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\tensor_operation_cpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\tensor_utils.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\utensor.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\Excalibur\accelerator.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\concat.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\conv_mkl_batch_cpu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\cudnn.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\eltwise.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\flip.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\im2col.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\inner_product.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\io.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\math_functions.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\mirrormax.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\normalize.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\pca.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\pooling.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\prelu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\src\Excalibur\concat.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\conv_depthwise_native_gpu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\eltwise.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\flip.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\inner_product.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\math_functions.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\mirrormax.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\normalize.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\pca.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\pooling.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\prelu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\slice.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\softmax.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Julius\Julius.vcxproj">
+      <Project>{e28b3350-1f2d-473d-83b7-1bde8e56cd6e}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
+  </ImportGroup>
+</Project>
