@@ -17,11 +17,14 @@ namespace glasssix
 		public:
 			MTCNN(int device_id);
 			~MTCNN();
-			std::vector<FaceInfomation> Detect(const unsigned char* img, const int channels, const int height, const int width, const int min_size, const float* threshold, const float factor, const int stage) override;
+			std::vector<FaceInfomation> Detect(const unsigned char* img, const int channels, const int height, const int width, 
+				const int min_size, const float* threshold, const float factor, const int stage, int order) override;
 			
 		protected:
-			std::vector<FaceInfomation> ProposalNet(const unsigned char* image, const int channels, const int height, const int width, int min_size, float threshold, float factor);
-			std::vector<FaceInfomation> NextStage(const unsigned char* image, const int channels, const int height, const int width, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold);
+			std::vector<FaceInfomation> ProposalNet(const unsigned char* image, const int channels, const int height, const int width, 
+				int min_size, float threshold, float factor, orderType order = orderType::NHWC);
+			std::vector<FaceInfomation> NextStage(const unsigned char* image, const int channels, const int height, const int width,
+				std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order = orderType::NHWC);
 			void BBoxRegression(std::vector<FaceInfomation>& bboxes);
 			void BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height);
 			void BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height);

@@ -10,11 +10,11 @@
 using namespace glasssix::longinus;
 using namespace glasssix::excalibur;
 
-LonginusDetector::LonginusDetector(): device_(-1)
+LonginusDetector::LonginusDetector(int device): device_(device)
 {
 	cascades_ = new std::vector<std::shared_ptr<BaseLonginusCascade>>();
 	bansheelia_.reset(new Banshee(device_));
-	//baseCNN_.reset(new MTCNN(device_));
+	diodorus_.reset(new MTCNN(device_));
 	matcher_.reset(new Matcher());
 	int dstep = (((48 * 8 + 7) / 8) * 4 - 1) &(~(4 - 1));
 	data_.resize(dstep * 48);
@@ -244,7 +244,7 @@ void LonginusDetector::set(DetectionType detectionType, int device)
 	device_ = device;
 	cascades_->resize(0);
 	bansheelia_.reset(new Banshee(device_));
-
+	diodorus_.reset(new MTCNN(device_));
 	InternalLonginusCascade * cascade = nullptr;
 	switch (detectionType)
 	{
@@ -317,7 +317,7 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char
 	const int minSize, const float* threshold, const float factor, const int stage) const
 {
 	std::vector<FaceRectwithFaceInfo> output;
-	auto res =  diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage);
+	auto res =  diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, 1);
 	for (auto i = 0; i < res.size(); i++)
 	{
 		float w = res[i].bbox.xmax - res[i].bbox.xmin;

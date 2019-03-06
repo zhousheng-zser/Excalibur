@@ -181,23 +181,49 @@ namespace glasssix
 		}
 
 		std::vector<FaceInfomation> MTCNN::ProposalNet(const unsigned char* image, const int channels, const int height, const int width, 
-			int minSize, float threshold, float factor) {
-			std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor, src_tensor, resized_tensor;
-			src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
-			if (device_id_ < 0)
+			int minSize, float threshold, float factor, orderType order) 
+		{
+			std::shared_ptr<tensor<unsigned char>> src_tensor, resized_tensor;
+			if (order == NHWC)
 			{
-				memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-				tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
+				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
+				if (device_id_ < 0)
+				{
+					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+				}
+				else
+				{
+#ifdef USE_CUDA
+					cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
+			}
+			else if (order == NCHW)
+			{
+				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
+				if (device_id_ < 0)
+				{
+					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+				}
+				else
+				{
+#ifdef USE_CUDA
+					cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
 			}
 			else
 			{
-#ifdef USE_CUDA
-				cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char),cudaMemcpyDefault);
-				tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
-#else
-				NO_GPU;
-#endif // USE_CUDA
+				NOT_IMPLEMENTED;
 			}
+			
 
 			float scale = 12.f / minSize;
 			float minWH = std::min(height, width) *scale;
@@ -230,12 +256,6 @@ namespace glasssix
 #endif // USE_CUDA
 				}
 
-				//std::cout << "pnet input data:" << std::endl;
-				//for (size_t i = 0; i < 50; i++)
-				//{
-				//	std::cout << input_layer->cpu_data()[i] << " ";
-				//}
-				//std::cout << std::endl;
 				PNet_->Forward(input_layer);
 				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
 				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
@@ -246,7 +266,6 @@ namespace glasssix
 				}
 			}
 			int num_box = (int)total_boxes_.size();
-			//std::cout << "num_box:" << num_box << std::endl;
 			std::vector<FaceInfomation> res_boxes;
 			if (num_box != 0) {
 				res_boxes = NMS(total_boxes_, 0.7f, 'u');
@@ -257,30 +276,53 @@ namespace glasssix
 		}
 
 		std::vector<FaceInfomation> MTCNN::NextStage(const unsigned char* image, const int channels, const int height, const int width, 
-			std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold)
+			std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order)
 		{
 			std::vector<FaceInfomation> res;
 			int batch_size = (int)pre_stage_res.size();
 			if (batch_size == 0)
 				return res;
 
-			std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor, src_tensor, roi_tensor, roi_resized_tensor;
-			src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
-			if (device_id_ < 0)
+			std::shared_ptr<tensor<unsigned char>> src_tensor, roi_tensor, roi_resized_tensor;
+			if (order == NHWC)
 			{
-				memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-				tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
+				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
+				if (device_id_ < 0)
+				{
+					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+				}
+				else
+				{
+#ifdef USE_CUDA
+					cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
+			}
+			else if (order == NCHW)
+			{
+				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
+				if (device_id_ < 0)
+				{
+					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+				}
+				else
+				{
+#ifdef USE_CUDA
+					cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
 			}
 			else
 			{
-#ifdef USE_CUDA
-				cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
-				tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
-#else
-				NO_GPU;
-#endif // USE_CUDA
+				NOT_IMPLEMENTED;
 			}
-			
 
 			std::shared_ptr<tensor<float>> input_layer;
 			std::shared_ptr<tensor<float>> confidence;
@@ -392,14 +434,19 @@ namespace glasssix
 		}
 
 		std::vector<FaceInfomation> MTCNN::Detect(const unsigned char* image, const int channels, const int height, const int width, 
-			const int minSize, const float* threshold, const float factor, const int stage)
+			const int minSize, const float* threshold, const float factor, const int stage, int order)
 		{
 			std::vector<FaceInfomation> pnet_res;
 			std::vector<FaceInfomation> rnet_res;
-			std::vector<FaceInfomation> onet_res;
+			std::vector<FaceInfomation> onet_res; 
+			if (order != 0 && order != 1)
+			{
+				return onet_res;
+			}
+			orderType order_ = (orderType)order;
 			if (stage >= 1)
 			{
-				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor);
+				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor, order_);
 			}
 			if (stage >= 2 && pnet_res.size()>0) {
 				if (pnet_max_detect_num < (int)pnet_res.size()) {
@@ -411,7 +458,7 @@ namespace glasssix
 					int start = iter*step_size;
 					int end = std::min(start + step_size, num);
 					std::vector<FaceInfomation> input(pnet_res.begin() + start, pnet_res.begin() + end);
-					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 24, 24, 2, threshold[1]);
+					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 24, 24, 2, threshold[1], order_);
 					rnet_res.insert(rnet_res.end(), res.begin(), res.end());
 				}
 				rnet_res = NMS(rnet_res, 0.7f, 'u');
@@ -425,7 +472,7 @@ namespace glasssix
 					int start = iter*step_size;
 					int end = std::min(start + step_size, num);
 					std::vector<FaceInfomation> input(rnet_res.begin() + start, rnet_res.begin() + end);
-					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 48, 48, 3, threshold[2]);
+					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 48, 48, 3, threshold[2], order_);
 					onet_res.insert(onet_res.end(), res.begin(), res.end());
 				}
 				BBoxRegression(onet_res);

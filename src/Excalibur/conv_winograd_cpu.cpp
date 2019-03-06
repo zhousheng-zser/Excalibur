@@ -95,9 +95,9 @@ namespace glasssix
 				output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
 				output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
 				output_spatial_dim_ = output_dim_w_*output_dim_h_;
-				top_dim_ = (top)->count(1, 4);
 				top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
 				float* top_data = top->mutable_cpu_data();
+				top_dim_ = (top)->count(1, 4);
 								
 				int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 				int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
@@ -378,9 +378,9 @@ namespace glasssix
 				output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
 				output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
 				output_spatial_dim_ = output_dim_w_*output_dim_h_;
-				top_dim_ = (top)->count(1, 4);
 				top.reset(new tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_Channel_}, device_, order_));
 				float* top_data = top->mutable_cpu_data();
+				top_dim_ = (top)->count(1, 4);
 
 				int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 				int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;

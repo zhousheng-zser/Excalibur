@@ -44,7 +44,7 @@ namespace glasssix
 		class LonginusDetector
 		{
 		public:
-			LonginusDetector();
+			LonginusDetector(int device = -1);
 			virtual ~LonginusDetector();
 			std::vector<FaceRect> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
