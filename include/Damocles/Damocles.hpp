@@ -18,7 +18,7 @@ namespace glasssix
 			~Damocles();
 
 			std::vector<FaceInfomation> Detect(const unsigned char* img, const int channels, const int height, const int width,
-				const int min_size, const float* threshold, const float factor, const int stage) const;
+				const int min_size, const float* threshold, const float factor, const int stage, int order) const;
 
 		private:
 			vDamocles *diodorus_;

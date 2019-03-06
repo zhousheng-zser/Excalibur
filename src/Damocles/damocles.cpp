@@ -17,9 +17,9 @@ namespace glasssix
 		};
 
 		std::vector<FaceInfomation> Damocles::Detect(const unsigned char* img, const int channels, const int height, const int width,
-			const int min_size, const float* threshold, const float factor, const int stage) const
+			const int min_size, const float* threshold, const float factor, const int stage, int order) const
 		{
-			return diodorus_->Detect(img, channels, height, width, min_size, threshold, factor, stage);
+			return diodorus_->Detect(img, channels, height, width, min_size, threshold, factor, stage, order);
 		}
 	}
 }

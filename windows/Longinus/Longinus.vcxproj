@@ -87,6 +87,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>LONGINUS_DLL;$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -123,6 +124,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>LONGINUS_DLL;$(PROCESSOR_ARCHITECTURE);USE_CUDA;USE_CUDNN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

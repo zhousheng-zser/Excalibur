@@ -69,7 +69,7 @@ void mtcnntset()
 
 	
 	Damocles detector(-1);
-	faceInfo = detector.Detect(image.data, channels, height, width, minSize, threshold, factor, 3);
+	faceInfo = detector.Detect(image.data, channels, height, width, minSize, threshold, factor, 3, 0);
 	
 
 	//double t = (double)cv::getTickCount();

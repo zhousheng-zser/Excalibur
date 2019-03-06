@@ -113,12 +113,12 @@ namespace glasssix
 				if (order_ == NCHW)
 				{
 					im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
-						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_, num_);
+						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
 					im2col_cpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
-						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_, num_);
+						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
 				{

@@ -50,17 +50,17 @@ namespace glasssix
 			}
 #endif
 
-			Init_Conv_Native_CPU_Params(conv1, 1, 16, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
+			Init_Conv_Params(conv1, 1, 16, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
 			Init_PReLU_Params(prelu1, 16, false);//nchw:1*16*24*24->1*16*24*24
 			Init_Conv_Depthwise_Native_CPU_Params(conv1_dw, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
 			Init_PReLU_Params(prelu1_dw, 16, false);//nchw:1*16*24*24->1*16*24*24
-			Init_Conv_Native_CPU_Params(conv2, 16, 32, 1, 1, 0, true);//nchw:1*16*24*24->1*32*24*24
+			Init_Conv_Params(conv2, 16, 32, 1, 1, 0, true);//nchw:1*16*24*24->1*32*24*24
 			Init_Conv_Depthwise_Native_CPU_Params(conv2_dw, 32, 32, 3, 2, 1, true);//nchw:1*32*24*24->1*32*12*12
 			Init_PReLU_Params(prelu2_dw, 32, false);//nchw:1*32*12*12->1*32*12*12
-			Init_Conv_Native_CPU_Params(conv3, 32, 32, 1, 1, 0, true);//nchw:1*32*12*12->1*32*12*12
+			Init_Conv_Params(conv3, 32, 32, 1, 1, 0, true);//nchw:1*32*12*12->1*32*12*12
 			Init_Conv_Depthwise_Native_CPU_Params(conv3_dw, 32, 32, 3, 2, 1, true);//nchw:1*32*12*12->1*32*6*6
 			Init_PReLU_Params(prelu3_dw, 32, false);//nchw:1*32*6*6->1*32*6*6
-			Init_Conv_Native_CPU_Params(conv4, 32, 64, 1, 1, 0, true);//nchw:1*32*6*6->1*64*6*6
+			Init_Conv_Params(conv4, 32, 64, 1, 1, 0, true);//nchw:1*32*6*6->1*64*6*6
 			Init_Conv_Depthwise_Native_CPU_Params(conv4_dw, 64, 64, 3, 2, 1, true);//nchw:1*64*6*6->1*64*3*3
 			Init_PReLU_Params(prelu4_dw, 64, false);//nchw:1*64*3*3->1*64*3*3
 			Init_InnerProduct_Params(conv5, 64, 3, 3, 256, true);//nchw:1*64*3*3->1*256*1*1
@@ -126,23 +126,6 @@ namespace glasssix
 			sigmoid1->Forward_cpu(conv6_1_top_data);
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			std::cout << "conv6_1:" << std::endl;
-			for (size_t i = 0; i < 1; i++)
-			{
-				std::cout << conv6_1_top_data->cpu_data()[0] << std::endl;
-			}
-			std::cout << "conv6_2:" << std::endl;
-			for (size_t i = 0; i < 3; i++)
-			{
-				std::cout << conv6_2_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
-			std::cout << "conv6_3:" << std::endl;
-			for (size_t i = 0; i < 10; i++)
-			{
-				std::cout << conv6_3_top_data->cpu_data()[i] << " ";
-			}
-			std::cout << std::endl;
 		}
 
 #ifdef USE_CUDA
