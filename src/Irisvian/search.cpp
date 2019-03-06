@@ -74,7 +74,14 @@ namespace glasssix
 			baseNum_ = baseDataPtr.size() - 1;
 		}
 
-		void Search::optimizeGraph() {//use after build or load
+		const std::vector<const float*>* Search::getBasedata()
+		{
+			return baseData_;
+		}
+
+		void Search::optimizeGraph() 
+		{
+			//use after build or load
 			if (baseNum_ <= 50000) {
 				neighborsMaxLength = 200;
 			}
@@ -127,36 +134,36 @@ namespace glasssix
 				memcpy(curNodeOffset + sizeof(unsigned), ngraph[i].data(), k * sizeof(unsigned));
 				std::vector<unsigned>().swap(ngraph[i]);
 			}
-			//free(data);
-			//data_ = nullptr;
 			CompactGraph().swap(ngraph);
 		}
 
 
 #ifndef PROFILER
 		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, 
-			std::vector<std::vector<float>> &returnDistancesInPercentage)
+			std::vector<std::vector<float>> &returnSimilarities)
 		{
 			queryData_ = queryData;
 			queryNum_ = (*queryData).size();
 
 			returnIDs.resize(queryNum_);
-			returnDistancesInPercentage.resize(queryNum_);
-//#pragma omp parallel for
+			returnSimilarities.resize(queryNum_);
+
 			if (baseNum_ != 1)
 			{
-				for (int i = 0; i < queryNum_; ++i) {
-					searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnDistancesInPercentage[i]);
+#ifdef _OPENMP
+				#pragma omp parallel for
+#endif
+				for (int i = 0; i < queryNum_; ++i) 
+				{
+					searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnSimilarities[i]);
 				}
 			}
 			else
 			{
-				std::cout << "direct search applied!!!";
-
 				for (int i = 0; i < queryNum_; ++i)
 				{
 					returnIDs[i].resize(1);
-					returnDistancesInPercentage[i].resize(1);
+					returnSimilarities[i].resize(1);
 
 					//return 0 when there is only one picture in database
 					returnIDs[i][0] = 0;
@@ -166,24 +173,13 @@ namespace glasssix
 					float normBase = DistanceCosine::norm((*baseData_).at(0), dimension_);
 					float normQuery = DistanceCosine::norm((*queryData_).at(i), dimension_);
 					float dist = DistanceCosine::compare((*baseData_).at(0), normBase, (*queryData_).at(i), normQuery, dimension_);
-
-					if (dist <= 0) 
-					{
-						returnDistancesInPercentage[i][0] = dist * -1;
-					}
-					else {
-						returnDistancesInPercentage[i][0] = 0.1;
-					}
+					returnSimilarities[i][0] = 1.0f - dist;
 
 #else
 
 					float normQuery = DistanceFastL2::norm((*queryData_).at(i), dimension_);
 					float dist = DistanceL2::compare((*baseData_).at(0), (*queryData_).at(i), dimension_);
-					returnDistancesInPercentage[i][0] = 1.0f - 1.0f * dist / normQuery;
-					if (returnDistancesInPercentage[i][0] <= 0) {
-						returnDistancesInPercentage[i][0] = 0.1;
-					}
-
+					returnSimilarities[i][0] = 1.0f - 1.0f * dist / normQuery;
 #endif // COSINE_DISTANCE
 				}
 			}
@@ -209,7 +205,7 @@ namespace glasssix
 
 #ifndef PROFILER
 		void Search::searchWithOptGraph(const float *singleQueryData, unsigned topK,
-			std::vector<unsigned> &returnIDs, std::vector<float> &returnDistancesInPercentage)
+			std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities)
 		{
 			if (topK > neighborsMaxLength || topK > baseNum_)
 			{
@@ -219,7 +215,7 @@ namespace glasssix
 			std::vector <Neighbor> returnNeighbors;
 			returnNeighbors.resize(neighborsMaxLength + 1);
 			returnIDs.resize(topK);
-			returnDistancesInPercentage.resize(topK);
+			returnSimilarities.resize(topK);
 			std::vector<unsigned> initIds(neighborsMaxLength);
 
 			boost::dynamic_bitset<> flags{ baseNum_, 0 };
@@ -341,22 +337,11 @@ namespace glasssix
 				returnIDs[i] = returnNeighbors[i].id;
 
 #ifdef COSINE_DISTANCE
-
-				if (returnNeighbors[i].distance <= 0) 
-				{
-					returnDistancesInPercentage[i] = returnNeighbors[i].distance * -1;
-				}
-				else 
-				{
-					returnDistancesInPercentage[i] = 0.1;
-				}
+				returnSimilarities[i] = 1.0f - returnNeighbors[i].distance;
 
 #else
-				returnDistancesInPercentage[i] = 1.0f - 1.0f * DistanceL2::compare(singleQueryData, (*baseData_).at(returnIDs[i]), 
+				returnSimilarities[i] = 1.0f - 1.0f * DistanceL2::compare(singleQueryData, (*baseData_).at(returnIDs[i]), 
 					(unsigned)dimension_) / normQuery;
-				if (returnDistancesInPercentage[i] <= 0) {
-					returnDistancesInPercentage[i] = 0.1;
-				}
 #endif // COSINE_DISTANCE
 
 			}

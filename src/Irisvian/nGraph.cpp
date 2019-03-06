@@ -1,4 +1,4 @@
-#include "NGraph.hpp"
+#include "nGraph.hpp"
 #include "distance.hpp"
 #ifdef _OPENMP
 #include <omp.h>
@@ -222,13 +222,13 @@ namespace glasssix
 
 			if (baseNum_ <= neighborsMaxLength)
 			{
-				cerr << "Warning: small dataset, shrinking neighborsMaxLength to " << baseNum_ << "." << endl;
+				LOG(WARNING) << "Warning: small dataset, shrinking neighborsMaxLength to " << baseNum_ << ".";
 				neighborsMaxLength = baseNum_;
 			}
 
 			if (baseNum_ <= range)
 			{
-				cerr << "Warning: small dataset, shrinking range to " << baseNum_ << "." << endl;
+				LOG(WARNING) << "Warning: small dataset, shrinking range to " << baseNum_ << ".";
 				range = baseNum_;
 			}
 
@@ -387,7 +387,6 @@ namespace glasssix
 
 		void NGraph::link(LockGraph &cutGraph_)
 		{
-			//std::cout << "indexing nsg..." << std::endl;
 #pragma omp parallel
 			{
 #pragma omp for
@@ -433,11 +432,6 @@ namespace glasssix
 			}
 			if (max > width)
 				width = max;
-			/*std::cout << "max is:" << max
-				<< ", avg is:" << avg
-				<< ", min is:" << min
-				<< ", unconnected num is:" << cnt
-				<< ", width is:" << width << std::endl;*/
 		}
 
 		void NGraph::DFS(boost::dynamic_bitset<> &flag, unsigned root, unsigned &cnt)

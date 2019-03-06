@@ -27,10 +27,12 @@ namespace glasssix
 
 				void loadGraph(const char* graphPath, const char *basedataPath) override;
 
+				const std::vector<const float*>* getBasedata() override;
+
 				void optimizeGraph() override;
 
 #ifndef PROFILER
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnDistancesInPercentage) override;
+				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
 #else
 				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) override;
 #endif // !PROFILER
@@ -66,7 +68,7 @@ namespace glasssix
 
 #ifndef PROFILER
 				void searchWithOptGraph(const float *singleQueryData, unsigned topK,
-					std::vector<unsigned> &returnIDs, std::vector<float> &returnDistancesInPercentage);
+					std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities);
 #else
 				void searchWithOptGraph(
 					const float *singleQueryData,
@@ -74,18 +76,6 @@ namespace glasssix
 					std::vector<unsigned> &returnIDs,
 					std::vector<Neighbor> &returnNeighbors);
 #endif // PROFILER
-
-			private:
-				int nIds_;
-				/*std::bitset<32> f_1_ECX_;
-				std::bitset<32> f_1_EDX_;
-				std::array<int, 4> cpui;
-				bool AVX();
-				bool SSE();*/
-				//instructionFlag_ = 0, NO_SIMD
-				//instructionFlag_ = 1, SSE
-				//instructionFlag_ = 2, AVX
-				//unsigned instructionFlag_ = 0;
 			};
 	}
 }

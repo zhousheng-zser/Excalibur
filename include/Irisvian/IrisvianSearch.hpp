@@ -28,6 +28,12 @@ namespace glasssix
 	{
 		class EXPORT_IRISVIAN IrisvianSearch
 		{
+			IrisvianSearch() {}
+
+			IrisvianSearch(const IrisvianSearch&){}
+
+			IrisvianSearch& operator=(const IrisvianSearch&);
+
 		public:
 
 			IrisvianSearch(const std::vector<const float*> *baseData, int dimension);
@@ -42,62 +48,60 @@ namespace glasssix
 
 			void buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage);
 #else
-			void buildGraph();
+			void buildGraph() const;
 
-			void buildGraph(const std::vector<const float*> *baseData);
+			void buildGraph(const std::vector<const float*> *baseData) const;
 #endif 
 
 
-			void saveGraph(const char *graphPath);
+			void saveGraph(const char *graphPath) const;
 
 
-			void saveGraph(std::string graphPath)
+			void saveGraph(std::string graphPath) const
 			{
 				saveGraph(graphPath.c_str());
 			}
 
 
-			void saveGraph(const char *graphPath, const char *basedataPath);
+			void saveGraph(const char *graphPath, const char *basedataPath) const;
 
 
-			void saveGraph(std::string graphPath, std::string basedataPath)
+			void saveGraph(std::string graphPath, std::string basedataPath) const
 			{
 				saveGraph(graphPath.c_str(), basedataPath.c_str());
 			}
 
 
-			void loadGraph(const char* graphPath);
+			void loadGraph(const char* graphPath) const;
 
 
-			void loadGraph(std::string graphPath)
+			void loadGraph(std::string graphPath) const
 			{
 				loadGraph(graphPath.c_str());
 			}
 
+			const std::vector<const float*>* getBasedata() const;
 
-			void loadGraph(const char* graphPath, const char *basedataPath);
+			void loadGraph(const char* graphPath, const char *basedataPath) const;
 
-
-			void loadGraph(std::string graphPath, std::string basedataPath)
+			void loadGraph(std::string graphPath, std::string basedataPath) const
 			{
 				loadGraph(graphPath.c_str(), basedataPath.c_str());
 			}
 
-
-			void optimizeGraph();
+			void optimizeGraph() const;
 
 #ifndef PROFILER
 			void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnDistancesInPercentage);
+				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const;
 #else
 			void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors);
+				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) const;
 #endif // !PROFILER
 
+			void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const;
 
-			void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs);
-
-			void saveResult(std::string resultPath, std::vector<std::vector<unsigned> > &returnIDs)
+			void saveResult(std::string resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
 			{
 				saveResult(resultPath.c_str(), returnIDs);
 			}

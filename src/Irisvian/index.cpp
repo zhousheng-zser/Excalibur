@@ -1,17 +1,10 @@
 #include "index.hpp"
-#include <glasssix\timer.hpp>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 
 using namespace std;
 using namespace boost;
-
-
-#ifdef __linux__
-#define __cpuid(out, infoType)\
-	asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType));
-#endif
 
 namespace glasssix
 {
@@ -38,7 +31,6 @@ namespace glasssix
 
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
-				std::cout << "data already normalized!!!" << std::endl;
 				isNormalized = true;
 #pragma omp parallel for
 				for (int i = 0; i < baseNum_; ++i)
@@ -85,23 +77,13 @@ namespace glasssix
 			void Index::buildGraph()
 #endif 
 		{
-
-			glasssix::Timer calcTime;
-			double elapsedTime = 0;
-
 			//index kgraph
 			{
-				calcTime.Start();
-					
 #if defined(PROFILER) && defined(_MSC_VER)
 				kgraph_.build(maxMemoryUsage);
 #else
 				kgraph_.build();
 #endif 
-
-				calcTime.Stop();
-				elapsedTime = calcTime.GetElapsedMilliseconds() / 1000;
-				std::cout << "The index time of kgraph is: " << elapsedTime << std::endl;
 			}
 
 			//transfer kgraph to nGraph's finalGraph_
@@ -123,13 +105,7 @@ namespace glasssix
 
 			//index nGraph
 			{
-				calcTime.Start();
-
 				ngraph_.build();
-
-				calcTime.Stop();
-				elapsedTime = calcTime.GetElapsedMilliseconds() / 1000;
-				std::cout << "The index time of nGraph is: " << elapsedTime << std::endl;
 			}
 
 			width = ngraph_.width;
@@ -171,7 +147,6 @@ namespace glasssix
 
 				if (abs(sum / calcNum - 1) <= 1e-5)
 				{
-					std::cout << "data already normalized!!!" << std::endl;
 					isNormalized = true;
 #pragma omp parallel for
 					for (int i = 0; i < baseNum_; ++i)
@@ -199,25 +174,16 @@ namespace glasssix
 				ngraph_.baseData_ = baseData_;
 				ngraph_.baseNum_ = baseNum_;
 				ngraph_.normArray_ = normArray_;
-
-				glasssix::Timer calcTime;
 				double elapsedTime = 0;
 
 				//index kgraph
 				{
-					calcTime.Start();
-
 #if defined(PROFILER) && defined(_MSC_VER)
 					kgraph_.build(maxMemoryUsage);
 #else
 					kgraph_.build();
 #endif 
-
-					calcTime.Stop();
-					elapsedTime = calcTime.GetElapsedMilliseconds() / 1000;
-					std::cout << "The index time of kgraph is: " << elapsedTime << std::endl;
 				}
-
 				//transfer kgraph to nGraph's finalGraph_
 				{
 					std::vector<std::vector<Neighbor>> &kgraphTemp = kgraph_.kgraph;
@@ -237,13 +203,7 @@ namespace glasssix
 
 				//index nGraph
 				{
-					calcTime.Start();
-
 					ngraph_.build();
-
-					calcTime.Stop();
-					elapsedTime = calcTime.GetElapsedMilliseconds() / 1000;
-					std::cout << "The index time of nGraph is: " << elapsedTime << std::endl;
 				}
 
 				width = ngraph_.width;
