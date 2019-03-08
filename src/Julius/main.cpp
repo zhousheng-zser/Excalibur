@@ -75,8 +75,8 @@ double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bo
 		for (int i = 0; i < iters; i++)
 		{
 			//glasssix::gemm_32f_AnoTrans_Btrans_auto(M, N, K, A, padK, B, padK, C1, N);
-			glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor, glasssix::excalibur::CblasNoTrans, glasssix::excalibur::CblasTrans, 
-				M, N, K, 1.0, A, padK, B, padK, 0, C1, N);
+			glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor, glasssix::excalibur::CblasNoTrans, glasssix::excalibur::CblasNoTrans,
+				M, N, K, 1.0, A, padK, B, N, 0, C1, N);
 		}
 		t2 = omp_get_wtime();
 		time1 = t2 - t1;
@@ -91,7 +91,7 @@ double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bo
 	t1 = omp_get_wtime();
 	for (int i = 0; i < iters; i++)
 	{
-		cblas_sgemm(::CblasRowMajor, CblasNoTrans, CblasTrans, M, N, K, 1.0, A, padK, B, padK, 0, C2, N);
+		cblas_sgemm(::CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, padK, B, N, 0, C2, N);
 	}
 	//printf("C2[0] = %f\n", C2[0]);
 	t2 = omp_get_wtime();
@@ -166,11 +166,15 @@ int main()
 {
 	for (int i = 0; i < 100000; i++)
 	{
-		int M = rand() % 10000 + 1;
-		int N = rand() % 10000 + 1;
-		int K = rand() % 10000 + 1;
-		//_test_gemm(M, N, K, 1, 1e-4, true);
-		_test_gemv(M, N, 1, 1e-4, true);
+		int M = rand() % 1000 + 1;
+		int N = rand() % 1000 + 1;
+		int K = rand() % 1000 + 1;
+		if (M%4!=0||N%4!=0)
+		{
+			continue;
+		}
+		_test_gemm(M, N, K, 1, 1e-4, true);
+		//_test_gemv(M, N, 1, 1e-4, true);
 	}
 	return 0;
 }
