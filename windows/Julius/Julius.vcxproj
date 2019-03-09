@@ -134,19 +134,23 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\Julius\instructionset.hpp" />
     <ClInclude Include="..\..\include\Julius\julius.hpp" />
+    <ClInclude Include="..\..\include\Julius\julius_asum.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_axpby.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_dot.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_gemm.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_gemv.hpp" />
+    <ClInclude Include="..\..\include\Julius\julius_nrm2.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_sdot.hpp" />
     <ClInclude Include="..\..\include\Julius\simd_helper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Julius\julius.cpp" />
+    <ClCompile Include="..\..\src\Julius\julius_asum.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_axpby.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_dot.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_gemm.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_gemv.cpp" />
+    <ClCompile Include="..\..\src\Julius\julius_nrm2.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_sdot.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

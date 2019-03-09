@@ -1,6 +1,8 @@
+#include "julius_asum.hpp"
+#include "julius_axpby.hpp"
 #include "julius_dot.hpp"
 #include "julius_sdot.hpp"
-#include "julius_axpby.hpp"
+#include "julius_nrm2.hpp"
 #include "julius_gemv.hpp"
 #include "julius_gemm.hpp"
 #include "julius.hpp"
@@ -9,68 +11,132 @@ namespace glasssix
 {
 	namespace excalibur
 	{
-		float  cblas_sdsdot(const int n, const float alpha, const float *x, const int incx, const float *y, const int incy)
+		float cblas_sasum(const int n, const float *x, const int incx)
 		{
 			if (n <= 0)
 			{
+				LOG(ERROR) << "Illegal vector size.";
+				return 0.0f;
+			}
+			CHECK_GT(incx, 0);
+			return juliusblas::cblas_sasum(n, x, incx);
+		}
+
+		double cblas_dasum(const int n, const double *x, const int incx)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return 0.0;
+			}
+			CHECK_GT(incx, 0);
+			return juliusblas::cblas_dasum(n, x, incx);
+		}
+
+		void cblas_saxpy(const int n, const float alpha, const float *x, const int incx, float *y, const int incy)
+		{
+			cblas_saxpby(n, alpha, x, incx, 1.0f, y, incy);
+		}
+
+		void cblas_daxpy(const int n, const double alpha, const double *x, const int incx, double *y, const int incy)
+		{
+			cblas_daxpby(n, alpha, x, incx, 1.0, y, incy);
+		}
+
+		void cblas_saxpby(const int n, const float alpha, const float* x,
+			const int incx, const float beta, float* y, const int incy)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return;
+			}
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			juliusblas::cblas_saxpby(n, alpha, x, incx, beta, y, incy);
+		}
+
+		void cblas_daxpby(const int n, const double alpha, const double* x,
+			const int incx, const double beta, double* y, const int incy)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return;
+			}
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			juliusblas::cblas_daxpby(n, alpha, x, incx, beta, y, incy);
+		}
+
+		float cblas_sdsdot(const int n, const float alpha, const float *x, const int incx, const float *y, const int incy)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
 				return alpha;
 			}
-			else
-			{
-				CHECK_GT(incx, 1);
-				CHECK_GT(incy, 1);
-				return juliusblas::cblas_sdsdot(n, alpha, x, incx, y, incy);
-			}
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			return juliusblas::cblas_sdsdot(n, alpha, x, incx, y, incy);
 		}
 
 		double cblas_dsdot(const int n, const float *x, const int incx, const float *y, const int incy)
 		{
 			if (n <= 0)
 			{
+				LOG(ERROR) << "Illegal vector size.";
 				return 0.0;
 			}
-			else
-			{
-				CHECK_GT(incx, 1);
-				CHECK_GT(incy, 1);
-				return juliusblas::cblas_dsdot(n, x, incx, y, incy);
-			}
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			return juliusblas::cblas_dsdot(n, x, incx, y, incy);
 		}
 
 		float  cblas_sdot(const int n, const float  *x, const int incx, const float  *y, const int incy)
 		{
 			if (n <= 0)
 			{
+				LOG(ERROR) << "Illegal vector size.";
 				return 0.0f;
 			}
-			else
-			{
-				return juliusblas::cblas_sdot(n, x, incx, y, incy);
-			}
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			return juliusblas::cblas_sdot(n, x, incx, y, incy);
 		}
 
 		double cblas_ddot(const int n, const double *x, const int incx, const double *y, const int incy)
 		{
 			if (n <= 0)
 			{
+				LOG(ERROR) << "Illegal vector size.";
 				return 0.0;
 			}
-			else
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
+			return juliusblas::cblas_ddot(n, x, incx, y, incy);
+		}
+
+		float cblas_snrm2(const int n, const float *x, const int incx)
+		{
+			if (n <= 0)
 			{
-				return juliusblas::cblas_ddot(n, x, incx, y, incy);
+				LOG(ERROR) << "Illegal vector size.";
+				return 0.0f;
 			}
+			CHECK_GT(incx, 0);
+			return juliusblas::cblas_snrm2(n, x, incx);
 		}
 
-		void cblas_saxpby(const int N, const float alpha, const float* X,
-			const int incX, const float beta, float* Y, const int incY)
+		double cblas_dnrm2(const int n, const double *x, const int incx)
 		{
-			juliusblas::cblas_saxpby(N, alpha, X, incX, beta, Y, incY);
-		}
-
-		void cblas_daxpby(const int N, const double alpha, const double* X,
-			const int incX, const double beta, double* Y, const int incY)
-		{
-			NOT_IMPLEMENTED;
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return 0.0;
+			}
+			CHECK_GT(incx, 0);
+			return juliusblas::cblas_dnrm2(n, x, incx);
 		}
 
 		void cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,

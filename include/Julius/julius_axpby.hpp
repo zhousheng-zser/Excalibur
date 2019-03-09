@@ -11,6 +11,9 @@ namespace glasssix
 		{
 			void cblas_saxpby(const int N, const float alpha, const float* X,
 				const int incX, const float beta, float* Y, const int incY);
+
+			void cblas_daxpby(const int N, const double alpha, const double* X,
+				const int incX, const double beta, double* Y, const int incY);
 		}
 	}
 }
