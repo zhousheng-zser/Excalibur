@@ -6,12 +6,19 @@ A SIMD supported [BLAS](http://www.netlib.org/blas/) library. Now only some impo
 
 | Function |Native Code|  SSE	 |	AVX   |	AVX512|
 |:--------:|:---------:|:-------:|:------:|:-----:|
-| *sdsdot* |   TP  |  F |    F  |  F |
-| *dsdot* |   F  |  F |    F  |  F |
-| *s/ddot* |   TP/F  |  F |    F  |  F |
-| *s/daxpby* |   TP/F  |  F |    F  |  F |
-| *s/dgemv* |   TP/F  |  TP/F |   TP/F  |  F |
-| *s/dgemm* |   TP/F  |  TP/F |   TP/F  |  F |
+| *s/dasum* |   NT     |  NT/F   |  NT/F  |  NT/F |
+| *s/daxpy* |   TP     |  F      |  F     |  F    |
+| *s/daxpby*|   TP     |  F      |  F     |  F    |
+| *s/dcopy* |   F      |  F      |  F     |  F    |
+| *sdsdot*  |   TP     |  F      |  F     |  F    |
+| *dsdot*   |   TP     |  F      |  F     |  F    |
+| *s/dnrm2* |   TP     |  NT/F   |  NT/F  |  NT/F |
+| *s/ddot*  |   TP     |  F      |    F   |  F    |
+| *s/dscal* |   F      |  F      |    F   |  F    |
+| *s/damax* |   F      |  F      |    F   |  F    |
+| *s/damin* |   F      |  F      |    F   |  F    |
+| *s/dgemv* |   TP/F   |  TP/F   |  TP/F  |  F    |
+| *s/dgemm* |   TP/F   |  TP/F   |  TP/F  |  F    |
 
 
 - TP: Implementated and test passed;

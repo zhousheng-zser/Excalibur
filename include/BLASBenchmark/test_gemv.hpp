@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _TEST_HEMV_HPP_
-#define _TEST_HEMV_HPP_
+#ifndef _TEST_GEMV_HPP_
+#define _TEST_GEMV_HPP_
 
 #include "../../include/Julius/julius.hpp"
 #include <cstdio>
@@ -79,5 +79,5 @@ inline void _test_gemv(int M, int N, int iters = 1000, float thresh = 1e-4, bool
 	_aligned_free(y2);
 }
 
-#endif // !_TEST_HEMV_HPP_
+#endif // !_TEST_GEMV_HPP_
 
