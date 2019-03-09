@@ -41,6 +41,7 @@ inline float _mm_sumall_ps(__m128 r)
 	_mm_store_ps(q.s, r);
 	return (q.s[0] + q.s[1]) + (q.s[2] + q.s[3]);
 }
+#define mm_sumall_ps _mm_sumall_ps
 #if USE_FMADD128
 #define mm_fmadd_ps _mm_fmadd_ps
 #else
@@ -86,6 +87,7 @@ inline float _mm256_sumall_ps(__m256 r)
 	h = _mm_add_ps(h, l);
 	return _mm_sumall_ps(h);
 }
+#define mm_sumall_ps _mm256_sumall_ps
 #if USE_FMADD256
 #define mm_fmadd_ps _mm256_fmadd_ps
 #else
