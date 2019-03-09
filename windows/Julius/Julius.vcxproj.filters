@@ -59,8 +59,5 @@
     <ClCompile Include="..\..\src\Julius\julius_sdot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Julius\main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
