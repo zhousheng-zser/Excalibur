@@ -69,6 +69,11 @@ double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bo
 		A[i] = rand() % 10001 / 5000.0f - 1.0f;
 	for (int i = 0; i < padK*N; i++)
 		B[i] = rand() % 10001 / 5000.0f - 1.0f;
+	for (int i = 0; i < M*N; i++)
+	{
+		C1[i] = rand() % 10001 / 5000.0f - 1.0f;;
+		C2[i] = C1[i];
+	}
 	double t1 = omp_get_wtime(), t2, mul_count, gflops;
 	double time1 = FLT_MAX;
 	{
@@ -76,7 +81,7 @@ double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bo
 		{
 			//glasssix::gemm_32f_AnoTrans_Btrans_auto(M, N, K, A, padK, B, padK, C1, N);
 			glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor, glasssix::excalibur::CblasNoTrans, glasssix::excalibur::CblasNoTrans,
-				M, N, K, 1.0, A, padK, B, N, 0, C1, N);
+				M, N, K, 1.0, A, padK, B, N, 0.5f, C1, N);
 		}
 		t2 = omp_get_wtime();
 		time1 = t2 - t1;
@@ -91,7 +96,7 @@ double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bo
 	t1 = omp_get_wtime();
 	for (int i = 0; i < iters; i++)
 	{
-		cblas_sgemm(::CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, padK, B, N, 0, C2, N);
+		cblas_sgemm(::CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, padK, B, N, 0.5f, C2, N);
 	}
 	//printf("C2[0] = %f\n", C2[0]);
 	t2 = omp_get_wtime();
