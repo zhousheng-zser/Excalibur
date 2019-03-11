@@ -16,7 +16,8 @@ int main()
 		int M = rand() % 1000 + 1;
 		int N = rand() % 1000 + 1;
 		int K = rand() % 1000 + 1;
-		_test_gemm(M, N, K, 1, false, false, 1e-4, true);
+		//_test_gemm(M, N, K, 1, false, false, 1e-4, true);
+		_test_gemv(M, N, 1, true, 1e-4, true);
 	}
 	/*for (int i = 0; i < inference_cassius_set.size(); i++)
 	{
