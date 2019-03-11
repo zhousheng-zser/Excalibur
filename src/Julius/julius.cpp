@@ -139,6 +139,26 @@ namespace glasssix
 			return juliusblas::cblas_dnrm2(n, x, incx);
 		}
 
+		void cblas_sscal(const int n, const float alpha, float *x, const int incx)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return;
+			}
+			CHECK_GT(incx, 0);
+		}
+
+		void cblas_dscal(const int n, const double alpha, double *x, const int incx)
+		{
+			if (n <= 0)
+			{
+				LOG(ERROR) << "Illegal vector size.";
+				return;
+			}
+			CHECK_GT(incx, 0);
+		}
+
 		void cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,
 			const float alpha, const float  *A, const int lda, const float  *x, const int incx, const float beta, float  *y, const int incy)
 		{
