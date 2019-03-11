@@ -39,6 +39,15 @@
     <ClInclude Include="..\..\include\Julius\simd_helper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Julius\julius_asum.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Julius\julius_nrm2.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Julius\julius_scal.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Julius\julius.cpp">
@@ -59,7 +68,13 @@
     <ClCompile Include="..\..\src\Julius\julius_sdot.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Julius\main.cpp">
+    <ClCompile Include="..\..\src\Julius\julius_asum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Julius\julius_nrm2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Julius\julius_scal.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,6 +15,19 @@ namespace glasssix
 				}
 			}
 
+			void packTransedA(const int M, const int K, const int padK, const float* A, const int lda, float* packedA)
+			{
+				memset(packedA, 0, M * padK * sizeof(float));
+				for (int j = 0; j < K; j++)
+				{
+					const int offsetA = j * lda;
+					for (int i = 0; i < M; i++)
+					{
+						packedA[i * padK + j] = A[offsetA + i];
+					}
+				}
+			}
+
 			void packnoTransedB(const int N, const int K, const int padK, const float* B, const int ldb, float* packedB)
 			{
 				memset(packedB, 0, N * padK * sizeof(float));
@@ -27,6 +40,16 @@ namespace glasssix
 					}
 				}
 			}
+
+			void packTransedB(const int N, const int K, const int padK, const float* B, const int ldb, float* packedB)
+			{
+				memset(packedB, 0, N * padK * sizeof(float));
+				for (int j = 0; j < N; j++)
+				{
+					memcpy(packedB + j * padK, B + j * ldb, K * sizeof(float));
+				}
+			}
+
 #if SIMD_TYPE > SIMDTYPE_NONE
 			inline void adddot1x1(const int padK, const float alpha, const float* packedA_ptr, const float* packedB_ptr, 
 				const float beta, float* C_ptr, const int ldc)
@@ -149,7 +172,7 @@ namespace glasssix
 					a[2] = mm_load_ps(packedA_ptr + padK_offset[2] + j);
 					a[3] = mm_load_ps(packedA_ptr + padK_offset[3] + j);
 					re[0] = mm_fmadd_ps(a[0], b, re[0]);
-					re[1] = mm_fmadd_ps(a[2], b, re[1]);
+					re[1] = mm_fmadd_ps(a[1], b, re[1]);
 					re[2] = mm_fmadd_ps(a[2], b, re[2]);
 					re[3] = mm_fmadd_ps(a[3], b, re[3]);
 				}
@@ -570,6 +593,140 @@ namespace glasssix
 					*(C_ptr + ldc * i) = alpha * mm_sumall_ps(re[i]) + beta * *(C_ptr + ldc * i);
 				}
 			}
+
+			void execution_kernel_16register(const int M, const int N, const int padK, const float alpha, float* packedA, 
+				float* packedB, const float beta,  float* C, const int ldc)
+			{
+				const int quotient_M = M / 4;
+				const int quotient_N = N / 4;
+				const int remain_M = M % 4;
+				const int remain_N = N % 4;
+				const int part_M = M - remain_M;
+				const int part_N = N - remain_N;
+				// deal with the most(left top) part of C in 4x4 block
+				if (part_N >= part_M)
+				{
+					for (int i = 0; i < part_M; i += 4)
+					{
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+						for (int j = 0; j < part_N; j += 4)
+						{
+							adddot4x4(padK, alpha, packedA + i * padK, packedB + j * padK, beta, C + i * ldc + j, ldc);
+						}
+					}
+				}
+				else
+				{
+					for (int j = 0; j < part_N; j += 4)
+					{
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+						for (int i = 0; i < part_M; i += 4)
+						{
+							adddot4x4(padK, alpha, packedA + i * padK, packedB + j * padK, beta, C + i * ldc + j, ldc);
+						}
+					}
+				}
+				
+				// deal with left bottom part of C in 2x8, 1x16, 1x8 or 1x4 block
+				if (remain_M / 2)
+				{
+					int j = 0;
+					const int total_8times = part_N / 8;
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+					for (int i = 0; i < total_8times; i++)
+					{
+						adddot2x8(padK, alpha, packedA + part_M * padK, packedB + i * 8 * padK, beta, C + part_M * ldc + i * 8, ldc);
+					}
+					j = 8 * total_8times;
+					if (j + 4 == part_N)
+					{
+						adddot2x4(padK, alpha, packedA + part_M * padK, packedB + j * padK, beta, C + part_M * ldc + j, ldc);
+					}
+				}
+				// the last row in C
+				if (remain_M % 2)
+				{
+					int j = 0;
+					int offset_M = remain_M / 2 ? 2 + part_M : part_M;
+					const int total_16times = part_N / 16;
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+					for (int i = 0; i < total_16times; i++)
+					{
+						adddot1x16(padK, alpha, packedA + offset_M * padK, packedB + i * 16 * padK, beta, C + offset_M * ldc + i * 16, ldc);
+					}
+					j = total_16times * 16;
+					for (; j + 8 <= part_N; j += 8)
+					{
+						adddot1x8(padK, alpha, packedA + offset_M * padK, packedB + j * padK, beta, C + offset_M * ldc + j, ldc);
+					}
+					if (j + 4 == part_N)
+					{
+						adddot1x4(padK, alpha, packedA + offset_M * padK, packedB + j * padK, beta, C + offset_M * ldc + j, ldc);
+					}
+				}
+
+				// deal with right top part of C in 8x2, 16x1, 8x1 or 4x1 block
+				if (remain_N / 2)
+				{
+					int i = 0;
+					const int total_8times = part_M / 8;
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+					for (int j = 0; j < total_8times; j++)
+					{
+						adddot8x2(padK, alpha, packedA + j * 8 * padK, packedB + part_N * padK, beta, C + j * 8 * ldc + part_N, ldc);
+					}
+					i = total_8times * 8;
+					if (i + 4 == part_M)
+					{
+						adddot4x2(padK, alpha, packedA + i * padK, packedB + part_N * padK, beta, C + i * ldc + part_N, ldc);
+					}
+				}
+				// the last colum in C
+				if (remain_N % 2)
+				{
+					int i = 0;
+					int offset_M = remain_N / 2 ? 2 + part_N : part_N;
+					const int total_16times = part_M / 16;
+#ifdef _OPENMP
+#pragma omp parallel for 
+#endif // _OPENMP
+					for (int j = 0; j < total_16times; j++)
+					{
+						adddot16x1(padK, alpha, packedA + j * 16 * padK, packedB + offset_M * padK, beta, C + j * 16 * ldc + offset_M, ldc);
+					}
+					i = total_16times * 16;
+					for (; i + 8 <= part_M; i += 8)
+					{
+						adddot8x1(padK, alpha, packedA + i * padK, packedB + offset_M * padK, beta, C + i * ldc + offset_M, ldc);
+					}
+					if (i + 4 == part_M)
+					{
+						adddot4x1(padK, alpha, packedA + i * padK, packedB + offset_M * padK, beta, C + i * ldc + offset_M, ldc);
+					}
+				}
+
+				// deal with the last(right bottom) part of C in 1x1 block
+				if (remain_M * remain_N > 0)
+				{
+					for (int row = 0; row < M - part_M; row++)
+					{
+						for (int col = 0; col < N - part_N; col++)
+						{
+							adddot1x1(padK, alpha, packedA + (part_M + row) * padK, packedB + (part_N + col) * padK, beta, C + (part_M + row) * ldc + (part_N + col), ldc);
+						}
+					}
+				}
+			}
 #endif //!SIMD_TYPE > SIMDTYPE_NONE
 
 			void cblas_sgemm_AnoTrans_BnoTrans(const int M, const int N, const int K, const float alpha, const float* A, const int lda,
@@ -578,245 +735,16 @@ namespace glasssix
 #if SIDM_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
-#elif SIMD_TYPE >= SIMDTYPE_AVX
+// AVX and SSE code follow the same logic, we merge them together.
+#elif SIMD_TYPE >= SIMDTYPE_SSE
 				const int padK = K % mm_align_size ? K - K % mm_align_size + mm_align_size: K;
 				float* packedA = new float[M * padK];
 				float* packedB = new float[N * padK];
 				packnoTransedA(M, K, padK, A, lda, packedA);
 				packnoTransedB(N, K, padK, B, ldb, packedB);
-
-				bool flag_M = true, flag_N = true;
-				const int num_M1 = M / 4, num_N1 = N / 4, remain_M1 = M % 4, remain_N1 = N % 4;
-				int num_M2, num_N2, remain_M2, remain_N2;
-				if (remain_M1 != 0) { flag_M = false; }
-				if (remain_N1 != 0) { flag_N = false; }
-				if(flag_M && flag_N) 
-				{
-					for (int n_row = 0; n_row < num_M1; n_row ++)
-					{
-#ifdef _OPENMP
-#pragma omp parallel for 
-#endif // _OPENMP
-						for (int n_col = 0; n_col < num_N1; n_col ++)
-						{
-							adddot4x4(padK, alpha, packedA + n_row * 4 * padK, packedB + n_col * 4 * padK, beta, C + n_row * 4 * ldc + n_col * 4, ldc);
-						}
-					}
-				}
-				else if(flag_M && !flag_N)
-				{
-					num_N2 = remain_N1 / 2;
-					remain_N2 = remain_N1 % 2;
-					flag_N = true;
-					if (remain_N2 != 0) { flag_N = false; }
-
-					for (int n_row = 0; n_row < num_M1; n_row++)
-					{
-						for (int n_col = 0; n_col < num_N1; n_col++)
-						{
-							adddot4x4(padK, alpha, packedA + n_row * 4 * padK, packedB + n_col * 4 * padK, beta, C + n_row * 4 * ldc + n_col * 4, ldc);
-						}
-					}
-					//deal with remain_N1
-					{
-						int row = 0;
-						for (; row + 8 < M; row += 8)
-						{
-							if (!num_N2)
-							{
-								adddot8x2(padK, alpha, packedA + row * padK, packedB + num_N1 * 4 * padK, beta, C + row * ldc + num_N1 * 4, ldc);
-							}
-						}
-						if(row < M - 1 && !num_N2)
-						{
-							adddot4x2(padK, alpha, packedA + row * padK, packedB + num_N1 * 4 * padK, beta, C + row * ldc + num_N1 * 4, ldc);
-						}
-
-						if (!flag_N)
-						{
-							row = 0;
-							for (; row + 16 < M; row += 16)
-							{
-								adddot16x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-							for (; row + 8 < M; row += 8)
-							{
-								adddot8x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-
-							if(row < M-1)
-							{
-								adddot4x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-						}
-					}
-				}
-				else if(!flag_M && flag_N)
-				{
-					num_M2 = remain_M1 / 2;
-					remain_M2 = remain_M1 % 2;
-					flag_M = true;
-					if (remain_M2 != 0) { flag_M = false; }
-
-					for (int n_row = 0; n_row < num_M1; n_row++)
-					{
-						for (int n_col = 0; n_col < num_N1; n_col++)
-						{
-							adddot4x4(padK, alpha, packedA + n_row * 4 * padK, packedB + n_col * 4 * padK, beta, C + n_row * 4 * ldc + n_col * 4, ldc);
-						}
-					}
-
-					//deal with remain_M1
-					{
-						int col = 0;
-						for (; col + 8 < N; col += 8)
-						{
-							if(num_M2)
-							{
-								adddot2x8(padK, alpha, packedA + num_M1 * 4 * padK, packedB + col * padK, beta, C + num_M1 * 4 * ldc + col, ldc);
-							}
-						}
-
-						if(num_M2)
-						{
-							adddot2x4(padK, alpha, packedA + num_M1 * 4 * padK, packedB + col * padK, beta, C + num_M1 * 4 * ldc + col, ldc);
-						}
-
-						if (!flag_M)
-						{
-							col = 0;
-							for (; col + 16 < N; col += 16)
-							{
-								adddot1x16(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-
-							for (; col + 8 < N; col += 8)
-							{
-								adddot1x8(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-
-							if (col < N - 1)
-							{
-								adddot1x4(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-						}
-					}
-				}
-				else if (!flag_M && !flag_N)
-				{
-					num_M2 = remain_M1 / 2;
-					remain_M2 = remain_M1 % 2;
-					num_N2 = remain_N1 / 2;
-					remain_N2 = remain_N1 % 2;
-					flag_M = flag_N = true;
-					if (remain_M2 != 0) { flag_M = false; }
-					if (remain_N2 != 0) { flag_N = false; }
-
-					for(int n_row=0;n_row< num_M1;n_row++)
-					{
-						for(int n_col=0;n_col< num_N1;n_col++)
-						{
-							adddot4x4(padK, alpha, packedA + n_row * 4 * padK, packedB + n_col * 4 * padK, beta, C + n_row * 4 * ldc + n_col * 4, ldc);
-						}
-					}
-					//deal with remain_M1
-					{
-						int col = 0;
-						for (; col + 8 < N - remain_N1 - 1; col += 8)
-						{
-							if (num_M2)
-							{
-								adddot2x8(padK, alpha, packedA + num_M1 * 4 * padK, packedB + col * padK, beta, C + num_M1 * 4 * ldc + col, ldc);
-							}
-						}
-
-						if(col < N - remain_N1 - 1 && num_M2)
-						{
-							adddot2x4(padK, alpha, packedA + num_M1 * 4 * padK, packedB + col * padK, beta, C + num_M1 * 4 * ldc + col, ldc);
-						}
-
-						if (!flag_M)
-						{
-							col = 0;
-							for (; col + 16 < N - remain_N1 - 1; col += 16)
-							{
-								adddot1x16(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-
-							for (; col + 8 < N - remain_N1 - 1; col += 8)
-							{
-								adddot1x8(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-
-							if(col < N - remain_N1 - 1)
-							{
-								adddot1x4(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + col * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + col, ldc);
-							}
-						}
-					}
-
-					//deal with remain_N1
-					{
-						int row = 0;
-						for (; row + 8 < M - remain_M1; row += 8)
-						{
-							for (int n = 0; n < num_N2; n++)
-							{
-								adddot8x2(padK, alpha, packedA + row * padK, packedB + num_N1 * 4 * padK, beta, C + row * ldc + num_N1 * 4, ldc);
-							}
-						}
-						if (row < M - remain_M1 - 1 && num_N2)
-						{
-							adddot4x2(padK, alpha, packedA + row * padK, packedB + num_N1 * 4 * padK, beta, C + row * ldc + num_N1 * 4, ldc);
-						}
-						if (!flag_N)
-						{
-							row = 0;
-							for (; row + 16 < M - remain_M1; row += 16)
-							{
-								adddot16x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-							for (; row + 8 < M - remain_M1; row += 8)
-							{
-								adddot8x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-							if (row < M - remain_M1 - 1)
-							{
-								adddot4x1(padK, alpha, packedA + row * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + row * ldc + num_N1 * 4 + num_N2 * 2, ldc);
-							}
-						}
-					}
-
-					//deal with remain_M2 and remain_N2 
-					{
-						if (!flag_M && !flag_N)
-						{
-							adddot2x2(padK, alpha, packedA + num_M1 * 4 * padK, packedB + num_N1 * 4 * padK, beta, C + num_M1 * 4 * ldc + num_N1 * 4, ldc);
-							adddot1x2(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + num_N1 * 4 * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + num_N1 * 4, ldc);
-							adddot2x1(padK, alpha, packedA + num_M1 * 4 * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + num_M1 * 4 * ldc + (num_N1 * 4 + num_N2 * 2), ldc);
-							adddot1x1(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + (num_N1 * 4 + num_N2 * 2), ldc);
-						}
-						else if (flag_M && !flag_N)
-						{
-							adddot2x2(padK, alpha, packedA + num_M1 * 4 * padK, packedB + num_N1 * 4 * padK, beta, C + num_M1 * 4 * ldc + num_N1 * 4, ldc);
-							adddot2x1(padK, alpha, packedA + num_M1 * 4 * padK, packedB + (num_N1 * 4 + num_N2 * 2) * padK, beta, C + num_M1 * 4 * ldc + (num_N1 * 4 + num_N2 * 2), ldc);
-						}
-						else if (!flag_M && flag_N)
-						{
-							adddot2x2(padK, alpha, packedA + num_M1 * 4 * padK, packedB + num_N1 * 4 * padK, beta, C + num_M1 * 4 * ldc + num_N1 * 4, ldc);
-							adddot1x2(padK, alpha, packedA + (num_M1 * 4 + num_M2 * 2) * padK, packedB + num_N1 * 4 * padK, beta, C + (num_M1 * 4 + num_M2 * 2) * ldc + num_N1 * 4, ldc);
-						}
-					}
-				}
-				else
-				{
-					LOG(FATAL) << "Impossible code!";
-				}
+				execution_kernel_16register(M, N, padK, alpha, packedA, packedB, beta, C, ldc);
 				delete[] packedA;
 				delete[] packedB;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
 #else 
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
@@ -844,12 +772,16 @@ namespace glasssix
 #if SIDM_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
-#elif SIMD_TYPE >= SIMDTYPE_AVX
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+// AVX and SSE code follow the same logic, we merge them together.
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+				const int padK = K % mm_align_size ? K - K % mm_align_size + mm_align_size : K;
+				float* packedA = new float[M * padK];
+				float* packedB = new float[N * padK];
+				packTransedA(M, K, padK, A, lda, packedA);
+				packnoTransedB(N, K, padK, B, ldb, packedB);
+				execution_kernel_16register(M, N, padK, alpha, packedA, packedB, beta, C, ldc);
+				delete[] packedA;
+				delete[] packedB;
 #else 
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
@@ -877,12 +809,16 @@ namespace glasssix
 #if SIDM_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
-#elif SIMD_TYPE >= SIMDTYPE_AVX
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+// AVX and SSE code follow the same logic, we merge them together.
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+				const int padK = K % mm_align_size ? K - K % mm_align_size + mm_align_size : K;
+				float* packedA = new float[M * padK];
+				float* packedB = new float[N * padK];
+				packnoTransedA(M, K, padK, A, lda, packedA);
+				packTransedB(N, K, padK, B, ldb, packedB);
+				execution_kernel_16register(M, N, padK, alpha, packedA, packedB, beta, C, ldc);
+				delete[] packedA;
+				delete[] packedB;
 #else 
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
@@ -897,9 +833,9 @@ namespace glasssix
 						for (size_t k = 0; k < K; k++)
 						{
 							C[j * ldc + i] += alpha * A[j * lda + k] * B[i * ldb + k];
-			}
-		}
-	}
+						}
+					}
+				}
 #undef UNHANDLED
 #endif
 			}
@@ -910,13 +846,17 @@ namespace glasssix
 #if SIDM_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
-#elif SIMD_TYPE >= SIMDTYPE_AVX
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+// AVX and SSE code follow the same logic, we merge them together.
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
-#else
+				const int padK = K % mm_align_size ? K - K % mm_align_size + mm_align_size : K;
+				float* packedA = new float[M * padK];
+				float* packedB = new float[N * padK];
+				packTransedA(M, K, padK, A, lda, packedA);
+				packTransedB(N, K, padK, B, ldb, packedB);
+				execution_kernel_16register(M, N, padK, alpha, packedA, packedB, beta, C, ldc);
+				delete[] packedA;
+				delete[] packedB;
+#else 
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #endif 
@@ -930,7 +870,7 @@ namespace glasssix
 						for (size_t k = 0; k < K; k++)
 						{
 							C[j * ldc + i] += alpha * A[k * lda + j] * B[i * ldb + k];
-			}
+						}
 					}
 				}
 #undef UNHANDLED
