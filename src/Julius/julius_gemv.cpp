@@ -6,6 +6,18 @@ namespace glasssix
 	{
 		namespace juliusblas
 		{
+			void packTransedA(const int M, const int N, const float* A, const int lda, float* packedA)
+			{
+				memset(packedA, 0, M * N * sizeof(float));
+				for (int i = 0; i < N; i++)
+				{
+					for (int j = 0; j < M; j++)
+					{
+						packedA[i * M + j] = A[j * lda + i];
+					}
+				}
+			}
+
 #if SIMD_TYPE == SIMDTYPE_SSE
 			inline void cblas_sgemv_AnoTrans_sse(const int M, const int N, const float alpha, const float  *A, const int lda,
 				const float  *x, const int incx, const float beta, float  *y, const int incy)
@@ -177,6 +189,7 @@ namespace glasssix
 #endif
 			}
 
+			// Convert this scenario into noTrans situation;
 			void cblas_sgemv_ATrans(const int M, const int N, const float alpha, const float  *A, const int lda,
 				const float  *x, const int incx, const float beta, float  *y, const int incy)
 			{
@@ -184,11 +197,16 @@ namespace glasssix
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+//#define UNHANDLED
+				float* packedA = new float[M * N];
+				packTransedA(M, N, A, lda, packedA);
+				cblas_sgemv_AnoTrans_avx(N, M, alpha, packedA, M, x, incx, beta, y, incy);
+				delete[] packedA;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-#define UNHANDLED
-				NATIVE_CODE_WARNING;
+				float* packedA = new float[M * N];
+				packTransedA(M, N, A, lda, packedA);
+				cblas_sgemv_AnoTrans_sse(M, N, alpha, packedA, N, x, incx, beta, y, incy);
+				delete[] packedA;
 #else 
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
