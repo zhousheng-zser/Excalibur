@@ -39,15 +39,18 @@ inline bool check_value(int M, int N, const float* C1, int ldc1, const float* C2
 	return ret;
 }
 
-inline double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1e-4, bool show = false)
+inline double _test_gemm(int M, int N, int K, int iters = 1000, bool trans_a = false, bool trans_b = false, float thresh = 1e-4, bool show = false)
 {
 	int padK = (K + 7) >> 3 << 3;
 	float* A = (float*)_aligned_malloc(M*padK * sizeof(float), 32);
 	float* B = (float*)_aligned_malloc(padK*N * sizeof(float), 32);
 	float* C1 = (float*)_aligned_malloc(M*N * sizeof(float), 32);
 	float* C2 = (float*)_aligned_malloc(M*N * sizeof(float), 32);
-	float* q = (float*)_aligned_malloc(32, 32);
 
+	int lda = trans_a ? M : padK;
+	int ldb = trans_b ? padK: N;
+	int transa_label = trans_a ? 112 : 111;
+	int transb_label = trans_b ? 112 : 111;
 
 	for (int i = 0; i < M*padK; i++)
 		A[i] = rand() % 10001 / 5000.0f - 1.0f;
@@ -58,29 +61,27 @@ inline double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1
 		C1[i] = rand() % 10001 / 5000.0f - 1.0f;;
 		C2[i] = C1[i];
 	}
+	//JuliusBLAS
 	double t1 = omp_get_wtime(), t2, mul_count, gflops;
 	double time1 = FLT_MAX;
+	for (int i = 0; i < iters; i++)
 	{
-		for (int i = 0; i < iters; i++)
-		{
-			//glasssix::gemm_32f_AnoTrans_Btrans_auto(M, N, K, A, padK, B, padK, C1, N);
-			glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor, glasssix::excalibur::CblasNoTrans, glasssix::excalibur::CblasNoTrans,
-				M, N, K, 1.0, A, padK, B, N, 0.5f, C1, N);
-		}
-		t2 = omp_get_wtime();
-		time1 = t2 - t1;
-		mul_count = (double)M*N*K*iters;
-		gflops = mul_count / (1 << 30) / (t2 - t1);
-		//printf("C1[0] = %f\n", C1[0]);
-		printf("%d x %d x %d * %d = %.3e, time = %.3f s, juliusblas_gemm gflops = %.3f\n", M, N, K, iters, mul_count, time1, gflops);
+		glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor,
+			(glasssix::excalibur::CBLAS_TRANSPOSE)transa_label, (glasssix::excalibur::CBLAS_TRANSPOSE)transa_label,
+			M, N, K, 1.0, A, lda, B, ldb, 0.5f, C1, N);
 	}
-
-
-
+	t2 = omp_get_wtime();
+	time1 = t2 - t1;
+	mul_count = (double)M*N*K*iters;
+	gflops = mul_count / (1 << 30) / (t2 - t1);
+	//printf("C1[0] = %f\n", C1[0]);
+	printf("%d x %d x %d * %d = %.3e, time = %.3f s, juliusblas_gemm gflops = %.3f\n", M, N, K, iters, mul_count, time1, gflops);
+	//OpenBLAS
 	t1 = omp_get_wtime();
 	for (int i = 0; i < iters; i++)
 	{
-		cblas_sgemm(::CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, 1.0, A, padK, B, N, 0.5f, C2, N);
+		cblas_sgemm(::CblasRowMajor, (::CBLAS_TRANSPOSE)transa_label, (::CBLAS_TRANSPOSE)transa_label, 
+			M, N, K, 1.0, A, lda, B, ldb, 0.5f, C2, N);
 	}
 	//printf("C2[0] = %f\n", C2[0]);
 	t2 = omp_get_wtime();
@@ -94,9 +95,6 @@ inline double _test_gemm(int M, int N, int K, int iters = 1000, float thresh = 1
 	_aligned_free(B);
 	_aligned_free(C1);
 	_aligned_free(C2);
-	_aligned_free(q);
-
-
 	return std::min(time1, time2) / iters;
 }
 

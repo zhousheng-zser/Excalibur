@@ -142,6 +142,11 @@ namespace glasssix
 		void cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,
 			const float alpha, const float  *A, const int lda, const float  *x, const int incx, const float beta, float  *y, const int incy)
 		{
+			CHECK_GT(M, 0);
+			CHECK_GT(N, 0);
+			CHECK_GT(lda, 0);
+			CHECK_GT(incx, 0);
+			CHECK_GT(incy, 0);
 			switch (order)
 			{
 			case CblasRowMajor:
@@ -188,6 +193,12 @@ namespace glasssix
 			const int M, const int N, const int K, const float alpha, const float* A, const int lda, const float* B, const int ldb,
 			const float beta, float* C, const int ldc)
 		{
+			CHECK_GT(M, 0);
+			CHECK_GT(N, 0);
+			CHECK_GT(K, 0);
+			CHECK_GT(lda, 0);
+			CHECK_GT(ldb, 0);
+			CHECK_GT(ldc, 0);
 			switch (Order)
 			{
 			case CblasRowMajor:
