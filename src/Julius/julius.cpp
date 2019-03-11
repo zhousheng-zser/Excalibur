@@ -3,6 +3,7 @@
 #include "julius_dot.hpp"
 #include "julius_sdot.hpp"
 #include "julius_nrm2.hpp"
+#include "julius_scal.hpp"
 #include "julius_gemv.hpp"
 #include "julius_gemm.hpp"
 #include "julius.hpp"
@@ -147,6 +148,7 @@ namespace glasssix
 				return;
 			}
 			CHECK_GT(incx, 0);
+			juliusblas::cblas_sscal(n, alpha, x, incx);
 		}
 
 		void cblas_dscal(const int n, const double alpha, double *x, const int incx)
@@ -157,6 +159,7 @@ namespace glasssix
 				return;
 			}
 			CHECK_GT(incx, 0);
+			juliusblas::cblas_dscal(n, alpha, x, incx);
 		}
 
 		void cblas_sgemv(const enum CBLAS_LAYOUT order, const enum CBLAS_TRANSPOSE trans, const int M, const int N,
