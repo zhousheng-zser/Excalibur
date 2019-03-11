@@ -67,7 +67,7 @@ inline double _test_gemm(int M, int N, int K, int iters = 1000, bool trans_a = f
 	for (int i = 0; i < iters; i++)
 	{
 		glasssix::excalibur::cblas_sgemm(glasssix::excalibur::CblasRowMajor,
-			(glasssix::excalibur::CBLAS_TRANSPOSE)transa_label, (glasssix::excalibur::CBLAS_TRANSPOSE)transa_label,
+			(glasssix::excalibur::CBLAS_TRANSPOSE)transa_label, (glasssix::excalibur::CBLAS_TRANSPOSE)transb_label,
 			M, N, K, 1.0, A, lda, B, ldb, 0.5f, C1, N);
 	}
 	t2 = omp_get_wtime();
@@ -80,7 +80,7 @@ inline double _test_gemm(int M, int N, int K, int iters = 1000, bool trans_a = f
 	t1 = omp_get_wtime();
 	for (int i = 0; i < iters; i++)
 	{
-		cblas_sgemm(::CblasRowMajor, (::CBLAS_TRANSPOSE)transa_label, (::CBLAS_TRANSPOSE)transa_label, 
+		cblas_sgemm(::CblasRowMajor, (::CBLAS_TRANSPOSE)transa_label, (::CBLAS_TRANSPOSE)transb_label,
 			M, N, K, 1.0, A, lda, B, ldb, 0.5f, C2, N);
 	}
 	//printf("C2[0] = %f\n", C2[0]);

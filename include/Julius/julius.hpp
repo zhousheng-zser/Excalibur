@@ -55,6 +55,12 @@ namespace glasssix
 		// return \|x\|_2
 		double cblas_dnrm2(const int n, const double *x, const int incx);
 
+		// The ?scal routines perform a vector operation defined as:
+		// x = alpha*x
+		void cblas_sscal(const int n, const float alpha, float *x, const int incx);
+		// x = alpha*x
+		void cblas_dscal(const int n, const double alpha, double *x, const int incx);
+
 		//-----Level 2 Functions-----
 
 		//The ?gemv routines perform a matrix-vector operation defined as:
