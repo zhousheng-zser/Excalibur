@@ -136,6 +136,7 @@
     <ClCompile Include="..\..\src\BLASBenchmark\blas_benchmark.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\BLASBenchmark\gemm_problems.hpp" />
     <ClInclude Include="..\..\include\BLASBenchmark\test_gemm.hpp" />
     <ClInclude Include="..\..\include\BLASBenchmark\test_gemv.hpp" />
   </ItemGroup>

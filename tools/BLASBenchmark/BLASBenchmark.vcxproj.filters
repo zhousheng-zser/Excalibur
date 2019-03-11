@@ -26,5 +26,8 @@
     <ClInclude Include="..\..\include\BLASBenchmark\test_gemm.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\BLASBenchmark\gemm_problems.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

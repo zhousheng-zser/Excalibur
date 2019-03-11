@@ -25,7 +25,7 @@ A SIMD supported [BLAS](http://www.netlib.org/blas/) library. Now only some impo
 - F: Not implementated;
 - TE: Implementated but error exists;
 - --: No implementation;
-- NT: Implementated but no test yet;
+- NT: Implementated but not test yet;
   
 ## Performance Status
 
