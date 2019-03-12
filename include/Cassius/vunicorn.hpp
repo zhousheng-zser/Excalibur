@@ -1,6 +1,6 @@
-#ifndef _VBASENET_HPP_
-#define _VBASENET_HPP_
-
+#pragma once
+#ifndef _VUNICORN_HPP_
+#define _VUNICORN_HPP_
 #include <vector>
 
 namespace glasssix
@@ -25,4 +25,4 @@ namespace glasssix
 	}
 }
 
-#endif // !_VBASENET_HPP_
+#endif // !_VUNICORN_HPP_
