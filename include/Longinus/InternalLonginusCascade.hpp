@@ -13,7 +13,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		class LONGINUS_DLL InternalLonginusCascade : public BaseLonginusCascade
+		class EXPORT_LONGINUS InternalLonginusCascade : public BaseLonginusCascade
 		{
 		public:
 			InternalLonginusCascade();
