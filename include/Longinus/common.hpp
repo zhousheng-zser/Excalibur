@@ -5,18 +5,22 @@
 #include <string>
 #include <memory> 
 
-#ifdef LONGINUS_DLL
-#undef LONGINUS_DLL
-#ifdef _MSC_VER
-#define LONGINUS_DLL __declspec(dllexport)
-#elif defined(__linux__)
-#define LONGINUS_DLL 
+#ifdef EXPORT_LONGINUS
+#undef EXPORT_LONGINUS
+#ifdef _MSC_VER // For Windows
+#ifdef _WINDLL // Dynamic lib
+#define EXPORT_LONGINUS __declspec(dllexport)
+#else // Static lib
+#define EXPORT_LONGINUS
+#endif //!_WINDLL
+#elif defined(__linux__) // For Linux
+#define EXPORT_LONGINUS 
 #endif
 #else  
 #ifdef _MSC_VER
-#define LONGINUS_DLL __declspec(dllimport)
+#define EXPORT_LONGINUS __declspec(dllimport)
 #elif defined(__linux__)
-#define LONGINUS_DLL 
+#define EXPORT_LONGINUS 
 #endif
 #endif
 
@@ -38,7 +42,7 @@ namespace glasssix
 		} FaceRect;
 
 		class BaseLonginusCascade;
-		class /*LONGINUS_DLL*/ LonginusDetector;
+		class EXPORT_LONGINUS LonginusDetector;
 
 		typedef struct CandidateRect : public FaceRect
 		{

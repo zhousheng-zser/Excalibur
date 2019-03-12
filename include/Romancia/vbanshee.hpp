@@ -1,5 +1,5 @@
-#ifndef _VBASENET_HPP_
-#define _VBASENET_HPP_
+#ifndef _VBANSHEE_HPP_
+#define _VBANSHEE_HPP_
 #include <vector>
 
 namespace glasssix
@@ -28,4 +28,4 @@ namespace glasssix
 	}
 }
 
-#endif // !_VBASENET_HPP_
+#endif // !_VBANSHEE_HPP_
