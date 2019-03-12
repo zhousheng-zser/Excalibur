@@ -1,6 +1,5 @@
 #include <fstream>
 #include <string>
-#include <glasssix/timer.hpp>
 #include "../../include/Irisvian/IrisvianSearch.hpp"
 
 using namespace glasssix::Irisvian;

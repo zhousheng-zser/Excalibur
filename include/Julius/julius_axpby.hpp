@@ -9,11 +9,11 @@ namespace glasssix
 	{
 		namespace juliusblas
 		{
-			void cblas_saxpby(const int N, const float alpha, const float* X,
-				const int incX, const float beta, float* Y, const int incY);
+			void cblas_saxpby(const int n, const float alpha, const float* x,
+				const int incx, const float beta, float* y, const int incy);
 
-			void cblas_daxpby(const int N, const double alpha, const double* X,
-				const int incX, const double beta, double* Y, const int incY);
+			void cblas_daxpby(const int n, const double alpha, const double* x,
+				const int incx, const double beta, double* y, const int incy);
 		}
 	}
 }
