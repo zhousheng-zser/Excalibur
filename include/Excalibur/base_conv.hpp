@@ -57,21 +57,7 @@ namespace glasssix
 
 			baseconv() {}
 
-			baseconv(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device)
-			{
-				input_Channel_ = input_Channel;
-				output_Channel_ = output_Channel;
-				kernelSize_ = kernelSize;
-				stride_ = stride;
-				pad_ = pad;
-				bias_term_ = bias_term;
-				device_ = device;
-				weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_}, device_));
-				bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
-				setup_internal_params();
-			}
-
-			baseconv(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device)
+			baseconv(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device)
 			{
 				CHECK_EQ(output_Channel % group, 0);
 				CHECK_EQ(input_Channel % group, 0);
@@ -82,18 +68,14 @@ namespace glasssix
 				pad_ = pad;
 				bias_term_ = bias_term;
 				device_ = device;
+				group_ = group;
 				weights_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernelSize_*kernelSize_ / group}, device_));
 				bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
-				setup_internal_params(group);
+				kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
+				weight_offset_ = kernelSize_*kernelSize_;
 			}
 
 			virtual ~baseconv() {};
-
-			virtual void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
-
-			virtual void forward_bias(float* output, const float* bias) = 0;
-
-			virtual void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) = 0;
 
 			void set_bias(float* bias)
 			{
@@ -108,6 +90,25 @@ namespace glasssix
 				weights_->set_cpu_data(weights);
 			}
 
+			virtual void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
+
+		protected:
+			virtual void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) = 0;
+			virtual void forward_bias(float* output, const float* bias) = 0;			
+
+#ifdef USE_CUDA
+		public:
+			virtual void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
+		protected:
+			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
+			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;			
+#ifdef USE_CUDNN
+		public:
+			virtual void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;		
+#endif//!USE_CUDNN
+#endif//!USE_CUDA
+
+		protected:
 			void conv_im2col_cpu(const float* data, float* col_buff)
 			{
 				if (order_ == NCHW)
@@ -156,21 +157,24 @@ namespace glasssix
 				col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
 					kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 			}
-#endif
+#endif //!USE_CUDA
 
-			void setup_internal_params()
-			{
-				kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
-				group_ = 1;
-				weight_offset_ = kernelSize_ * kernelSize_;
-			}
-
-			void setup_internal_params(int group)
-			{
-				kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
-				group_ = group;
-				weight_offset_ = kernelSize_*kernelSize_;
-			}
+#ifdef USE_CUDA
+#ifdef USE_CUDNN
+			float one = 1.0, zero = 0.0;
+			size_t size;
+			cudnnTensorDescriptor_t xdesc;
+			cudnnTensorDescriptor_t	ydesc;
+			cudnnTensorDescriptor_t bdesc;
+			cudnnFilterDescriptor_t wdesc;
+			cudnnConvolutionDescriptor_t conv_desc;
+			// algorithms for forward and backwards convolutions
+			cudnnConvolutionFwdAlgo_t fwd_algo_;
+			size_t workspace_limit_bytes = 8 * 1024 * 1024;
+			float *extra = nullptr;
+			size_t current_size;
+#endif//!USE_CUDNN
+#endif//!USE_CUDA
 		};
 	}
 }

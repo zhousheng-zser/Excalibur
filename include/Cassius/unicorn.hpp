@@ -102,6 +102,7 @@ namespace glasssix
 			Declear_Params(relu5_weights);
 			//
 			int device_;
+			bool cudnn_ready_ = false;
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
 			std::vector<float> quality_score;

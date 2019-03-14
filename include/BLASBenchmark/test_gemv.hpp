@@ -2,12 +2,10 @@
 #ifndef _TEST_GEMV_HPP_
 #define _TEST_GEMV_HPP_
 
-#include "../../include/Julius/julius.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <omp.h>
 #include <cfloat>
-#include <cblas.h>
 #include <algorithm>
 
 inline bool check_value(int M, const float* y1, int incy1, const float* y2, int incy2, float thresh = 1e-5, bool show = false)
@@ -48,6 +46,7 @@ inline void _test_gemv(int M, int N, int iters = 1000, bool trans_a = false, flo
 	double t1 = omp_get_wtime(), t2;
 	double time1 = FLT_MAX;
 	{
+#ifndef USE_MKL
 		for (int i = 0; i < iters; i++)
 		{
 			glasssix::excalibur::cblas_sgemv(glasssix::excalibur::CblasRowMajor, (glasssix::excalibur::CBLAS_TRANSPOSE)transa_label,
@@ -58,13 +57,14 @@ inline void _test_gemv(int M, int N, int iters = 1000, bool trans_a = false, flo
 		mul_count = (double)M*N * 1 * iters;
 		gflops = mul_count / (1 << 30) / (time1);
 		printf("%d x %d x %d * %d = %.3e, time = %.3f s, juliusblas_gemv gflops = %.3f\n", M, N, 1, iters, mul_count, time1, gflops);
+#endif
 	}
 
 	{
 		t1 = omp_get_wtime();
 		for (int i = 0; i < iters; i++)
 		{
-			cblas_sgemv(CblasRowMajor, (::CBLAS_TRANSPOSE)transa_label, M, N, 1.1f, A, N, x, 1, 0.5f, y2, 1);
+			cblas_sgemv(::CblasRowMajor, (::CBLAS_TRANSPOSE)transa_label, M, N, 1.1f, A, N, x, 1, 0.5f, y2, 1);
 		}
 		t2 = omp_get_wtime();
 		mul_count = (double)M*N * 1 * iters;
@@ -72,7 +72,9 @@ inline void _test_gemv(int M, int N, int iters = 1000, bool trans_a = false, flo
 		gflops = mul_count / (1 << 30) / (time2 / 1);
 		printf("%d x %d x %d * %d = %.3e, time = %.3f s, openblas_gemv gflops = %.3f\n", M, N, 1, iters, mul_count, time2, gflops);
 	}
+#ifndef USE_MKL
 	printf("check = %s\n", check_value(trans_a ? N : M, y1, 1, y2, 1, thresh, show) ? "True" : "False");
+#endif
 	_aligned_free(A);
 	_aligned_free(x);
 	_aligned_free(y1);
