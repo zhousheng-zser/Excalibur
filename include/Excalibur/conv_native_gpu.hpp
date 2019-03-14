@@ -1,8 +1,7 @@
-#ifdef USE_CUDA
 #ifndef _CONV_NATIVE_GPU_HPP_
 #define _CONV_NATIVE_GPU_HPP_
 #include "base_conv.hpp"
-#include "conv_depthwise_native_gpu.hpp"
+
 namespace glasssix
 {
 	namespace excalibur
@@ -10,24 +9,29 @@ namespace glasssix
 		class conv_native_gpu : public baseconv
 		{
 		public:
-			cublasHandle_t cublas_handle_;
-
-			conv_native_gpu(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device) 
-				: baseconv(input_Channel, output_Channel, kernelSize, stride, pad, bias_term, device) {}
-
-			conv_native_gpu(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device) 
-				: baseconv(input_Channel, output_Channel, kernelSize, group, stride, pad, bias_term, device) {}
+			conv_native_gpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device)
+				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device) {}
 
 			virtual ~conv_native_gpu() {}
 
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+#ifdef USE_CUDA
+			void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
 
-			void forward_bias(float* output, const float* bias) override;
+		private:
+			void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) override;
+			void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) override;
 
-			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) override;
+#ifdef USE_CUDNN
+		private:
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+#endif //!USE_CUDNN
+#endif // !USE_CUDA
+
+		private:
+			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_bias(float* output, const float* bias) {}
 		};
 	}
 }
-
 #endif // !_CONV_NATIVE_GPU_HPP_
-#endif // !USE_CUDA

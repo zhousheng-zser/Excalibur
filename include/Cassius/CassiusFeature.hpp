@@ -4,7 +4,7 @@
 
 #ifdef EXPORT_CASSIUS
 #undef EXPORT_CASSIUS
-#ifdef _MSC_VER // For Windiws
+#ifdef _MSC_VER // For Windows
 #ifdef _WINDLL // Dynamic lib
 #define EXPORT_CASSIUS __declspec(dllexport)
 #else // Static lib

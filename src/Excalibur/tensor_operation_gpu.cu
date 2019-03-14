@@ -4,7 +4,6 @@
 #include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include "tensor_utils.hpp"
 #include <glasssix\tensor.hpp>
 #include "math_functions.hpp"
 #include <iostream>
