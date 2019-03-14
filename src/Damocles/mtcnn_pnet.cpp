@@ -29,22 +29,23 @@ namespace glasssix
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 			}
 #ifdef USE_CUDNN
-			/*if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
 			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}*/
+			}
+			cudnn_ready_ = true;
 #endif
 #endif
 
 			//
-			Init_Conv_Params(conv1, 3, 10, 3, 1, 0, true);
+			Init_Conv_Params(conv1, 3, 10, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu1, 10, false);
 			Init_Pooling_Params(pool1, 2, 2, 0, 0);
-			Init_Conv_Params(conv2, 10, 16, 3, 1, 0, true);
+			Init_Conv_Params(conv2, 10, 16, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu2, 16, false);
-			Init_Conv_Params(conv3, 16, 32, 3, 1, 0, true);
+			Init_Conv_Params(conv3, 16, 32, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu3, 32, false);
-			Init_Conv_Params(conv4_1, 32, 2, 1, 1, 0, true);
-			Init_Conv_Params(conv4_2, 32, 4, 1, 1, 0, true);
+			Init_Conv_Params(conv4_1, 32, 2, 1, 1, 1, 0, true);
+			Init_Conv_Params(conv4_2, 32, 4, 1, 1, 1, 0, true);
 			Init_Softmax_Params(prob1, 2);
 			//
 		}
@@ -68,10 +69,10 @@ namespace glasssix
 				CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 			}
 #ifdef USE_CUDNN
-			/*if (cudnn_handle_)
+			if (cudnn_handle_)
 			{
-			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
-			}*/
+			    CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+			}
 #endif
 #endif
 		}
@@ -94,30 +95,30 @@ namespace glasssix
 #ifdef USE_CUDA
 		void mtcnn_pnet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
 			pool1->Forward_gpu_native(conv1_top_data, pool1_top_data);
-			conv2->Forward(pool1_top_data, conv2_top_data);
+			conv2->Forward(cublas_handle_, pool1_top_data, conv2_top_data);
 			prelu2->Forward_gpu_native(conv2_top_data);
-			conv3->Forward(conv2_top_data, conv3_top_data);
+			conv3->Forward(cublas_handle_, conv2_top_data, conv3_top_data);
 			prelu3->Forward_gpu_native(conv3_top_data);
-			conv4_1->Forward(conv3_top_data, conv4_1_top_data);
-			conv4_2->Forward(conv3_top_data, conv4_2_top_data);
+			conv4_1->Forward(cublas_handle_, conv3_top_data, conv4_1_top_data);
+			conv4_2->Forward(cublas_handle_, conv3_top_data, conv4_2_top_data);
 			prob1->Forward_gpu_native(conv4_1_top_data, prob1_top_data);
 		}
 
 #ifdef USE_CUDNN
 		void mtcnn_pnet::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
 			pool1->Forward_gpu_cudnn(conv1_top_data, pool1_top_data);
-			conv2->Forward(pool1_top_data, conv2_top_data);
+			conv2->Forward(cudnn_handle_, pool1_top_data, conv2_top_data);
 			prelu2->Forward_gpu_native(conv2_top_data);
-			conv3->Forward(conv2_top_data, conv3_top_data);
+			conv3->Forward(cudnn_handle_, conv2_top_data, conv3_top_data);
 			prelu3->Forward_gpu_native(conv3_top_data);
-			conv4_1->Forward(conv3_top_data, conv4_1_top_data);
-			conv4_2->Forward(conv3_top_data, conv4_2_top_data);
+			conv4_1->Forward(cudnn_handle_, conv3_top_data, conv4_1_top_data);
+			conv4_2->Forward(cudnn_handle_, conv3_top_data, conv4_2_top_data);
 			prob1->Forward_gpu_cudnn(conv4_1_top_data, prob1_top_data);
 		}
 
