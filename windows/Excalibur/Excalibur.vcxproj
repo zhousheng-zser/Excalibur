@@ -97,7 +97,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);$(UseIntelMKL);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;$(PROCESSOR_ARCHITECTURE);$(UseIntelMKL);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -125,7 +125,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);$(UseIntelMKL);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;$(PROCESSOR_ARCHITECTURE);$(UseIntelMKL);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -149,7 +149,7 @@
     <ClInclude Include="..\..\include\Excalibur\im2col.hpp" />
     <ClInclude Include="..\..\include\Excalibur\inner_product.hpp" />
     <ClInclude Include="..\..\include\Excalibur\io.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
+    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
     <ClInclude Include="..\..\include\Excalibur\math_functions.hpp" />
     <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp" />
     <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp" />
@@ -188,23 +188,57 @@
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\src\Excalibur\concat.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\eltwise.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\flip.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\inner_product.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\math_functions.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\mirrormax.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\normalize.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\pca.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\pooling.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\prelu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\slice.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\softmax.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\concat.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\eltwise.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\flip.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\im2col.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\inner_product.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\math_functions.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\mirrormax.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\normalize.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\pca.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\pooling.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\prelu.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\slice.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\softmax.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu">
+      <FileType>Document</FileType>
+    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Julius\Julius.vcxproj">

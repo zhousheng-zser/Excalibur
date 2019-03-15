@@ -86,21 +86,20 @@ namespace glasssix
 				if (group_ > 1)
 				{
 					bool is_U_calculated = false;
-					float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *v_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *m_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *result = (float*)malloc(m_length_ * sizeof(float));
 
 					for (int n = 0; n < num_; n++)
 					{
 						int bottom_offset_num = n * bottom_dim_;
 						int top_offset_num = n * top_dim_;
 
-						//we do not use omp in depthwise_conv, because Romancia is too small, it will cose more time in parallel mode. 
-						//Activate omp when forward a big net
-						//#pragma omp parallel for
+#pragma omp parallel for
 						for (int och = 0; och < output_Channel_; och++)
 						{
+							float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *v_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *m_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *result = (float*)malloc(m_length_ * sizeof(float));
+
 							int U_och_offset = och * tile_length_;
 							int top_offset_num_channel = top_offset_num + och * output_spatial_dim_;
 							int bottom_offset_num_channel = bottom_offset_num + och * input_spatial_dim_;
@@ -110,37 +109,58 @@ namespace glasssix
 								calculate_GgGT(weights + kernel_length_ * och, U_ + U_och_offset);//calculate U
 							}
 
+							//param declaration
+							int row_in_output_data;
+							int row_in_input_data;
+							int bottom_offset_num_channel_row;
+							int top_offset_num_channel_row;
+							int num_w;
+							int col_in_output_data;
+							int col_in_input_data;
+							int bottom_offset_num_channel_row_col;
+							int top_offset_num_channel_row_col;
+							int row_in_tile;
+							int tile_offset_row;
+							int real_row;
+							int col_in_tile;
+							int real_col;
+							int tile_offset_row_col;
+							int row;
+							int col;
+							int result_offset_row;
+							__m256 u_front;
+							__m256 u_rear;
+							__m256 v_front;
+							__m256 v_rear;
+							__m256 sum_front;
+							__m256 sum_rear;
+
 							for (int num_h = 0; num_h < h_tile_num_; num_h++)
 							{
-								int row_in_output_data = num_h * m_;
-								int row_in_input_data = row_in_output_data - pad_;
-								int bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_dim_w_;
-								int top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
-								for (int num_w = 0; num_w < w_tile_num_; num_w++)
+								row_in_output_data = num_h * m_;
+								row_in_input_data = row_in_output_data - pad_;
+								bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_dim_w_;
+								top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
+								for (num_w = 0; num_w < w_tile_num_; num_w++)
 								{
-									int col_in_output_data = num_w * m_;
-									int col_in_input_data = col_in_output_data - pad_;
-									int bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data;
-									int top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
+									col_in_output_data = num_w * m_;
+									col_in_input_data = col_in_output_data - pad_;
+									bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data;
+									top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
 
-									//float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *v_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *m_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *result = (float*)malloc(m_ * m_ * sizeof(float));
-
-									for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
+									for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
 									{
-										int tile_offset_row = row_in_tile * tile_size_;
-										int real_row = row_in_input_data + row_in_tile;
+										tile_offset_row = row_in_tile * tile_size_;
+										real_row = row_in_input_data + row_in_tile;
 										if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
 										{
 											memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
 										}
 										else
 										{
-											for (int col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
+											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
-												int real_col = col_in_input_data + col_in_tile;
+												real_col = col_in_input_data + col_in_tile;
 												if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
 												{
 													tile_data[tile_offset_row + col_in_tile] = 0;
@@ -157,33 +177,31 @@ namespace glasssix
 
 									calculate_BTdB(tile_data, v_data);//calculate V
 
-									for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-									{
-										int tile_offset_row = row_in_tile * tile_size_;
-										for (int col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-										{
-											int tile_offset_row_col = tile_offset_row + col_in_tile;
-											m_data[tile_offset_row_col] = v_data[tile_offset_row_col] * U_[U_och_offset + tile_offset_row_col];
-										}
-									}
-
+									u_front = _mm256_loadu_ps(U_ + U_och_offset);
+									u_rear = _mm256_loadu_ps(U_ + U_och_offset + 8);
+									v_front = _mm256_loadu_ps(v_data);
+									v_rear = _mm256_loadu_ps(v_data + 8);
+									sum_front = _mm256_mul_ps(u_front, v_front);
+									sum_rear = _mm256_mul_ps(u_rear, v_rear);
+									_mm256_storeu_ps(m_data, sum_front);
+									_mm256_storeu_ps(m_data + 8, sum_rear);
 									calculate_ATmA(m_data, result);//calculate result
 
 									if (num_h == h_tile_num_ - 1)
 									{
-										for (size_t row = 0; row < m_ - add_h; row++)
+										for (row = 0; row < m_ - add_h; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (size_t col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (size_t col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
@@ -193,19 +211,19 @@ namespace glasssix
 									}
 									else
 									{
-										for (int row = 0; row < m_; row++)
+										for (row = 0; row < m_; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (int col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (int col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
@@ -213,13 +231,13 @@ namespace glasssix
 											top_offset_num_channel_row_col += output_dim_w_;
 										}
 									}
-
-									//delete tile_data;
-									//delete v_data;
-									//delete m_data;
-									//delete result;
 								}
 							}
+
+							delete tile_data;
+							delete v_data;
+							delete m_data;
+							delete result;
 						}
 
 						math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_->mutable_cpu_data());
@@ -230,11 +248,6 @@ namespace glasssix
 
 						is_U_calculated = true;
 					}
-
-					delete tile_data;
-					delete v_data;
-					delete m_data;
-					delete result;
 				}
 				else if (group_ == 1)
 				{
@@ -288,6 +301,14 @@ namespace glasssix
 							int col_in_tile;
 							int real_col;
 							int row;
+							int col;
+							int result_offset_row;
+							__m256 sum_front;
+							__m256 sum_rear;
+							__m256 u_front;
+							__m256 u_rear;
+							__m256 v_front;
+							__m256 v_rear;
 
 							for (int num_h = 0; num_h < h_tile_num_; num_h++)
 							{
@@ -303,8 +324,8 @@ namespace glasssix
 									top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
 									bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data;
 									V_offset_row_col = V_offset_row + num_w * tile_length_;
-									__m256 sum_front = _mm256_setzero_ps();
-									__m256 sum_rear = _mm256_setzero_ps();
+									sum_front = _mm256_setzero_ps();
+									sum_rear = _mm256_setzero_ps();
 
 									for (ich = 0; ich < input_Channel_; ich++)
 									{
@@ -351,10 +372,10 @@ namespace glasssix
 											calculate_BTdB(tile_data, V_ + V_offset_channel_row_col);
 										}
 
-										__m256 u_front = _mm256_loadu_ps(U_ + U_offset_och_ich);
-										__m256 u_rear = _mm256_loadu_ps(U_ + U_offset_och_ich + 8);
-										__m256 v_front = _mm256_loadu_ps(V_ + V_offset_channel_row_col);
-										__m256 v_rear = _mm256_loadu_ps(V_ + V_offset_channel_row_col + 8);
+										u_front = _mm256_loadu_ps(U_ + U_offset_och_ich);
+										u_rear = _mm256_loadu_ps(U_ + U_offset_och_ich + 8);
+										v_front = _mm256_loadu_ps(V_ + V_offset_channel_row_col);
+										v_rear = _mm256_loadu_ps(V_ + V_offset_channel_row_col + 8);
 										sum_front = _mm256_fmadd_ps(v_front, u_front, sum_front);
 										sum_rear = _mm256_fmadd_ps(v_rear, u_rear, sum_rear);
 									}
@@ -363,92 +384,53 @@ namespace glasssix
 									_mm256_storeu_ps(m_data + 8, sum_rear);
 									calculate_ATmA(m_data, result);
 
-									if (!add_h && !add_w)//add_h==0,add_w==0
+									if (num_h == h_tile_num_ - 1)
 									{
-										for (row = 0; row < m_; row++)
+										for (row = 0; row < m_ - add_h; row++)
 										{
-											memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
-											top_offset_num_channel_row_col += output_dim_w_;
-										}
-									}
-									else if (add_h && !add_w)//add_h==1,add_w==0
-									{
-										if (num_h != h_tile_num_ - 1)
-										{
-											for (int row = 0; row < m_; row++)
+											result_offset_row = row * m_;
+											if (num_w == w_tile_num_ - 1)
 											{
-												memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
-										else
-										{
-											for (int row = 0; row < m_ - add_h; row++)
-											{
-												memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
-									}
-									else if (!add_h && add_w)//add_h==0,add_w==1
-									{
-										for (int row = 0; row < m_; row++)
-										{
-											if (num_w != w_tile_num_ - 1)
-											{
-												memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
+												for (col = 0; col < m_ - add_w; col++)
+												{
+													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
+												}
 											}
 											else
 											{
-												for (int col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_; col++)
 												{
-													top_data[top_offset_num_channel_row_col + col] = result[row * m_ + col];
+													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
 											}
 											top_offset_num_channel_row_col += output_dim_w_;
 										}
 									}
-									else if (add_h && add_w)//add_h==1,add_w==1
+									else
 									{
-										if (num_h != h_tile_num_ - 1)
+										for (row = 0; row < m_; row++)
 										{
-											for (int row = 0; row < m_; row++)
+											result_offset_row = row * m_;
+											if (num_w == w_tile_num_ - 1)
 											{
-												if (num_w != w_tile_num_ - 1)
+												for (col = 0; col < m_ - add_w; col++)
 												{
-													memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
+													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
-												else
-												{
-													for (int col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[row * m_ + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
 											}
-										}
-										else
-										{
-											for (int row = 0; row < m_ - add_h; row++)
+											else
 											{
-												if (num_w != w_tile_num_ - 1)
+												for (col = 0; col < m_; col++)
 												{
-													memcpy(top_data + top_offset_num_channel_row_col, result + row * m_, m_ * sizeof(float));
+													top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
 												}
-												else
-												{
-													for (int col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[row * m_ + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
 											}
+											top_offset_num_channel_row_col += output_dim_w_;
 										}
 									}
 								}
 							}
+
 							is_V_calculated = true;
 							delete tile_data;
 							delete m_data;
@@ -499,21 +481,20 @@ namespace glasssix
 				if (group_ > 1)
 				{
 					bool is_U_calculated = false;
-					float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *v_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *m_data = (float*)malloc(tile_length_ * sizeof(float));
-					float *result = (float*)malloc(m_length_ * sizeof(float));
 
 					for (int n = 0; n < num_; n++)
 					{
 						int bottom_offset_num = n * bottom_dim_;
 						int top_offset_num = n * top_dim_;
 
-						//we do not use omp in depthwise_conv, because Romancia is too small, it will cose more time in parallel mode. 
-						//Activate omp when forward a big net
-						//#pragma omp parallel for
+#pragma omp parallel for
 						for (int och = 0; och < output_Channel_; och++)
 						{
+							float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *v_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *m_data = (float*)malloc(tile_length_ * sizeof(float));
+							float *result = (float*)malloc(m_length_ * sizeof(float));
+
 							int bottom_offset_num_channel = bottom_offset_num + och;
 							int top_offset_num_channel = top_offset_num + och;
 							int U_och_offset = och * tile_length_;
@@ -523,37 +504,58 @@ namespace glasssix
 								calculate_GgGT(weights + kernel_length_ * och, U_ + U_och_offset);//calculate U
 							}
 
+							//param declaration
+							int row_in_output_data;
+							int row_in_input_data;
+							int bottom_offset_num_channel_row;
+							int top_offset_num_channel_row;
+							int num_w;
+							int col_in_output_data;
+							int col_in_input_data;
+							int bottom_offset_num_channel_row_col;
+							int top_offset_num_channel_row_col;
+							int row_in_tile;
+							int tile_offset_row;
+							int real_row;
+							int col_in_tile;
+							int real_col;
+							int tile_offset_row_col;
+							int row;
+							int result_offset_row;
+							int col;
+							__m256 u_front;
+							__m256 u_rear;
+							__m256 v_front;
+							__m256 v_rear;
+							__m256 sum_front;
+							__m256 sum_rear;
+
 							for (int num_h = 0; num_h < h_tile_num_; num_h++)
 							{
-								int row_in_output_data = num_h * m_;
-								int row_in_input_data = row_in_output_data - pad_;
-								int bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_w_stride;
-								int top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-								for (int num_w = 0; num_w < w_tile_num_; num_w++)
+								row_in_output_data = num_h * m_;
+								row_in_input_data = row_in_output_data - pad_;
+								bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_w_stride;
+								top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
+								for (num_w = 0; num_w < w_tile_num_; num_w++)
 								{
-									int col_in_output_data = num_w * m_;
-									int col_in_input_data = col_in_output_data - pad_;
-									int bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data * input_Channel_;
-									int top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
+									col_in_output_data = num_w * m_;
+									col_in_input_data = col_in_output_data - pad_;
+									bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data * input_Channel_;
+									top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
 
-									//float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *v_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *m_data = (float*)malloc(tile_length_ * sizeof(float));
-									//float *result = (float*)malloc(m_ * m_ * sizeof(float));
-
-									for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
+									for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
 									{
-										int tile_offset_row = row_in_tile * tile_size_;
-										int real_row = row_in_input_data + row_in_tile;
+										tile_offset_row = row_in_tile * tile_size_;
+										real_row = row_in_input_data + row_in_tile;
 										if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
 										{
 											memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
 										}
 										else
 										{
-											for (int col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
+											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
-												int real_col = col_in_input_data + col_in_tile;
+												real_col = col_in_input_data + col_in_tile;
 												if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
 												{
 													tile_data[tile_offset_row + col_in_tile] = 0;
@@ -568,35 +570,33 @@ namespace glasssix
 										bottom_offset_num_channel_row_col += input_w_stride;
 									}
 
-									calculate_BTdB(tile_data, v_data);//calculate v
+									calculate_BTdB(tile_data, v_data);//calculate V
 
-									for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-									{
-										int tile_offset_row = row_in_tile * tile_size_;
-										for (int col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-										{
-											int tile_offset_row_col = tile_offset_row + col_in_tile;
-											m_data[tile_offset_row_col] = v_data[tile_offset_row_col] * U_[U_och_offset + tile_offset_row_col];
-										}
-									}
-
+									u_front = _mm256_loadu_ps(U_ + U_och_offset);
+									u_rear = _mm256_loadu_ps(U_ + U_och_offset + 8);
+									v_front = _mm256_loadu_ps(v_data);
+									v_rear = _mm256_loadu_ps(v_data + 8);
+									sum_front = _mm256_mul_ps(u_front, v_front);
+									sum_rear = _mm256_mul_ps(u_rear, v_rear);
+									_mm256_storeu_ps(m_data, sum_front);
+									_mm256_storeu_ps(m_data + 8, sum_rear);
 									calculate_ATmA(m_data, result);//calculate result
 
 									if (num_h == h_tile_num_ - 1)
 									{
-										for (size_t row = 0; row < m_ - add_h; row++)
+										for (row = 0; row < m_ - add_h; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (size_t col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (size_t col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
@@ -606,19 +606,19 @@ namespace glasssix
 									}
 									else
 									{
-										for (int row = 0; row < m_; row++)
+										for (row = 0; row < m_; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (int col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (int col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
@@ -641,7 +641,6 @@ namespace glasssix
 				}
 				else if (group_ == 1)
 				{
-					__m256 u_front, u_rear, v_front, v_rear, res_front, res_rear, sum_front, sum_rear;
 					//calculate U_
 #pragma omp parallel for
 					for (int n = 0; n < U_num_; ++n)
@@ -650,7 +649,7 @@ namespace glasssix
 					}
 
 					//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
-					V_num_ = input_Channel_ * h_tile_num_ * w_tile_num_;
+					V_num_ = input_Channel_ * total_tile_num;
 					V_ = (float*)malloc(V_num_ * tile_length_ * sizeof(float));
 					int U_offset_single_och = input_Channel_ * tile_length_;
 
@@ -664,53 +663,86 @@ namespace glasssix
 						for (int och = 0; och < output_Channel_; och++)
 						{
 							float *tile_data = (float*)malloc(tile_length_ * sizeof(float));
-							float *v_data = (float*)malloc(tile_length_ * sizeof(float));
 							float *m_data = (float*)malloc(tile_length_ * sizeof(float));
 							float *result = (float*)malloc(m_length_ * sizeof(float));
 
 							int U_offset_och = och * U_offset_single_och;
 							int top_offset_num_channel = top_offset_num + och;
 
+							//param declaration
+							int row_in_output_data;
+							int row_in_input_data;
+							int bottom_offset_num_row;
+							int top_offset_num_channel_row;
+							int V_offset_row;
+							int num_w;
+							int col_in_output_data;
+							int col_in_input_data;
+							int bottom_offset_num_row_col;
+							int top_offset_num_channel_row_col;
+							int V_offset_row_col;
+							int ich;
+							int V_offset_channel_row_col;
+							int U_offset_och_ich;
+							int bottom_offset_num_channel_row_col;
+							int row_in_tile;
+							int tile_offset_row;
+							int real_row;
+							int col_in_tile;
+							int real_col;
+							int row;
+							int col;
+							int tile_offset_row_col;
+							int U_offset_och_ich_row;
+							int V_offset_channel_row_col_rowt;
+							int result_offset_row;
+							__m256 sum_front;
+							__m256 sum_rear;
+							__m256 u_front;
+							__m256 u_rear;
+							__m256 v_front;
+							__m256 v_rear;
+
 							for (int num_h = 0; num_h < h_tile_num_; num_h++)
 							{
-								int row_in_output_data = num_h * m_;
-								int row_in_input_data = row_in_output_data - pad_;
-								int bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_w_stride;
-								int top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-								int V_offset_row = num_h * w_tile_stride;
+								row_in_output_data = num_h * m_;
+								row_in_input_data = row_in_output_data - pad_;
+								bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_w_stride;
+								top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
+								V_offset_row = num_h * w_tile_stride;
 
-								for (int num_w = 0; num_w < w_tile_num_; num_w++)
+								for (num_w = 0; num_w < w_tile_num_; num_w++)
 								{
-									int col_in_output_data = num_w * m_;
-									int col_in_input_data = col_in_output_data - pad_;
-									int bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data * input_Channel_;
-									int top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
-									int V_offset_row_col = V_offset_row + num_w * tile_length_;
-									memset(m_data, 0, tile_length_ * sizeof(float));
+									col_in_output_data = num_w * m_;
+									col_in_input_data = col_in_output_data - pad_;
+									bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data * input_Channel_;
+									top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
+									V_offset_row_col = V_offset_row + num_w * tile_length_;
 									sum_front = _mm256_setzero_ps();
 									sum_rear = _mm256_setzero_ps();
-									for (int ich = 0; ich < input_Channel_; ich++)
+
+									for (ich = 0; ich < input_Channel_; ich++)
 									{
-										int V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
-										int U_offset_och_ich = U_offset_och + ich * tile_length_;
-										int bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich;
+										V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
+										U_offset_och_ich = U_offset_och + ich * tile_length_;
+										bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich;
 
 										//calculate V when is_first==true
 										if (!is_V_calculated)
 										{
-											for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
+											for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
 											{
-												int tile_offset_row = row_in_tile * tile_size_;
-												int real_row = row_in_input_data + row_in_tile;
+												tile_offset_row = row_in_tile * tile_size_;
+												real_row = row_in_input_data + row_in_tile;
 												if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
 												{
 													memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
 												}
 												else
 												{
-													for (int col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
+													for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 													{
-														int real_col = col_in_input_data + col_in_tile;
+														real_col = col_in_input_data + col_in_tile;
 														if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
 														{
 															tile_data[tile_offset_row + col_in_tile] = 0;
@@ -727,35 +759,33 @@ namespace glasssix
 											calculate_BTdB(tile_data, V_ + V_offset_channel_row_col);//calculate v
 										}
 
-										for (int row = 0; row < tile_size_; row++)
-										{
-											int tile_offset_row_col = row * tile_size_;
-											int U_offset_och_ich_row = U_offset_och_ich + tile_offset_row_col;
-											int V_offset_channel_row_col_rowt = V_offset_channel_row_col + tile_offset_row_col;
-											for (int col = 0; col < tile_size_; col++)
-											{
-												m_data[tile_offset_row_col + col] += V_[V_offset_channel_row_col_rowt + col] * U_[U_offset_och_ich_row + col];
-											}
-										}
+										u_front = _mm256_loadu_ps(U_ + U_offset_och_ich);
+										u_rear = _mm256_loadu_ps(U_ + U_offset_och_ich + 8);
+										v_front = _mm256_loadu_ps(V_ + V_offset_channel_row_col);
+										v_rear = _mm256_loadu_ps(V_ + V_offset_channel_row_col + 8);
+										sum_front = _mm256_fmadd_ps(v_front, u_front, sum_front);
+										sum_rear = _mm256_fmadd_ps(v_rear, u_rear, sum_rear);
 									}
 
+									_mm256_storeu_ps(m_data, sum_front);
+									_mm256_storeu_ps(m_data + 8, sum_rear);
 									calculate_ATmA(m_data, result);//calculate result
 
 									if (num_h == h_tile_num_ - 1)
 									{
-										for (size_t row = 0; row < m_ - add_h; row++)
+										for (row = 0; row < m_ - add_h; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (size_t col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (size_t col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
@@ -765,19 +795,19 @@ namespace glasssix
 									}
 									else
 									{
-										for (int row = 0; row < m_; row++)
+										for (row = 0; row < m_; row++)
 										{
-											int result_offset_row = row * m_;
+											result_offset_row = row * m_;
 											if (num_w == w_tile_num_ - 1)
 											{
-												for (int col = 0; col < m_ - add_w; col++)
+												for (col = 0; col < m_ - add_w; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
 											}
 											else
 											{
-												for (int col = 0; col < m_; col++)
+												for (col = 0; col < m_; col++)
 												{
 													top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
 												}
@@ -790,7 +820,6 @@ namespace glasssix
 
 							is_V_calculated = true;
 							delete tile_data;
-							delete v_data;
 							delete m_data;
 							delete result;
 						}
