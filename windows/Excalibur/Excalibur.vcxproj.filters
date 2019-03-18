@@ -105,9 +105,6 @@
     <ClInclude Include="..\..\include\Excalibur\math_functions.hpp">
       <Filter>Header Files\utils</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
-      <Filter>Source Files\cu</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\accelerator.cpp">
@@ -219,6 +216,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu">
       <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
+      <Filter>Header Files</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
