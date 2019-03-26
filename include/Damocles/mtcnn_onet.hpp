@@ -72,12 +72,13 @@ namespace glasssix
 			Neuron_Name(prob1);
 			//
 			int device_;
+			bool cudnn_ready_ = false;
 			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
 			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDNN
-			//cudnnHandle_t cudnn_handle_ = nullptr;
+			cudnnHandle_t cudnn_handle_ = nullptr;
 			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
 #endif 
 #endif

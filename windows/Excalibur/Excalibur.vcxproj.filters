@@ -30,12 +30,6 @@
     <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_depthwise_native_gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_mkl_batch_cpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -102,9 +96,6 @@
     <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\tensor_utils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\utensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -120,9 +111,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\conv_mkl_batch_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp">
@@ -184,9 +172,6 @@
     <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\src\Excalibur\conv_depthwise_native_gpu.cu">
-      <Filter>Source Files\cu</Filter>
-    </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
@@ -231,6 +216,9 @@
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu">
       <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
+      <Filter>Header Files</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>

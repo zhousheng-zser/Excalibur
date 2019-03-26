@@ -150,6 +150,7 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 			tensor_operation_cpu::resize_cpu(rect_tensor, rect48_tensor, 48, 48);
 			memcpy(group_rect_tensor->mutable_cpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->cpu_data(), 1 * 48 * 48 * sizeof(unsigned char));
 		}
+
 		bansheelia_->Forward(group_rect_tensor->cpu_data(), rects.size(), order);
 		bansheelia_->getParam(infoParam, rects.size());
 	}

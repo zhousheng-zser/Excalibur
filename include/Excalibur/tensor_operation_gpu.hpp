@@ -8,7 +8,6 @@
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 #include <glasssix\accelerator.hpp>
-#include "tensor_utils.hpp"
 #include <glasssix\tensor.hpp>
 #include <iostream>
 #ifdef USE_OPENCV

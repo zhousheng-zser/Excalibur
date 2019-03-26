@@ -1,6 +1,5 @@
 #ifndef _CONV_CUDNN_GPU_HPP_
 #define _CONV_CUDNN_GPU_HPP_
-#ifdef USE_CUDNN
 #include "base_conv.hpp"
 
 namespace glasssix
@@ -10,36 +9,29 @@ namespace glasssix
 		class conv_cudnn_gpu : public baseconv
 		{
 		public:
-			float one = 1.0, zero = 0.0;
-			size_t size;
-			cudnnHandle_t cudnn_handle_ = nullptr;
-			cudnnTensorDescriptor_t xdesc;
-			cudnnTensorDescriptor_t	ydesc;
-			cudnnTensorDescriptor_t bdesc;
-			cudnnFilterDescriptor_t wdesc;
-			cudnnConvolutionDescriptor_t conv_desc;
-			// algorithms for forward and backwards convolutions
-			cudnnConvolutionFwdAlgo_t fwd_algo_;
-			size_t workspace_limit_bytes = 8 * 1024 * 1024;
-			float *extra = nullptr;
-			size_t current_size;
-
-			conv_cudnn_gpu(int input_Channel, int output_Channel, int kernelSize, int stride, int pad, bool bias_term, int device) 
-				: baseconv(input_Channel, output_Channel, kernelSize, stride, pad, bias_term, device) {}
-
-			conv_cudnn_gpu(int input_Channel, int output_Channel, int kernelSize, int group, int stride, int pad, bool bias_term, int device)
-			    : baseconv(input_Channel, output_Channel, kernelSize, group, stride, pad, bias_term, device) {}
+			conv_cudnn_gpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device)
+			    : baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device) {}
 
 			virtual ~conv_cudnn_gpu() {}
 
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+#ifdef USE_CUDA
+			void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			
+		private:
+			void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) {}
 
-			void forward_bias(float* output, const float* bias) override;
+#ifdef USE_CUDNN
+		private:
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+#endif //!USE_CUDNN
+#endif // !USE_CUDA
 
-			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) override;
+		private:
+			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_bias(float* output, const float* bias) {}
 		};
 	}
 }
-
-#endif // !USE_CUDA
 #endif // !_CONV_CUDNN_GPU_HPP_

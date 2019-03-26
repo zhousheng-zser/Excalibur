@@ -1,4 +1,4 @@
-#include "conv_native_cpu.hpp"
+#include "deconv.hpp"
 
 namespace glasssix
 {

@@ -33,19 +33,20 @@ namespace glasssix
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 			}
 #ifdef USE_CUDNN
-			/*if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
 			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}*/
+			}
+			cudnn_ready_ = true;
 #endif
 #endif
 			//
-			Init_Conv_Params(conv1, 3, 28, 3, 1, 0, true);
+			Init_Conv_Params(conv1, 3, 28, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu1, 28, false);
 			Init_Pooling_Params(pool1, 3, 2, 0, 0);
-			Init_Conv_Params(conv2, 28, 48, 3, 1, 0, true);
+			Init_Conv_Params(conv2, 28, 48, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu2, 48, false);
 			Init_Pooling_Params(pool2, 3, 2, 0, 0);
-			Init_Conv_Params(conv3, 48, 64, 2, 1, 0, true);
+			Init_Conv_Params(conv3, 48, 64, 1, 2, 1, 0, true);
 			Init_PReLU_Params(prelu3, 64, false);
 			Init_InnerProduct_Params(conv4, 64, 3, 3, 128, true);
 			Init_PReLU_Params(prelu4, 128, false);
@@ -75,10 +76,10 @@ namespace glasssix
 				CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 			}
 #ifdef USE_CUDNN
-			/*if (cudnn_handle_)
+			if (cudnn_handle_)
 			{
-			CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
-			}*/
+				CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+			}
 #endif
 #endif
 		}
@@ -103,13 +104,13 @@ namespace glasssix
 #ifdef USE_CUDA
 		void mtcnn_rnet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
 			pool1->Forward_gpu_native(conv1_top_data, pool1_top_data);
-			conv2->Forward(pool1_top_data, conv2_top_data);
+			conv2->Forward(cublas_handle_, pool1_top_data, conv2_top_data);
 			prelu2->Forward_gpu_native(conv2_top_data);
 			pool2->Forward_gpu_native(conv2_top_data, pool2_top_data);
-			conv3->Forward(pool2_top_data, conv3_top_data);
+			conv3->Forward(cublas_handle_, pool2_top_data, conv3_top_data);
 			prelu3->Forward_gpu_native(conv3_top_data);
 			conv4->Forward_gpu_native(cublas_handle_, conv3_top_data, conv4_top_data);
 			prelu4->Forward_gpu_native(conv4_top_data);
@@ -120,13 +121,13 @@ namespace glasssix
 #ifdef USE_CUDNN
 		void mtcnn_rnet::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
 		{
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
 			pool1->Forward_gpu_cudnn(conv1_top_data, pool1_top_data);
-			conv2->Forward(pool1_top_data, conv2_top_data);
+			conv2->Forward(cudnn_handle_, pool1_top_data, conv2_top_data);
 			prelu2->Forward_gpu_native(conv2_top_data);
 			pool2->Forward_gpu_cudnn(conv2_top_data, pool2_top_data);
-			conv3->Forward(pool2_top_data, conv3_top_data);
+			conv3->Forward(cudnn_handle_, pool2_top_data, conv3_top_data);
 			prelu3->Forward_gpu_native(conv3_top_data);
 			conv4->Forward_gpu_native(cublas_handle_, conv3_top_data, conv4_top_data);
 			prelu4->Forward_gpu_native(conv4_top_data);

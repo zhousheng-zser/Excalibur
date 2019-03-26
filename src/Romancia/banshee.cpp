@@ -1,6 +1,6 @@
 #include "banshee.hpp"
 #include "banshee_data.hpp"
-#include "../Excalibur/tensor_utils.hpp"
+#include <glasssix\tensor.hpp>
 
 using namespace glasssix::excalibur;
 
@@ -42,26 +42,34 @@ namespace glasssix
 			Copy_Params(conv6_3_weights, Banshee, quantize_level);//2560
 			Copy_Params(conv6_3_bias, Banshee, quantize_level);//10
 			//
-			device_ = device;
+			device_ = device;			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS)
 			{
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
 			}
+
+#ifdef USE_CUDNN
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+			{
+				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+			}
+			cudnn_ready_ = true;
+#endif // USE_CUDNN
 #endif
 
-			Init_Conv_Params(conv1, 1, 16, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
+			Init_Conv_Params(conv1, 1, 16, 1, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
 			Init_PReLU_Params(prelu1, 16, false);//nchw:1*16*24*24->1*16*24*24
-			Init_Conv_Depthwise_Native_CPU_Params(conv1_dw, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
+			Init_Conv_Params(conv1_dw, 16, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
 			Init_PReLU_Params(prelu1_dw, 16, false);//nchw:1*16*24*24->1*16*24*24
-			Init_Conv_Params(conv2, 16, 32, 1, 1, 0, true);//nchw:1*16*24*24->1*32*24*24
-			Init_Conv_Depthwise_Native_CPU_Params(conv2_dw, 32, 32, 3, 2, 1, true);//nchw:1*32*24*24->1*32*12*12
+			Init_Conv_Params(conv2, 16, 32, 1, 1, 1, 0, true);//nchw:1*16*24*24->1*32*24*24
+			Init_Conv_Params(conv2_dw, 32, 32, 32, 3, 2, 1, true);//nchw:1*32*24*24->1*32*12*12
 			Init_PReLU_Params(prelu2_dw, 32, false);//nchw:1*32*12*12->1*32*12*12
-			Init_Conv_Params(conv3, 32, 32, 1, 1, 0, true);//nchw:1*32*12*12->1*32*12*12
-			Init_Conv_Depthwise_Native_CPU_Params(conv3_dw, 32, 32, 3, 2, 1, true);//nchw:1*32*12*12->1*32*6*6
+			Init_Conv_Params(conv3, 32, 32, 1, 1, 1, 0, true);//nchw:1*32*12*12->1*32*12*12
+			Init_Conv_Params(conv3_dw, 32, 32, 32, 3, 2, 1, true);//nchw:1*32*12*12->1*32*6*6
 			Init_PReLU_Params(prelu3_dw, 32, false);//nchw:1*32*6*6->1*32*6*6
-			Init_Conv_Params(conv4, 32, 64, 1, 1, 0, true);//nchw:1*32*6*6->1*64*6*6
-			Init_Conv_Depthwise_Native_CPU_Params(conv4_dw, 64, 64, 3, 2, 1, true);//nchw:1*64*6*6->1*64*3*3
+			Init_Conv_Params(conv4, 32, 64, 1, 1, 1, 0, true);//nchw:1*32*6*6->1*64*6*6
+			Init_Conv_Params(conv4_dw, 64, 64, 64, 3, 2, 1, true);//nchw:1*64*6*6->1*64*3*3
 			Init_PReLU_Params(prelu4_dw, 64, false);//nchw:1*64*3*3->1*64*3*3
 			Init_InnerProduct_Params(conv5, 64, 3, 3, 256, true);//nchw:1*64*3*3->1*256*1*1
 			Init_PReLU_Params(prelu5, 256, false);//nchw:1*256*1*1->1*256*1*1
@@ -136,18 +144,18 @@ namespace glasssix
 			CHECK_EQ(input_data->height(), 48);
 			CHECK_EQ(input_data->channels(), 1);
 #endif
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
-			conv1_dw->Forward(conv1_top_data, conv1_dw_top_data);
+			conv1_dw->Forward(cublas_handle_, conv1_top_data, conv1_dw_top_data);
 			prelu1_dw->Forward_gpu_native(conv1_dw_top_data);
-			conv2->Forward(conv1_dw_top_data, conv2_top_data);
-			conv2_dw->Forward(conv2_top_data, conv2_dw_top_data);
+			conv2->Forward(cublas_handle_, conv1_dw_top_data, conv2_top_data);
+			conv2_dw->Forward(cublas_handle_, conv2_top_data, conv2_dw_top_data);
 			prelu2_dw->Forward_gpu_native(conv2_dw_top_data);
-			conv3->Forward(conv2_dw_top_data, conv3_top_data);
-			conv3_dw->Forward(conv3_top_data, conv3_dw_top_data);
+			conv3->Forward(cublas_handle_, conv2_dw_top_data, conv3_top_data);
+			conv3_dw->Forward(cublas_handle_, conv3_top_data, conv3_dw_top_data);
 			prelu3_dw->Forward_gpu_native(conv3_dw_top_data);
-			conv4->Forward(conv3_dw_top_data, conv4_top_data);
-			conv4_dw->Forward(conv4_top_data, conv4_dw_top_data);
+			conv4->Forward(cublas_handle_, conv3_dw_top_data, conv4_top_data);
+			conv4_dw->Forward(cublas_handle_, conv4_top_data, conv4_dw_top_data);
 			prelu4_dw->Forward_gpu_native(conv4_dw_top_data);
 			conv5->Forward_gpu_native(cublas_handle_, conv4_dw_top_data, conv5_top_data);
 			prelu5->Forward_gpu_native(conv5_top_data);
@@ -165,19 +173,18 @@ namespace glasssix
 			CHECK_EQ(input_data->height(), 48);
 			CHECK_EQ(input_data->channels(), 1);
 #endif
-
-			conv1->Forward(input_data, conv1_top_data);
+			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
-			conv1_dw->Forward(conv1_top_data, conv1_dw_top_data);
+			conv1_dw->Forward(cudnn_handle_, conv1_top_data, conv1_dw_top_data);
 			prelu1_dw->Forward_gpu_native(conv1_dw_top_data);
-			conv2->Forward(conv1_dw_top_data, conv2_top_data);
-			conv2_dw->Forward(conv2_top_data, conv2_dw_top_data);
+			conv2->Forward(cudnn_handle_, conv1_dw_top_data, conv2_top_data);
+			conv2_dw->Forward(cudnn_handle_, conv2_top_data, conv2_dw_top_data);
 			prelu2_dw->Forward_gpu_native(conv2_dw_top_data);
-			conv3->Forward(conv2_dw_top_data, conv3_top_data);
-			conv3_dw->Forward(conv3_top_data, conv3_dw_top_data);
+			conv3->Forward(cudnn_handle_, conv2_dw_top_data, conv3_top_data);
+			conv3_dw->Forward(cudnn_handle_, conv3_top_data, conv3_dw_top_data);
 			prelu3_dw->Forward_gpu_native(conv3_dw_top_data);
-			conv4->Forward(conv3_dw_top_data, conv4_top_data);
-			conv4_dw->Forward(conv4_top_data, conv4_dw_top_data);
+			conv4->Forward(cudnn_handle_, conv3_dw_top_data, conv4_top_data);
+			conv4_dw->Forward(cudnn_handle_, conv4_top_data, conv4_dw_top_data);
 			prelu4_dw->Forward_gpu_native(conv4_dw_top_data);
 			conv5->Forward_gpu_native(cublas_handle_, conv4_dw_top_data, conv5_top_data);
 			prelu5->Forward_gpu_native(conv5_top_data);
