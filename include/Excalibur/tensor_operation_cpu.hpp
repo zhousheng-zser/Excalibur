@@ -2,7 +2,6 @@
 #define _TENSOR_OPERATION_CPU_HPP_
 
 #include <glasssix\tensor.hpp>
-#include "tensor_utils.hpp"
 #include "math_functions.hpp"
 #include <algorithm>
 #ifdef USE_OPENCV

@@ -268,7 +268,7 @@ std::vector<std::tuple<int, int, int, bool, bool>> inference_device_set = {
 std::vector<std::tuple<int, int, int, bool, bool>> inference_cassius_set =
 {
 	std::make_tuple(32, 15876, 27, false, false),
-	std::make_tuple(64, 15876, 288, false, false),
+	std::make_tuple(64, 15376, 288, false, false),
 	std::make_tuple(64, 3844, 576, false, false),
 	std::make_tuple(128, 3600, 276, false, false),
 	std::make_tuple(128, 900, 1152, false, false),

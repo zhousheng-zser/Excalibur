@@ -1,6 +1,6 @@
-#pragma once
-#ifndef _BASE_CONV_HPP_
-#define _BASE_CONV_HPP_
+
+#ifndef _DECONV_HPP_
+#define _DECONV_HPP_
 #include <glasssix\tensor.hpp>
 #include "im2col.hpp"
 #include "math_functions.hpp"
@@ -16,7 +16,7 @@ namespace glasssix
 		class baseconv
 		{
 		public:
-			
+
 			std::shared_ptr<tensor<float>> weights_;
 			std::shared_ptr<tensor<float>> bias_;
 			std::shared_ptr<tensor<float>> col_buffer_;
@@ -94,17 +94,17 @@ namespace glasssix
 
 		protected:
 			virtual void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) = 0;
-			virtual void forward_bias(float* output, const float* bias) = 0;			
+			virtual void forward_bias(float* output, const float* bias) = 0;
 
 #ifdef USE_CUDA
 		public:
 			virtual void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 		protected:
-			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
-			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;			
+			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0;
+			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;
 #ifdef USE_CUDNN
 		public:
-			virtual void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;		
+			virtual void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 #endif//!USE_CUDNN
 #endif//!USE_CUDA
 
@@ -178,4 +178,4 @@ namespace glasssix
 		};
 	}
 }
-#endif //_BASE_CONV_HPP_
+#endif //_DECONV_HPP_

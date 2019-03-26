@@ -36,7 +36,7 @@ namespace glasssix
 #ifdef USE_OPENBLAS
 					cblas_saxpy(count, coeffs_[i], bottom[i]->cpu_data(), 1, top_data, 1);
 #else
-					cblas_saxpby(count, coeffs_[i], bottom[i]->cpu_data(), 1, 0.0f, top_data, 1);
+					cblas_saxpby(count, coeffs_[i], bottom[i]->cpu_data(), 1, 1.0f, top_data, 1);
 #endif
 				}
 				break;
