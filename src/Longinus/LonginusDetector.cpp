@@ -202,7 +202,7 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 	return rectsWithLandmark;
 }
 
-#ifdef Internal_SDK
+#ifndef RELEASE_SDK
 void LonginusDetector::load(std::vector<std::string> cascades, int device)
 {
 	if (device >= 0)
