@@ -1,0 +1,6 @@
+E:\Code\Excalibur\Build\x64\Release\CSharpExample.exe.config
+E:\Code\Excalibur\Build\x64\Release\CSharpExample.exe
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Release\CSharpExample.csprojAssemblyReference.cache
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Release\CSharpExample.csproj.CoreCompileInputs.cache
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Release\CSharpExample.csproj.CopyComplete
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Release\CSharpExample.exe
