@@ -16,7 +16,7 @@ using namespace glasssix::longinus;
 //	//cv::Mat image = cv::imread("E:\\datasets\\LS3D-W\\300W-Testset-3D\\indoor_087_0.png");
 //	/*cv::resize(image, image, cv::Size(12, 18));
 //	cv::imwrite("E:\\rec-bench\\uofw\\re_equalized\\Correct\\0\\re_12_18.jpg", image);*/
-//	std::shared_ptr<tensor<float>> tensor_data = nullptr;
+//	std::shared_ptr<tensor<float>> tensor_data;
 //	std::shared_ptr<tensor<float>> tensor_data_ = nullptr;
 //	//io::image2tensor(image, tensor_data/*, false, 1.0*/);
 //	io::images2tensor(std::vector<cv::Mat>{image}, tensor_data);
