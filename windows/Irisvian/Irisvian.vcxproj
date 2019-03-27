@@ -85,7 +85,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;RELEASE_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -119,7 +119,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;RELEASE_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
@@ -145,6 +145,11 @@
     <ClCompile Include="..\..\src\Irisvian\kGraph.cpp" />
     <ClCompile Include="..\..\src\Irisvian\nGraph.cpp" />
     <ClCompile Include="..\..\src\Irisvian\search.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\License\License.vcxproj">
+      <Project>{b1dbda1f-7496-49bc-b423-c8924aa8e126}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

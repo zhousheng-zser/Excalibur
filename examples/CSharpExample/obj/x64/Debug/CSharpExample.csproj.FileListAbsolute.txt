@@ -1,0 +1,8 @@
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Debug\CSharpExample.csprojAssemblyReference.cache
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Debug\CSharpExample.csproj.CoreCompileInputs.cache
+E:\Code\Excalibur\Build\x64\Debug\CSharpExample.exe.config
+E:\Code\Excalibur\Build\x64\Debug\CSharpExample.exe
+E:\Code\Excalibur\Build\x64\Debug\CSharpExample.pdb
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Debug\CSharpExample.csproj.CopyComplete
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Debug\CSharpExample.exe
+E:\Code\Excalibur\examples\CSharpExample\obj\x64\Debug\CSharpExample.pdb
