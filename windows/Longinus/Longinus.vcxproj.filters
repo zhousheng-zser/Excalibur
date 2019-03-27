@@ -85,7 +85,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\src\Longinus\ImageOperation.cu" />
-    <None Include="..\..\src\Longinus\InternalLonginusCascade.cu" />
+    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu" />
+    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu" />
   </ItemGroup>
 </Project>
