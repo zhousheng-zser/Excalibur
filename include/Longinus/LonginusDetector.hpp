@@ -143,7 +143,7 @@ namespace glasssix
 				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;
 
 
-#ifdef Internal_SDK
+#ifndef RELEASE_SDK
 			void load(std::vector<std::string> cascades, int device = -1);
 #endif
 			void set(DetectionType detectionType, int device = -1);
