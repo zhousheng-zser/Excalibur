@@ -2,6 +2,7 @@
 #include "../../include/Cassius/CassiusFeature.hpp"
 #include "../../include/Irisvian/IrisvianSearch.hpp"
 #include "opencv2/opencv.hpp"
+#include <glasssix\filehelper.hpp>
 #include <chrono>
 
 using namespace glasssix;
@@ -69,14 +70,6 @@ void testRomanciaCassius(int device, int order)
 	cv::Mat gray;
 	cv::cvtColor(img, gray, CV_RGB2GRAY);
 	auto face_info = detector.detect(gray.data, gray.cols, gray.rows, gray.step[0], 24, 1.1f, 3, order);
-	for (size_t i = 0; i < face_info.size(); i++)
-	{
-		for (size_t j = 0; j < 5; j++)
-		{
-			std::cout << face_info[i].pts[j].x << " " << face_info[i].pts[j].y << " ";
-		}
-		std::cout << std::endl;
-	}
 	//show_detection_results(img, face_info);
 	// alignment step
 	std::vector<std::vector<int>> bboxes;
@@ -86,14 +79,6 @@ void testRomanciaCassius(int device, int order)
 	//show_alignment_results(alignedfaces_data, face_info.size());
 	// feature extraction step
 	auto features = feat_extractor.Forward(alignedfaces_data.data(), face_info.size(), order);
-	for (size_t i = 0; i < features.size(); i++)
-	{
-		for (size_t j = 0; j < 10; j++)
-		{
-			std::cout << features[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
 	//std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
 	//for (size_t i = 0; i < 100; i++)
 	//{
@@ -108,10 +93,19 @@ int main()
 {
 	int device = -1;//device<0(CPU),others(GPU)
 	int order = 10;//order==0(NCHW),others(NHWC)
-
 	//testCassiusOnly(device, order);
-	testRomanciaCassius(device, order);
-
+	//testRomanciaCassius(device, order);
+	longinus::LonginusDetector detector;
+	detector.set(longinus::MULTIVIEW_REINFORCE, device);
+	auto files = glasssix::getFilesinDirectory("C:\\Users\\Glasssix-Admin\\Desktop\\lightingtest\\infread");
+	for (int i = 0; i < files.size(); i++)
+	{
+		cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\lightingtest\\infread\\" + files[i]);
+		//(gray.data, gray.cols, gray.rows, gray.step[0], 24, 1.1f, 3, order)
+		float thresholds[3] = { 0.6f, 0.7f, 0.7f };
+		auto face_info = detector.detectEx(img.data, 3, img.rows, img.cols, 24, thresholds, 0.707, 3);
+		//show_detection_results(img, face_info);
+	}
 	cv::destroyAllWindows();
 	system("pause");
 	return 0;
