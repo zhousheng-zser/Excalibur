@@ -48,6 +48,11 @@ A tool of transfering prototxt and caffemodel into hpp and cpp. The last prepara
 
 An Excalibur based head-pose estimation, landmark detection CNN.
 
+### License
+
+An authorize module for the whole SDK. Enable macro 'RELEASE_SDK' in the pre-released dynamic libraries, the execution need be authorized manually by our engineer. This module relies on third-part library [OpenSSL](https://www.openssl.org), 
+at the same time, due to the existence of global mutex, this module is only able to compile as dynamic library. Now, only Windows platform is supported.
+
 ## Features
 
 - Supports convolutional neural networks and most commonly used image processing operations.
@@ -67,6 +72,7 @@ An Excalibur based head-pose estimation, landmark detection CNN.
 - Glasssix Research: [J. Hu](https://github.com/inlmouse)
 - Glasssix Research: [Y. Zhang](https://github.com/zhangyifu2016)
 - Glasssix Research: [J. Zhang](https://github.com/fengye2two)
+- Glasssix Engineering: [M. Zhang](https://github.com/mingyu92)
 
 ## Copyright
 
