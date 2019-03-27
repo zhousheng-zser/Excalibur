@@ -47,9 +47,9 @@ namespace glasssix
 				0.0f, 0.5f, -0.5f, 0.0f,
 				0.0f, 0.5f,  0.5f, 1.0f };
 
-			conv_winograd_cpu::conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device);
+			conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device);
 
-			virtual conv_winograd_cpu::~conv_winograd_cpu();
+			virtual ~conv_winograd_cpu();
 
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
 

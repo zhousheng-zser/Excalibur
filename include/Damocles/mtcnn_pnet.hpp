@@ -39,7 +39,7 @@ namespace glasssix
 			Declear_Opration(softmax, prob1)
 
 			//
-			std::shared_ptr<tensor<float>> tensor_data = nullptr;
+			std::shared_ptr<tensor<float>> tensor_data;
 			Neuron_Name(conv1)
 			Neuron_Name(pool1)
 			Neuron_Name(conv2)
