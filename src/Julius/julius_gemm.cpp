@@ -6,18 +6,20 @@ namespace glasssix
 	{
 		namespace juliusblas
 		{
-			void packnoTransedA(const int M, const int K, const int padK, const float* A, const int lda, float* packedA)
+			template<typename Dtype>
+			void packnoTransedA(const int M, const int K, const int padK, const Dtype* A, const int lda, Dtype* packedA)
 			{
-				memset(packedA, 0, M * padK * sizeof(float));
+				memset(packedA, 0, M * padK * sizeof(Dtype));
 				for (int i = 0; i < M; i++)
 				{
-					memcpy(packedA + i * padK, A + i * lda, K * sizeof(float));
+					memcpy(packedA + i * padK, A + i * lda, K * sizeof(Dtype));
 				}
 			}
 
-			void packTransedA(const int M, const int K, const int padK, const float* A, const int lda, float* packedA)
+			template<typename Dtype>
+			void packTransedA(const int M, const int K, const int padK, const Dtype* A, const int lda, Dtype* packedA)
 			{
-				memset(packedA, 0, M * padK * sizeof(float));
+				memset(packedA, 0, M * padK * sizeof(Dtype));
 				for (int j = 0; j < K; j++)
 				{
 					const int offsetA = j * lda;
@@ -28,9 +30,10 @@ namespace glasssix
 				}
 			}
 
-			void packnoTransedB(const int N, const int K, const int padK, const float* B, const int ldb, float* packedB)
+			template<typename Dtype>
+			void packnoTransedB(const int N, const int K, const int padK, const Dtype* B, const int ldb, Dtype* packedB)
 			{
-				memset(packedB, 0, N * padK * sizeof(float));
+				memset(packedB, 0, N * padK * sizeof(Dtype));
 				for (int j = 0; j < K; j++)
 				{
 					const int offsetB = j * ldb;
@@ -41,12 +44,13 @@ namespace glasssix
 				}
 			}
 
-			void packTransedB(const int N, const int K, const int padK, const float* B, const int ldb, float* packedB)
+			template<typename Dtype>
+			void packTransedB(const int N, const int K, const int padK, const Dtype* B, const int ldb, Dtype* packedB)
 			{
-				memset(packedB, 0, N * padK * sizeof(float));
+				memset(packedB, 0, N * padK * sizeof(Dtype));
 				for (int j = 0; j < N; j++)
 				{
-					memcpy(packedB + j * padK, B + j * ldb, K * sizeof(float));
+					memcpy(packedB + j * padK, B + j * ldb, K * sizeof(Dtype));
 				}
 			}
 
@@ -875,6 +879,61 @@ namespace glasssix
 				}
 #undef UNHANDLED
 #endif
+			}
+
+			void cblas_fgemm_AnoTrans_BnoTrans(const int M, const int N, const int K, const float alpha, const signed char* A, const int lda,
+				const signed char* B, const int ldb, const float beta, int* C, const int ldc)
+			{
+#if SIDM_TYPE >= SIMDTYPE_AVX512
+#define UNHANDLED
+				NATIVE_CODE_WARNING;
+				// AVX and SSE code follow the same logic, we merge them together.
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+				const int padK = K % mm_align_size2 ? K - K % mm_align_size2 + mm_align_size2 : K;
+				signed char* packedA = new signed char[M * padK];
+				signed char* packedB = new signed char[N * padK];
+				packnoTransedA(M, K, padK, A, lda, packedA);
+				packnoTransedB(N, K, padK, B, ldb, packedB);
+				//execution_kernel_16register(M, N, padK, alpha, packedA, packedB, beta, C, ldc);
+				delete[] packedA;
+				delete[] packedB;
+#else 
+#define UNHANDLED
+				NATIVE_CODE_WARNING;
+#endif 
+#ifdef UNHANDLED
+				// Fall back to native code
+				for (int i = 0; i < N; i++)
+				{
+					for (int j = 0; j < M; j++)
+					{
+						C[j * ldc + i] = static_cast<int>(beta * C[j * ldc + i]);
+						for (int k = 0; k < K; k++)
+						{
+							C[j * ldc + i] += static_cast<int>( alpha * A[j * lda + k] * B[k * ldb + i]);
+						}
+					}
+				}
+#undef UNHANDLED
+#endif
+			}
+
+			void cblas_fgemm_ATrans_BnoTrans(const int M, const int N, const int K, const float alpha, const signed char* A, const int lda,
+				const signed char* B, const int ldb, const float beta, int* C, const int ldc)
+			{
+				
+			}
+
+			void cblas_fgemm_AnoTrans_BTrans(const int M, const int N, const int K, const float alpha, const signed char* A, const int lda,
+				const signed char* B, const int ldb, const float beta, int* C, const int ldc)
+			{
+				
+			}
+
+			void cblas_fgemm_ATrans_BTrans(const int M, const int N, const int K, const float alpha, const signed char* A, const int lda,
+				const signed char* B, const int ldb, const float beta, int* C, const int ldc)
+			{
+				
 			}
 		}
 	}

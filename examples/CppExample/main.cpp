@@ -104,7 +104,7 @@ int main()
 		//(gray.data, gray.cols, gray.rows, gray.step[0], 24, 1.1f, 3, order)
 		float thresholds[3] = { 0.6f, 0.7f, 0.7f };
 		auto face_info = detector.detectEx(img.data, 3, img.rows, img.cols, 24, thresholds, 0.707, 3);
-		//show_detection_results(img, face_info);
+		show_detection_results(img, face_info);
 	}
 	cv::destroyAllWindows();
 	system("pause");
