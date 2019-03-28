@@ -19,6 +19,7 @@ A SIMD supported [BLAS](http://www.netlib.org/blas/) library. Now only some impo
 | *s/damin* |   F      |  F      |    F   |  F    |
 | *s/dgemv* |   TP/F   |  TP/F   |  TP/F  |  F    |
 | *s/dgemm* |   TP/F   |  TP/F   |  TP/F  |  F    |
+| *fgemm*   |   F      |  F      |    F   |  F    |
 
 
 - TP: Implementated and test passed;

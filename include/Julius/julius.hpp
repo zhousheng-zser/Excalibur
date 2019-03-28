@@ -94,6 +94,13 @@ namespace glasssix
 		// y := alpha*x + beta*y
 		void cblas_daxpby(const int n, const double alpha, const double* x,
 			const int incx, const double beta, double* y, const int incy);
+
+		//The fgemm routines compute a scalar-matrix-matrix product into int32(fixed point) type and add the result to a scalar-matrix product, 
+		//with general matrices. The operation is defined as
+		// C := static_cast<int>(alpha*op(static_cast<int>(A))*op(static_cast<int>(B)) + beta*C)
+		void cblas_fgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
+			const int M, const int N, const int K, const float alpha, const signed char* A, const int lda, const signed char* B, const int ldb,
+			const float beta, int* C, const int ldc);
 	}
 }
 #endif // !_JULIUS_HPP_
