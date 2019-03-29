@@ -447,6 +447,8 @@ namespace glasssix
 							forward_bias(top_data + top_offset_num, bias);
 						}
 					}
+
+					_aligned_free(V_);
 				}
 				else
 				{

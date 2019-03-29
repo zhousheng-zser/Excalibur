@@ -118,7 +118,6 @@ namespace glasssix
 				//
 				int bottom_dim_ = bottom->data_shape()[1] * bottom->data_shape()[2] * bottom->data_shape()[3];
 				int top_dim = (top)->count(1, 4);
-				std::chrono::time_point<std::chrono::system_clock> p0 = std::chrono::system_clock::now();
 				for (int n = 0; n < num_; n++)
 				{
 					forward_gemm(bottom_data + n * bottom_dim_, weights, top_data + n * top_dim);

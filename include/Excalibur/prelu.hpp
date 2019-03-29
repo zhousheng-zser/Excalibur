@@ -12,6 +12,7 @@ namespace glasssix
 		{
 			std::shared_ptr<tensor<float>> slope_data_;
 			bool isrelu_;
+			bool is_shared_;
 			int channel_;
 			int height_;
 			int width_;
@@ -19,7 +20,7 @@ namespace glasssix
 			orderType order_;
 
 		public:
-			prelu(int input_channel, bool isrelu = false, int device = -1);
+			prelu(int input_channel, bool isrelu = false, int device = -1, bool is_shared = false);
 
 			~prelu();
 

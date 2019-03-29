@@ -1,4 +1,4 @@
-#ifdef Internal_SDK
+#ifndef RELEASE_SDK
 #include "tinyxml2.h"
 #endif
 #include "common.hpp"
@@ -232,7 +232,7 @@ InternalLonginusCascade::InternalLonginusCascade()
 {
 }
 
-#ifdef Internal_SDK
+#ifndef RELEASE_SDK
 void InternalLonginusCascade::LoadCascade(const std::string & filename, int device)
 {
 	if (device >= 0)
@@ -803,7 +803,7 @@ std::vector<FaceRect> InternalLonginusCascade::MultiScaleDetect(glasssix::excali
 	return rects;
 }
 
-#ifdef Internal_SDK
+#ifndef RELEASE_SDK
 #ifdef HARDCODE_TRANSFORM
 void InternalLonginusCascade::HardCode2Hpp(const std::string & filename, const std::string & cascadeName)
 {
