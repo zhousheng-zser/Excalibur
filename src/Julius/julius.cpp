@@ -280,5 +280,68 @@ namespace glasssix
 		{
 			NOT_IMPLEMENTED;
 		}
+
+
+		void cblas_fgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
+			const int M, const int N, const int K, const float alpha, const signed char* A, const int lda, const signed char* B, const int ldb,
+			const float beta, int* C, const int ldc)
+		{
+			CHECK_GT(M, 0);
+			CHECK_GT(N, 0);
+			CHECK_GT(K, 0);
+			CHECK_GT(lda, 0);
+			CHECK_GT(ldb, 0);
+			CHECK_GT(ldc, 0);
+			switch (Order)
+			{
+			case CblasRowMajor:
+				if (TransA == CblasNoTrans && TransB == CblasNoTrans)
+				{
+					juliusblas::cblas_fgemm_AnoTrans_BnoTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasTrans && TransB == CblasNoTrans)
+				{
+					juliusblas::cblas_fgemm_ATrans_BnoTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasNoTrans && TransB == CblasTrans)
+				{
+					juliusblas::cblas_fgemm_AnoTrans_BTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasTrans && TransB == CblasTrans)
+				{
+					juliusblas::cblas_fgemm_ATrans_BTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else
+				{
+					NOT_IMPLEMENTED << " error trans type in Julius sgemm.";
+				}
+				break;
+			case CblasColMajor:
+				NOT_IMPLEMENTED << " with CblasColMajor in Julius sgemm.";
+				break;
+			default:
+				if (TransA == CblasNoTrans && TransB == CblasNoTrans)
+				{
+					juliusblas::cblas_fgemm_AnoTrans_BnoTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasTrans && TransB == CblasNoTrans)
+				{
+					juliusblas::cblas_fgemm_ATrans_BnoTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasNoTrans && TransB == CblasTrans)
+				{
+					juliusblas::cblas_fgemm_AnoTrans_BTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else if (TransA == CblasTrans && TransB == CblasTrans)
+				{
+					juliusblas::cblas_fgemm_ATrans_BTrans(M, N, K, alpha, A, lda, B, ldb, beta, C, ldc);
+				}
+				else
+				{
+					NOT_IMPLEMENTED << " error trans type in Julius sgemm.";
+				}
+				break;
+			}
+		}
 	}
 }
