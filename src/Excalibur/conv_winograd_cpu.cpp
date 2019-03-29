@@ -1284,6 +1284,8 @@ void conv_winograd_cpu::Forward(const std::shared_ptr<tensor<float>>& bottom, st
 					forward_bias(top_data + top_offset_num, bias);
 				}
 			}
+
+			_aligned_free(V_);
 		}
 		else
 		{
@@ -2110,6 +2112,8 @@ void conv_winograd_cpu::Forward(const std::shared_ptr<tensor<float>>& bottom, st
 					forward_bias(top_data + top_offset_num, bias);
 				}
 			}
+
+			_aligned_free(V_);
 		}
 		else
 		{
