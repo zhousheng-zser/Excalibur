@@ -26,7 +26,16 @@ namespace glasssix
 #define simd_registers 16
 __forceinline __m128i _mm_madd_epi16_epi32(const __m128i a, const __m128i b, __m128i c)
 {
-	NOT_IMPLEMENTED;
+	const __m128i a_int16 = _mm_cvtepi8_epi16(a);
+	const __m128i b_int16 = _mm_cvtepi8_epi16(b);
+	const __m128i product_int16 = _mm_mullo_epi16(a_int16, b_int16);
+	short product_int16_array[8];
+	_mm_store_si128((__m128i*)product_int16_array, product_int16);
+	const __m128i product_h = _mm_load_si128((__m128i*)product_int16_array);
+	const __m128i product_l = _mm_load_si128((__m128i*)(product_int16_array + 4));
+	const __m128i product_h_int32 = _mm_cvtepi16_epi32(product_h);
+	const __m128i product_l_int32 = _mm_cvtepi16_epi32(product_l);
+	return _mm_add_epi32(_mm_add_epi32(product_l_int32, product_h_int32), c);
 }
 
 __forceinline int _mm_sumall_epi32(const __m128i re)
@@ -86,8 +95,12 @@ __forceinline __m256i _mm256_madd_epi16_epi32(const __m128i a, const __m128i b, 
 	const __m256i a_int16 = _mm256_cvtepi8_epi16(a);
 	const __m256i b_int16 = _mm256_cvtepi8_epi16(b);
 	const __m256i product_int16 = _mm256_mullo_epi16(a_int16, b_int16);
-	const __m128i product_h = _mm256_extractf128_si256(product_int16, 1);
-	const __m128i product_l = _mm256_extractf128_si256(product_int16, 0);
+	/*const __m128i product_h = _mm256_extractf128_si256(product_int16, 1);
+	const __m128i product_l = _mm256_extractf128_si256(product_int16, 0);*/
+	short product_int16_array[16];
+	_mm256_store_si256((__m256i*)product_int16_array, product_int16);
+	const __m128i product_h = _mm_load_si128((__m128i*)product_int16_array);
+	const __m128i product_l = _mm_load_si128((__m128i*)(product_int16_array + 8));
 	const __m256i product_h_int32 = _mm256_cvtepi16_epi32(product_h);
 	const __m256i product_l_int32 = _mm256_cvtepi16_epi32(product_l);
 	return _mm256_add_epi32(_mm256_add_epi32(product_l_int32, product_h_int32), c);
