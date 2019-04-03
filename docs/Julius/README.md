@@ -2,7 +2,7 @@
 
 A SIMD supported [BLAS](http://www.netlib.org/blas/) library. Now only some important interfaces were implementated. 
 Given our usage, there is no plans for complex value supporting(i.e. only *float* and *double* datatypes will be implemented) currently.
-A the same time, some interfaces include but not limited *gemm*, *gemv* will support *int8* datatype as 'f'-prefix.
+A the same time, some interfaces include but not limited *gemm*, *gemv* will support *int8* datatype as 'f'-prefix and *float16* datatype as 'h'-prefix.
 
 
 ## Implementation Status
@@ -23,6 +23,7 @@ A the same time, some interfaces include but not limited *gemm*, *gemv* will sup
 | *s/dgemv* |   TP/F   |  TP/F   |  TP/F  |  F    |
 | *s/dgemm* |   TP/F   |  TP/F   |  TP/F  |  F    |
 | *fgemm*   |   NT     |  F      |    NT  |  F    |
+| *hgemm*   |   TP     |  TP     |    TP  |  F    |
 
 
 - TP: Implementated and test passed;
