@@ -10,39 +10,80 @@ namespace glasssix
 	{
 		Banshee::Banshee(int device)
 		{
+			device_ = device;
+			if (device_ >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in GPU mode
+			}
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
+#endif // SIMD_TYPE >= SIMDTYPE_SSE
+
 			float quantize_level = INT_MAX;
-			Copy_Params(conv1_weights, Banshee, quantize_level);//144
-			Copy_Params(conv1_bias, Banshee, quantize_level);//16
-			Copy_Params(prelu1_weights, Banshee, quantize_level);//16
-			Copy_Params(conv1_dw_weights, Banshee, quantize_level);//144
-			Copy_Params(conv1_dw_bias, Banshee, quantize_level);//16
-			Copy_Params(prelu1_dw_weights, Banshee, quantize_level);//16
-			Copy_Params(conv2_weights, Banshee, quantize_level);//512
-			Copy_Params(conv2_bias, Banshee, quantize_level);//32
-			Copy_Params(conv2_dw_weights, Banshee, quantize_level);//288
-			Copy_Params(conv2_dw_bias, Banshee, quantize_level);//32
-			Copy_Params(prelu2_dw_weights, Banshee, quantize_level);//32
-			Copy_Params(conv3_weights, Banshee, quantize_level);//1024
-			Copy_Params(conv3_bias, Banshee, quantize_level);//32
-			Copy_Params(conv3_dw_weights, Banshee, quantize_level);//288
-			Copy_Params(conv3_dw_bias, Banshee, quantize_level);//32
-			Copy_Params(prelu3_dw_weights, Banshee, quantize_level);//32
-			Copy_Params(conv4_weights, Banshee, quantize_level);//2048
-			Copy_Params(conv4_bias, Banshee, quantize_level);//64
-			Copy_Params(conv4_dw_weights, Banshee, quantize_level);//576
-			Copy_Params(conv4_dw_bias, Banshee, quantize_level);//64
-			Copy_Params(prelu4_dw_weights, Banshee, quantize_level);//64
-			Copy_Params(conv5_weights, Banshee, quantize_level);//147456
-			Copy_Params(conv5_bias, Banshee, quantize_level);//256
-			Copy_Params(prelu5_weights, Banshee, quantize_level);//256
-			Copy_Params(conv6_1_weights, Banshee, quantize_level);//256
-			Copy_Params(conv6_1_bias, Banshee, quantize_level);//1
-			Copy_Params(conv6_2_weights, Banshee, quantize_level);//768
-			Copy_Params(conv6_2_bias, Banshee, quantize_level);//3
-			Copy_Params(conv6_3_weights, Banshee, quantize_level);//2560
-			Copy_Params(conv6_3_bias, Banshee, quantize_level);//10
-			//
-			device_ = device;			
+
+			if (int8_quantization_)
+			{
+				Copy_Int8_Params(conv1, Banshee);
+				Copy_Params(prelu1_weights, Banshee, quantize_level);//16
+				Copy_Int8_Params(conv1_dw, Banshee);
+				Copy_Params(prelu1_dw_weights, Banshee, quantize_level);//16
+				Copy_Int8_Params(conv2, Banshee);
+				Copy_Int8_Params(conv2_dw, Banshee);
+				Copy_Params(prelu2_dw_weights, Banshee, quantize_level);//32
+				Copy_Int8_Params(conv3, Banshee);
+				Copy_Int8_Params(conv3_dw, Banshee);
+				Copy_Params(prelu3_dw_weights, Banshee, quantize_level);//32
+				Copy_Int8_Params(conv4, Banshee);
+				Copy_Int8_Params(conv4_dw, Banshee);
+				Copy_Params(prelu4_dw_weights, Banshee, quantize_level);//64
+				Copy_Params(conv5_weights, Banshee, quantize_level);//147456
+				Copy_Params(conv5_bias, Banshee, quantize_level);//256
+				Copy_Params(prelu5_weights, Banshee, quantize_level);//256
+				Copy_Params(conv6_1_weights, Banshee, quantize_level);//256
+				Copy_Params(conv6_1_bias, Banshee, quantize_level);//1
+				Copy_Params(conv6_2_weights, Banshee, quantize_level);//768
+				Copy_Params(conv6_2_bias, Banshee, quantize_level);//3
+				Copy_Params(conv6_3_weights, Banshee, quantize_level);//2560
+				Copy_Params(conv6_3_bias, Banshee, quantize_level);//10
+			}
+			else
+			{
+				Copy_Params(conv1_weights, Banshee, quantize_level);//144
+				Copy_Params(conv1_bias, Banshee, quantize_level);//16
+				Copy_Params(prelu1_weights, Banshee, quantize_level);//16
+				Copy_Params(conv1_dw_weights, Banshee, quantize_level);//144
+				Copy_Params(conv1_dw_bias, Banshee, quantize_level);//16
+				Copy_Params(prelu1_dw_weights, Banshee, quantize_level);//16
+				Copy_Params(conv2_weights, Banshee, quantize_level);//512
+				Copy_Params(conv2_bias, Banshee, quantize_level);//32
+				Copy_Params(conv2_dw_weights, Banshee, quantize_level);//288
+				Copy_Params(conv2_dw_bias, Banshee, quantize_level);//32
+				Copy_Params(prelu2_dw_weights, Banshee, quantize_level);//32
+				Copy_Params(conv3_weights, Banshee, quantize_level);//1024
+				Copy_Params(conv3_bias, Banshee, quantize_level);//32
+				Copy_Params(conv3_dw_weights, Banshee, quantize_level);//288
+				Copy_Params(conv3_dw_bias, Banshee, quantize_level);//32
+				Copy_Params(prelu3_dw_weights, Banshee, quantize_level);//32
+				Copy_Params(conv4_weights, Banshee, quantize_level);//2048
+				Copy_Params(conv4_bias, Banshee, quantize_level);//64
+				Copy_Params(conv4_dw_weights, Banshee, quantize_level);//576
+				Copy_Params(conv4_dw_bias, Banshee, quantize_level);//64
+				Copy_Params(prelu4_dw_weights, Banshee, quantize_level);//64
+				Copy_Params(conv5_weights, Banshee, quantize_level);//147456
+				Copy_Params(conv5_bias, Banshee, quantize_level);//256
+				Copy_Params(prelu5_weights, Banshee, quantize_level);//256
+				Copy_Params(conv6_1_weights, Banshee, quantize_level);//256
+				Copy_Params(conv6_1_bias, Banshee, quantize_level);//1
+				Copy_Params(conv6_2_weights, Banshee, quantize_level);//768
+				Copy_Params(conv6_2_bias, Banshee, quantize_level);//3
+				Copy_Params(conv6_3_weights, Banshee, quantize_level);//2560
+				Copy_Params(conv6_3_bias, Banshee, quantize_level);//10
+			}
+			
+
+			//			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS)
 			{
