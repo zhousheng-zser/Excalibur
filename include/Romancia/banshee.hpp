@@ -14,40 +14,29 @@ namespace glasssix
 	{
 		class Banshee : public vBanshee
 		{
-			Declear_Params(conv1_weights);
-			Declear_Params(conv1_bias);
-			Declear_Params(prelu1_weights);
-			Declear_Params(conv1_dw_weights);
-			Declear_Params(conv1_dw_bias);
-			Declear_Params(prelu1_dw_weights);
-			Declear_Params(conv2_weights);
-			Declear_Params(conv2_bias);
-			Declear_Params(conv2_dw_weights);
-			Declear_Params(conv2_dw_bias);
-			Declear_Params(prelu2_dw_weights);
-			Declear_Params(conv3_weights);
-			Declear_Params(conv3_bias);
-			Declear_Params(conv3_dw_weights);
-			Declear_Params(conv3_dw_bias);
-			Declear_Params(prelu3_dw_weights);
-			Declear_Params(conv4_weights);
-			Declear_Params(conv4_bias);
-			Declear_Params(conv4_dw_weights);
-			Declear_Params(conv4_dw_bias);
-			Declear_Params(prelu4_dw_weights);
-			Declear_Params(conv5_weights);
-			Declear_Params(conv5_bias);
-			Declear_Params(prelu5_weights);
-			Declear_Params(conv6_1_weights);
-			Declear_Params(conv6_1_bias);
-			Declear_Params(conv6_2_weights);
-			Declear_Params(conv6_2_bias);
-			Declear_Params(conv6_3_weights);
-			Declear_Params(conv6_3_bias);
+			Declear_Params(conv1);
+			Declear_Params(prelu1);
+			Declear_Params(conv1_dw);
+			Declear_Params(prelu1_dw);
+			Declear_Params(conv2);
+			Declear_Params(conv2_dw);
+			Declear_Params(prelu2_dw);
+			Declear_Params(conv3);
+			Declear_Params(conv3_dw);
+			Declear_Params(prelu3_dw);
+			Declear_Params(conv4);
+			Declear_Params(conv4_dw);
+			Declear_Params(prelu4_dw);
+			Declear_Params(conv5);
+			Declear_Params(prelu5);
+			Declear_Params(conv6_1);
+			Declear_Params(conv6_2);
+			Declear_Params(conv6_3);
 
 			//
 			int device_;
 			bool cudnn_ready_ = false;
+			bool int8_quantization_ = false;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			//

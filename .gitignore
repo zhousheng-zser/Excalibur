@@ -60,9 +60,14 @@
 *.asv
 *_version.hpp
 *_halfdata.hpp
+*_int8data.hpp
 *_data_full.hpp
 *.docx
 *.xlsx
 *.vs
 *.CopyComplete
 *.bin
+*.vcxproj
+
+examples/*
+examples/CppExample/main.cpp

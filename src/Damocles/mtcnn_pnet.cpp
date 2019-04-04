@@ -8,22 +8,48 @@ namespace glasssix
 	{
 		mtcnn_pnet::mtcnn_pnet(int device)
 		{
-			float quantize_level = INT_MAX;
-			Copy_Params(conv1_weights, PNet, quantize_level);
-			Copy_Params(conv1_bias, PNet, quantize_level);
-			Copy_Params(prelu1_weights, PNet, quantize_level);
-			Copy_Params(conv2_weights, PNet, quantize_level);
-			Copy_Params(conv2_bias, PNet, quantize_level);
-			Copy_Params(prelu2_weights, PNet, quantize_level);
-			Copy_Params(conv3_weights, PNet, quantize_level);
-			Copy_Params(conv3_bias, PNet, quantize_level);
-			Copy_Params(prelu3_weights, PNet, quantize_level);
-			Copy_Params(conv4_1_weights, PNet, quantize_level);
-			Copy_Params(conv4_1_bias, PNet, quantize_level);
-			Copy_Params(conv4_2_weights, PNet, quantize_level);
-			Copy_Params(conv4_2_bias, PNet, quantize_level);
-
 			device_ = device;
+			if (device_ >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in GPU mode
+			}
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
+#endif // SIMD_TYPE >= SIMDTYPE_SSE
+
+			float quantize_level = INT_MAX;
+			if (int8_quantization_)
+			{
+				Copy_Int8_Params(conv1, PNet);
+				Copy_Params(prelu1_weights, PNet, quantize_level);
+				Copy_Int8_Params(conv2, PNet);
+				Copy_Params(prelu2_weights, PNet, quantize_level);
+				Copy_Int8_Params(conv3, PNet);
+				Copy_Params(prelu3_weights, PNet, quantize_level);
+				Copy_Int8_Params(conv4_1, PNet);
+				Copy_Int8_Params(conv4_2, PNet);
+			}
+			else
+			{
+				Copy_Params(conv1_weights, PNet, quantize_level);
+				Copy_Params(conv1_bias, PNet, quantize_level);
+				Copy_Params(prelu1_weights, PNet, quantize_level);
+				Copy_Params(conv2_weights, PNet, quantize_level);
+				Copy_Params(conv2_bias, PNet, quantize_level);
+				Copy_Params(prelu2_weights, PNet, quantize_level);
+				Copy_Params(conv3_weights, PNet, quantize_level);
+				Copy_Params(conv3_bias, PNet, quantize_level);
+				Copy_Params(prelu3_weights, PNet, quantize_level);
+				Copy_Params(conv4_1_weights, PNet, quantize_level);
+				Copy_Params(conv4_1_bias, PNet, quantize_level);
+				Copy_Params(conv4_2_weights, PNet, quantize_level);
+				Copy_Params(conv4_2_bias, PNet, quantize_level);
+			}
+			
+
+			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";

@@ -13,27 +13,19 @@ namespace glasssix
 	{
 		class mtcnn_onet
 		{
-			Declear_Params(conv1_weights);
-			Declear_Params(conv1_bias);
-			Declear_Params(prelu1_weights);
-			Declear_Params(conv2_weights);
-			Declear_Params(conv2_bias);
-			Declear_Params(prelu2_weights);
-			Declear_Params(conv3_weights);
-			Declear_Params(conv3_bias);
-			Declear_Params(prelu3_weights);
-			Declear_Params(conv4_weights);
-			Declear_Params(conv4_bias);
-			Declear_Params(prelu4_weights);
-			Declear_Params(conv5_weights);
-			Declear_Params(conv5_bias);
-			Declear_Params(prelu5_weights);
-			Declear_Params(conv6_1_weights);
-			Declear_Params(conv6_1_bias);
-			Declear_Params(conv6_2_weights);
-			Declear_Params(conv6_2_bias);
-			Declear_Params(conv6_3_weights);
-			Declear_Params(conv6_3_bias);
+			Declear_Params(conv1);
+			Declear_Params(prelu1);
+			Declear_Params(conv2);
+			Declear_Params(prelu2);
+			Declear_Params(conv3);
+			Declear_Params(prelu3);
+			Declear_Params(conv4);
+			Declear_Params(prelu4);
+			Declear_Params(conv5);
+			Declear_Params(prelu5);
+			Declear_Params(conv6_1);
+			Declear_Params(conv6_2);
+			Declear_Params(conv6_3);
 			//
 			std::shared_ptr<tensor<float>> tensor_data;
 			Declear_Opration(baseconv, conv1);
@@ -73,6 +65,7 @@ namespace glasssix
 			//
 			int device_;
 			bool cudnn_ready_ = false;
+			bool int8_quantization_ = false;
 			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;

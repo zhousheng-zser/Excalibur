@@ -9,15 +9,20 @@ namespace glasssix
 		class conv_native_cpu : public baseconv
 		{
 		public:
-			conv_native_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device)
-				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device) {}
+			conv_native_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, bool int8_quantization = false, int device = -1)
+				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, int8_quantization, device) {}
 
 			virtual ~conv_native_cpu() {}
 
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
 
+
 		private:
+
 			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) override;
+
+			void forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) override;
+
 			void forward_bias(float* output, const float* bias) override;
 
 #ifdef USE_CUDA
