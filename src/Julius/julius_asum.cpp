@@ -84,7 +84,7 @@ namespace glasssix
 					else
 					{
 						const int offset = i * mm_align_size;
-						val_x = _mm256_set_ps(x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx]);
+						val_x = _mm_set_ps(x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx]);
 					}
 					// MSVC and INTEL COMPILER is BAD when inlining '_mm256_andnot_ps' into loops?
 					// ref: https://stackoverflow.com/questions/32408665/fastest-way-to-compute-absolute-value-using-sse
