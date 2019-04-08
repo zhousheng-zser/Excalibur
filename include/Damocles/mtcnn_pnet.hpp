@@ -12,19 +12,14 @@ namespace glasssix
 	{
 		class mtcnn_pnet
 		{
-			Declear_Params(conv1_weights)
-			Declear_Params(conv1_bias)
-			Declear_Params(prelu1_weights)
-			Declear_Params(conv2_weights)
-			Declear_Params(conv2_bias)
-			Declear_Params(prelu2_weights)
-			Declear_Params(conv3_weights)
-			Declear_Params(conv3_bias)
-			Declear_Params(prelu3_weights)
-			Declear_Params(conv4_1_weights)
-			Declear_Params(conv4_1_bias)
-			Declear_Params(conv4_2_weights)
-			Declear_Params(conv4_2_bias)
+			Declear_Params(conv1)
+			Declear_Params(prelu1)
+			Declear_Params(conv2)
+			Declear_Params(prelu2)
+			Declear_Params(conv3)
+			Declear_Params(prelu3)
+			Declear_Params(conv4_1)
+			Declear_Params(conv4_2)
 
 			//
 			Declear_Opration(baseconv, conv1)
@@ -50,6 +45,7 @@ namespace glasssix
 			//
 			int device_;
 			bool cudnn_ready_ = false;
+			bool int8_quantization_ = false;
 			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
