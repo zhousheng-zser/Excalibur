@@ -24,6 +24,16 @@ namespace glasssix
 				ldb, beta, C, N);
 		}
 
+
+		void math_functions::cpu_fgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB,
+			const int M, const int N, const int K, const float alpha, const signed char* A, const signed char* B, const float beta, int* C)
+		{
+			int lda = (TransA == CblasNoTrans) ? K : M;
+			int ldb = (TransB == CblasNoTrans) ? N : K;
+			cblas_fgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
+				ldb, beta, C, N);
+		}
+
 		void math_functions::cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 			const int N, const float alpha, const float* A, const float* x,
 			const float beta, float* y) 

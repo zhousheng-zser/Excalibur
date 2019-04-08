@@ -1,12 +1,10 @@
 #ifndef _UNICORN_HPP_
 #define _UNICORN_HPP_
 
-
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
 #include "vunicorn.hpp"
-
 
 using namespace glasssix::excalibur;
 
@@ -16,97 +14,73 @@ namespace glasssix
 	{
 		class Unicorn: public vUnicorn
 		{
-			Declear_Params(conv1a_weights);
-			Declear_Params(conv1a_bias);
-			Declear_Params(relu1a_weights);
-			Declear_Params(conv1b_weights);
-			Declear_Params(conv1b_bias);
-			Declear_Params(relu1b_weights);
-			Declear_Params(conv2_1_weights);
-			Declear_Params(conv2_1_bias);
-			Declear_Params(relu2_1_weights);
-			Declear_Params(conv2_2_weights);
-			Declear_Params(conv2_2_bias);
-			Declear_Params(relu2_2_weights);
-			Declear_Params(conv2_weights);
-			Declear_Params(conv2_bias);
-			Declear_Params(relu2_weights);
-			Declear_Params(conv3_1_weights);
-			Declear_Params(conv3_1_bias);
-			Declear_Params(relu3_1_weights);
-			Declear_Params(conv3_2_weights);
-			Declear_Params(conv3_2_bias);
-			Declear_Params(relu3_2_weights);
-			Declear_Params(conv3_3_weights);
-			Declear_Params(conv3_3_bias);
-			Declear_Params(relu3_3_weights);
-			Declear_Params(conv3_4_weights);
-			Declear_Params(conv3_4_bias);
-			Declear_Params(relu3_4_weights);
-			Declear_Params(conv3_weights);
-			Declear_Params(conv3_bias);
-			Declear_Params(relu3_weights);
-			Declear_Params(conv4_1_weights);
-			Declear_Params(conv4_1_bias);
-			Declear_Params(relu4_1_weights);
-			Declear_Params(conv4_2_weights);
-			Declear_Params(conv4_2_bias);
-			Declear_Params(relu4_2_weights);
-			Declear_Params(conv4_3_weights);
-			Declear_Params(conv4_3_bias);
-			Declear_Params(relu4_3_weights);
-			Declear_Params(conv4_4_weights);
-			Declear_Params(conv4_4_bias);
-			Declear_Params(relu4_4_weights);
-			Declear_Params(conv4_5_weights);
-			Declear_Params(conv4_5_bias);
-			Declear_Params(relu4_5_weights);
-			Declear_Params(conv4_6_weights);
-			Declear_Params(conv4_6_bias);
-			Declear_Params(relu4_6_weights);
-			Declear_Params(conv4_7_weights);
-			Declear_Params(conv4_7_bias);
-			Declear_Params(relu4_7_weights);
-			Declear_Params(conv4_8_weights);
-			Declear_Params(conv4_8_bias);
-			Declear_Params(relu4_8_weights);
-			Declear_Params(conv4_9_weights);
-			Declear_Params(conv4_9_bias);
-			Declear_Params(relu4_9_weights);
-			Declear_Params(conv4_10_weights);
-			Declear_Params(conv4_10_bias);
-			Declear_Params(relu4_10_weights);
-			Declear_Params(conv4_weights);
-			Declear_Params(conv4_bias);
-			Declear_Params(relu4_weights);
-			Declear_Params(conv5_1_weights);
-			Declear_Params(conv5_1_bias);
-			Declear_Params(relu5_1_weights);
-			Declear_Params(conv5_2_weights);
-			Declear_Params(conv5_2_bias);
-			Declear_Params(relu5_2_weights);
-			Declear_Params(conv5_3_weights);
-			Declear_Params(conv5_3_bias);
-			Declear_Params(relu5_3_weights);
-			Declear_Params(conv5_4_weights);
-			Declear_Params(conv5_4_bias);
-			Declear_Params(relu5_4_weights);
-			Declear_Params(conv5_5_weights);
-			Declear_Params(conv5_5_bias);
-			Declear_Params(relu5_5_weights);
-			Declear_Params(conv5_6_weights);
-			Declear_Params(conv5_6_bias);
-			Declear_Params(relu5_6_weights);
-			Declear_Params(conv5_weights);
-			Declear_Params(conv5_bias);
-			Declear_Params(relu5_weights);
+			Declear_Params(conv1a);
+			Declear_Params(relu1a);
+			Declear_Params(conv1b);
+			Declear_Params(relu1b);
+			Declear_Params(conv2_1);
+			Declear_Params(relu2_1);
+			Declear_Params(conv2_2);
+			Declear_Params(relu2_2);
+			Declear_Params(conv2);
+			Declear_Params(relu2);
+			Declear_Params(conv3_1);
+			Declear_Params(relu3_1);
+			Declear_Params(conv3_2);
+			Declear_Params(relu3_2);
+			Declear_Params(conv3_3);
+			Declear_Params(relu3_3);
+			Declear_Params(conv3_4);
+			Declear_Params(relu3_4);
+			Declear_Params(conv3);
+			Declear_Params(relu3);
+			Declear_Params(conv4_1);
+			Declear_Params(relu4_1);
+			Declear_Params(conv4_2);
+			Declear_Params(relu4_2);
+			Declear_Params(conv4_3);
+			Declear_Params(relu4_3);
+			Declear_Params(conv4_4);
+			Declear_Params(relu4_4);
+			Declear_Params(conv4_5);
+			Declear_Params(relu4_5);
+			Declear_Params(conv4_6);
+			Declear_Params(relu4_6);
+			Declear_Params(conv4_7);
+			Declear_Params(relu4_7);
+			Declear_Params(conv4_8);
+			Declear_Params(relu4_8);
+			Declear_Params(conv4_9);
+			Declear_Params(relu4_9);
+			Declear_Params(conv4_10);
+			Declear_Params(relu4_10);
+			Declear_Params(conv4);
+			Declear_Params(relu4);
+			Declear_Params(conv5_1);
+			Declear_Params(relu5_1);
+			Declear_Params(conv5_2);
+			Declear_Params(relu5_2);
+			Declear_Params(conv5_3);
+			Declear_Params(relu5_3);
+			Declear_Params(conv5_4);
+			Declear_Params(relu5_4);
+			Declear_Params(conv5_5);
+			Declear_Params(relu5_5);
+			Declear_Params(conv5_6);
+			Declear_Params(relu5_6);
+			Declear_Params(conv5);
+			Declear_Params(relu5);
+
 			//
 			int device_;
 			bool cudnn_ready_ = false;
+			bool int8_quantization_ = true;
+
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
 			std::vector<float> quality_score;
 			//
+
 			Declear_Opration(flip, fliper);
 			Neuron_Name(flip);
 			Declear_Opration(concat, concator);

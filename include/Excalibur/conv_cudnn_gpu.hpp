@@ -30,6 +30,7 @@ namespace glasssix
 		private:
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
 			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
 			void forward_bias(float* output, const float* bias) {}
 		};
 	}

@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{6FCF7CB3-7523-442B-BA36-E65EF38A5598}</ProjectGuid>
     <RootNamespace>CppExample</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -128,18 +128,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\windows\Cassius\Cassius.vcxproj">
       <Project>{ed436a1f-4a52-4974-850a-8f9ca9dfeb90}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\windows\Irisvian\Irisvian.vcxproj">
-      <Project>{d73d41d7-9c35-4e48-a85a-aba45068223a}</Project>
+    <ProjectReference Include="..\..\windows\Damocles\Damocles.vcxproj">
+      <Project>{0f56cced-aa44-4767-b843-7a45227946cf}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\windows\Excalibur\Excalibur.vcxproj">
+      <Project>{546e42e9-516a-4d09-bbe0-d3d567ac1328}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\windows\Longinus\Longinus.vcxproj">
       <Project>{9700e429-6846-4c83-89cf-1881147fe5d6}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

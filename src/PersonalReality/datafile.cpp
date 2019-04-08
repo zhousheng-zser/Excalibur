@@ -1,6 +1,7 @@
 #include "datafile.hpp"
 
-
+#define DATA_TYPE "float"
+//#define DATA_TYPE "unsigned short"
 
 datafile::datafile(std::string outpath)
 {
@@ -128,7 +129,7 @@ bool datafile::quantize_weight(float *data, size_t data_length, int quantize_lev
 	return true;
 }
 
-void datafile::writedata(const float* data, int len, std::string datatype)
+void datafile::writedata(const float* data, int len, std::string datatype, float scale)
 {
 	if (datatype == "float")
 	{
@@ -176,6 +177,20 @@ void datafile::writedata(const float* data, int len, std::string datatype)
 			}
 		}
 	}
+	if (datatype == "signed char")
+	{
+		for (int i = 0; i < len; ++i, ++pos)
+		{
+			if (i == len - 1)
+				out << int(float2int8(data[i] * scale));
+			else
+				out << int(float2int8(data[i] * scale)) << ", ";
+			if (pos >= 15) {
+				pos = 0;
+				out << std::endl;
+			}
+		}
+	}
 }
 
 void datafile::writedataend()
@@ -192,6 +207,7 @@ void datafile::writedatahead(std::string netname, std::string layername, std::st
 void datafile::writedatafileend()
 {
 	out << "}" << std::endl;
+	out << "}" << std::endl;
 	out << "#endif" << std::endl;
 }
 
@@ -201,6 +217,7 @@ void datafile::writedatafilehead(std::string filename, std::string namespace_)
 	out << "#ifndef _" + filename + "_DATA_HPP_" << std::endl;
 	out << "#define _" + filename + "_DATA_HPP_" << std::endl;
 	out << std::endl << std::endl;
+	out << "namespace glasssix {" << std::endl;
 	out << "namespace " << namespace_ << " {" << std::endl;
 }
 
@@ -217,22 +234,112 @@ void datafile::writedatahpp(std::string netpath, std::string netname, std::strin
 		{
 			std::string layer_name = layer_param.name();
 			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-			writedatahead(netname, layer_name + "_weights", "unsigned short");
-			//writedatahead(netname, layer_name + "_weights", "float");
+			writedatahead(netname, layer_name + "_weights", DATA_TYPE);
 			const BlobProto& blob = layer_param.blobs(0);
-			writedata(blob.data().data(), blob.data_size(), "unsigned short");
-			//writedata(blob.data().data(), blob.data_size(), "float");
+			writedata(blob.data().data(), blob.data_size(), DATA_TYPE);
 			
 			writedataend();
 			if (n>1)
 			{
-				writedatahead(netname, layer_name + "_bias", "float");
+				writedatahead(netname, layer_name + "_bias", DATA_TYPE);
 				const BlobProto& bias = layer_param.blobs(1);
-				writedata(bias.data().data(), bias.data_size(), "unsigned short");
-				//writedata(bias.data().data(), bias.data_size(), "float");
+				writedata(bias.data().data(), bias.data_size(), DATA_TYPE);
 				writedataend();
 			}
 		}
 	}
 	writedatafileend();
 }
+
+
+signed char datafile::float2int8(float v)
+{
+	int int32 = round(v);
+	if (int32 > 127) return 127;
+	if (int32 < -128) return -128;
+	return (signed char)int32;
+}
+
+void datafile::insert_scales()
+{
+	Unicorn_scales["conv1a"] = 168.626725724f;
+	Unicorn_scales["conv1b"] = 194.307459918f;
+	Unicorn_scales["conv2_1"] = 274.472378716f;
+	Unicorn_scales["conv2_2"] = 176.114160843f;
+	Unicorn_scales["conv2"] = 264.601509306f;
+	Unicorn_scales["conv3_1"] = 274.026229762f;
+	Unicorn_scales["conv3_2"] = 371.508281583f;
+	Unicorn_scales["conv3_3"] = 292.500820515f;
+	Unicorn_scales["conv3_4"] = 369.318496505f;
+	Unicorn_scales["conv3"] = 487.45436938f;
+	Unicorn_scales["conv4_1"] = 487.379385175f;
+	Unicorn_scales["conv4_2"] = 699.1747656f;
+	Unicorn_scales["conv4_3"] = 426.879147006f;
+	Unicorn_scales["conv4_4"] = 599.783328188f;
+	Unicorn_scales["conv4_5"] = 616.978328872f;
+	Unicorn_scales["conv4_6"] = 521.076596219f;
+	Unicorn_scales["conv4_7"] = 624.644821949f;
+	Unicorn_scales["conv4_8"] = 379.590710985f;
+	Unicorn_scales["conv4_9"] = 653.362954491f;
+	Unicorn_scales["conv4_10"] = 560.751397762f;
+	Unicorn_scales["conv4"] = 387.85863108f;
+	Unicorn_scales["conv5_1"] = 442.958470508f;
+	Unicorn_scales["conv5_2"] = 495.714291497f;
+	Unicorn_scales["conv5_3"] = 509.101942536f;
+	Unicorn_scales["conv5_4"] = 295.730290681f;
+	Unicorn_scales["conv5_5"] = 429.575008314f;
+	Unicorn_scales["conv5_6"] = 502.631792597f;
+	Unicorn_scales["conv5"] = 745.230312878f;
+}
+
+void datafile::write_int8_datahpp(std::string netpath, std::string netname, std::string namespacename)
+{
+	insert_scales();
+
+	NetParameter param;
+	ReadProtoFromBinaryFile(netpath.c_str(), &param);
+	writedatafilehead(netname, namespacename);
+	for (int i = 1; i < param.layer_size(); i++)
+	{
+		LayerParameter& layer_param = *param.mutable_layer(i);
+		int n = param.mutable_layer(i)->mutable_blobs()->size();
+		if (n)
+		{
+			std::string layer_name = layer_param.name();
+			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
+
+			float scale;
+			std::map<std::string, float>::iterator iter;
+			iter = Unicorn_scales.find(layer_name);
+			if (iter == Unicorn_scales.end())
+			{
+				scale = 1.0f;
+				writedatahead(netname, layer_name + "_weights", "float");
+				const BlobProto& blob = layer_param.blobs(0);
+				writedata(blob.data().data(), blob.data_size(), "float");
+				writedataend();
+			}
+			else
+			{
+				scale = Unicorn_scales[layer_name];
+				writedatahead(netname, layer_name + "_weights", "signed char");
+				const BlobProto& blob = layer_param.blobs(0);
+				writedata(blob.data().data(), blob.data_size(), "signed char", scale);
+				writedataend();
+			}
+
+			std::cout << "layer_name:" << layer_name << ",scale:" << scale << std::endl;
+
+			
+			if (n > 1)
+			{
+				writedatahead(netname, layer_name + "_bias", "float");
+				const BlobProto& bias = layer_param.blobs(1);
+				writedata(bias.data().data(), bias.data_size(), "float");
+				writedataend();
+			}
+		}
+	}
+	writedatafileend();
+}
+
