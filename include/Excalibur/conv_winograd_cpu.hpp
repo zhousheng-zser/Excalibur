@@ -1,7 +1,7 @@
 #ifndef _CONV_WINOGRAD_CPU_HPP_
 #define _CONV_WINOGRAD_CPU_HPP_
 #include "base_conv.hpp"
-#include <iostream>
+
 namespace glasssix
 {
 	namespace excalibur
@@ -25,9 +25,9 @@ namespace glasssix
 			std::shared_ptr<tensor<short>> U_int16, V_int16;
 			short *U_int16_data, *V_int16_data;
 
-			conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, bool int8_quantization = false, int device = -1);
+			conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = -1, bool int8_quantization = false);
 
-			virtual ~conv_winograd_cpu();
+			virtual ~conv_winograd_cpu() {};
 
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
 

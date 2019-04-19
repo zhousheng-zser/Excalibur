@@ -81,7 +81,7 @@ namespace glasssix
 			
 			baseconv() {}
 
-			baseconv(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, bool int8_quantization = false, int device = -1)
+			baseconv(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = -1, bool int8_quantization = false)
 			{
 				CHECK_EQ(output_Channel % group, 0);
 				CHECK_EQ(input_Channel % group, 0);

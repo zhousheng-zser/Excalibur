@@ -399,5 +399,23 @@ namespace glasssix
 			floats[i] = float16_to_float32(halfs[i]);
 		}
 	}
+
+	inline void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group)
+	{
+		if (num % group != 0)
+		{
+			LOG(FATAL) << "int8_data does not match group!!!";
+			return;
+		}
+		int offset = num / group;
+
+		for (int i = 0; i < offset; i++)
+		{
+			for (int j = 0; j < group; j++)
+			{
+				floats[j * offset + i] = int8_data[j * offset + i] / scales[j];
+			}			
+		}
+	}
 }
 #endif // !_SIMD_HELPER_HPP_

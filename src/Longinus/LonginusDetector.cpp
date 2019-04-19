@@ -131,7 +131,11 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 	int order, bool useMultiThreads, bool doEarlyReject)
 {
 	std::vector<FaceRect> rects = detect(gray, width, height, step, minSize, scale, min_neighbors, useMultiThreads, doEarlyReject);
-		
+	if (rects.size() == 0)
+	{
+		return std::vector<FaceRectwithFaceInfo>();
+	}
+
 	std::vector<std::vector<float> > infoParam;
 	std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 	group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));

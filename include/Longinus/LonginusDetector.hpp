@@ -101,16 +101,17 @@ namespace glasssix
 		{
 			bboxes.clear();
 			landmarks.clear();
-			int index = -1;
+			int index = 0;
 			float area = 0.0f;
 			for (size_t i = 0; i < face_info.size(); i++)
 			{
-				if (face_info[index].width * face_info[index].height > area)
+				if (face_info[i].width * face_info[i].height > area)
 				{
 					index = i;
+					area = face_info[i].width * face_info[i].height;
 				}
 			}
-			if (index < 0)
+			if (area <= 0.0f)
 			{
 				return;
 			}

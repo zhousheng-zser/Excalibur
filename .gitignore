@@ -71,3 +71,8 @@
 
 examples/*
 examples/CppExample/main.cpp
+include/Excalibur/prune.hpp
+src/PersonalReality/main.cpp
+src/Reconstruct/main.cpp
+include/Reconstruct/deconv_net.hpp
+src/Reconstruct/deconv_net.cpp

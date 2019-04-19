@@ -18,6 +18,7 @@
 #include "normalize.hpp"
 #include "mirrormax.hpp"
 #include "sigmoid.hpp"
+#include "deconv.hpp"
 
 
 #define Neuron_Name(name) private: \
@@ -49,6 +50,13 @@ if(datatype == USHRT_MAX) {\
 layer_para =  (float*)_aligned_malloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float), MALLOC_ALIGN); \
 half2float((unsigned short*)netname##_##layer_para,layer_para,sizeof(netname##_##layer_para) / sizeof(unsigned short));}
 #endif
+
+
+
+#define Copy_Int8_FP32_Params(layername, netname)\
+layername##_##weights =  (float*)_aligned_malloc(sizeof(netname##_##layername##_##weights) / sizeof(signed char) * sizeof(float), MALLOC_ALIGN); \
+int8_to_float((const signed char*)netname##_##layername##_##weights,(const float*)netname##_##layername##_##scales_weight,(float*)layername##_##weights,\
+    sizeof(netname##_##layername##_##weights) / sizeof(signed char),sizeof(netname##_##layername##_##scales_weight) / sizeof(float));
 
 
 #ifdef INT8_DATA //copy directely, do not caculate
@@ -113,9 +121,9 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 #define Init_Conv_Params(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
 if(device_ < 0){\
 if(kernel_size == 3 && stride == 1){\
-conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, int8_quantization_, device_);}\
+conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization_);}\
 else{\
-conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, int8_quantization_, device_);}}\
+conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization_);}}\
 else{\
 if(cudnn_ready_){\
 conv_name = new conv_cudnn_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
@@ -128,6 +136,16 @@ conv_name->set_scales(conv_name##_##scales);}\
 else{\
 conv_name->set_weights(conv_name##_##weights);}
 
+
+#define Init_Deconv_Params(deconv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term)\
+deconv_name = new deconv(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_);\
+deconv_name->set_weights(deconv_name##_##weights);\
+deconv_name->set_bias(deconv_name##_##bias);
+
+
+#define Init_PReLU_Shared_Params(prelu_name, input_channel, isrelu, is_shared)\
+prelu_name = new prelu(input_channel, isrelu, device_, is_shared);\
+prelu_name->setslope(prelu_name##_##weights);
 
 #define Init_PReLU_Params(prelu_name, input_channel, isrelu)\
 prelu_name = new prelu(input_channel, isrelu, device_);\
