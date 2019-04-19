@@ -75,6 +75,7 @@
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
@@ -87,7 +88,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_CASSIUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_CASSIUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
@@ -125,7 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_CASSIUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_CASSIUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>

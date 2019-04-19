@@ -9,8 +9,8 @@ namespace glasssix
 		class conv_native_cpu : public baseconv
 		{
 		public:
-			conv_native_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, bool int8_quantization = false, int device = -1)
-				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, int8_quantization, device) {}
+			conv_native_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = -1, bool int8_quantization = false)
+				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization) {}
 
 			virtual ~conv_native_cpu() {}
 

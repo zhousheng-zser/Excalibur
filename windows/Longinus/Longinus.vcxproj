@@ -87,7 +87,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -126,7 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -164,16 +164,6 @@
     <ClCompile Include="DllMain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Damocles\Damocles.vcxproj">
       <Project>{0f56cced-aa44-4767-b843-7a45227946cf}</Project>
     </ProjectReference>
@@ -186,6 +176,16 @@
     <ProjectReference Include="..\Romancia\Romancia.vcxproj">
       <Project>{9e81958b-61ae-4de2-b254-cfd4260f64a6}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </CudaCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
