@@ -12,7 +12,6 @@
 #include "unicorn_data.hpp"
 #endif//HALF_DATA
 
-
 namespace glasssix
 {
 	namespace cassius
@@ -99,6 +98,93 @@ namespace glasssix
 			}
 			else
 			{
+#ifdef INT8_DATA
+				Copy_Int8_FP32_Params(conv1a, Unicorn);//864
+				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
+				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
+				Copy_Int8_FP32_Params(conv1b, Unicorn);//18432
+				Copy_Params(conv1b_bias, Unicorn, quantize_level);//128
+				Copy_Params(relu1b_weights, Unicorn, quantize_level);//64
+				Copy_Int8_FP32_Params(conv2_1, Unicorn);//36864
+				Copy_Params(conv2_1_bias, Unicorn, quantize_level);//128
+				Copy_Params(relu2_1_weights, Unicorn, quantize_level);//64
+				Copy_Int8_FP32_Params(conv2_2, Unicorn);//36864
+				Copy_Params(conv2_2_bias, Unicorn, quantize_level);//128
+				Copy_Params(relu2_2_weights, Unicorn, quantize_level);//64
+				Copy_Int8_FP32_Params(conv2, Unicorn);//73728
+				Copy_Params(conv2_bias, Unicorn, quantize_level);//256
+				Copy_Params(relu2_weights, Unicorn, quantize_level);//128
+				Copy_Int8_FP32_Params(conv3_1, Unicorn);//147456
+				Copy_Params(conv3_1_bias, Unicorn, quantize_level);//256
+				Copy_Params(relu3_1_weights, Unicorn, quantize_level);//128
+				Copy_Int8_FP32_Params(conv3_2, Unicorn);//147456
+				Copy_Params(conv3_2_bias, Unicorn, quantize_level);//256
+				Copy_Params(relu3_2_weights, Unicorn, quantize_level);//128
+				Copy_Int8_FP32_Params(conv3_3, Unicorn);//147456
+				Copy_Params(conv3_3_bias, Unicorn, quantize_level);//256
+				Copy_Params(relu3_3_weights, Unicorn, quantize_level);//128
+				Copy_Int8_FP32_Params(conv3_4, Unicorn);//147456
+				Copy_Params(conv3_4_bias, Unicorn, quantize_level);//256
+				Copy_Params(relu3_4_weights, Unicorn, quantize_level);//128
+				Copy_Int8_FP32_Params(conv3, Unicorn);//294912
+				Copy_Params(conv3_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu3_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_1, Unicorn);//589824
+				Copy_Params(conv4_1_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_1_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_2, Unicorn);//589824
+				Copy_Params(conv4_2_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_2_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_3, Unicorn);//589824
+				Copy_Params(conv4_3_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_3_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_4, Unicorn);//589824
+				Copy_Params(conv4_4_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_4_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_5, Unicorn);//589824
+				Copy_Params(conv4_5_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_5_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_6, Unicorn);//589824
+				Copy_Params(conv4_6_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_6_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_7, Unicorn);//589824
+				Copy_Params(conv4_7_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_7_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_8, Unicorn);//589824
+				Copy_Params(conv4_8_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_8_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_9, Unicorn);//589824
+				Copy_Params(conv4_9_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_9_weights, Unicorn, quantize_level);//256
+				Copy_Int8_FP32_Params(conv4_10, Unicorn);//589824
+				Copy_Params(conv4_10_bias, Unicorn, quantize_level);//512
+				Copy_Params(relu4_10_weights, Unicorn, quantize_level);//256,512
+				Copy_Int8_FP32_Params(conv4, Unicorn);//1179648
+				Copy_Params(conv4_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu4_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_1, Unicorn);//2359296
+				Copy_Params(conv5_1_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_1_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_2, Unicorn);//2359296
+				Copy_Params(conv5_2_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_2_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_3, Unicorn);//2359296
+				Copy_Params(conv5_3_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_3_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_4, Unicorn);//2359296
+				Copy_Params(conv5_4_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_4_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_5, Unicorn);//2359296
+				Copy_Params(conv5_5_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_5_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5_6, Unicorn);//2359296
+				Copy_Params(conv5_6_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_6_weights, Unicorn, quantize_level);//512
+				Copy_Int8_FP32_Params(conv5, Unicorn);//2359296
+				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
+				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
+
+#else				
 				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
@@ -183,6 +269,7 @@ namespace glasssix
 				Copy_Params(conv5_weights, Unicorn, quantize_level);//2359296
 				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
+#endif //!INT8_DATA
 			}
 
 			
@@ -362,7 +449,7 @@ namespace glasssix
 			}
 #endif
 #endif
-		}
+		} 
 
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
@@ -600,6 +687,12 @@ namespace glasssix
 
 		std::vector<std::vector<float> > Unicorn::Forward(const float* input_data, unsigned num, int order)
 		{
+			if (num <= 0)
+			{
+				LOG(FATAL) << "no human face information!!!";
+				return std::vector<std::vector<float> >();
+			}
+
 			std::vector<std::vector<float> > feature;
 
 			if (order == 0)//NCHW
@@ -658,6 +751,12 @@ namespace glasssix
 
 		std::vector<std::vector<float> > Unicorn::Forward(const unsigned char* input_data, unsigned num, int order)
 		{
+			if (num <= 0)
+			{
+				LOG(FATAL) << "no human face information!!!";
+				return std::vector<std::vector<float> >();
+			}
+
 			std::vector<std::vector<float> > feature;
 
 			if (order == 0)//NCHW

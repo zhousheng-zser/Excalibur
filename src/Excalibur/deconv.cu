@@ -8,7 +8,7 @@ namespace glasssix
 	{
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
-		void conv_cudnn_gpu::Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void deconv::Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			order_ = bottom->order();
 

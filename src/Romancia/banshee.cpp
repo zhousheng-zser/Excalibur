@@ -265,6 +265,13 @@ namespace glasssix
 		std::vector<unsigned char> Banshee::alignFace(const unsigned char* origine, int n, int channels, 
 			int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks)
 		{
+			if (n <= 0)
+			{
+				LOG(FATAL) << "no human face information!!!";
+				return std::vector<unsigned char>();
+			}
+
+			CHECK_EQ(n, 1);
 			CHECK_EQ(channels, 1);
 			std::shared_ptr<tensor<unsigned char>> ori_image, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
 			std::vector<std::shared_ptr<tensor<unsigned char>>> src_vector;
