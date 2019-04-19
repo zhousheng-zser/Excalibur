@@ -349,8 +349,8 @@ namespace glasssix
 			const int M, const int N, const int K, const unsigned short alpha, const unsigned short* A, const int lda, const unsigned short* B, const int ldb,
 			const unsigned short beta, unsigned short* C, const int ldc)
 		{
-			float* f_A;
-			float* f_B;
+			float* f_A = nullptr;
+			float* f_B = nullptr;
 			float* f_C = new float[M * ldc];
 			if (TransA == CBLAS_TRANSPOSE::CblasNoTrans)
 			{

@@ -6,8 +6,8 @@ namespace glasssix
 {
 	namespace excalibur
 	{
-		conv_winograd_cpu::conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, bool int8_quantization, int device)
-			: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, int8_quantization, device)
+		conv_winograd_cpu::conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device, bool int8_quantization)
+			: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization)
 		{
 			tile_size_ = m_ + kernelSize_ - 1;//m+r-1
 			tile_length_ = tile_size_ * tile_size_;
@@ -27,8 +27,6 @@ namespace glasssix
 				U_data = U_->mutable_cpu_data();
 			}
 		}
-
-		conv_winograd_cpu::~conv_winograd_cpu() {}
 
 		void conv_winograd_cpu::forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col) {}
 
