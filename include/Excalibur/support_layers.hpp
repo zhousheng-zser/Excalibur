@@ -19,7 +19,7 @@
 #include "mirrormax.hpp"
 #include "sigmoid.hpp"
 #include "deconv.hpp"
-
+#include "prune.hpp"
 
 #define Neuron_Name(name) private: \
 std::shared_ptr<tensor<float>> name##_top_data;\
