@@ -191,7 +191,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
 				}
 				else
 				{
@@ -242,15 +242,13 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					tensor_operation_cpu::resize_cpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_cpu::type_converter_cpu(resized_tensor, input_layer);
-					tensor_operation_cpu::preprocess_tensors_cpu(input_layer);
+					tensor_operation_cpu::preprocess_tensors_cpu(resized_tensor, input_layer);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					tensor_operation_gpu::resize_gpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_gpu::type_converter_gpu(resized_tensor, input_layer);
-					tensor_operation_gpu::preprocess_tensors_gpu(input_layer);
+					tensor_operation_gpu::preprocess_tensors_gpu(resized_tensor, input_layer);
 #else
 					NO_GPU;
 #endif // USE_CUDA
@@ -291,7 +289,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
 				}
 				else
 				{
@@ -359,8 +357,7 @@ namespace glasssix
 					{
 						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_cpu::type_converter_cpu(roi_resized_tensor, roi_resized_float_tensor);
-						tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_float_tensor);
+						tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor);
 						memcpy(input_data_n, roi_resized_float_tensor->cpu_data(), channels * input_h * input_w * sizeof(float));
 					}
 					else
@@ -376,8 +373,7 @@ namespace glasssix
 					{
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_gpu::type_converter_gpu(roi_resized_tensor, roi_resized_float_tensor);
-						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_float_tensor);
+						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
 						cudaMemcpy(input_data_n, roi_resized_float_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault);
 					}
 					else
