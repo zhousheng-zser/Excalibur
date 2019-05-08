@@ -12,8 +12,10 @@ namespace glasssix
 			pad_ = pad;
 			type_ = (pooling_type)type;
 			device_ = device;
+
+#ifdef USE_CUDA
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) 
 			{
 				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
 			}
@@ -35,10 +37,15 @@ namespace glasssix
 			CUDNN_CHECK(cudnnSetPooling2dDescriptor(pooling_desc_, mode_,
 				CUDNN_PROPAGATE_NAN, kernel_, kernel_, pad_, pad_, stride_, stride_));
 #endif
+#endif // USE_CUDA
+
+
 		}
 
 		pooling::~pooling()
 		{
+
+#ifdef USE_CUDA
 #ifdef USE_CUDNN
 			if (cudnn_handle_)
 			{
@@ -48,6 +55,9 @@ namespace glasssix
 			cudnnDestroyTensorDescriptor(top_desc_);
 			cudnnDestroyPoolingDescriptor(pooling_desc_);
 #endif
+#endif // USE_CUDA
+
+
 		}
 
 		void pooling::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)

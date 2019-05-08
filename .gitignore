@@ -68,6 +68,8 @@
 *.CopyComplete
 *.bin
 *.vcxproj
+*.sln
+*.filters
 
 examples/*
 examples/CppExample/main.cpp
@@ -76,3 +78,5 @@ src/PersonalReality/main.cpp
 src/Reconstruct/main.cpp
 include/Reconstruct/deconv_net.hpp
 src/Reconstruct/deconv_net.cpp
+include/Excalibur/support_layers.hpp
+src/Cassius/unicorn.cpp

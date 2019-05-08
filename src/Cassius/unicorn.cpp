@@ -12,6 +12,9 @@
 #include "unicorn_data.hpp"
 #endif//HALF_DATA
 
+#include <fstream>
+#define READ_FEATURES
+
 namespace glasssix
 {
 	namespace cassius
@@ -284,7 +287,7 @@ namespace glasssix
 			cudnn_ready_ = true;
 #endif
 #endif
-			//
+			
 			Init_Conv_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
 			Init_PReLU_Params(relu1a, 32, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
@@ -462,7 +465,7 @@ namespace glasssix
 			relu2_1->Forward_cpu(conv2_1_top_data);
 			conv2_2->Forward(conv2_1_top_data, conv2_2_top_data);
 			relu2_2->Forward_cpu(conv2_2_top_data);
-			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
+			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);	
 			conv2->Forward(res2_2_top_data, conv2_top_data);
 			relu2->Forward_cpu(conv2_top_data);
 			pool2->Forward_cpu(conv2_top_data, pool2_top_data);
@@ -708,7 +711,7 @@ namespace glasssix
 			{
 				float* tensor_data = tensor_float_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float));
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -723,7 +726,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
 				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault);
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
@@ -774,8 +777,7 @@ namespace glasssix
 			{
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char));
-				tensor_operation_cpu::type_converter_cpu(tensor_unsigned_char_data, tensor_float_data);
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -790,8 +792,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
 				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
-				tensor_operation_gpu::type_converter_gpu(tensor_unsigned_char_data, tensor_float_data);
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)

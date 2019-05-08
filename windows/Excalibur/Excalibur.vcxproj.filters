@@ -224,7 +224,7 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
-      <Filter>Header Files</Filter>
+      <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>
 </Project>
