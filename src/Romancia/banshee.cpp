@@ -271,18 +271,18 @@ namespace glasssix
 				return std::vector<unsigned char>();
 			}
 
-			CHECK_EQ(n, 1);
+			CHECK_EQ(n, bbox.size());
+			CHECK_EQ(n, landmarks.size());
 			CHECK_EQ(channels, 1);
 			std::shared_ptr<tensor<unsigned char>> ori_image, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
 			std::vector<std::shared_ptr<tensor<unsigned char>>> src_vector;
-			int num = bbox.size();
 			std::vector<unsigned char> res;
-			res.resize(num * 3 * 128 * 128);
+			res.resize(n * 3 * 128 * 128);
 
 			if (device_ < 0)
 			{
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{n, channels, height, width}, device_, NCHW));
-				memcpy(ori_image->mutable_cpu_data(), origine, n * channels * height * width * sizeof(unsigned char));
+				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				memcpy(ori_image->mutable_cpu_data(), origine, 1 * channels * height * width * sizeof(unsigned char));
 
 				for (size_t i = 0; i < landmarks.size(); i++)
 				{
@@ -333,8 +333,8 @@ namespace glasssix
 			else
 			{
 #ifdef USE_CUDA
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{n, channels, height, width}, device_, NCHW));
-				cudaMemcpy(ori_image->mutable_gpu_data(), origine, n * channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
 
 				for (size_t i = 0; i < landmarks.size(); i++)
 				{
