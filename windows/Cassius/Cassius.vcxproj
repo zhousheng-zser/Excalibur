@@ -137,6 +137,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Cassius\unicorn_mobile.hpp" />
     <ClInclude Include="..\..\include\Cassius\vunicorn.hpp" />
     <ClInclude Include="..\..\include\Cassius\CassiusFeature.hpp" />
     <ClInclude Include="..\..\include\Cassius\unicorn.hpp" />
@@ -144,6 +145,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp" />
     <ClCompile Include="..\..\src\Cassius\unicorn.cpp" />
+    <ClCompile Include="..\..\src\Cassius\unicorn_mobile.cpp" />
     <ClCompile Include="DllMain.cpp" />
   </ItemGroup>
   <ItemGroup>

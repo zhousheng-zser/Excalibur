@@ -51,8 +51,7 @@ half2float((unsigned short*)netname##_##layer_para,layer_para,sizeof(netname##_#
 #endif
 
 
-
-#define Copy_Int8_FP32_Params(layername, netname)\
+#define Copy_Int8_to_FP32_Params(layername, netname)\
 layername##_##weights =  (float*)_aligned_malloc(sizeof(netname##_##layername##_##weights) / sizeof(signed char) * sizeof(float), MALLOC_ALIGN); \
 int8_to_float((const signed char*)netname##_##layername##_##weights,(const float*)netname##_##layername##_##scales_weight,(float*)layername##_##weights,\
     sizeof(netname##_##layername##_##weights) / sizeof(signed char),sizeof(netname##_##layername##_##scales_weight) / sizeof(float));
@@ -117,6 +116,7 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 
 #endif // INT8_DATA
 
+
 #define Init_Conv_Params(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
 if(device_ < 0){\
 if(kernel_size == 3 && stride == 1){\
@@ -134,6 +134,20 @@ conv_name->set_weights(conv_name##_##weights_int8);\
 conv_name->set_scales(conv_name##_##scales);}\
 else{\
 conv_name->set_weights(conv_name##_##weights);}
+
+#define Init_Conv_Params_No_Quantize(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
+if(device_ < 0){\
+if(kernel_size == 3 && stride == 1){\
+conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, false);}\
+else{\
+conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, false);}}\
+else{\
+if(cudnn_ready_){\
+conv_name = new conv_cudnn_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
+else{\
+conv_name = new conv_native_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }}\
+conv_name->set_bias(conv_name##_##bias);\
+conv_name->set_weights(conv_name##_##weights);
 
 
 #define Init_Deconv_Params(deconv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term)\

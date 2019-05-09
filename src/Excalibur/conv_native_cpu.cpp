@@ -273,21 +273,23 @@ namespace glasssix
 								mm_store_ps(top_data + n * top_dim_ + j * offset + index_offset, res);
 							}
 
-							for (index = index * mm_align_size; index < (j + 1) * offset; index++)
+							for (index = index * mm_align_size; index < offset; index++)
 							{
 								top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
 							}
 						}
 #else
-						for (int index = 0; index < offset; index++)
+#pragma omp parallel for
+						for (int j = 0; j < group_; j++)
 						{
-							for (int j = 0; j < group_; j++)
+							float total_scale = scales_data[0] * scales_data[1 + j];
+							for (int index = 0; index < offset; index++)
 							{
-								float total_scale = scales_data[0] * scales_data[1 + j];
 								top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
 							}
 						}
 #endif
+
 					}
 					else
 					{
@@ -335,38 +337,14 @@ namespace glasssix
 						forward_gemm(bottom_int8_data + n * bottom_dim_, weights_int8_data, top_int32_data + n * top_dim_);
 
 						int offset = top_dim_ / group_;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-						int circle_num = offset / mm_align_size;
 						for (int j = 0; j < group_; j++)
 						{
 							float total_scale = scales_data[0] * scales_data[1 + j];
-							mm_type scale = mm_set1_ps(1.0f / total_scale);
-							int index = 0;
-							for (; index < circle_num; index++)
+							for (int index = 0; index < offset; index++)
 							{
-								int index_offset = index * mm_align_size;
-								mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + n * top_dim_ + j * offset + index_offset));
-								mm_type temp2 = mm_cvtepi32_ps(temp1);
-								mm_type res = mm_mul_ps(temp2, scale);
-								mm_store_ps(top_data + n * top_dim_ + j * offset + index_offset, res);
-							}
-
-							for (index = index * mm_align_size; index < (j + 1) * offset; index++)
-							{
-								top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
+								top_data[index * group_ + n * top_dim_ + j] = top_int32_data[index * group_ + n * top_dim_ + j] / total_scale;
 							}
 						}
-#else
-						for (int index = 0; index < top_dim_ / group_; index++)
-						{
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j];
-								top_data[index + n * top_dim_ + j * top_dim_ / group_] = top_int32_data[index + n * top_dim_ + j * top_dim_ / group_] / total_scale;
-							}
-						}
-#endif
 					}
 					else
 					{
