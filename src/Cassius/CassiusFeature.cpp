@@ -1,19 +1,22 @@
 #include "CassiusFeature.hpp"
 #include "unicorn.hpp"
+#include "unicorn_mobile.hpp"
 
 
 namespace glasssix
 {
 	namespace cassius
 	{
-		CassiusFeature::CassiusFeature()
+		CassiusFeature::CassiusFeature(bool is_mobile, int device)
 		{
-			unicornia_ = new Unicorn(-1);
-		}
-
-		CassiusFeature::CassiusFeature(int device)
-		{
-			unicornia_ = new Unicorn(device);
+			if (is_mobile)
+			{
+				unicornia_ = new Unicorn_mobile(device);
+			}
+			else
+			{
+				unicornia_ = new Unicorn(device);
+			}			
 		}
 
 		CassiusFeature::~CassiusFeature()

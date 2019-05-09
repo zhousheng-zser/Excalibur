@@ -31,15 +31,17 @@ namespace glasssix
 		{
 		public:
 
-			CassiusFeature();
+			CassiusFeature() {}
 
-			CassiusFeature(int device);
+			CassiusFeature(bool is_mobile, int device);
 
 			~CassiusFeature();
 
 			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
 
 		private:
+			bool is_mobile_;
+
 			vUnicorn* unicornia_;
 
 			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;
