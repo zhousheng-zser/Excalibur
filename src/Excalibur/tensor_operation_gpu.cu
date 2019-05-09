@@ -3224,6 +3224,11 @@ namespace glasssix
 
 				if (type == Border_Constant)
 				{
+					std::vector<Dtype> top_data(top * dst_width, fill_pixel_value);
+					std::vector<Dtype> center_left_data(left, fill_pixel_value);
+					std::vector<Dtype> center_right_data(right, fill_pixel_value);
+					std::vector<Dtype> bottom_data(bottom * dst_width, fill_pixel_value);
+
 					for (int n = 0; n < num; n++)
 					{
 						int src_n_offset = n * src_num_offset;
@@ -3235,14 +3240,7 @@ namespace glasssix
 							int dst_channel_offset = ch * dst_offset;
 
 							//top
-							for (int row = 0; row < top; row++)
-							{
-								int dst_index = dst_channel_offset + row * dst_width;
-								for (int col = 0; col < dst_width; col++)
-								{
-									dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
-								}
-							}
+							cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset, top_data.data(), top * dst_width * sizeof(Dtype), cudaMemcpyDefault);
 
 							//center
 							for (int row = top; row < top + height; ++row)
@@ -3250,28 +3248,15 @@ namespace glasssix
 								int src_index = src_channel_offset + (row - top) * width;
 								int dst_index = dst_channel_offset + row * dst_width;
 
-								for (int col = 0; col < left; col++)
-								{
-									dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
-								}
+								cudaMemcpy(dst_data + dst_n_offset + dst_index, center_left_data.data(), left * sizeof(Dtype), cudaMemcpyDefault);
 
 								cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
 
-								for (int col = left + width; col < dst_width; col++)
-								{
-									dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
-								}
+								cudaMemcpy(dst_data + dst_n_offset + dst_index + left + width, center_right_data.data(), right * sizeof(Dtype), cudaMemcpyDefault);
 							}
 
 							//bottom
-							for (int row = top + height; row < dst_height; row++)
-							{
-								int dst_index = dst_channel_offset + row * dst_width;
-								for (int col = 0; col < dst_width; col++)
-								{
-									dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
-								}
-							}
+							cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset + (top + height) * dst_width, bottom_data.data(), bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault);
 						}
 					}
 				}
@@ -3368,24 +3353,18 @@ namespace glasssix
 
 				if (type == Border_Constant)
 				{
+					std::vector<Dtype> top_data(channels * top * dst_width, fill_pixel_value);
+					std::vector<Dtype> center_left_data(channels * left, fill_pixel_value);
+					std::vector<Dtype> center_right_data(channels * right, fill_pixel_value);
+					std::vector<Dtype> bottom_data(channels * bottom * dst_width, fill_pixel_value);
+
 					for (int n = 0; n < num; n++)
 					{
 						int src_n_offset = n * src_num_offset;
 						int dst_n_offset = n * dst_num_offset;
 
 						//top
-						for (int row = 0; row < top; row++)
-						{
-							int dst_index1 = row * dst_width * channels;
-							for (int col = 0; col < dst_width; col++)
-							{
-								int dst_index2 = dst_index1 + col * channels;
-								for (int ch = 0; ch < channels; ch++)
-								{
-									dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
-								}
-							}
-						}
+						cudaMemcpy(dst_data + dst_n_offset, top_data.data(), channels * top * dst_width * sizeof(Dtype), cudaMemcpyDefault);
 
 						//center
 						for (int row = top; row < top + height; ++row)
@@ -3393,43 +3372,17 @@ namespace glasssix
 							int src_index = (row - top) * width * channels;
 
 							//left
-							int dst_index1 = row * dst_width * channels;
-							for (int col = 0; col < left; col++)
-							{
-								int dst_index2 = dst_index1 + col * channels;
-								for (int ch = 0; ch < channels; ch++)
-								{
-									dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
-								}
-							}
+							cudaMemcpy(dst_data + dst_n_offset + row * dst_width * channels, center_left_data.data(), channels * left * sizeof(Dtype), cudaMemcpyDefault);
 
 							//center
-							cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset + src_index, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+							cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left) * channels, src_data + src_n_offset + src_index, width * channels * sizeof(Dtype), cudaMemcpyDefault);
 
 							//right
-							for (int col = left + width; col < dst_width; col++)
-							{
-								int dst_index2 = dst_index1 + col * channels;
-								for (int ch = 0; ch < channels; ch++)
-								{
-									dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
-								}
-							}
+							cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left + width) * channels, center_right_data.data(), channels * right * sizeof(Dtype), cudaMemcpyDefault);
 						}
 
 						//bottom
-						for (int row = top + height; row < dst_height; row++)
-						{
-							int dst_index1 = row * dst_width * channels;
-							for (int col = 0; col < dst_width; col++)
-							{
-								int dst_index2 = dst_index1 + col * channels;
-								for (int ch = 0; ch < channels; ch++)
-								{
-									dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
-								}
-							}
-						}
+						cudaMemcpy(dst_data + dst_n_offset + (top + height) * dst_width * channels, bottom_data.data(), channels * bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault);
 					}
 				}
 				else if (type == Border_Replicate)

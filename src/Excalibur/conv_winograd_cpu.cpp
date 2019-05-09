@@ -148,7 +148,7 @@ namespace glasssix
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
 
-#pragma omp parallel for
+//#pragma omp parallel for
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<int>> M_, RESULT_;
@@ -280,7 +280,7 @@ namespace glasssix
 										sum_1 = mm_mullo_epi32(u_1_int32, v_1_int32);
 										sum_2 = mm_mullo_epi32(u_2_int32, v_2_int32);
 										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)m_data + 8, sum_2);
+										mm_store_si((mm_typei*)(m_data + 8), sum_2);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 										u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och));
 										u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 4));
@@ -374,7 +374,7 @@ namespace glasssix
 							int circle_num = offset / mm_align_size;
 							for (int j = 0; j < group_; j++)
 							{
-								float total_scale = scales_data[0] * scales_data[1 + j];
+								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
 								mm_type scale = mm_set1_ps(1.0f / total_scale);
 
 								int index = 0;
@@ -387,19 +387,19 @@ namespace glasssix
 									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
 								}
 
-								for (index = index * mm_align_size; index < (j + 1) * offset; index++)
+								for (index = index * mm_align_size; index < offset; index++)
 								{
 									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
 								}
 							}
 #else
-#pragma omp for
-							for (int i = 0; i < offset; i++)
+#pragma omp parallel for
+							for (int j = 0; j < group_; j++)
 							{
-								for (int j = 0; j < group_; j++)
+								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+								for (int index = 0; index < offset; index++)
 								{
-									float total_scale = scales_data[0] * scales_data[1 + j];
-									top_data[i + top_offset_num + j * offset] = top_int32_data[i + top_offset_num + j * offset] / total_scale;
+									top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
 								}
 							}
 #endif
@@ -722,18 +722,19 @@ namespace glasssix
 									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
 								}
 
-								for (index = index * mm_align_size; index < (j + 1) * offset; index++)
+								for (index = index * mm_align_size; index < offset; index++)
 								{
 									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
 								}
 							}
 #else
-							for (int index = 0; index < offset; index++)
+#pragma omp parallel for
+							for (int j = 0; j < group_; j++)
 							{
-								for (int j = 0; j < group_; j++)
+								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
+								for (int index = 0; index < offset; index++)
 								{
-									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
-									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
 								}
 							}
 #endif
@@ -923,8 +924,8 @@ namespace glasssix
 										v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
 										sum_1 = _mm256_mullo_epi32(u_1_int32, v_1_int32);
 										sum_2 = _mm256_mullo_epi32(u_2_int32, v_2_int32);
-										_mm256_store_si256((__m256i*)m_data, sum_1);
-										_mm256_store_si256((__m256i*)m_data + 8, sum_2);
+										_mm256_store_si256((mm_typei*)m_data, sum_1);
+										_mm256_store_si256((mm_typei*)(m_data + 8), sum_2);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 										u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och));
 										u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 4));
@@ -1013,40 +1014,14 @@ namespace glasssix
 							}
 
 							int offset = top_dim_ / group_;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-							int circle_num = offset / mm_align_size;
 							for (int j = 0; j < group_; j++)
 							{
-								float total_scale = scales_data[0] * scales_data[1 + j];
-								mm_type scale = mm_set1_ps(1.0f / total_scale);
-
-								int index = 0;
-								for (; index < circle_num; index++)
+								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
+								for (int index = 0; index < offset; index++)
 								{
-									int index_offset = index * mm_align_size;
-									mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
-									mm_type temp2 = mm_cvtepi32_ps(temp1);
-									mm_type res = mm_mul_ps(temp2, scale);
-									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
-								}
-
-								for (index = index * mm_align_size; index < (j + 1) * offset; index++)
-								{
-									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									top_data[index * group_ + n * top_dim_ + j] = top_int32_data[index * group_ + n * top_dim_ + j] / total_scale;
 								}
 							}
-#else
-#pragma omp for
-							for (int i = 0; i < offset; i++)
-							{
-								for (int j = 0; j < group_; j++)
-								{
-									float total_scale = scales_data[0] * scales_data[1 + j];
-									top_data[i + top_offset_num + j * offset] = top_int32_data[i + top_offset_num + j * offset] / total_scale;
-								}
-							}
-#endif
 
 							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
 							if (bias_term_)
@@ -1341,40 +1316,14 @@ namespace glasssix
 							}
 
 							int offset = top_dim_ / group_;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-							int circle_num = offset / mm_align_size;
 							for (int j = 0; j < group_; j++)
 							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
-								mm_type scale = mm_set1_ps(1.0f / total_scale);
-
-								int index = 0;
-								for (; index < circle_num; index++)
+								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
+								for (int index = 0; index < offset; index++)
 								{
-									int index_offset = index * mm_align_size;
-									mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
-									mm_type temp2 = mm_cvtepi32_ps(temp1);
-									mm_type res = mm_mul_ps(temp2, scale);
-									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
-								}
-
-								for (index = index * mm_align_size; index < (j + 1) * offset; index++)
-								{
-									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									top_data[index * group_ + n * top_dim_ + j] = top_int32_data[index * group_ + n * top_dim_ + j] / total_scale;
 								}
 							}
-#else
-#pragma omp for
-							for (int i = 0; i < offset; i++)
-							{
-								for (int j = 0; j < group_; j++)
-								{
-									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
-									top_data[i + top_offset_num + j * offset] = top_int32_data[i + top_offset_num + j * offset] / total_scale;
-								}
-							}
-#endif
 
 							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
 							if (bias_term_)
