@@ -25,12 +25,12 @@ void prototxt2class::declear_params(std::string caffemodel, std::string netname)
 		{
 			std::string layer_name = layer_param.name();
 			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-			hpp << "Declear_Params(" + layer_name + "_weights);" << std::endl;
-			cpp << "Copy_Params(" + layer_name + "_weights, " + netname + ");" << std::endl;
+			hpp << "Declear_Params(" + layer_name + ");" << std::endl;
+			cpp << "Copy_Params(" + layer_name + "_weights, " + netname + ", quantize_level);" << std::endl;
 			if (n>1)
 			{
-				hpp << "Declear_Params(" + layer_name + "_bias);" << std::endl;
-				cpp << "Copy_Params(" + layer_name + "_bias, " + netname + ");" << std::endl;
+				//hpp << "Declear_Params(" + layer_name + "_bias);" << std::endl;
+				cpp << "Copy_Params(" + layer_name + "_bias, " + netname + ", quantize_level);" << std::endl;
 			}
 			std::cout << i << " " << layer_name << std::endl;
 		}
@@ -51,7 +51,20 @@ void prototxt2class::declear_operation_neuron(std::string prorotxt)
 		std::string layer_name = layer_param.name();
 		std::transform(type_name.begin(), type_name.end(), type_name.begin(), tolower);
 		std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-		hpp << "Declear_Opration(" + type_name + ", " + layer_name + ");" << std::endl;
+
+		if (type_name == "convolution" || type_name == "depthwiseconvolution")
+		{
+			hpp << "Declear_Opration(baseconv, " + layer_name + ");" << std::endl;
+		}
+		else if (type_name == "innerproduct")
+		{
+			hpp << "Declear_Opration(inner_product, " + layer_name + ");" << std::endl;
+		}
+		else
+		{
+			hpp << "Declear_Opration(" + type_name + ", " + layer_name + ");" << std::endl;
+		}
+
 		if (type_name!="prelu"||type_name!="relu")
 		{
 			hpp << "Neuron_Name(" + layer_name + ");" << std::endl;
@@ -98,25 +111,88 @@ void prototxt2class::init_operation(std::string prorotxt)
 		LayerParameter& layer_param = *param.mutable_layer(index);
 		std::string type_name = layer_param.type();
 		std::transform(type_name.begin(), type_name.end(), type_name.begin(), tolower);
-		if (type_name=="convolution")
+		if (type_name=="convolution" || type_name == "convolutiondepthwise" || type_name == "depthwiseconvolution")
 		{
 			bool bias_term = layer_param.convolution_param().bias_term();
 			int num_output = layer_param.convolution_param().num_output();
-			int kernel_size = layer_param.convolution_param().kernel_size(0);
-			int stride = layer_param.convolution_param().stride_size();
-			int pad = layer_param.convolution_param().pad_size();
+
+			int num_group;
+			if (type_name == "convolutiondepthwise" || type_name == "depthwiseconvolution")
+			{
+				num_group = layer_param.convolution_param().num_output();
+			}
+			else
+			{
+				num_group = layer_param.convolution_param().group();
+			}
+
+			int kernel_size;
+			if (layer_param.convolution_param().has_kernel_w() || layer_param.convolution_param().has_kernel_h())
+			{
+				if (layer_param.convolution_param().kernel_w() == layer_param.convolution_param().kernel_h())
+				{
+					kernel_size = layer_param.convolution_param().kernel_w();
+				}
+				else
+				{
+					std::cout << "only support kernel_w == kernel_h" << std::endl;
+					return;
+				}
+			}
+			else
+			{
+				kernel_size = layer_param.convolution_param().kernel_size(0);
+			}
+
+			int stride;
+			if (layer_param.convolution_param().has_stride_w() && layer_param.convolution_param().has_stride_h())
+			{
+				if (layer_param.convolution_param().stride_w() == layer_param.convolution_param().stride_h())
+				{
+					stride = layer_param.convolution_param().stride_w();
+				}
+				else
+				{
+					std::cout << "only support stride_w == stride_h" << std::endl;
+					return;
+				}
+			}
+			else
+			{
+				stride = layer_param.convolution_param().stride_size() != 0 ? layer_param.convolution_param().stride(0) : 1;
+			}
+
+			//int pad = layer_param.convolution_param().pad_size();
+			int pad;
+			if (layer_param.convolution_param().has_pad_w() && layer_param.convolution_param().has_pad_h())
+			{
+				if (layer_param.convolution_param().pad_w() == layer_param.convolution_param().pad_h())
+				{
+					pad = layer_param.convolution_param().pad_w();
+				}
+				else
+				{
+					std::cout << "only support pad_w == pad_h" << std::endl;
+					return;
+				}
+			}
+			else
+			{
+				pad = layer_param.convolution_param().pad_size() != 0 ? layer_param.convolution_param().pad(0) : 0;
+			}
+
 			int num_input = 666;
 			if (bias_term)
 			{
 				cpp << "Init_Conv_Params(" << elem.second + ", " <<
-					num_input << ", " << num_output << ", " <<
+					num_input << ", " << num_output << ", " << num_group << ", " <<
 					kernel_size << ", " << stride << ", " <<
 					pad << ", true);" << std::endl;
 			}
 			else
 			{
 				cpp << "Init_Conv_Params(" << elem.second + ", " <<
-					num_input << ", " << num_output << ", " <<
+					num_input << ", " << num_output << ", " << num_group << ", " <<
 					kernel_size << ", " << stride << ", " <<
 					pad << ", false);" << std::endl;
 			}
@@ -201,6 +277,10 @@ void prototxt2class::build_forward(std::string prorotxt)
 			if (type_name=="relu"|| type_name=="prelu")
 			{
 				cpp << elem.second << "->Forward_cpu(" << bottom_names[0] << "_top_data);" << std::endl;
+			}
+			else if (type_name == "convolution" || type_name == "convolutiondepthwise" || type_name == "depthwiseconvolution")
+			{
+				cpp << elem.second << "->Forward(" << bottom_names[0] << "_top_data, " << elem.second << "_top_data);" << std::endl;
 			}
 			else
 			{

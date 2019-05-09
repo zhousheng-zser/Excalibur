@@ -24,6 +24,9 @@
     <ClInclude Include="..\..\include\Cassius\CassiusFeature.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Cassius\unicorn_mobile.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Cassius\unicorn.cpp">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DllMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Cassius\unicorn_mobile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
