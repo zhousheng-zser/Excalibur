@@ -14,6 +14,7 @@ namespace glasssix
 #define mm_set1_ps _mm_set1_ps
 #define mm_setzero_ps _mm_setzero_ps
 #define mm_add_ps _mm_add_ps
+#define mm_sub_ps _mm_sub_ps
 #define mm_mul_ps _mm_mul_ps
 #define mm_type __m128
 #define mm_typei __m128i
@@ -88,6 +89,7 @@ namespace glasssix
 #define mm_set1_ps _mm256_set1_ps
 #define mm_setzero_ps _mm256_setzero_ps
 #define mm_add_ps _mm256_add_ps
+#define mm_sub_ps _mm256_sub_ps
 #define mm_mul_ps _mm256_mul_ps
 #define mm_type __m256
 #define mm_typei __m256i

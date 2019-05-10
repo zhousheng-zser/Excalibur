@@ -18,6 +18,7 @@
 #include "normalize.hpp"
 #include "mirrormax.hpp"
 #include "sigmoid.hpp"
+#include "axpy.hpp"
 #include "deconv.hpp"
 
 #define Neuron_Name(name) private: \
