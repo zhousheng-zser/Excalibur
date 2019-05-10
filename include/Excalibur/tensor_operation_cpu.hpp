@@ -3,8 +3,8 @@
 
 #include <glasssix\tensor.hpp>
 #include <glasssix\timer.hpp>
-
 #include "math_functions.hpp"
+#include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
 
 #ifdef USE_OPENCV
@@ -3359,7 +3359,7 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				if (channels != 3)
+				if (!(channels == 3 || channels == 4))
 				{
 					LOG(ERROR) << "Incorrect input channel.";
 					return;
@@ -3442,7 +3442,7 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				if (channels != 3)
+				if (!(channels == 3 || channels == 4))
 				{
 					LOG(ERROR) << "Incorrect input channel.";
 					return;
@@ -7764,7 +7764,14 @@ namespace glasssix
 				int channel = src->channels();
 				int height = src->height();
 				int width = src->width();
-				const DtypeSRC* src_data = src->cpu_data();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
 
 				if (dst == nullptr || (dst->count() != src->count()))
 				{
@@ -7772,6 +7779,10 @@ namespace glasssix
 				}
 				
 				DtypeDST* dst_data = dst->mutable_cpu_data();
+				const DtypeSRC* src_data = src->cpu_data();
+
+				std::string src_type = typeid(DtypeSRC).name();
+				std::string dst_type = typeid(DtypeDST).name();
 
 				if (channel == 3)
 				{
@@ -7780,19 +7791,72 @@ namespace glasssix
 
 					if (dst->order() == NCHW)
 					{
-						for (size_t n = 0; n < num; n++)
+						if (src_type == "float" && dst_type == "float")//SIMD support
 						{
-							int offset = n * 3 * height * width;
-							for (size_t c = 0; c < 3; c++)
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type mean_simd[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+							mm_type var_simd = mm_set1_ps(var);
+							mm_type temp;
+
+							for (size_t n = 0; n < num; n++)
 							{
-								int sub_offset = c * height * width;
-								for (size_t h = 0; h < height; h++)
+								int n_offset = n * num_offset;
+								for (size_t ch = 0; ch < 3; ch++)
 								{
-									int subsub_offset = h * width;
-									for (size_t w = 0; w < width; w++)
+									int ch_offset = ch * offset;
+									int circle_num = offset / mm_align_size;
+									int index = 0;
+									for (; index < circle_num; index++)
 									{
-										dst_data[offset + sub_offset + subsub_offset + w] =
-											DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										temp = mm_load_ps((const float*)(src_data + n_offset + ch_offset + index * mm_align_size));
+										temp = mm_sub_ps(temp, mean_simd[ch]);
+										temp = mm_mul_ps(temp, var_simd);
+										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp);
+									}
+
+									for (index *= mm_align_size; index < offset; index++)
+									{
+										dst_data[n_offset + ch_offset + index] = (src_data[n_offset + ch_offset + index] - means[ch]) * var;
+									}
+								}
+							}
+
+#else
+							for (size_t n = 0; n < num; n++)
+							{
+								int offset = n * channel * height * width;
+								for (size_t c = 0; c < 3; c++)
+								{
+									int sub_offset = c * height * width;
+									for (size_t h = 0; h < height; h++)
+									{
+										int subsub_offset = h * width;
+										for (size_t w = 0; w < width; w++)
+										{
+											dst_data[offset + sub_offset + subsub_offset + w] =
+												DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										}
+									}
+								}
+							}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+						}
+						else
+						{
+							for (size_t n = 0; n < num; n++)
+							{
+								int offset = n * channel * height * width;
+								for (size_t c = 0; c < 3; c++)
+								{
+									int sub_offset = c * height * width;
+									for (size_t h = 0; h < height; h++)
+									{
+										int subsub_offset = h * width;
+										for (size_t w = 0; w < width; w++)
+										{
+											dst_data[offset + sub_offset + subsub_offset + w] =
+												DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										}
 									}
 								}
 							}
@@ -7828,16 +7892,60 @@ namespace glasssix
 					float means[] = { 127.5f };
 					float var = 0.0078125f;
 
-					for (size_t n = 0; n < num; n++)
+					if (src_type == "float" && dst_type == "float")//SIMD support
 					{
-						int offset = n * height * width;
-						for (size_t h = 0; h < height; h++)
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type mean_simd = mm_set1_ps(means[0]);
+						mm_type var_simd = mm_set1_ps(var);
+						mm_type temp;
+
+						for (size_t n = 0; n < num; n++)
 						{
-							int subsub_offset = h * width;
-							for (size_t w = 0; w < width; w++)
+							int n_offset = n * num_offset;
+							int circle_num = offset / mm_align_size;
+							int index = 0;
+							for (; index < circle_num; index++)
 							{
-								dst_data[offset + subsub_offset + w] =
-									DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								temp = mm_load_ps((const float*)(src_data + n_offset + index * mm_align_size));
+								temp = mm_sub_ps(temp, mean_simd);
+								temp = mm_mul_ps(temp, var_simd);
+								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp);
+							}
+
+							for (index *= mm_align_size; index < offset; index++)
+							{
+								dst_data[n_offset + index] = (src_data[n_offset + index] - means[0]) * var;
+							}
+						}
+#else
+						for (size_t n = 0; n < num; n++)
+						{
+							int offset = n * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + subsub_offset + w] =
+										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								}
+							}
+						}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+					}
+					else
+					{
+						for (size_t n = 0; n < num; n++)
+						{
+							int offset = n * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + subsub_offset + w] =
+										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								}
 							}
 						}
 					}
@@ -7860,18 +7968,29 @@ namespace glasssix
 					return;
 				}
 
-				int num = src.num();
-				int channel = src.channels();
-				int height = src.height();
-				int width = src.width();
+				int num = src->num();
+				int channel = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
 
-				const DtypeSRC* src_data = src.cpu_data();
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
 
 				if (dst.count() != src.count())
 				{
 					dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-				}				
+				}		
+
 				DtypeDST* dst_data = dst.mutable_cpu_data();
+				const DtypeSRC* src_data = src.cpu_data();
+
+				std::string src_type = typeid(DtypeSRC).name();
+				std::string dst_type = typeid(DtypeDST).name();
 
 				if (channel == 3)
 				{
@@ -7880,19 +7999,72 @@ namespace glasssix
 
 					if (dst.order() == NCHW)
 					{
-						for (size_t n = 0; n < num; n++)
+						if (src_type == "float" && dst_type == "float")//SIMD support
 						{
-							int offset = n * 3 * height * width;
-							for (size_t c = 0; c < 3; c++)
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type mean_simd[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+							mm_type var_simd = mm_set1_ps(var);
+							mm_type temp;
+
+							for (size_t n = 0; n < num; n++)
 							{
-								int sub_offset = c * height * width;
-								for (size_t h = 0; h < height; h++)
+								int n_offset = n * num_offset;
+								for (size_t ch = 0; ch < 3; ch++)
 								{
-									int subsub_offset = h * width;
-									for (size_t w = 0; w < width; w++)
+									int ch_offset = ch * offset;
+									int circle_num = offset / mm_align_size;
+									int index = 0;
+									for (; index < circle_num; index++)
 									{
-										dst_data[offset + sub_offset + subsub_offset + w] =
-											DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										temp = mm_load_ps(src_data + n_offset + ch_offset + index * mm_align_size);
+										temp = mm_sub_ps(temp, mean_simd[ch]);
+										temp = mm_mul_ps(temp, var_simd);
+										mm_store_ps(dst_data + n_offset + ch_offset + index * mm_align_size, temp);
+									}
+
+									for (index *= mm_align_size; index < offset; index++)
+									{
+										dst_data[n_offset + ch_offset + index] = (src_data[n_offset + ch_offset + index] - means[ch]) * var;
+									}
+								}
+							}
+
+#else
+							for (size_t n = 0; n < num; n++)
+							{
+								int offset = n * channel * height * width;
+								for (size_t c = 0; c < 3; c++)
+								{
+									int sub_offset = c * height * width;
+									for (size_t h = 0; h < height; h++)
+									{
+										int subsub_offset = h * width;
+										for (size_t w = 0; w < width; w++)
+										{
+											dst_data[offset + sub_offset + subsub_offset + w] =
+												DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										}
+									}
+								}
+							}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+						}
+						else
+						{
+							for (size_t n = 0; n < num; n++)
+							{
+								int offset = n * channel * height * width;
+								for (size_t c = 0; c < 3; c++)
+								{
+									int sub_offset = c * height * width;
+									for (size_t h = 0; h < height; h++)
+									{
+										int subsub_offset = h * width;
+										for (size_t w = 0; w < width; w++)
+										{
+											dst_data[offset + sub_offset + subsub_offset + w] =
+												DtypeDST((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+										}
 									}
 								}
 							}
@@ -7923,21 +8095,65 @@ namespace glasssix
 						NOT_IMPLEMENTED;
 					}
 				}
-				else
+				else if(channel == 1)
 				{
 					float means[] = { 127.5f };
 					float var = 0.0078125f;
 
-					for (size_t n = 0; n < num; n++)
+					if (src_type == "float" && dst_type == "float")//SIMD support
 					{
-						int offset = n * height * width;
-						for (size_t h = 0; h < height; h++)
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type mean_simd = mm_set1_ps(means[0]);
+						mm_type var_simd = mm_set1_ps(var);
+						mm_type temp;
+
+						for (size_t n = 0; n < num; n++)
 						{
-							int subsub_offset = h * width;
-							for (size_t w = 0; w < width; w++)
+							int n_offset = n * num_offset;
+							int circle_num = offset / mm_align_size;
+							int index = 0;
+							for (; index < circle_num; index++)
 							{
-								dst_data[offset + subsub_offset + w] =
-									DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								temp = mm_load_ps(src_data + n_offset + index * mm_align_size);
+								temp = mm_sub_ps(temp, mean_simd);
+								temp = mm_mul_ps(temp, var_simd);
+								mm_store_ps(dst_data + n_offset + index * mm_align_size, temp);
+							}
+
+							for (index *= mm_align_size; index < offset; index++)
+							{
+								dst_data[n_offset + index] = (src_data[n_offset + index] - means[0]) * var;
+							}
+						}
+#else
+						for (size_t n = 0; n < num; n++)
+						{
+							int offset = n * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + subsub_offset + w] =
+										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								}
+							}
+						}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+					}
+					else
+					{
+						for (size_t n = 0; n < num; n++)
+						{
+							int offset = n * height * width;
+							for (size_t h = 0; h < height; h++)
+							{
+								int subsub_offset = h * width;
+								for (size_t w = 0; w < width; w++)
+								{
+									dst_data[offset + subsub_offset + w] =
+										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+								}
 							}
 						}
 					}

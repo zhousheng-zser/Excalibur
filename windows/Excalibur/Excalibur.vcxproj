@@ -138,6 +138,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Excalibur\axpy.hpp" />
     <ClInclude Include="..\..\include\Excalibur\base_conv.hpp" />
     <ClInclude Include="..\..\include\Excalibur\concat.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp" />
@@ -177,6 +178,7 @@
     <ClInclude Include="..\..\include\Excalibur\utensor.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Excalibur\axpy.cpp" />
     <ClCompile Include="..\..\src\Excalibur\concat.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp" />
@@ -198,6 +200,7 @@
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\src\Excalibur\axpy.cu" />
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
