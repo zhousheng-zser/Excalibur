@@ -80,3 +80,4 @@ include/Reconstruct/deconv_net.hpp
 src/Reconstruct/deconv_net.cpp
 include/Excalibur/support_layers.hpp
 src/Cassius/unicorn.cpp
+examples/IrisvianExample/IrisvianExample.cpp
