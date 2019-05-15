@@ -21,6 +21,9 @@ namespace glasssix
 #define mm_round_ps _mm_round_ps
 #define mm_load_si _mm_load_si128
 #define mm_cvtepi32_ps _mm_cvtepi32_ps
+#define mm_cvtps_epi32	_mm_cvtps_epi32
+#define mm_cvtepu8_epi32 _mm_cvtepu8_epi32
+#define mm_cvtepi8_epi32 _mm_cvtepi8_epi32
 #define mm_cvtepi16_epi32 _mm_cvtepi16_epi32
 #define mm_mullo_epi32 _mm_mullo_epi32
 #define mm_store_si _mm_store_si128
@@ -96,6 +99,9 @@ namespace glasssix
 #define mm_round_ps _mm256_round_ps
 #define mm_load_si _mm256_load_si256
 #define mm_cvtepi32_ps _mm256_cvtepi32_ps
+#define mm_cvtps_epi32	_mm256_cvtps_epi32
+#define mm_cvtepu8_epi32 _mm256_cvtepu8_epi32
+#define mm_cvtepi8_epi32 _mm256_cvtepi8_epi32
 #define mm_cvtepi16_epi32 _mm256_cvtepi16_epi32
 #define mm_mullo_epi32 _mm256_mullo_epi32
 #define mm_store_si _mm256_store_si256
