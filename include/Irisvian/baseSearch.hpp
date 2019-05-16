@@ -30,7 +30,8 @@ namespace glasssix
 				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) = 0;
 #else
 			virtual void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) = 0;
+				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities, 
+				const std::vector<const float*>* tempData = nullptr) = 0;
 #endif // !PROFILER
 			virtual void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) = 0;
 

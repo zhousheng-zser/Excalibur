@@ -15,7 +15,8 @@ namespace glasssix
 		Index::Index(const vector<const float*> *baseData, int dimension)
 			:baseData_(baseData), baseNum_((*baseData).size()), dimension_(dimension)
 		{			
-			normArray_ = (float*)malloc(baseNum_ * sizeof(float));
+			normArray_tensor_.reset(new glasssix::excalibur::tensor<float>(baseNum_));
+			normArray_ = normArray_tensor_->mutable_cpu_data();
 
 			//use 10 data to judge if normalized
 			float sum = 0;
@@ -32,7 +33,9 @@ namespace glasssix
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int i = 0; i < baseNum_; ++i)
 				{
 					normArray_[i] = 1;
@@ -131,7 +134,8 @@ namespace glasssix
 			{
 				baseData_ = baseData;
 				baseNum_ = ((*baseData).size());
-				normArray_ = (float*)malloc(baseNum_ * sizeof(float));
+				normArray_tensor_.reset(new glasssix::excalibur::tensor<float>(baseNum_));
+				normArray_ = normArray_tensor_->mutable_cpu_data();
 
 				//use 10 data to judge if normalized
 				float sum = 0;
@@ -148,7 +152,9 @@ namespace glasssix
 				if (abs(sum / calcNum - 1) <= 1e-5)
 				{
 					isNormalized = true;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int i = 0; i < baseNum_; ++i)
 					{
 						normArray_[i] = 1;
@@ -156,7 +162,9 @@ namespace glasssix
 				}
 				else
 				{
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int i = 0; i < baseNum_; ++i)
 					{
 #ifdef COSINE_DISTANCE
