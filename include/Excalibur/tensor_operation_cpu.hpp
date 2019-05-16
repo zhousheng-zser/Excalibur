@@ -1,8 +1,8 @@
 #ifndef _TENSOR_OPERATION_CPU_HPP_
 #define _TENSOR_OPERATION_CPU_HPP_
 
-#include <glasssix\tensor.hpp>
-#include <glasssix\timer.hpp>
+#include <glasssix/tensor.hpp>
+#include <glasssix/timer.hpp>
 #include "math_functions.hpp"
 #include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
@@ -417,95 +417,7 @@ namespace glasssix
 			}
 
 
-
-			static void load_imgs(std::shared_ptr<tensor<unsigned char>> &src_total_ptr, orderType order)
-			{
-				cv::Mat src_image1, src_image2;
-				src_image1 = cv::imread("D://1.jpg");
-				cv::imshow("sourceImage1", src_image1);
-				cv::waitKey(10);
-
-				src_image2 = cv::imread("D://2.jpg");
-				cv::imshow("sourceImage2", src_image2);
-				cv::waitKey(10);
-
-				int channels = src_image1.channels();
-				int height = src_image1.rows;
-				int width = src_image1.cols;
-				int offset = height * width;
-				int stride = width * channels;
-				int num_offset = channels * height * width;
-
-				std::shared_ptr<tensor<unsigned char>> src_ptr = std::make_shared<tensor<unsigned char>>();
-				std::shared_ptr<tensor<unsigned char>> src_ptr2 = std::make_shared<tensor<unsigned char>>();
-				int device = -1;
-
-				if (order == NCHW)
-				{
-					src_total_ptr = std::make_shared<tensor<unsigned char>>(std::vector<int>{2, channels, height, width}, device, order);
-				}
-				else if (order == NHWC)
-				{
-					src_total_ptr = std::make_shared<tensor<unsigned char>>(std::vector<int>{2, height, width, channels}, device, order);
-				}
-				else
-				{
-					NOT_IMPLEMENTED;
-				}
-
-				tensor_operation_cpu::mat2tensor_cpu(src_image1, src_ptr, order);
-				tensor_operation_cpu::mat2tensor_cpu(src_image2, src_ptr2, order);
-				memcpy(src_total_ptr->mutable_cpu_data(), src_ptr->cpu_data(), num_offset * sizeof(unsigned char));
-				memcpy(src_total_ptr->mutable_cpu_data() + num_offset, src_ptr2->cpu_data(), num_offset * sizeof(unsigned char));
-			}
-
-
-
-			static void load_imgs(tensor<unsigned char> &src_total_tensor, orderType order)
-			{
-				cv::Mat src_image1, src_image2;
-				src_image1 = cv::imread("D://1.jpg");
-				cv::imshow("sourceImage1", src_image1);
-				cv::waitKey(10);
-
-				src_image2 = cv::imread("D://2.jpg");
-				cv::imshow("sourceImage2", src_image2);
-				cv::waitKey(10);
-
-				int channels = src_image1.channels();
-				int height = src_image1.rows;
-				int width = src_image1.cols;
-				int offset = height * width;
-				int stride = width * channels;
-				int num_offset = channels * height * width;
-
-				tensor<unsigned char> src_tensor = tensor<unsigned char>::tensor();
-				tensor<unsigned char> src_tensor2 = tensor<unsigned char>::tensor();
-				int device = -1;
-
-				if (order == NCHW)
-				{
-					src_total_tensor = tensor<unsigned char>(std::vector<int>{2, channels, height, width}, device, order);
-				}
-				else if (order == NHWC)
-				{
-					src_total_tensor = tensor<unsigned char>(std::vector<int>{2, height, width, channels}, device, order);
-				}
-				else
-				{
-					NOT_IMPLEMENTED;
-				}
-
-				tensor_operation_cpu::mat2tensor_cpu(src_image1, src_tensor, order);
-				tensor_operation_cpu::mat2tensor_cpu(src_image2, src_tensor2, order);
-
-				memcpy(src_total_tensor.mutable_cpu_data(), src_tensor.cpu_data(), num_offset * sizeof(unsigned char));
-				memcpy(src_total_tensor.mutable_cpu_data() + num_offset, src_tensor2.cpu_data(), num_offset * sizeof(unsigned char));
-			}
-
-
 #endif
-
 
 
 			/// <summary>
@@ -527,125 +439,10 @@ namespace glasssix
 				DtypeDST* dst_data = dst->mutable_cpu_data();
 				int length = src->count();
 
-#if SIMD_TYPE >= SIMDTYPE_SSE
-				std::string src_type = typeid(DtypeSRC).name();
-				std::string dst_type = typeid(DtypeDST).name();
-				int circle_num = length / mm_align_size;
-				int index = 0;
-
-				if (src_type == "float" && dst_type == "int")
-				{
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_float32 = mm_load_ps(src_data + index * mm_align_size);
-						temp_int32 = mm_cvtps_epi32(temp_float32);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "int" && dst_type == "float")
-				{
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int32 = mm_load_si((mm_typei const *)(src_data + index * mm_align_size));
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "unsigned char" && dst_type == "int")
-				{
-					__m128i temp_uint8;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "unsigned char" && dst_type == "float")
-				{
-					__m128i temp_uint8;
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "signed char" && dst_type == "int")
-				{
-					__m128i temp_int8;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepi8_epi32(temp_int8);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "signed char" && dst_type == "float")
-				{
-					__m128i temp_int8;
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepi8_epi32(temp_int8);
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else
-				{
-					for (int i = 0; i < length; i++)
-					{
-						dst_data[i] = DtypeDST(src_data[i]);
-					}
-				}
-#else
 				for (int i = 0; i < length; i++)
 				{
 					dst_data[i] = DtypeDST(src_data[i]);
 				}
-#endif //!SIMD_TYPE >= SIMDTYPE_SSE
 			}
 
 
@@ -667,125 +464,493 @@ namespace glasssix
 				const DtypeSRC* src_data = src.cpu_data();
 				dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
 				DtypeDST* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = DtypeDST(src_data[i]);
+				}
+			}
+
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<int>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const float* src_data = src->cpu_data();
+				dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+				int* dst_data = dst->mutable_cpu_data();
 				int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-				std::string src_type = typeid(DtypeSRC).name();
-				std::string dst_type = typeid(DtypeDST).name();
+				mm_type temp_float32;
+				mm_typei temp_int32;
 				int circle_num = length / mm_align_size;
 				int index = 0;
 
-				if (src_type == "float" && dst_type == "int")
+				for (; index < circle_num; index++)
 				{
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_float32 = mm_load_ps(src_data + index * mm_align_size);
-						temp_int32 = mm_cvtps_epi32(temp_float32);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
+					temp_float32 = mm_load_ps(src_data + index * mm_align_size);
+					temp_int32 = mm_cvtps_epi32(temp_float32);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
 				}
-				else if (src_type == "int" && dst_type == "float")
-				{
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int32 = mm_load_si((mm_typei const *)(src_data + index * mm_align_size));
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
 
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "unsigned char" && dst_type == "int")
+				for (index *= mm_align_size; index < length; index++)
 				{
-					__m128i temp_uint8;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "unsigned char" && dst_type == "float")
-				{
-					__m128i temp_uint8;
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "signed char" && dst_type == "int")
-				{
-					__m128i temp_int8;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepi8_epi32(temp_int8);
-						mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else if (src_type == "signed char" && dst_type == "float")
-				{
-					__m128i temp_int8;
-					mm_type temp_float32;
-					mm_typei temp_int32;
-					for (; index < circle_num; index++)
-					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-						temp_int32 = mm_cvtepi8_epi32(temp_int8);
-						temp_float32 = mm_cvtepi32_ps(temp_int32);
-						mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
-					}
-
-					for (index *= mm_align_size; index < length; index++)
-					{
-						dst_data[index] = DtypeDST(src_data[index]);
-					}
-				}
-				else
-				{
-					for (int i = 0; i < length; i++)
-					{
-						dst_data[i] = DtypeDST(src_data[i]);
-					}
+					dst_data[index] = int(src_data[index]);
 				}
 #else
 				for (int i = 0; i < length; i++)
 				{
-					dst_data[i] = DtypeDST(src_data[i]);
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<float> &src, tensor<int> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const float* src_data = src.cpu_data();
+				dst = tensor<int>(src.data_shape(), src.device(), src.order());
+				int* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_float32 = mm_load_ps(src_data + index * mm_align_size);
+					temp_int32 = mm_cvtps_epi32(temp_float32);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = int(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const int* src_data = src->cpu_data();
+				dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				float* dst_data = dst->mutable_cpu_data();
+				int length = src->count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int32 = mm_load_si((mm_typei const *)(src_data + index * mm_align_size));
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<int> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const int* src_data = src.cpu_data();
+				dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				float* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int32 = mm_load_si((mm_typei const *)(src_data + index * mm_align_size));
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<int>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const unsigned char* src_data = src->cpu_data();
+				dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+				int* dst_data = dst->mutable_cpu_data();
+				int length = src->count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_uint8;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = int(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<unsigned char> &src, tensor<int> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const unsigned char* src_data = src.cpu_data();
+				dst = tensor<int>(src.data_shape(), src.device(), src.order());
+				int* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_uint8;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = int(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const unsigned char* src_data = src->cpu_data();
+				dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				float* dst_data = dst->mutable_cpu_data();
+				int length = src->count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_uint8;
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<unsigned char> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const unsigned char* src_data = src.cpu_data();
+				dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				float* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_uint8;
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<int>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const signed char* src_data = src->cpu_data();
+				dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+				int* dst_data = dst->mutable_cpu_data();
+				int length = src->count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_int8;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepi8_epi32(temp_int8);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = int(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<signed char> &src, tensor<int> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const signed char* src_data = src.cpu_data();
+				dst = tensor<int>(src.data_shape(), src.device(), src.order());
+				int* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_int8;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepi8_epi32(temp_int8);
+					mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = int(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = int(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+
+			template<>
+			static void type_converter_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const signed char* src_data = src->cpu_data();
+				dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				float* dst_data = dst->mutable_cpu_data();
+				int length = src->count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_int8;
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepi8_epi32(temp_int8);
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
+				}
+#endif //!SIMD_TYPE >= SIMDTYPE_SSE
+			}
+
+			template<>
+			static void type_converter_cpu(const tensor<signed char> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				const signed char* src_data = src.cpu_data();
+				dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				float* dst_data = dst.mutable_cpu_data();
+				int length = src.count();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				__m128i temp_int8;
+				mm_type temp_float32;
+				mm_typei temp_int32;
+				int circle_num = length / mm_align_size;
+				int index = 0;
+
+				for (; index < circle_num; index++)
+				{
+					temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+					temp_int32 = mm_cvtepi8_epi32(temp_int8);
+					temp_float32 = mm_cvtepi32_ps(temp_int32);
+					mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
+				}
+
+				for (index *= mm_align_size; index < length; index++)
+				{
+					dst_data[index] = float(src_data[index]);
+				}
+#else
+				for (int i = 0; i < length; i++)
+				{
+					dst_data[i] = float(src_data[i]);
 				}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 			}
@@ -8193,12 +8358,9 @@ namespace glasssix
 				{
 					dst.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
 				}
-				
+
 				DtypeDST* dst_data = dst->mutable_cpu_data();
 				const DtypeSRC* src_data = src->cpu_data();
-
-				std::string src_type = typeid(DtypeSRC).name();
-				std::string dst_type = typeid(DtypeDST).name();
 
 				if (channel == 3)
 				{
@@ -8207,147 +8369,6 @@ namespace glasssix
 
 					if (dst->order() == NCHW)
 					{
-						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
-						mm_type var_float32 = mm_set1_ps(var);
-						int circle_num = offset / mm_align_size;
-						int index = 0;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-						if (src_type == "float" && dst_type == "float")
-						{
-							mm_type temp_float32;
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_float32 = mm_load_ps((const float*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "int" && dst_type == "float")
-						{
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "unsigned char" && dst_type == "float")
-						{
-							__m128i temp_uint8;
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "signed char" && dst_type == "float")
-						{
-							__m128i temp_int8;
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_int32 = mm_cvtepi8_epi32(temp_int8);
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else
-						{
-							for (int n = 0; n < num; n++)
-							{
-								int offset = n * height * width;
-								for (int h = 0; h < height; h++)
-								{
-									int subsub_offset = h * width;
-									for (int w = 0; w < width; w++)
-									{
-										dst_data[offset + subsub_offset + w] =
-											DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
-									}
-								}
-							}
-						}
-
-#else
 						for (int n = 0; n < num; n++)
 						{
 							int offset = n * channel * height * width;
@@ -8365,8 +8386,6 @@ namespace glasssix
 								}
 							}
 						}
-#endif //!SIMD_TYPE >= SIMDTYPE_AVX
-
 					}
 					else if (dst->order() == NHWC)
 					{
@@ -8398,127 +8417,6 @@ namespace glasssix
 					float means[] = { 127.5f };
 					float var = 0.0078125f;
 
-#if SIMD_TYPE >= SIMDTYPE_SSE
-					mm_type mean_float32 = mm_set1_ps(means[0]);
-					mm_type var_float32 = mm_set1_ps(var);
-					int circle_num = offset / mm_align_size;
-					int index = 0;
-
-					if (src_type == "float" && dst_type == "float")
-					{
-						mm_type temp_float32;
-
-						for (int n = 0; n < num; n++)
-						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
-							{
-								temp_float32 = mm_load_ps((const float*)(src_data + n_offset + index * mm_align_size));
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
-							}
-						}
-					}
-					else if (src_type == "int" && dst_type == "float")
-					{
-						mm_type temp_float32;
-						mm_typei temp_int32;
-
-						for (int n = 0; n < num; n++)
-						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
-							{
-								temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + index * mm_align_size));
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
-							}
-						}
-					}
-					else if (src_type == "unsigned char" && dst_type == "float")
-					{
-						__m128i temp_uint8;
-						mm_type temp_float32;
-						mm_typei temp_int32;
-
-						for (int n = 0; n < num; n++)
-						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
-							{
-								temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-								temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
-							}
-						}
-					}
-					else if (src_type == "signed char" && dst_type == "float")
-					{
-						__m128i temp_int8;
-						mm_type temp_float32;
-						mm_typei temp_int32;
-
-						for (int n = 0; n < num; n++)
-						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
-							{
-								temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-								temp_int32 = mm_cvtepi8_epi32(temp_int8);
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
-							}
-						}
-					}
-					else
-					{
-						for (int n = 0; n < num; n++)
-						{
-							int offset = n * height * width;
-							for (int h = 0; h < height; h++)
-							{
-								int subsub_offset = h * width;
-								for (int w = 0; w < width; w++)
-								{
-									dst_data[offset + subsub_offset + w] =
-										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
-								}
-							}
-						}
-					}
-#else
 					for (int n = 0; n < num; n++)
 					{
 						int offset = n * height * width;
@@ -8532,7 +8430,6 @@ namespace glasssix
 							}
 						}
 					}
-#endif//!SIMD_TYPE >= SIMDTYPE_SSE
 				}
 			}
 
@@ -8552,10 +8449,10 @@ namespace glasssix
 					return;
 				}
 
-				int num = src->num();
-				int channel = src->channels();
-				int height = src->height();
-				int width = src->width();
+				int num = src.num();
+				int channel = src.channels();
+				int height = src.height();
+				int width = src.width();
 				int offset = height * width;
 				int num_offset = channel * height * width;
 
@@ -8568,13 +8465,10 @@ namespace glasssix
 				if (dst.count() != src.count())
 				{
 					dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-				}		
+				}
 
 				DtypeDST* dst_data = dst.mutable_cpu_data();
 				const DtypeSRC* src_data = src.cpu_data();
-
-				std::string src_type = typeid(DtypeSRC).name();
-				std::string dst_type = typeid(DtypeDST).name();
 
 				if (channel == 3)
 				{
@@ -8583,147 +8477,6 @@ namespace glasssix
 
 					if (dst.order() == NCHW)
 					{
-						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
-						mm_type var_float32 = mm_set1_ps(var);
-						int circle_num = offset / mm_align_size;
-						int index = 0;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-						if (src_type == "float" && dst_type == "float")
-						{
-							mm_type temp_float32;
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_float32 = mm_load_ps((const float*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "int" && dst_type == "float")
-						{
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "unsigned char" && dst_type == "float")
-						{
-							__m128i temp_uint8;
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else if (src_type == "signed char" && dst_type == "float")
-						{
-							__m128i temp_int8;
-							mm_type temp_float32;
-							mm_typei temp_int32;
-
-							for (int n = 0; n < num; n++)
-							{
-								int n_offset = n * num_offset;
-								for (int ch = 0; ch < 3; ch++)
-								{
-									int ch_offset = ch * offset;
-									index = 0;
-
-									for (; index < circle_num; index++)
-									{
-										temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
-										temp_int32 = mm_cvtepi8_epi32(temp_int8);
-										temp_float32 = mm_cvtepi32_ps(temp_int32);
-										temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
-										temp_float32 = mm_mul_ps(temp_float32, var_float32);
-										mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
-									}
-
-									for (index *= mm_align_size; index < offset; index++)
-									{
-										dst_data[n_offset + ch_offset + index] = DtypeDST((src_data[n_offset + ch_offset + index] - means[ch]) * var);
-									}
-								}
-							}
-						}
-						else
-						{
-							for (int n = 0; n < num; n++)
-							{
-								int offset = n * height * width;
-								for (int h = 0; h < height; h++)
-								{
-									int subsub_offset = h * width;
-									for (int w = 0; w < width; w++)
-									{
-										dst_data[offset + subsub_offset + w] =
-											DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
-									}
-								}
-							}
-						}
-
-#else
 						for (int n = 0; n < num; n++)
 						{
 							int offset = n * channel * height * width;
@@ -8741,8 +8494,6 @@ namespace glasssix
 								}
 							}
 						}
-#endif //!SIMD_TYPE >= SIMDTYPE_AVX
-
 					}
 					else if (dst.order() == NHWC)
 					{
@@ -8774,124 +8525,163 @@ namespace glasssix
 					float means[] = { 127.5f };
 					float var = 0.0078125f;
 
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+				}
+			}
+
+
+			
+			template<>
+			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				int channel = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst == nullptr || (dst->count() != src->count()))
+				{
+					dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				}
+
+				float* dst_data = dst->mutable_cpu_data();
+				const float* src_data = src->cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst->order() == NCHW)
+					{
 #if SIMD_TYPE >= SIMDTYPE_SSE
-					mm_type mean_float32 = mm_set1_ps(means[0]);
-					mm_type var_float32 = mm_set1_ps(var);
-					int circle_num = offset / mm_align_size;
-					int index = 0;
-
-					if (src_type == "float" && dst_type == "float")
-					{
 						mm_type temp_float32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
 
 						for (int n = 0; n < num; n++)
 						{
 							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
+							for (int ch = 0; ch < 3; ch++)
 							{
-								temp_float32 = mm_load_ps((const float*)(src_data + n_offset + index * mm_align_size));
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
+								int ch_offset = ch * offset;
+								index = 0;
 
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
+								for (; index < circle_num; index++)
+								{
+									temp_float32 = mm_load_ps((const float*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = (src_data[n_offset + ch_offset + index] - means[ch]) * var;
+								}
 							}
 						}
-					}
-					else if (src_type == "int" && dst_type == "float")
-					{
-						mm_type temp_float32;
-						mm_typei temp_int32;
-
+#else
 						for (int n = 0; n < num; n++)
 						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
 							{
-								temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + index * mm_align_size));
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											(src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var;
+									}
+								}
 							}
 						}
-					}
-					else if (src_type == "unsigned char" && dst_type == "float")
-					{
-						__m128i temp_uint8;
-						mm_type temp_float32;
-						mm_typei temp_int32;
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
 
+					}
+					else if (dst->order() == NHWC)
+					{
 						for (int n = 0; n < num; n++)
 						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
 							{
-								temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-								temp_int32 = mm_cvtepu8_epi32(temp_uint8);
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
-							}
-						}
-					}
-					else if (src_type == "signed char" && dst_type == "float")
-					{
-						__m128i temp_int8;
-						mm_type temp_float32;
-						mm_typei temp_int32;
-
-						for (int n = 0; n < num; n++)
-						{
-							int n_offset = n * num_offset;
-							index = 0;
-							for (; index < circle_num; index++)
-							{
-								temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
-								temp_int32 = mm_cvtepi8_epi32(temp_int8);
-								temp_float32 = mm_cvtepi32_ps(temp_int32);
-								temp_float32 = mm_sub_ps(temp_float32, mean_float32);
-								temp_float32 = mm_mul_ps(temp_float32, var_float32);
-								mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
-							}
-
-							for (index *= mm_align_size; index < offset; index++)
-							{
-								dst_data[n_offset + index] = DtypeDST((src_data[n_offset + index] - means[0]) * var);
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											(src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var;
+									}
+								}
 							}
 						}
 					}
 					else
 					{
-						for (int n = 0; n < num; n++)
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type temp_float32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
 						{
-							int offset = n * height * width;
-							for (int h = 0; h < height; h++)
-							{
-								int subsub_offset = h * width;
-								for (int w = 0; w < width; w++)
-								{
-									dst_data[offset + subsub_offset + w] =
-										DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
-								}
-							}
+							temp_float32 = mm_load_ps((const float*)(src_data + n_offset + index * mm_align_size));
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = (src_data[n_offset + index] - means[0]) * var;
 						}
 					}
 #else
@@ -8904,7 +8694,1165 @@ namespace glasssix
 							for (int w = 0; w < width; w++)
 							{
 								dst_data[offset + subsub_offset + w] =
-									DtypeDST((src_data[offset + subsub_offset + w] - means[0]) * var);
+									(src_data[offset + subsub_offset + w] - means[0]) * var;
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+			template<>
+			static void preprocess_tensors_cpu(const tensor<float> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src.num();
+				int channel = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst.count() != src.count())
+				{
+					dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				}
+
+				float* dst_data = dst.mutable_cpu_data();
+				const float* src_data = src.cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst.order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type temp_float32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_float32 = mm_load_ps((const float*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = (src_data[n_offset + ch_offset + index] - means[ch]) * var;
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											(src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var;
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst.order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											(src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var;
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type temp_float32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_float32 = mm_load_ps((const float*)(src_data + n_offset + index * mm_align_size));
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = (src_data[n_offset + index] - means[0]) * var;
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									(src_data[offset + subsub_offset + w] - means[0]) * var;
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+
+			template<>
+			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				int channel = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst == nullptr || (dst->count() != src->count()))
+				{
+					dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				}
+
+				float* dst_data = dst->mutable_cpu_data();
+				const int* src_data = src->cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst->order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst->order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + index * mm_align_size));
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+			template<>
+			static void preprocess_tensors_cpu(const tensor<int> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src.num();
+				int channel = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst.count() != src.count())
+				{
+					dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				}
+
+				float* dst_data = dst.mutable_cpu_data();
+				const int* src_data = src.cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst.order() == NCHW)
+					{
+
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst.order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_int32 = mm_load_si((mm_typei const *)(src_data + n_offset + index * mm_align_size));
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+
+			template<>
+			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				int channel = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst == nullptr || (dst->count() != src->count()))
+				{
+					dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				}
+
+				float* dst_data = dst->mutable_cpu_data();
+				const unsigned char* src_data = src->cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst->order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128i temp_uint8;
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst->order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128i temp_uint8;
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+							temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+			template<>
+			static void preprocess_tensors_cpu(const tensor<unsigned char> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src.num();
+				int channel = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst.count() != src.count())
+				{
+					dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				}
+
+				float* dst_data = dst.mutable_cpu_data();
+				const unsigned char* src_data = src.cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst.order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128i temp_uint8;
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst.order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128i temp_uint8;
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+							temp_int32 = mm_cvtepu8_epi32(temp_uint8);
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+
+			template<>
+			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				int channel = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst == nullptr || (dst->count() != src->count()))
+				{
+					dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+				}
+
+				float* dst_data = dst->mutable_cpu_data();
+				const signed char* src_data = src->cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst->order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128i temp_int8;
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_int32 = mm_cvtepi8_epi32(temp_int8);
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst->order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128i temp_int8;
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+							temp_int32 = mm_cvtepi8_epi32(temp_int8);
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
+							}
+						}
+					}
+#endif//!SIMD_TYPE >= SIMDTYPE_SSE
+				}
+			}
+
+			template<>
+			static void preprocess_tensors_cpu(const tensor<signed char> &src, tensor<float> &dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src.num();
+				int channel = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channel * height * width;
+
+				if (!(channel == 1 || channel == 3))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				if (dst.count() != src.count())
+				{
+					dst = tensor<float>(src.data_shape(), src.device(), src.order());
+				}
+
+				float* dst_data = dst.mutable_cpu_data();
+				const signed char* src_data = src.cpu_data();
+
+				if (channel == 3)
+				{
+					float means[] = { 104.f, 117.0f, 124.f };
+					float var = 0.0078125f;
+
+					if (dst.order() == NCHW)
+					{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128i temp_int8;
+						mm_type temp_float32;
+						mm_typei temp_int32;
+						mm_type mean_float32[] = { mm_set1_ps(means[0]), mm_set1_ps(means[1]), mm_set1_ps(means[2]) };
+						mm_type var_float32 = mm_set1_ps(var);
+						int circle_num = offset / mm_align_size;
+						int index = 0;
+
+						for (int n = 0; n < num; n++)
+						{
+							int n_offset = n * num_offset;
+							for (int ch = 0; ch < 3; ch++)
+							{
+								int ch_offset = ch * offset;
+								index = 0;
+
+								for (; index < circle_num; index++)
+								{
+									temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+									temp_int32 = mm_cvtepi8_epi32(temp_int8);
+									temp_float32 = mm_cvtepi32_ps(temp_int32);
+									temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
+									temp_float32 = mm_mul_ps(temp_float32, var_float32);
+									mm_store_ps((float*)(dst_data + n_offset + ch_offset + index * mm_align_size), temp_float32);
+								}
+
+								for (index *= mm_align_size; index < offset; index++)
+								{
+									dst_data[n_offset + ch_offset + index] = float((src_data[n_offset + ch_offset + index] - means[ch]) * var);
+								}
+							}
+						}
+#else
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * channel * height * width;
+							for (int c = 0; c < 3; c++)
+							{
+								int sub_offset = c * height * width;
+								for (int h = 0; h < height; h++)
+								{
+									int subsub_offset = h * width;
+									for (int w = 0; w < width; w++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + w] =
+											float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+									}
+								}
+							}
+						}
+#endif //!SIMD_TYPE >= SIMDTYPE_AVX
+
+					}
+					else if (dst.order() == NHWC)
+					{
+						for (int n = 0; n < num; n++)
+						{
+							int offset = n * 3 * height * width;
+							for (int h = 0; h < height; h++)
+							{
+								int sub_offset = h * width * 3;
+								for (int w = 0; w < width; w++)
+								{
+									int subsub_offset = w * 3;
+									for (int c = 0; c < 3; c++)
+									{
+										dst_data[offset + sub_offset + subsub_offset + c] =
+											float((src_data[offset + sub_offset + subsub_offset + c] - means[c]) * var);
+									}
+								}
+							}
+						}
+					}
+					else
+					{
+						NOT_IMPLEMENTED;
+					}
+				}
+				else if (channel == 1)
+				{
+					float means[] = { 127.5f };
+					float var = 0.0078125f;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128i temp_int8;
+					mm_type temp_float32;
+					mm_typei temp_int32;
+					mm_type mean_float32 = mm_set1_ps(means[0]);
+					mm_type var_float32 = mm_set1_ps(var);
+					int circle_num = offset / mm_align_size;
+					int index = 0;
+
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+						index = 0;
+						for (; index < circle_num; index++)
+						{
+							temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+							temp_int32 = mm_cvtepi8_epi32(temp_int8);
+							temp_float32 = mm_cvtepi32_ps(temp_int32);
+							temp_float32 = mm_sub_ps(temp_float32, mean_float32);
+							temp_float32 = mm_mul_ps(temp_float32, var_float32);
+							mm_store_ps((float*)(dst_data + n_offset + index * mm_align_size), temp_float32);
+						}
+
+						for (index *= mm_align_size; index < offset; index++)
+						{
+							dst_data[n_offset + index] = float((src_data[n_offset + index] - means[0]) * var);
+						}
+					}
+#else
+					for (int n = 0; n < num; n++)
+					{
+						int offset = n * height * width;
+						for (int h = 0; h < height; h++)
+						{
+							int subsub_offset = h * width;
+							for (int w = 0; w < width; w++)
+							{
+								dst_data[offset + subsub_offset + w] =
+									float((src_data[offset + subsub_offset + w] - means[0]) * var);
 							}
 						}
 					}

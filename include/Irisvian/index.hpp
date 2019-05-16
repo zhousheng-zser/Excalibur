@@ -6,6 +6,7 @@
 #include "kGraph.hpp"
 #include "distance.hpp"
 #include "baseIndex.hpp"
+#include <glasssix/tensor.hpp>
 
 namespace glasssix 
 {
@@ -44,6 +45,7 @@ namespace glasssix
 				unsigned dimension_;
 				KGraph kgraph_;
 				NGraph ngraph_;
+				std::shared_ptr<glasssix::excalibur::tensor<float>> normArray_tensor_;
 				float *normArray_;
 			};
 	}
