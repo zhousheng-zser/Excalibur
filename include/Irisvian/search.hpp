@@ -34,8 +34,7 @@ namespace glasssix
 
 #ifndef PROFILER
 				void searchVector(const std::vector<const float*>* queryData, unsigned topK, 
-					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities, 
-					const std::vector<const float*>* tempData = nullptr) override;
+					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
 #else
 				void searchVector(const std::vector<const float*>* queryData, unsigned topK, 
 					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) override;

@@ -198,6 +198,7 @@
     <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp" />
     <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu" />
