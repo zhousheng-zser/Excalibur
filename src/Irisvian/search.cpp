@@ -140,47 +140,9 @@ namespace glasssix
 			CompactGraph().swap(ngraph);
 		}
 
-
-		void get_closest(const float* queryData, unsigned &closest_ID,
-			float &closest_Similarity, const vector<const float*>* tempData, int dimension)
-		{
-			if (tempData == nullptr)
-			{
-				return;
-			}
-
-			int tempSize = tempData->size();
-			closest_ID = 0;
-			closest_Similarity = FLT_MIN;
-
-			for (int i = 0; i < tempSize; i++)
-			{
-#ifdef COSINE_DISTANCE
-				float normBase = DistanceCosine::norm((*tempData).at(i), dimension);
-				float normQuery = DistanceCosine::norm(queryData, dimension);
-				float dist = DistanceCosine::compare((*tempData).at(i), normBase, queryData, normQuery, dimension);
-				float similarity = 1.0f - dist;
-				if (similarity > closest_Similarity)
-				{
-					closest_ID = i;
-					closest_Similarity = similarity;
-				}
-#else
-				float normQuery = DistanceFastL2::norm(queryData, dimension);
-				float dist = DistanceL2::compare((*tempData).at(i), queryData, dimension);
-				float similarity = 1.0f - 1.0f * dist / normQuery;
-				if (similarity > closest_Similarity)
-				{
-					closest_ID = i;
-					closest_Similarity = similarity;
-				}
-#endif // COSINE_DISTANCE
-			}
-		}
-
 #ifndef PROFILER
 		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, 
-			std::vector<std::vector<float>> &returnSimilarities, const vector<const float*>* tempData)
+			std::vector<std::vector<float>> &returnSimilarities)
 		{
 			queryData_ = queryData;
 			queryNum_ = (*queryData).size();
@@ -195,41 +157,7 @@ namespace glasssix
 #endif
 				for (int i = 0; i < queryNum_; ++i) 
 				{
-					// search from baseData
 					searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnSimilarities[i]);
-
-					//search from tempData, only closest one returned
-					if (tempData != nullptr)
-					{
-						unsigned closest_ID;
-						float closest_Similarity;
-						get_closest((*queryData_).at(i), closest_ID, closest_Similarity, tempData, dimension_);
-
-						int pos = topK - 1;
-						while (pos >= 0)
-						{
-							if (returnSimilarities[i][pos] >= closest_Similarity)
-							{
-								break;
-							}
-
-							--pos;
-						}
-
-						++pos;
-
-						if (pos < topK)
-						{
-							for (int j = topK - 1; j > pos; j--)
-							{
-								returnIDs[i][j] = returnIDs[i][j - 1];
-								returnSimilarities[i][j] = returnSimilarities[i][j - 1];
-							}
-
-							returnIDs[i][pos] = baseNum_ + closest_ID;
-							returnSimilarities[i][pos] = closest_Similarity;
-						}
-					}
 				}
 			}
 			else
@@ -252,20 +180,6 @@ namespace glasssix
 					float dist = DistanceL2::compare((*baseData_).at(0), (*queryData_).at(i), dimension_);
 					returnSimilarities[i][0] = 1.0f - 1.0f * dist / normQuery;
 #endif // COSINE_DISTANCE
-
-					if (tempData != nullptr)
-					{
-						unsigned closest_ID;
-						float closest_Similarity;
-						get_closest((*queryData_).at(i), closest_ID, closest_Similarity, tempData, dimension_);
-
-						//replace result
-						if (closest_Similarity > returnSimilarities[i][0])
-						{
-							returnIDs[i][0] = baseNum_ + closest_ID;
-							returnSimilarities[i][0] = closest_Similarity;							
-						}
-					}
 				}
 			}
 		}
