@@ -1,5 +1,8 @@
 #ifdef USE_CUDA
 #include "pooling.hpp"
+#include <cuda_runtime.h>
+#include "device_launch_parameters.h"
+#include "device_functions.h"
 #include <algorithm>
 #include <cfloat>
 #include <vector>
@@ -142,6 +145,31 @@ namespace glasssix
 			}
 		}
 
+		__global__ void GlobalAvePoolForward(const int spatial_dim,
+			const float* bottom_data, float* top_data) {
+			__shared__ float buffer[CUDA_NUM_THREADS];
+			unsigned int tid = threadIdx.x;
+			buffer[tid] = 0;
+			__syncthreads();
+
+			for (int j = tid; j < spatial_dim; j += blockDim.x) {
+				buffer[tid] += bottom_data[blockIdx.x * spatial_dim + j];
+			}
+			__syncthreads();
+
+			for (int i = blockDim.x / 2; i > 0; i >>= 1) {
+				if (tid < i) {
+					buffer[threadIdx.x] += buffer[threadIdx.x + i];
+				}
+				__syncthreads();
+			}
+
+			if (tid == 0) {
+				top_data[blockIdx.x] = buffer[0] / spatial_dim;
+			}
+		}
+
+
 		void pooling::Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			int num = bottom->num();
@@ -153,14 +181,17 @@ namespace glasssix
 				height_ + 2 * pad_ - kernel_) / stride_)) + 1;
 			pooled_width_ = static_cast<int>(ceil(static_cast<float>(
 				width_ + 2 * pad_ - kernel_) / stride_)) + 1;
+			int spatial_dim;
 
 			if (order_ == NCHW)
 			{
 				top.reset(new tensor<float>(std::vector<int>{num, channels_, pooled_height_, pooled_width_}, device_, order_));
+				spatial_dim = bottom->count(2, 4);
 			}
 			else if(order_ == NHWC)
 			{
 				top.reset(new tensor<float>(std::vector<int>{num, pooled_height_, pooled_width_, channels_}, device_, order_));
+				spatial_dim = bottom->count(1, 3);
 			}
 			else
 			{
@@ -180,10 +211,19 @@ namespace glasssix
 					kernel_, stride_, stride_, pad_, pad_, top_data, order_);
 				break;
 			case AVE:
-				AvePoolForward << <CUDA_GET_BLOCKS(top_count), CUDA_NUM_THREADS >> >(
-					top_count, bottom_data, bottom->num(), channels_,
-					height_, width_, pooled_height_, pooled_width_, kernel_,
-					kernel_, stride_, stride_, pad_, pad_, top_data, order_);
+				if (pooled_height_ == 1 && pooled_width_ == 1)
+				{
+					GlobalAvePoolForward << <num * channels_, CUDA_NUM_THREADS >> > (
+						spatial_dim, bottom_data, top_data);
+				}
+				else
+				{
+					AvePoolForward << <CUDA_GET_BLOCKS(top_count), CUDA_NUM_THREADS >> > (
+						top_count, bottom_data, bottom->num(), channels_,
+						height_, width_, pooled_height_, pooled_width_, kernel_,
+						kernel_, stride_, stride_, pad_, pad_, top_data, order_);
+				}
+
 				break;
 			default:
 				LOG(FATAL) << "Unknown pooling method.";

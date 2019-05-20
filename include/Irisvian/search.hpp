@@ -8,6 +8,7 @@
 #include "kGraph.hpp"
 #include "distance.hpp"
 #include "baseSearch.hpp"
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -32,9 +33,11 @@ namespace glasssix
 				void optimizeGraph() override;
 
 #ifndef PROFILER
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
+				void searchVector(const std::vector<const float*>* queryData, unsigned topK, 
+					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
 #else
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) override;
+				void searchVector(const std::vector<const float*>* queryData, unsigned topK, 
+					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) override;
 #endif // !PROFILER
 
 				
@@ -58,7 +61,9 @@ namespace glasssix
 				unsigned queryNum_;
 				unsigned dimension_;
 
+				std::shared_ptr<glasssix::excalibur::tensor<char>> optGraph_tensor_;
 				char* optGraph_;
+
 				size_t nodeSize;
 				size_t dataLen;
 				size_t neighborLen;

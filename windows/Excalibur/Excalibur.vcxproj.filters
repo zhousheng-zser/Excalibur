@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\include\Excalibur\prune.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\axpy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -170,6 +173,12 @@
     <ClCompile Include="..\..\src\Excalibur\deconv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\axpy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
@@ -224,6 +233,9 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

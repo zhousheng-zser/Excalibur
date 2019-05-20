@@ -6,6 +6,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace glasssix::excalibur;
 
 namespace glasssix
 {
@@ -64,8 +65,9 @@ namespace glasssix
 			//load basedata
 			baseDataPtr.clear();
 			std::ifstream inBaseData(basedataPath, std::ios::binary);
+			std::shared_ptr<tensor<float>> temp_tensor = std::make_shared<tensor<float>>(dimension_);
+			float *temp_data = temp_tensor->mutable_cpu_data();
 			while (!inBaseData.eof()) {
-				float *temp_data = (float*)malloc(dimension_ * sizeof(float));
 				inBaseData.read((char*)(temp_data), dimension_ * sizeof(float));
 				baseDataPtr.push_back(const_cast<const float*>(temp_data));
 			}
@@ -107,7 +109,8 @@ namespace glasssix
 			dataLen = (dimension_ + 1) * sizeof(float);
 			neighborLen = (width + 1) * sizeof(unsigned);
 			nodeSize = dataLen + neighborLen;
-			optGraph_ = (char*)malloc(nodeSize * baseNum_);
+			optGraph_tensor_.reset(new tensor<char>(nodeSize * baseNum_));
+			optGraph_ = optGraph_tensor_->mutable_cpu_data();
 			for (unsigned i = 0; i<baseNum_; i++) {
 				char* curNodeOffset = optGraph_ + i * nodeSize;
 
@@ -136,7 +139,6 @@ namespace glasssix
 			}
 			CompactGraph().swap(ngraph);
 		}
-
 
 #ifndef PROFILER
 		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, 
@@ -169,14 +171,11 @@ namespace glasssix
 					returnIDs[i][0] = 0;
 
 #ifdef COSINE_DISTANCE
-
 					float normBase = DistanceCosine::norm((*baseData_).at(0), dimension_);
 					float normQuery = DistanceCosine::norm((*queryData_).at(i), dimension_);
 					float dist = DistanceCosine::compare((*baseData_).at(0), normBase, (*queryData_).at(i), normQuery, dimension_);
 					returnSimilarities[i][0] = 1.0f - dist;
-
 #else
-
 					float normQuery = DistanceFastL2::norm((*queryData_).at(i), dimension_);
 					float dist = DistanceL2::compare((*baseData_).at(0), (*queryData_).at(i), dimension_);
 					returnSimilarities[i][0] = 1.0f - 1.0f * dist / normQuery;
@@ -212,6 +211,7 @@ namespace glasssix
 				cerr << "error, topK is bigger than " << neighborsMaxLength << ", or bigger than " << baseNum_;
 				return;
 			}
+
 			std::vector <Neighbor> returnNeighbors;
 			returnNeighbors.resize(neighborsMaxLength + 1);
 			returnIDs.resize(topK);
