@@ -22,7 +22,7 @@ namespace glasssix
 	namespace Irisvian
 	{
 		// both pool and knn should be sorted in ascending order
-		static float evaluateRecall(Neighbors const &approximateResults, Neighbors const &accurateResults)
+		static float evaluateRecall(std::vector<Neighbor> const &approximateResults, std::vector<Neighbor> const &accurateResults)
 		{
 			if (accurateResults.empty()) return 1.0;
 			unsigned found = 0;
@@ -60,7 +60,7 @@ namespace glasssix
 			return float(found) / accurateResults.size();
 		}
 
-		static float evaluateDelta(Neighbors const &pool, unsigned K)
+		static float evaluateDelta(std::vector<Neighbor> const &pool, unsigned K)
 		{
 			unsigned count = 0;
 			unsigned num = K;
@@ -71,8 +71,8 @@ namespace glasssix
 			return float(count) / K;
 		}
 
-		void KGraph::linearSearch(unsigned queryID, unsigned K, vector<Neighbor> *pnns) {
-			Neighbors neighbors(K + 1);
+		void KGraph::linearSearch(unsigned queryID, unsigned K, std::vector<Neighbor> *pnns) {
+			std::vector<Neighbor> neighbors(K + 1);
 			Neighbor nn;
 			nn.id = 0;
 			nn.flag = true; // we don't really use this
@@ -107,15 +107,16 @@ namespace glasssix
 				std::mt19937 random_device{ std::random_device{}() };
 				shuffle(index.begin(), index.end(), random_device);
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int i = 0; i < numControls; ++i) {
 					controls[i].id = index[i];
-					linearSearch(index[i], K, &controls[i].neighbors);
+					linearSearch(index[i], K, &controls[i].pool);
 				}
 			}
 			pcontrols->swap(controls);
 		}
-
 
 		// generate size distinct random numbers (< numItem) to fill in addr
 		template <typename RNG>
@@ -297,25 +298,37 @@ namespace glasssix
 				LOG(WARNING) << "Warning: small dataset, shrinking params.K to " << baseNum_ - 1 << ".";
 				params.K = baseNum_ - 1;
 			}
-			//throw runtime_error("K larger than dataset size");
 			if (baseNum_ <= params.poolSize)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking L to " << baseNum_ - 1 << ".";
+				LOG(WARNING) << "Warning: small dataset, shrinking poolSize to " << baseNum_ - 1 << ".";
 				params.poolSize = baseNum_ - 1;
+			}
+			if (baseNum_ <= params.reversePoolSize)
+			{
+				LOG(WARNING) << "Warning: small dataset, shrinking reversePoolSize to " << baseNum_ - 1 << ".";
+				params.reversePoolSize = baseNum_ - 1;
 			}
 
 			unsigned N = baseNum_;
 			nhoods.resize(baseNum_);
 			unsigned seed = 1998;
 			mt19937 rng(seed);
-			for (auto &nhood : nhoods)
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int n = 0; n < N; n++)
 			{
+				auto &nhood = nhoods[n];
 				nhood.reset(new Nhood());
 				(nhood->nnNew).resize(params.K * 2);
 				(nhood->pool).resize(params.poolSize + 1);
 				nhood->radius = numeric_limits<float>::max();
 			}
+
+#ifdef _OPENMP
 #pragma omp parallel
+#endif
 			{
 #ifdef _OPENMP
 				mt19937 rng(seed ^ omp_get_thread_num());
@@ -324,11 +337,13 @@ namespace glasssix
 #endif
 
 				vector<unsigned> random(params.K + 1);
+#ifdef _OPENMP
 #pragma omp for
+#endif
 				for (int n = 0; n < N; ++n)
 				{
 					auto &nhood = nhoods[n];
-					Neighbors &pool = nhood->pool;
+					std::vector<Neighbor> &pool = nhood->pool;
 					genRandom(rng, &nhood->nnNew[0], nhood->nnNew.size(), N);
 					genRandom(rng, &random[0], random.size(), N);
 					nhood->neighborsLength = params.K;
@@ -356,7 +371,9 @@ namespace glasssix
 
 		void KGraph::join()
 		{
+#ifdef _OPENMP
 #pragma omp parallel for default(shared) schedule(dynamic, 100)
+#endif
 			for (int n = 0; n < baseNum_; ++n)
 			{
 				size_t signal = 0;
@@ -385,32 +402,22 @@ namespace glasssix
 			std::random_device rd;
 			std::mt19937 rng(rd());
 			unsigned N = baseNum_;
-			for (auto &nhood : nhoods)
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int n = 0; n < N; ++n)
 			{
+				auto &nhood = nhoods[n];
 				nhood->nnNew.clear();
 				nhood->nnOld.clear();
 				nhood->rnnNew.clear();
 				nhood->rnnOld.clear();
-				nhood->radius = nhood->pool.back().distance;
-			}
-			//!!! compute radius2
-#pragma omp parallel for
-			for (int n = 0; n < N; ++n)
-			{
-				auto &nhood = nhoods[n];
+				nhood->radius = nhoods[n]->pool.back().distance;
+				
 				if (nhood->found)
 				{
-					//unsigned maxPos = std::min(nhood.M + params.K, nhood.neighborsLength);
-					unsigned maxPos = 0;
-					if (nhood->M + params.K < nhood->neighborsLength)
-					{
-						maxPos = nhood->M + params.K;
-					}
-					else
-					{
-						maxPos = nhood->neighborsLength;
-					}
-
+					unsigned maxPos = std::min(nhood->M + params.K, nhood->neighborsLength);
 					unsigned count = 0;
 					unsigned pos = 0;
 					while ((pos < maxPos) && (count < params.K))
@@ -424,7 +431,9 @@ namespace glasssix
 				BOOST_VERIFY(nhood->M > 0);
 				nhood->radiusM = nhood->pool[nhood->M - 1].distance;
 			}
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 			for (int n = 0; n < N; ++n)
 			{
 				auto &nhood = nhoods[n];
@@ -457,19 +466,24 @@ namespace glasssix
 					}
 				}
 			}
-			for (unsigned i = 0; i < N; ++i)
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int n = 0; n < N; ++n)
 			{
-				auto &nnNew = nhoods[i]->nnNew;
-				auto &nnOld = nhoods[i]->nnOld;
-				auto &rnnNew = nhoods[i]->rnnNew;
-				auto &rnnOld = nhoods[i]->rnnOld;
-				if (params.reversePoolSize && (rnnNew.size() > params.reversePoolSize))
+				auto &nhood = nhoods[n];
+				auto &nnNew = nhood->nnNew;
+				auto &nnOld = nhood->nnOld;
+				auto &rnnNew = nhood->rnnNew;
+				auto &rnnOld = nhood->rnnOld;
+				if (rnnNew.size() > params.reversePoolSize)
 				{
 					std::shuffle(rnnNew.begin(), rnnNew.end(), rng);
 					rnnNew.resize(params.reversePoolSize);
 				}
 				nnNew.insert(nnNew.end(), rnnNew.begin(), rnnNew.end());
-				if (params.reversePoolSize && (rnnOld.size() > params.reversePoolSize))
+				if (rnnOld.size() > params.reversePoolSize)
 				{
 					std::shuffle(rnnOld.begin(), rnnOld.end(), rng);
 					rnnOld.resize(params.reversePoolSize);
@@ -509,7 +523,7 @@ namespace glasssix
 #endif // _MSC_VER
 #endif // PROFILER
 
-			for (unsigned it = 0; (params.iterations <= 0) || (it < params.iterations); ++it)
+			for (unsigned it = 0; it < params.iterations; ++it)
 			{		
 				++info.iterations;
 
@@ -522,7 +536,7 @@ namespace glasssix
 					}
 					for (auto const &c : controls)
 					{
-						recall2 += evaluateRecall(nhoods[c.id]->pool, c.neighbors);
+						recall2 += evaluateRecall(nhoods[c.id]->pool, c.pool);
 					}
 					info.delta = delta2 / nhoods.size();
 					info.recall = recall2 / controls.size();
