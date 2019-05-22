@@ -118,7 +118,7 @@ namespace glasssix
 					CUDNN_CHECK(cudnnAddTensor(cudnn_handle_, &one, bdesc, bias_->gpu_data(),
 						&one, ydesc, top_data));
 				}
-				}
+			}
 			else if (order_ == NHWC)
 			{
 				CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));

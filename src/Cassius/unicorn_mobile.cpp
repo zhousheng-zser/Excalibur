@@ -594,6 +594,51 @@ namespace glasssix
 			delete relu5_ex;
 			delete conv5_dw;
 			delete fc5;
+
+			FreeHost(relu1_weights, false);
+			FreeHost(relu1_dw_weights, false);
+			FreeHost(relu2_ex_weights, false);
+			FreeHost(relu2_dw_weights, false);
+			FreeHost(relu2_1_ex_weights, false);
+			FreeHost(relu2_1_dw_weights, false);
+			FreeHost(relu2_2_ex_weights, false);
+			FreeHost(relu2_2_dw_weights, false);
+			FreeHost(relu2_3_ex_weights, false);
+			FreeHost(relu2_3_dw_weights, false);
+			FreeHost(relu2_4_ex_weights, false);
+			FreeHost(relu2_4_dw_weights, false);
+			FreeHost(relu3_ex_weights, false);
+			FreeHost(relu3_dw_weights, false);
+			FreeHost(relu3_1_ex_weights, false);
+			FreeHost(relu3_1_dw_weights, false);
+			FreeHost(relu3_2_ex_weights, false);
+			FreeHost(relu3_2_dw_weights, false);
+			FreeHost(relu3_3_ex_weights, false);
+			FreeHost(relu3_3_dw_weights, false);
+			FreeHost(relu3_4_ex_weights, false);
+			FreeHost(relu3_4_dw_weights, false);
+			FreeHost(relu3_5_ex_weights, false);
+			FreeHost(relu3_6_dw_weights, false);
+			FreeHost(relu4_ex_weights, false);
+			FreeHost(relu4_dw_weights, false);
+			FreeHost(relu4_1_ex_weights, false);
+			FreeHost(relu4_1_dw_weights, false);
+			FreeHost(relu4_2_ex_weights, false);
+			FreeHost(relu4_2_dw_weights, false);
+			FreeHost(relu5_ex_weights, false);
+
+#ifdef USE_CUDA
+			if (cublas_handle_)
+			{
+				CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+			}
+#ifdef USE_CUDNN
+			if (cudnn_handle_)
+			{
+				CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+			}
+#endif
+#endif
 		}
 
 		void Unicorn_mobile::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)

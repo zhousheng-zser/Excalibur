@@ -28,7 +28,7 @@ namespace glasssix
 			void BBoxRegression(std::vector<FaceInfomation>& bboxes);
 			void BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height);
 			void BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height);
-			void GenerateBBox(std::shared_ptr<tensor<float>> confidence, std::shared_ptr<tensor<float>> reg_box, float scale, float thresh);
+			void GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box, float scale, float thresh);
 			std::vector<FaceInfomation> NMS(std::vector<FaceInfomation>& bboxes, float thresh, char methodType);
 			float IoU(float xmin, float ymin, float xmax, float ymax, float xmin_, float ymin_, float xmax_, float ymax_, bool is_iom = false);
 
