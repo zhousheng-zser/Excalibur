@@ -110,7 +110,29 @@ namespace glasssix
 				weight_offset_ = kernelSize_*kernelSize_;
 			}
 
-			virtual ~baseconv() {};
+			virtual ~baseconv() 
+			{
+#ifdef USE_CUDA
+#ifdef USE_CUDNN
+				if (device_ >= 0)
+				{
+					CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+					CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
+					CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
+					CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+					if (bias_term_)
+					{
+						CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+					}
+					if (extra != nullptr)
+					{
+						cudaFree(extra);
+					}
+				}
+#endif
+#endif // USE_CUDA
+
+			};
 
 			void set_bias(float* bias)
 			{

@@ -116,6 +116,13 @@ namespace glasssix
 			delete conv6_2;
 			delete conv6_3;
 			delete prob1;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu2_weights, false);
+			FreeHost(prelu3_weights, false);
+			FreeHost(prelu4_weights, false);
+			FreeHost(prelu5_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{
