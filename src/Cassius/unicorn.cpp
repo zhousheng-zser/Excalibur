@@ -438,6 +438,35 @@ namespace glasssix
 			delete pool5;
 			delete normalizer;
 
+			FreeHost(relu1a_weights, false);
+			FreeHost(relu1b_weights, false);
+			FreeHost(relu2_1_weights, false);
+			FreeHost(relu2_2_weights, false);
+			FreeHost(relu2_weights, false);
+			FreeHost(relu3_1_weights, false);
+			FreeHost(relu3_2_weights, false);
+			FreeHost(relu3_3_weights, false);
+			FreeHost(relu3_4_weights, false);
+			FreeHost(relu3_weights, false);
+			FreeHost(relu4_1_weights, false);
+			FreeHost(relu4_2_weights, false);
+			FreeHost(relu4_3_weights, false);
+			FreeHost(relu4_4_weights, false);
+			FreeHost(relu4_5_weights, false);
+			FreeHost(relu4_6_weights, false);
+			FreeHost(relu4_7_weights, false);
+			FreeHost(relu4_8_weights, false);
+			FreeHost(relu4_9_weights, false);
+			FreeHost(relu4_10_weights, false);
+			FreeHost(relu4_weights, false);
+			FreeHost(relu5_1_weights, false);
+			FreeHost(relu5_2_weights, false);
+			FreeHost(relu5_3_weights, false);
+			FreeHost(relu5_4_weights, false);
+			FreeHost(relu5_5_weights, false);
+			FreeHost(relu5_6_weights, false);
+			FreeHost(relu5_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{
