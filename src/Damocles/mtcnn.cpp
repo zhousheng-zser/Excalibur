@@ -147,20 +147,21 @@ namespace glasssix
 			}
 		}
 
-		void MTCNN::GenerateBBox(std::shared_ptr<tensor<float>> confidence, std::shared_ptr<tensor<float>> reg_box,
+		void MTCNN::GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box,
 			float scale, float thresh)
 		{
-			int feature_map_w_ = confidence->width();
-			int feature_map_h_ = confidence->height();
-			int spatical_size = feature_map_w_*feature_map_h_;
+			int feature_map_w = confidence->width();
+			int feature_map_h = confidence->height();
+			int spatical_size = feature_map_w * feature_map_h;
 			const float* confidence_data = confidence->cpu_data() + spatical_size;
 			const float* reg_data = reg_box->cpu_data();
+
 			candidate_boxes_.clear();
 			for (int i = 0; i<spatical_size; i++) {
 				if (confidence_data[i] >= thresh) {
 
-					int y = i / feature_map_w_;
-					int x = i - feature_map_w_ * y;
+					int y = i / feature_map_w;
+					int x = i - feature_map_w * y;
 					FaceInfomation FaceInfomation;
 					FaceBox &faceBox = FaceInfomation.bbox;
 

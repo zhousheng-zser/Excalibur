@@ -48,8 +48,6 @@ namespace glasssix
 				Copy_Params(conv4_2_bias, PNet, quantize_level);
 			}
 			
-
-			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
@@ -89,6 +87,11 @@ namespace glasssix
 			delete conv4_1;
 			delete conv4_2;
 			delete prob1;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu2_weights, false);
+			FreeHost(prelu3_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{

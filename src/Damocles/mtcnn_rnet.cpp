@@ -55,6 +55,8 @@ namespace glasssix
 				Copy_Params(conv5_1_bias, RNet, quantize_level);
 				Copy_Params(conv5_2_weights, RNet, quantize_level);
 				Copy_Params(conv5_2_bias, RNet, quantize_level);
+
+
 				/*Copy_Params(conv5_3_weights, RNet, quantize_level);
 				Copy_Params(conv5_3_bias, RNet, quantize_level);*/
 			}
@@ -91,6 +93,7 @@ namespace glasssix
 
 		mtcnn_rnet::~mtcnn_rnet()
 		{
+			delete conv1;
 			delete prelu1;
 			delete pool1;
 			delete conv2;
@@ -103,6 +106,12 @@ namespace glasssix
 			delete conv5_1;
 			delete conv5_2;
 			delete prob1;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu2_weights, false);
+			FreeHost(prelu3_weights, false);
+			FreeHost(prelu4_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{

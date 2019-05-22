@@ -1,6 +1,7 @@
 #include "banshee.hpp"
 #include "banshee_data.hpp"
 #include <glasssix\tensor.hpp>
+#include <glasssix/syncedmem.hpp>
 
 using namespace glasssix::excalibur;
 
@@ -141,11 +142,26 @@ namespace glasssix
 			delete sigmoid1;
 			delete conv6_2;
 			delete conv6_3;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu1_dw_weights, false);
+			FreeHost(prelu2_dw_weights, false);
+			FreeHost(prelu3_dw_weights, false);
+			FreeHost(prelu4_dw_weights, false);
+			FreeHost(prelu5_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{
 				CUBLAS_CHECK(cublasDestroy(cublas_handle_));
 			}
+
+#ifdef USE_CUDNN
+			if (cudnn_handle_)
+			{
+				CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+			}
+#endif
 #endif
 		}
 
