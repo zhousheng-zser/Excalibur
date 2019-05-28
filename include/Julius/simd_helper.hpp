@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SIMD_HELPER_HPP_
 #define _SIMD_HELPER_HPP_
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 
 namespace glasssix
 {

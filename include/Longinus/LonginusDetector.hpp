@@ -6,7 +6,7 @@
 #include <memory>
 #include "BaseLonginusCascade.hpp"
 #include "../Romancia/romancia.hpp"
-#include "../Damocles/damocles.hpp"
+#include "../Damocles/Damocles.hpp"
 #include "matcher.hpp"
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>

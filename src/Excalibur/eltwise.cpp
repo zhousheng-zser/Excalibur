@@ -1,5 +1,6 @@
 #include "eltwise.hpp"
 #include <algorithm>
+#include <cfloat>
 
 namespace glasssix
 {

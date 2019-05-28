@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _INNER_PRODUCT_HPP_
 #define _INNER_PRODUCT_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 #include "im2col.hpp"
 

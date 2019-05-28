@@ -1,5 +1,4 @@
 #include "math_functions.hpp"
-#include <filesystem>
 #include <iostream>
 
 namespace glasssix

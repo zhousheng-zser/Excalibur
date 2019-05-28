@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SIGMOID_HPP_
 #define _SIGMOID_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include <memory>
 
 namespace glasssix

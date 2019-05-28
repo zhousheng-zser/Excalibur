@@ -1,5 +1,7 @@
 #include "matcher.hpp"
 #include <sstream>
+#include <cfloat>
+#include <cmath>
 
 namespace glasssix
 {
