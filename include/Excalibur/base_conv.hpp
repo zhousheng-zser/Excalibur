@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _BASE_CONV_HPP_
 #define _BASE_CONV_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>

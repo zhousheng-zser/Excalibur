@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <mutex>
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 #include "boost/smart_ptr/detail/spinlock.hpp"
 
 namespace glasssix 

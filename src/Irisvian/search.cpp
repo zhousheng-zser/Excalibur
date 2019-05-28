@@ -1,5 +1,5 @@
 #include "search.hpp"
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -239,12 +239,14 @@ namespace glasssix
 				count++;
 			}
 
+#if SIMD_TYPE >= SIMDTYPE_SSE
 			for (unsigned i = 0; i < initIds.size(); i++)
 			{
 				unsigned id = initIds[i];
 				if (id >= baseNum_)continue;
 				_mm_prefetch(optGraph_ + nodeSize * id, _MM_HINT_T0);
 			}
+#endif
 
 			float normQuery = 0.0f;
 			if (isNormalized)
@@ -286,12 +288,20 @@ namespace glasssix
 				{
 					returnNeighbors[i].flag = false;
 					unsigned n = returnNeighbors[i].id;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
 					_mm_prefetch(optGraph_ + nodeSize * n + dataLen, _MM_HINT_T0);
+#endif
+
 					unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
 					unsigned MaxM = *neighbors;
 					neighbors++;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
 					for (unsigned m = 0; m<MaxM; ++m)
 						_mm_prefetch(optGraph_ + nodeSize * neighbors[m], _MM_HINT_T0);
+#endif
+
 					for (unsigned m = 0; m < MaxM; ++m)
 					{
 						unsigned id = neighbors[m];
@@ -382,12 +392,14 @@ namespace glasssix
 				count++;
 			}
 
+#if SIMD_TYPE >= SIMDTYPE_SSE
 			for (unsigned i = 0; i < initIds.size(); i++)
 			{
 				unsigned id = initIds[i];
 				if (id >= baseNum_)continue;
 				_mm_prefetch(optGraph_ + nodeSize * id, _MM_HINT_T0);
 			}
+#endif
 
 			float normQuery = 0.0f;
 			if (isNormalized)
@@ -426,12 +438,20 @@ namespace glasssix
 				if (returnNeighbors[i].flag) {
 					returnNeighbors[i].flag = false;
 					unsigned n = returnNeighbors[i].id;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
 					_mm_prefetch(optGraph_ + nodeSize * n + dataLen, _MM_HINT_T0);
+#endif
+
 					unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
 					unsigned MaxM = *neighbors;
 					neighbors++;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
 					for (unsigned m = 0; m<MaxM; ++m)
 						_mm_prefetch(optGraph_ + nodeSize * neighbors[m], _MM_HINT_T0);
+#endif
+
 					for (unsigned m = 0; m < MaxM; ++m) {
 						unsigned id = neighbors[m];
 						if (flags[id])continue;
