@@ -74,7 +74,7 @@ namespace glasssix
 			//
 			int device_;
 			bool cudnn_ready_ = false;
-			bool int8_quantization_ = false;
+			bool int8_quantization_ = true;
 
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;

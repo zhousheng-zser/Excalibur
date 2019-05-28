@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SOFTMAX_HPP_
 #define _SOFTMAX_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 #ifdef USE_CUDNN
 #include "cudnn.hpp"

@@ -4,13 +4,13 @@
 #include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 #include <iostream>
 #ifdef USE_OPENCV
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 #endif
-#include <glasssix\timer.hpp>
+#include <glasssix/timer.hpp>
 #include "tensor_operation_gpu.hpp"
 #include <algorithm>
 

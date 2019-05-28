@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _ELTWISE_HPP_
 #define _ELTWISE_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 
 

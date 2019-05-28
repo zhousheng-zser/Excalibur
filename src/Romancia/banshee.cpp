@@ -1,6 +1,6 @@
 #include "banshee.hpp"
 #include "banshee_data.hpp"
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include <glasssix/syncedmem.hpp>
 
 using namespace glasssix::excalibur;
