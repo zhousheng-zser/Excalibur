@@ -2,7 +2,7 @@
 #ifndef _FTENSOR_HPP_
 #define _FTENSOR_HPP_
 
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {

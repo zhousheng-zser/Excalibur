@@ -3,7 +3,7 @@
 
 #ifdef USE_CUDA
 #include <cuda_runtime.h>
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {

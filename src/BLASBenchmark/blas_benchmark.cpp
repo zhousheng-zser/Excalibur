@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <omp.h>
 #include <cfloat>
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 #ifndef USE_MKL
 #include "../../include/Julius/julius.hpp"
 #include <cblas.h>

@@ -21,6 +21,8 @@
 #include "axpy.hpp"
 #include "deconv.hpp"
 
+#include <climits>
+
 #define Neuron_Name(name) private: \
 std::shared_ptr<tensor<float>> name##_top_data;\
 public: std::shared_ptr<tensor<float>> get_##name(){\
@@ -28,7 +30,7 @@ return name##_top_data;\
 }\
 private:
 
-#define  Declear_Opration(op, name) op##* name;
+#define  Declear_Opration(op, name) op* name;
 
 #define Declear_Params(layername) float *layername##_##bias, *layername##_##weights, *layername##_##scales;\
 signed char *layername##_##weights_int8;

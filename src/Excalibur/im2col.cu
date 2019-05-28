@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 #include "im2col.hpp"
 #include <algorithm>
 
