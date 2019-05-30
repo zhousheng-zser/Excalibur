@@ -42,7 +42,11 @@ namespace glasssix
 
 			int device_id_;
 			//omp
+#ifdef _OPENMP
 			const int threads_num = omp_get_num_procs();
+#else
+			const int threads_num = 1;
+#endif
 			//pnet config
 			const float pnet_stride = 2;
 			const float pnet_cell_size = 12;
