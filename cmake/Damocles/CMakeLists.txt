@@ -23,4 +23,4 @@ else()
 endif()
 
 target_link_libraries(Damocles Excalibur ${Excalibur_LINKER_LIBS})
-add_dependencies(Damocles Excalibur ${Excalibur_LINKER_LIBS})
+add_dependencies(Damocles Excalibur)
