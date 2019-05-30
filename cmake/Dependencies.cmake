@@ -27,6 +27,16 @@ endif()
 
 if(USE_CUDA)
 	find_package(CUDA REQUIRED)
+	include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})
+	list(APPEND Excalibur_LINKER_LIBS ${CUDA_CUDART_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
+	add_definitions(-DUSE_CUDA)
+endif()
+
+if(USE_CUDNN)
+	include_directories(/usr/local/cuda/include)
+	link_directories(/usr/local/cuda/lib64)
+	list(APPEND Excalibur_LINKER_LIBS cudnn)
+	add_definitions(-DUSE_CUDNN)
 endif()
 
 if(USE_OPENMP)

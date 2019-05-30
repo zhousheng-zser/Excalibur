@@ -1,15 +1,13 @@
 #include "sigmoid.hpp"
-#include <memory>
+//#include <memory>
 #include <algorithm>
 #include <cmath>
 namespace glasssix
 {
 	namespace excalibur
 	{
-		sigmoid::sigmoid(int input_channel, int device)
+		sigmoid::sigmoid()
 		{
-			channel_ = input_channel;
-			device_ = device;
 		}
 
 		sigmoid::~sigmoid()

@@ -2,7 +2,7 @@
 #ifndef _SIGMOID_HPP_
 #define _SIGMOID_HPP_
 #include <glasssix/tensor.hpp>
-#include <memory>
+//#include <memory>
 
 namespace glasssix
 {
@@ -10,11 +10,8 @@ namespace glasssix
 	{
 		class sigmoid
 		{
-			int channel_;
-			int device_;
-
 		public:
-			sigmoid(int input_channel, int device = -1);
+			sigmoid();
 
 			~sigmoid();
 
