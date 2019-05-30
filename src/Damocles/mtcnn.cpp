@@ -15,7 +15,9 @@ namespace glasssix
 
 		MTCNN::MTCNN(int device_id) {
 			device_id_ = device_id;
+#ifdef _OPENMP
 			omp_set_num_threads(threads_num);
+#endif
 			PNet_ = new mtcnn_pnet(device_id_);
 			RNet_ = new mtcnn_rnet(device_id_);
 			ONet_ = new mtcnn_onet(device_id_);

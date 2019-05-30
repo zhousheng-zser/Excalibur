@@ -190,6 +190,9 @@ fliper_name = new flip(flip_height, flip_width, device_);
 #define Init_Concat_Params(concat_name, concat_axis)\
 concat_name = new concat(concat_axis, device_);
 
+#define Init_Sigmoid_Params(sigmoid_name)\
+sigmoid_name = new sigmoid();
+
 #define Init_Slice_Params(slice_name, slice_axis)\
 slice_name = new slice(slice_axis, device_);
 
