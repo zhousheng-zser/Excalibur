@@ -1,8 +1,7 @@
 #include <iostream>
 #include "../Excalibur/io.hpp"
-#include "damocles.hpp"
-#include <filesystem>
-#include <opencv2\opencv.hpp>
+#include "Damocles.hpp"
+#include <opencv2/opencv.hpp>
 
 
 using namespace glasssix;

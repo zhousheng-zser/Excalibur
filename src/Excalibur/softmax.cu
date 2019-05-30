@@ -1,7 +1,7 @@
 #ifdef USE_CUDA
 #include "math_functions.hpp"
 #include "softmax.hpp"
-
+#include <cfloat>
 namespace glasssix
 {
 	namespace excalibur
