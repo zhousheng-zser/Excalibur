@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _MIRRORMAX_HPP_
 #define _MIRRORMAX_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 
 

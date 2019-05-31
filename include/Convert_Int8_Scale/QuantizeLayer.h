@@ -6,7 +6,7 @@
 #include <iostream>
 #include <algorithm>
 #include <iomanip>
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 
 #define QUANTIZE_NUM 127
 #define INTERVAL_NUM 2048

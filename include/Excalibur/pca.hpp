@@ -2,7 +2,7 @@
 #ifndef _PCA_HPP_
 #define _PCA_HPP_
 
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 
 namespace glasssix

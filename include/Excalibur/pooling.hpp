@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _POOLING_HPP_
 #define _POOLING_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #ifdef USE_CUDNN
 #include "cudnn.hpp"
 #endif

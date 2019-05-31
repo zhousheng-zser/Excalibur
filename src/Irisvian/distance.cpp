@@ -1,6 +1,8 @@
 #include "distance.hpp"
 #include "../../include/Julius/simd_helper.hpp"
 
+#include <cmath>
+
 #ifdef __linux__
 #define __cpuid(out, infoType)\
 	asm("cpuid": "=a" (out[0]), "=b" (out[1]), "=c" (out[2]), "=d" (out[3]): "a" (infoType));
