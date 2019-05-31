@@ -6,6 +6,7 @@
 #include "math_functions.hpp"
 #include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
+#include <cstring>
 
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>

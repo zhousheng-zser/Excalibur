@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _IM2COL_HPP_
 #define _IM2COL_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {

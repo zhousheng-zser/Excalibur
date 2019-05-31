@@ -2,7 +2,7 @@
 #ifndef _DECONV_HPP_
 #define _DECONV_HPP_
 #include "base_conv.hpp"
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>

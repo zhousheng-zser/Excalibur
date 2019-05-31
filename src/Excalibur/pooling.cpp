@@ -1,6 +1,7 @@
 #include "pooling.hpp"
 #include <algorithm>
-
+#include <cfloat>
+#include <cmath>
 namespace glasssix
 {
 	namespace excalibur

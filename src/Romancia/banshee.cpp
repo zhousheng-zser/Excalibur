@@ -1,6 +1,6 @@
 #include "banshee.hpp"
 #include "banshee_data.hpp"
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include <glasssix/syncedmem.hpp>
 
 using namespace glasssix::excalibur;
@@ -99,7 +99,7 @@ namespace glasssix
 			cudnn_ready_ = true;
 #endif // USE_CUDNN
 #endif
-
+                        
 			Init_Conv_Params(conv1, 1, 16, 1, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
 			Init_PReLU_Params(prelu1, 16, false);//nchw:1*16*24*24->1*16*24*24
 			Init_Conv_Params(conv1_dw, 16, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
@@ -116,6 +116,7 @@ namespace glasssix
 			Init_InnerProduct_Params(conv5, 64, 3, 3, 256, true);//nchw:1*64*3*3->1*256*1*1
 			Init_PReLU_Params(prelu5, 256, false);//nchw:1*256*1*1->1*256*1*1
 			Init_InnerProduct_Params(conv6_1, 256, 1, 1, 1, true);//nchw:1*256*1*1->1*1*1*1
+			Init_Sigmoid_Params(sigmoid1);
 			Init_InnerProduct_Params(conv6_2, 256, 1, 1, 3, true);//nchw:1*256*1*1->1*3*1*1
 			Init_InnerProduct_Params(conv6_3, 256, 1, 1, 10, true);//nchw:1*256*1*1->1*10*1*1
 		}
