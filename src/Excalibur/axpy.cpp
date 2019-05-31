@@ -65,7 +65,7 @@ namespace glasssix
 						int scale_offset = n * channels + ch;
 						int data_offset = scale_offset * spatial_dim;
 #ifdef USE_OPENBLAS
-						cblas_saxpy(spatial_dim, scales_data[scale_offset], bottom_data + data_offset, 1, 1.0f, top_data + data_offset, 1);
+						cblas_saxpby(spatial_dim, scales_data[scale_offset], bottom_data + data_offset, 1, 1.0f, top_data + data_offset, 1);
 #else
 						cblas_saxpby(spatial_dim, scales_data[scale_offset], bottom_data + data_offset, 1, 1.0f, top_data + data_offset, 1);
 #endif
