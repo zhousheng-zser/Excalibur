@@ -29,9 +29,15 @@ namespace glasssix
 		{
 			int lda = (TransA == CblasNoTrans) ? K : M;
 			int ldb = (TransB == CblasNoTrans) ? N : K;
+
+#if (!defined USE_MKL) && (!defined USE_OPENBLAS)
 			cblas_fgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
 				ldb, beta, C, N);
-		}
+#else
+			LOG(ERROR) << "fgemm only support julius!!!";
+#endif
+	    }
+
 
 		void math_functions::cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 			const int N, const float alpha, const float* A, const float* x,
