@@ -122,35 +122,24 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 
 #define Init_Conv_Params(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
 if(device_ < 0){\
-if(kernel_size == 3 && stride == 1){\
-conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization_);}\
+    bool int8_quantization = int8_quantization_;\
+    if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
+    if(kernel_size == 3 && stride == 1){\
+        conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+    else{\
+        conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+    conv_name->set_bias(conv_name##_##bias);\
+    if(int8_quantization){\
+        conv_name->set_weights(conv_name##_##weights_int8);\
+        conv_name->set_scales(conv_name##_##scales);}\
+    else{conv_name->set_weights(conv_name##_##weights);}}\
 else{\
-conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization_);}}\
-else{\
-if(cudnn_ready_){\
-conv_name = new conv_cudnn_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
-else{\
-conv_name = new conv_native_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }}\
-conv_name->set_bias(conv_name##_##bias);\
-if(int8_quantization_){\
-conv_name->set_weights(conv_name##_##weights_int8);\
-conv_name->set_scales(conv_name##_##scales);}\
-else{\
-conv_name->set_weights(conv_name##_##weights);}
-
-#define Init_Conv_Params_No_Quantize(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
-if(device_ < 0){\
-if(kernel_size == 3 && stride == 1){\
-conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, false);}\
-else{\
-conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, false);}}\
-else{\
-if(cudnn_ready_){\
-conv_name = new conv_cudnn_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
-else{\
-conv_name = new conv_native_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }}\
-conv_name->set_bias(conv_name##_##bias);\
-conv_name->set_weights(conv_name##_##weights);
+    if(cudnn_ready_){\
+        conv_name = new conv_cudnn_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
+    else{\
+        conv_name = new conv_native_gpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_); }\
+    conv_name->set_bias(conv_name##_##bias);\
+    conv_name->set_weights(conv_name##_##weights);}
 
 
 #define Init_Deconv_Params(deconv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term)\
