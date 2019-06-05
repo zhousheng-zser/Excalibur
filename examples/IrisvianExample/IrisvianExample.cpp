@@ -3,6 +3,7 @@
 #include "../../include/Irisvian/IrisvianSearch.hpp"
 #include "../../include/Irisvian/distance.hpp"
 #include <glasssix/profiler.hpp>
+#include <glasssix/timer.hpp>
 
 using namespace glasssix;
 using namespace glasssix::Irisvian;
@@ -70,8 +71,9 @@ void get_accurate_similarity(std::vector<const float*> &baseData, unsigned baseN
 {
 	accurateSimilarities.clear();
 	accurateSimilarities.resize(queryNumItem);
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 	for (int i = 0; i < queryNumItem; i++)
 	{
 		std::vector<float> &similarity = accurateSimilarities[i];
@@ -112,14 +114,14 @@ void get_accurate_similarity(std::vector<const float*> &baseData, unsigned baseN
 		}
 	}
 
-	for (int i = 0; i < queryNumItem; i++)
-	{
-		for (int j = 0; j < topK; j++)
-		{
-			std::cout << accurateSimilarities[i][j] << " ";
-		}
-		std::cout << std::endl;
-	}
+	//for (int i = 0; i < queryNumItem; i++)
+	//{
+	//	for (int j = 0; j < topK; j++)
+	//	{
+	//		std::cout << accurateSimilarities[i][j] << " ";
+	//	}
+	//	std::cout << std::endl;
+	//}
 }
 
 float get_accuracy(std::vector<std::vector<float>> &accurateSimilarities, std::vector<std::vector<float>> &searchSimilarities,
@@ -160,41 +162,41 @@ void search_first_time()
 	std::string sourceDataPath = "D:/projects/nsg/map512.bin";
 	std::vector<const float*> baseData;
 	std::vector<const float*> queryData;
-	const unsigned baseNum = 5000;
-	const unsigned queryNum = 10;
-	const unsigned data_dimension = 128;
+	const unsigned baseNum = 2000;
+	const unsigned queryNum = baseNum / 10;
+	const unsigned data_dimension = 512;
 	loadData(sourceDataPath.c_str(), baseData, baseNum, queryData, queryNum, data_dimension);
+
+	double build_time, search_time;
+	glasssix::Timer calcTime;
+	calcTime.Start();
 	IrisvianSearch irisvian(&baseData, data_dimension);
-
-	//Profiler *profiler = Profiler::Get();
-	//profiler->TurnON();
-	//profiler->ScopeStart("kgraph");
-	//for (int i = 0; i < 10; i++)
-	//{
-	//	irisvian.buildGraph();
-	//}
-	//profiler->ScopeEnd();
-	//profiler->TurnOFF();
-	//profiler->DumpProfile("D:/kgraph_sequence_sample.json");
-
 	irisvian.buildGraph();
+	calcTime.Stop();
+	build_time = calcTime.GetElapsedMilliseconds() / 1000;
+
 	irisvian.optimizeGraph();
-	const unsigned topK = 5;
+	const unsigned topK = 10;
 	std::vector<std::vector<unsigned>> returnIDs;
 	std::vector<std::vector<float>> returnSimilarities;
+
+	calcTime.Start();
 	irisvian.searchVector(&queryData, topK, returnIDs, returnSimilarities);
+	calcTime.Stop();
+	search_time = calcTime.GetElapsedMilliseconds() / queryNum;
+
 	irisvian.saveGraph("D:/projects/nsg/search_index.graph");
 
 	std::vector<std::vector<float>> accurateSimilarities;
 	get_accurate_similarity(baseData, baseNum, queryData, queryNum, data_dimension, topK, accurateSimilarities);
 	float accuracy = get_accuracy(accurateSimilarities, returnSimilarities, topK, queryNum);
 
-	std::cout << "accuracy: " << accuracy << std::endl;
+	std::cout << "build_time:" << build_time << ", search_time:" << search_time << ", accuracy: " << accuracy << std::endl;
 
 	std::cout << "result:" << std::endl;
-	for (int i = 0; i < returnIDs.size(); i++)
+	for (int i = 0; i < 10; i++)
 	{
-		for (int j = 0; j < returnIDs[i].size(); j++)
+		for (int j = 0; j < 5; j++)
 		{
 			std::cout << returnIDs[i][j] << " ," << returnSimilarities[i][j] << "   ";
 		}

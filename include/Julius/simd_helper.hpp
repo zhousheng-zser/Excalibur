@@ -9,8 +9,8 @@ namespace glasssix
 
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-#define mm_load_ps _mm_load_ps
-#define mm_store_ps _mm_store_ps
+#define mm_load_ps _mm_loadu_ps
+#define mm_store_ps _mm_storeu_ps
 #define mm_set1_ps _mm_set1_ps
 #define mm_setzero_ps _mm_setzero_ps
 #define mm_add_ps _mm_add_ps
@@ -87,8 +87,8 @@ namespace glasssix
 #endif
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-#define mm_load_ps _mm256_load_ps
-#define mm_store_ps _mm256_store_ps
+#define mm_load_ps _mm256_loadu_ps
+#define mm_store_ps _mm256_storeu_ps
 #define mm_set1_ps _mm256_set1_ps
 #define mm_setzero_ps _mm256_setzero_ps
 #define mm_add_ps _mm256_add_ps
@@ -173,8 +173,8 @@ namespace glasssix
 #endif
 
 #if SIMD_TYPE >= SIMDTYPE_AVX512
-#define mm_load_ps _mm512_load_ps
-#define mm_store_ps _mm512_store_ps
+#define mm_load_ps _mm512_loadu_ps
+#define mm_store_ps _mm512_storeu_ps
 #define mm_set1_ps _mm512_set1_ps
 #define mm_setzero_ps _mm512_setzero_ps
 #define mm_add_ps _mm512_add_ps
