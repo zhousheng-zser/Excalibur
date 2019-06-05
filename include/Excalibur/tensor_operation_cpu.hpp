@@ -767,7 +767,9 @@ namespace glasssix
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < dst_height; ++row)
 					{
 						float yf = row * height_ratio + beta;
@@ -966,7 +968,9 @@ namespace glasssix
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < dst_height; ++row)
 					{
 						float yf = row * height_ratio + beta;
@@ -1094,7 +1098,9 @@ namespace glasssix
 							int src_channel_offset = ch * src_offset;
 							int dst_channel_offset = ch * dst_offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < dst_height; ++row)
 							{
 								int dst_pos1 = dst_channel_offset + row * dst_width;
@@ -1152,7 +1158,9 @@ namespace glasssix
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < dst_height; ++row)
 					{
 						int dst_pos1 = row * dst_width * channels;
@@ -1284,7 +1292,9 @@ namespace glasssix
 							int src_channel_offset = ch * src_offset;
 							int dst_channel_offset = ch * dst_offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < dst_height; ++row)
 							{
 								int dst_pos1 = dst_channel_offset + row * dst_width;
@@ -1342,7 +1352,9 @@ namespace glasssix
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < dst_height; ++row)
 					{
 						int dst_pos1 = row * dst_width * channels;
@@ -1491,7 +1503,9 @@ namespace glasssix
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int channel_offset = ch * offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
@@ -1548,7 +1562,9 @@ namespace glasssix
 				}
 				else if (src->order() == NHWC)
 				{
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < height; ++row)
 					{
 						double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
@@ -1700,7 +1716,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
@@ -1757,7 +1775,9 @@ namespace glasssix
 				}
 				else if (src.order() == NHWC)
 				{
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int row = 0; row < height; ++row)
 					{
 						double temp_xf = reverse_M[0][1] * row + reverse_M[0][2];
@@ -3358,9 +3378,9 @@ namespace glasssix
 
 						for (; index < circle_num; index++)
 						{
-							temp_uint8_B = _mm_loadu_si64((void const*)(src_data + n_offset + index * mm_align_size));
-							temp_uint8_G = _mm_loadu_si64((void const*)(src_data + n_offset + offset + index * mm_align_size));
-							temp_uint8_R = _mm_loadu_si64((void const*)(src_data + n_offset + 2 * offset + index * mm_align_size));
+							temp_uint8_B = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + index * mm_align_size));
+							temp_uint8_G = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + offset + index * mm_align_size));
+							temp_uint8_R = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + 2 * offset + index * mm_align_size));
 							temp_int32_B = mm_cvtepu8_epi32(temp_uint8_B);
 							temp_int32_G = mm_cvtepu8_epi32(temp_uint8_G);
 							temp_int32_R = mm_cvtepu8_epi32(temp_uint8_R);
@@ -3490,9 +3510,9 @@ namespace glasssix
 
 						for (; index < circle_num; index++)
 						{
-							temp_uint8_B = _mm_loadu_si64((void const*)(src_data + n_offset + index * mm_align_size));
-							temp_uint8_G = _mm_loadu_si64((void const*)(src_data + n_offset + offset + index * mm_align_size));
-							temp_uint8_R = _mm_loadu_si64((void const*)(src_data + n_offset + 2 * offset + index * mm_align_size));
+							temp_uint8_B = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + index * mm_align_size));
+							temp_uint8_G = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + offset + index * mm_align_size));
+							temp_uint8_R = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + 2 * offset + index * mm_align_size));
 							temp_int32_B = mm_cvtepu8_epi32(temp_uint8_B);
 							temp_int32_G = mm_cvtepu8_epi32(temp_uint8_G);
 							temp_int32_R = mm_cvtepu8_epi32(temp_uint8_R);
@@ -5784,7 +5804,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								double temp_xf = X[1] * row + X[2];
@@ -5845,7 +5867,9 @@ namespace glasssix
 					{
 						int n_offset = n * num_offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							double temp_xf = X[1] * row + X[2];
@@ -5986,7 +6010,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								double temp_xf = X[1] * row + X[2];
@@ -6047,7 +6073,9 @@ namespace glasssix
 					{
 						int n_offset = n * num_offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							double temp_xf = X[1] * row + X[2];
@@ -6183,7 +6211,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6211,7 +6241,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6245,7 +6277,9 @@ namespace glasssix
 					for (int n = 0; n < num; n++)
 					{
 						//horizontal
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							int index = row * width * channels;
@@ -6272,7 +6306,9 @@ namespace glasssix
 
 
 						//vertical
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							int index = row * width * channels;
@@ -6377,7 +6413,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6405,7 +6443,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6438,7 +6478,9 @@ namespace glasssix
 					for (int n = 0; n < num; n++)
 					{
 						//horizontal
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							int index = row * width * channels;
@@ -6465,7 +6507,9 @@ namespace glasssix
 
 
 						//vertical
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 0; row < height; ++row)
 						{
 							int index = row * width * channels;
@@ -6541,8 +6585,9 @@ namespace glasssix
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int channel_offset = ch * offset;
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 1; row < height - 1; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6592,7 +6637,9 @@ namespace glasssix
 					for (int n = 0; n < num; n++)
 					{
 						int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 1; row < height - 1; ++row)
 						{
 							int index = row * width * channels;
@@ -6689,7 +6736,9 @@ namespace glasssix
 						{
 							int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 1; row < height - 1; ++row)
 							{
 								int index = channel_offset + row * width;
@@ -6739,7 +6788,9 @@ namespace glasssix
 					for (int n = 0; n < num; n++)
 					{
 						int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int row = 1; row < height - 1; ++row)
 						{
 							int index = row * width * channels;
@@ -6845,7 +6896,9 @@ namespace glasssix
 							{
 								int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 								for (int row = 0; row < height; ++row)
 								{
 									int index = channel_offset + row * width;
@@ -6890,7 +6943,9 @@ namespace glasssix
 							{
 								int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 								for (int row = 0; row < height; ++row)
 								{
 									int index = channel_offset + row * width;
@@ -6938,7 +6993,9 @@ namespace glasssix
 						for (int n = 0; n < num; n++)
 						{
 							int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = row * width * channels;
@@ -6982,7 +7039,9 @@ namespace glasssix
 						for (int n = 0; n < num; n++)
 						{
 							int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = row * width * channels;
@@ -7085,7 +7144,9 @@ namespace glasssix
 							{
 								int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 								for (int row = 0; row < height; ++row)
 								{
 									int index = channel_offset + row * width;
@@ -7130,7 +7191,9 @@ namespace glasssix
 							{
 								int channel_offset = ch * offset;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 								for (int row = 0; row < height; ++row)
 								{
 									int index = channel_offset + row * width;
@@ -7178,7 +7241,9 @@ namespace glasssix
 						for (int n = 0; n < num; n++)
 						{
 							int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = row * width * channels;
@@ -7222,7 +7287,9 @@ namespace glasssix
 						for (int n = 0; n < num; n++)
 						{
 							int n_offset = n * num_offset;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int row = 0; row < height; ++row)
 							{
 								int index = row * width * channels;

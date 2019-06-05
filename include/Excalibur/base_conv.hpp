@@ -69,7 +69,7 @@ namespace glasssix
 			int output_dim_w_;
 			int output_spatial_dim_;
 			int top_dim_;
-			bool isfirst;
+			bool isfirst=true;
 			int last_height;
 			int last_width;
 			float* gpu_temp_col_buffer_;
@@ -116,17 +116,19 @@ namespace glasssix
 #ifdef USE_CUDNN
 				if (device_ >= 0)
 				{
-					CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
-					CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
-					CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
-					CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
-					if (bias_term_)
-					{
-						CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
-					}
+				        //CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+					//CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
+					//CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
+					//CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+					
+					//if (bias_term_)
+					//{
+				        //    CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+					//}
+					
 					if (extra != nullptr)
 					{
-						cudaFree(extra);
+				            cudaFree(extra);
 					}
 				}
 #endif

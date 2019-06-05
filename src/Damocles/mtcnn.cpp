@@ -73,7 +73,10 @@ namespace glasssix
 				float y2 = static_cast<float>(select_bbox.ymax);
 
 				select_idx++;
+
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 				for (int32_t i = select_idx; i < num_bbox; i++) {
 					if (mask_merged[i] == 1)
 						continue;
@@ -108,7 +111,9 @@ namespace glasssix
 
 		void MTCNN::BBoxRegression(std::vector<FaceInfomation>& bboxes)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif // _OPENMP
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				float *bbox_reg = bboxes[i].bbox_reg;
@@ -123,7 +128,9 @@ namespace glasssix
 
 		void MTCNN::BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				bbox.xmin = round(std::max(bbox.xmin, 0.f));
@@ -135,7 +142,9 @@ namespace glasssix
 
 		void MTCNN::BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				float w = bbox.xmax - bbox.xmin + 1;
@@ -284,7 +293,7 @@ namespace glasssix
 			if (batch_size == 0)
 				return res;
 
-			std::shared_ptr<tensor<unsigned char>> src_tensor, roi_tensor, roi_resized_tensor;
+			std::shared_ptr<tensor<unsigned char>> src_tensor;
 			if (order == NHWC)
 			{
 				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
@@ -329,7 +338,6 @@ namespace glasssix
 			std::shared_ptr<tensor<float>> confidence;
 			std::shared_ptr<tensor<float>> reg_box;
 			std::shared_ptr<tensor<float>> reg_landmark;
-			std::shared_ptr<tensor<float>> roi_resized_float_tensor;
 
 			switch (stage_num) {
 			case 2: {
@@ -343,11 +351,16 @@ namespace glasssix
 				break;
 			}
 
-			roi_resized_float_tensor.reset(new tensor<float>(std::vector<int>{1, channels, input_h, input_w}, device_id_));
 
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int n = 0; n < batch_size; ++n)
 			{
+				std::shared_ptr<tensor<unsigned char>> roi_tensor, roi_resized_tensor;
+				std::shared_ptr<tensor<float>> roi_resized_float_tensor;
+				roi_resized_float_tensor.reset(new tensor<float>(std::vector<int>{1, channels, input_h, input_w}, device_id_));
+
 				FaceBox &box = pre_stage_res[n].bbox;
 				int rect_h = (int)box.ymax - (int)box.ymin + 1;
 				int rect_w = (int)box.xmax - (int)box.xmin + 1;

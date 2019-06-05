@@ -211,7 +211,7 @@ namespace glasssix
 					kernel_, stride_, stride_, pad_, pad_, top_data, order_);
 				break;
 			case AVE:
-				if (pooled_height_ == 1 && pooled_width_ == 1)
+				if (order_ == NCHW && pooled_height_ == 1 && pooled_width_ == 1)
 				{
 					GlobalAvePoolForward << <num * channels_, CUDA_NUM_THREADS >> > (
 						spatial_dim, bottom_data, top_data);
