@@ -139,7 +139,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Damocles\damocles.cpp" />
-    <ClCompile Include="..\..\src\Damocles\main.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn_onet.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn_pnet.cpp" />
