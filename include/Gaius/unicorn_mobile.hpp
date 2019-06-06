@@ -4,15 +4,15 @@
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
-#include "vunicorn.hpp"
+#include "vunicorn_mobile.hpp"
 
 using namespace glasssix::excalibur;
 
 namespace glasssix
 {
-	namespace cassius
+	namespace gaius
 	{
-		class Unicorn_mobile : public vUnicorn
+		class Unicorn_mobile : public vUnicornMobile
 		{
 			Declear_Params(conv1);
 			Declear_Params(relu1);
