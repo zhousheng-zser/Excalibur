@@ -147,16 +147,13 @@
     <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
     <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
     <ClInclude Include="..\..\include\Excalibur\eltwise.hpp" />
     <ClInclude Include="..\..\include\Excalibur\flip.hpp" />
     <ClInclude Include="..\..\include\Excalibur\ftensor.hpp" />
     <ClInclude Include="..\..\include\Excalibur\im2col.hpp" />
     <ClInclude Include="..\..\include\Excalibur\inner_product.hpp" />
     <ClInclude Include="..\..\include\Excalibur\io.hpp" />
-    <CudaCompile Include="..\..\include\Excalibur\kernel_depthwise_conv.cuh">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </CudaCompile>
     <ClInclude Include="..\..\include\Excalibur\math_functions.hpp" />
     <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp" />
     <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp" />
