@@ -7,7 +7,7 @@
 
 namespace glasssix
 {
-	namespace cassius
+	namespace gaius
 	{
 		Unicorn_mobile::Unicorn_mobile(int device)
 		{
