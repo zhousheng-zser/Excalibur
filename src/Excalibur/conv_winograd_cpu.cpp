@@ -1,7 +1,5 @@
 #include "conv_winograd_cpu.hpp"
-#include "../../include/Julius/simd_helper.hpp"
 #include <iostream>
-
 namespace glasssix
 {
 	namespace excalibur
@@ -102,7 +100,9 @@ namespace glasssix
 					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
 				}
 #else
-#pragma omp for
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
 				for (int index = 0; index < num_ * bottom_dim_; index++)
 				{
 					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
@@ -147,8 +147,9 @@ namespace glasssix
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-
-//#pragma omp parallel for
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<int>> M_, RESULT_;
@@ -313,7 +314,7 @@ namespace glasssix
 											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
 												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] += U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
+												m_data[tile_offset_row_col] = U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
 											}
 										}
 #endif
@@ -393,7 +394,9 @@ namespace glasssix
 								}
 							}
 #else
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int j = 0; j < group_; j++)
 							{
 								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
@@ -416,7 +419,9 @@ namespace glasssix
 					else if (group_ == 1)
 					{
 						//calculate U_
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int n = 0; n < U_num_; ++n)
 						{
 							calculate_GgGT(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
@@ -434,7 +439,9 @@ namespace glasssix
 							int top_offset_num = n * top_dim_;
 							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<int>> M_, RESULT_;
@@ -728,7 +735,9 @@ namespace glasssix
 								}
 							}
 #else
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int j = 0; j < group_; j++)
 							{
 								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
@@ -792,8 +801,9 @@ namespace glasssix
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<int>> M_, RESULT_;
@@ -958,7 +968,7 @@ namespace glasssix
 											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
 												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] += U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
+												m_data[tile_offset_row_col] = U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
 											}
 										}
 #endif
@@ -1035,7 +1045,9 @@ namespace glasssix
 					else if (group_ == 1)
 					{
 						//calculate U_
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int n = 0; n < U_num_; ++n)
 						{
 							calculate_GgGT(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
@@ -1053,7 +1065,9 @@ namespace glasssix
 							int top_offset_num = n * top_dim_;
 							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<int>> M_, RESULT_;
@@ -1380,8 +1394,9 @@ namespace glasssix
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_, v_;
@@ -1520,7 +1535,7 @@ namespace glasssix
 											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
 												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] += U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
+												m_data[tile_offset_row_col] = U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
 											}
 										}
 #endif
@@ -1587,7 +1602,9 @@ namespace glasssix
 					else if (group_ == 1)
 					{
 						//calculate U_
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int n = 0; n < U_num_; ++n)
 						{
 							calculate_GgGT(weights_data + kernel_length_ * n, U_data + tile_length_ * n);//calculate U
@@ -1604,8 +1621,9 @@ namespace glasssix
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
 							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_;
@@ -1884,8 +1902,9 @@ namespace glasssix
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_, v_;
@@ -2024,7 +2043,7 @@ namespace glasssix
 											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
 											{
 												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] += U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
+												m_data[tile_offset_row_col] = U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
 											}
 										}
 #endif
@@ -2091,7 +2110,9 @@ namespace glasssix
 					else if (group_ == 1)
 					{
 						//calculate U_
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int n = 0; n < U_num_; ++n)
 						{
 							calculate_GgGT(weights_data + kernel_length_ * n, U_data + tile_length_ * n);//calculate U
@@ -2108,8 +2129,9 @@ namespace glasssix
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
 							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
-
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 							for (int och = 0; och < output_Channel_; och++)
 							{
 								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_;
