@@ -213,7 +213,9 @@ namespace glasssix
 					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
 				}
 #else
-#pragma omp for
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
 				for (int index = 0; index < num_ * bottom_dim_; index++)
 				{
 					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
@@ -279,7 +281,9 @@ namespace glasssix
 							}
 						}
 #else
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 						for (int j = 0; j < group_; j++)
 						{
 							float total_scale = scales_data[0] * scales_data[1 + j];
