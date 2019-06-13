@@ -205,7 +205,7 @@ namespace glasssix
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 				float* packedA = new float[M * N];
 				packTransedA(M, N, A, lda, packedA);
-				cblas_sgemv_AnoTrans_sse(M, N, alpha, packedA, N, x, incx, beta, y, incy);
+				cblas_sgemv_AnoTrans_sse(N, M, alpha, packedA, M, x, incx, beta, y, incy);
 				delete[] packedA;
 #else 
 #define UNHANDLED

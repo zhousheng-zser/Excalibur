@@ -7,7 +7,6 @@ namespace glasssix
 {
 #define NATIVE_CODE_WARNING LOG(WARNING) << "Unhandled Scenario: fall back to native code with extremely low performance."
 
-
 #if SIMD_TYPE >= SIMDTYPE_SSE
 #define mm_load_ps _mm_loadu_ps
 #define mm_store_ps _mm_storeu_ps
@@ -371,9 +370,10 @@ namespace glasssix
 			const __m128i half_vector = _mm256_cvtps_ph(float_vector, 0);
 			_mm_store_si128((__m128i*)(halfs + i), half_vector);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-			const __m128 float_vector = _mm_load_ps(floats + i);
-			const __m128i half_vector = _mm_cvtps_ph(float_vector, 0);
-			_mm_store_si128((__m128i*)(halfs + i), half_vector);
+			for (int j = 0; j < mm_align_size; j++)
+			{
+				halfs[i + j] = float32_to_float16(floats[i + j]);
+			}
 #endif
 		}
 		for (int i = partl; i < length; i++)
@@ -397,9 +397,10 @@ namespace glasssix
 			const __m256 float_vector = _mm256_cvtph_ps(half_vector);
 			_mm256_store_ps(floats + i, float_vector);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-			const __m128i half_vector = _mm_load_si128((__m128i*)(halfs + i));
-			const __m128 float_vector = _mm_cvtph_ps(half_vector);
-			_mm_store_ps(floats + i, float_vector);
+			for (int j = 0; j < mm_align_size; j++)
+			{
+				floats[i + j] = float16_to_float32(halfs[i + j]);
+			}
 #endif
 		}
 		for (int i = partl; i < length; i++)
