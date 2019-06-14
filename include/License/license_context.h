@@ -4,7 +4,11 @@
 #include "license_error.hpp"
 
 #include <string>
+#ifdef _MSC_VER
 #include <filesystem>
+#elif defined(__GNUC__)
+#include <experimental/filesystem>
+#endif
 
 namespace glasssix
 {

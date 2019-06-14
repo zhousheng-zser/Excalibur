@@ -2,6 +2,9 @@
 
 #ifdef _MSC_VER
 #include "windows_com_global.hpp"
+#elif defined(__GNUC__)
+#include <glasssix/simd_config.hpp>
+#include "DmiDecoder.hpp"
 #endif
 
 namespace glasssix
@@ -38,10 +41,16 @@ namespace glasssix
                 select_core("Win32_BaseBoard", "Product") +
                 select_core("Win32_BaseBoard", "SerialNumber") +
                 select_core("Win32_ComputerSystemProduct", "UUID");
-#else
-            std::string result;
+#elif __GNUC__
+			unsigned int cpuinfo[4];
+			__cpuid(cpuinfo, 1);
+			char processorId[24] = { 0 };
+			sprintf(processorId, "%08X%08X", cpuinfo[3], cpuinfo[0]);
+			std::unordered_map<std::string, std::string> system_map = DmiSysDecoder::instance().decode(DecodeType::SYSTEM);
+			std::unordered_map<std::string, std::string> board_map = DmiSysDecoder::instance().decode(DecodeType::BASEBOARD);
 
-            return result;
+
+			return std::string(processorId) + board_map["Product Name"] + board_map["Serial Number"] + system_map["UUID"];
 #endif
 		}
 
