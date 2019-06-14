@@ -18,7 +18,6 @@ namespace glasssix
 		class baseconv
 		{
 		public:
-			//int8 quantization
 			bool int8_quantization_;
 			std::shared_ptr<tensor<signed char>> weights_int8_;
 			std::shared_ptr<tensor<signed char>> col_buffer_int8_;
@@ -116,19 +115,19 @@ namespace glasssix
 #ifdef USE_CUDNN
 				if (device_ >= 0)
 				{
-				        //CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+				    //CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
 					//CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
 					//CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
 					//CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
 					
 					//if (bias_term_)
 					//{
-				        //    CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+				        //CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
 					//}
 					
 					if (extra != nullptr)
 					{
-				            cudaFree(extra);
+				        cudaFree(extra);
 					}
 				}
 #endif
@@ -141,26 +140,58 @@ namespace glasssix
 				if (bias_term_)
 				{
 					bias_->set_cpu_data(bias);
-					bias_data = bias_->cpu_data();
+
+					if (device_ < 0)
+					{
+						bias_data = bias_->cpu_data();
+					}
+					else
+					{
+						bias_data = bias_->gpu_data();
+					}
 				}				
 			}
 
 			void set_weights(float* weights)
 			{
 				weights_->set_cpu_data(weights);
-				weights_data = weights_->cpu_data();
+
+				if (device_ < 0)
+				{
+					weights_data = weights_->cpu_data();
+				}
+				else
+				{
+					weights_data = weights_->gpu_data();
+				}
 		    }
 
 			void set_weights(signed char* weights_int8)
 			{
 				weights_int8_->set_cpu_data(weights_int8);
-				weights_int8_data = weights_int8_->cpu_data();
+
+				if (device_ < 0)
+				{
+					weights_int8_data = weights_int8_->cpu_data();
+				}
+				else
+				{
+					weights_int8_data = weights_int8_->gpu_data();
+				}
 			}
 
 			void set_scales(float* scales)
 			{
 				scales_->set_cpu_data(scales);
-				scales_data = scales_->cpu_data();
+
+				if (device_ < 0)
+				{
+					scales_data = scales_->cpu_data();
+				}
+				else
+				{
+					scales_data = scales_->gpu_data();
+				}
 			}
 
 			virtual void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
@@ -179,6 +210,7 @@ namespace glasssix
 			virtual void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 		protected:
 			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
+			virtual void forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) = 0;
 			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;			
 #ifdef USE_CUDNN
 		public:
@@ -231,6 +263,24 @@ namespace glasssix
 
 #ifdef USE_CUDA
 			void conv_im2col_gpu(const float* data, float* col_buff)
+			{
+				if (order_ == NCHW)
+				{
+					im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
+				}
+				else if (order_ == NHWC)
+				{
+					im2col_gpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+			void conv_im2col_gpu(const signed char* data, signed char* col_buff)
 			{
 				if (order_ == NCHW)
 				{

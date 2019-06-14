@@ -20,16 +20,27 @@ namespace glasssix
 		Unicorn::Unicorn(int device)
 		{
 			device_ = device;
-			if (device_ >= 0)
-			{
-				int8_quantization_ = false;//do not use int8 in GPU mode
-			}
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
+#ifdef USE_CUDA
+			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
+				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
+			}
+#ifdef USE_CUDNN
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+			}
+			cudnn_ready_ = true;
+			if (device >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in CUDNN
+			}
+#endif
+#endif
 
 #ifdef HALF_DATA
 			float quantize_level = USHRT_MAX;
@@ -40,7 +51,8 @@ namespace glasssix
 
 			if (int8_quantization_)
 			{
-				Copy_Int8_Params(conv1a, Unicorn);//864
+				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
+				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_Params(conv1b, Unicorn);//18432
 				Copy_Params(relu1b_weights, Unicorn, quantize_level);//64
@@ -100,7 +112,7 @@ namespace glasssix
 			else
 			{
 #ifdef INT8_DATA
-				Copy_Int8_to_FP32_Params(conv1a, Unicorn);//864
+				Copy_Params(conv1a_weights, Unicorn, quantize_level);//64
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_to_FP32_Params(conv1b, Unicorn);//18432
@@ -273,20 +285,10 @@ namespace glasssix
 #endif //!INT8_DATA
 			}
 
-			
-#ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
-#ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
-			cudnn_ready_ = true;
-#endif
-#endif
-			
+			bool temp_quantization = int8_quantization_;
+			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
+			int8_quantization_ = temp_quantization;
 			Init_PReLU_Params(relu1a, 32, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
 			Init_PReLU_Params(relu1b, 64, false);//nchw:1*64*124*124->1*64*124*124
@@ -557,6 +559,7 @@ namespace glasssix
 			pool5->Forward_cpu(conv5_top_data, pool5_top_data);
 			normalizer->Forward_cpu(pool5_top_data);//feature_top_data
 		}
+
 
 #ifdef USE_CUDA
 		void Unicorn::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)

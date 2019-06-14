@@ -62,6 +62,24 @@ namespace glasssix
 				N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 		}
 
+		void math_functions::gpu_gemmEx(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,
+			const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+			const signed char* A, const signed char* B, int* C)
+		{
+			// Note that cublas follows fortran order.
+			int lda = (TransA == CblasNoTrans) ? K : M;
+			int ldb = (TransB == CblasNoTrans) ? N : K;
+			cublasOperation_t cuTransA =
+				(TransA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+			cublasOperation_t cuTransB =
+				(TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+			int alpha = 1;
+			int beta = 0;
+			CUBLAS_CHECK(cublasGemmEx(cublas_handle_, cuTransB, cuTransA,
+				N, M, K, &alpha, B, CUDA_R_8I, ldb, A, CUDA_R_8I, lda, &beta, C, CUDA_R_32I, N, CUDA_R_32I, CUBLAS_GEMM_DFALT));
+		}
+
 		void math_functions::gpu_saxpy(cublasHandle_t cublas_handle_, const int N, const float alpha, const float* X, float* Y)
 		{
 			CUBLAS_CHECK(cublasSaxpy(cublas_handle_, N, &alpha, X, 1, Y, 1));
