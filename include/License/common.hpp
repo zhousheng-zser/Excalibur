@@ -1,11 +1,15 @@
 #pragma once
 
 #include "md5.h"
-#include "base64_utils.h"
 
 #include <string>
+#ifdef _MSC_VER
 #include <filesystem>
+#elif defined(__GNUC__)
+#include <experimental/filesystem>
+#endif
 #include <unordered_map>
+#include <algorithm>
 
 #define CP_GBK 936
 #define STL_NO_ERROR(x) ((x) == 0)
@@ -113,7 +117,7 @@ namespace glasssix
 				if (hex_digits_mapping_.empty())
 				{
 					int index = 0;
-					
+
 					std::for_each(std::cbegin(hex_digits_), std::cend(hex_digits_), [&](char digit)
 					{
 						// Ignore the trailing null-terminating character.
@@ -130,44 +134,44 @@ namespace glasssix
 			}
 
 #ifdef _MSC_VER
-            /// <summary>
-            /// Get an environment variable.
-            /// </summary>
-            /// <param name="variable">The name of a variable</param>
-            /// <returns>The value of the variable</returns>
-            static std::string get_environment_variable(const std::string& name)
-            {
-                size_t size;
-                char* buffer;
-                std::string result;
+			/// <summary>
+			/// Get an environment variable.
+			/// </summary>
+			/// <param name="variable">The name of a variable</param>
+			/// <returns>The value of the variable</returns>
+			static std::string get_environment_variable(const std::string& name)
+			{
+				size_t size;
+				char* buffer;
+				std::string result;
 
-                if (STL_NO_ERROR(_dupenv_s(&buffer, &size, name.c_str())) && buffer != nullptr)
-                {
-                    result = buffer;
-                }
+				if (STL_NO_ERROR(_dupenv_s(&buffer, &size, name.c_str())) && buffer != nullptr)
+				{
+					result = buffer;
+				}
 
-                free(buffer);
+				free(buffer);
 
-                return result;
-            }
+				return result;
+			}
 
-            /// <summary>
-            /// Get %ALLUSERPROGRAMDATA%.
-            /// </summary>
-            /// <returns>The value of %ALLUSERPROGRAMDATA%</returns>
-            inline static std::string get_all_user_program_data()
-            {
-                return get_environment_variable("ALLUSERSPROFILE");
-            }
+			/// <summary>
+			/// Get %ALLUSERPROGRAMDATA%.
+			/// </summary>
+			/// <returns>The value of %ALLUSERPROGRAMDATA%</returns>
+			inline static std::string get_all_user_program_data()
+			{
+				return get_environment_variable("ALLUSERSPROFILE");
+			}
 
-            /// <summary>
-            /// Get %ALLUSERPROGRAMDATA% and make it a path.
-            /// </summary>
-            /// <returns>The path object</returns>
-            inline static filesystem::path get_all_user_program_data_path()
-            {
-                return get_all_user_program_data();
-            }
+			/// <summary>
+			/// Get %ALLUSERPROGRAMDATA% and make it a path.
+			/// </summary>
+			/// <returns>The path object</returns>
+			inline static filesystem::path get_all_user_program_data_path()
+			{
+				return get_all_user_program_data();
+			}
 
 			/// <summary>
 			/// Convert UTF-16 to GBK.
@@ -236,46 +240,42 @@ namespace glasssix
 			{
 				return convert_multi_bytes_to_wide_chars(str.c_str(), static_cast<int>(str.size()));
 			}
-
-            /// <summary>
-            /// Calculate the MD5 code of the input data.
-            /// </summary>
-            /// <param name="data">The input data</param>
-            /// <param name="size">The size of the data</param>
-            /// <returns>The MD5 bytes</returns>
-            static std::vector<uint8_t> calculate_md5(const uint8_t* data, uint32_t size)
-            {
-                md5_digest_context context;
-
-                md5_init_context(&context);
-                md5_update_context(&context, data, size);
-                md5_final_context(&context);
-
-                return std::vector<uint8_t> { std::cbegin(context.digest), std::cend(context.digest) };
-            }
-
-            /// <summary>
-            /// Calculate the MD5 code of the input string.
-            /// </summary>
-            /// <param name="data">The input string</param>
-            /// <returns>The MD5 bytes</returns>
-            inline static std::vector<uint8_t> calculate_md5(const std::string& str)
-            {
-                return calculate_md5(reinterpret_cast<const uint8_t*>(str.c_str()), static_cast<uint32_t>(str.size()));
-            }
 #endif
+			/// <summary>
+			/// Calculate the MD5 code of the input data.
+			/// </summary>
+			/// <param name="data">The input data</param>
+			/// <param name="size">The size of the data</param>
+			/// <returns>The MD5 bytes</returns>
+			static std::vector<uint8_t> calculate_md5(const uint8_t* data, uint32_t size)
+			{
+				md5_digest_context context;
+
+				md5_init_context(&context);
+				md5_update_context(&context, data, size);
+				md5_final_context(&context);
+
+				return std::vector<uint8_t> { std::cbegin(context.digest), std::cend(context.digest) };
+			}
+
+			/// <summary>
+			/// Calculate the MD5 code of the input string.
+			/// </summary>
+			/// <param name="data">The input string</param>
+			/// <returns>The MD5 bytes</returns>
+			inline static std::vector<uint8_t> calculate_md5(const std::string& str)
+			{
+				return calculate_md5(reinterpret_cast<const uint8_t*>(str.c_str()), static_cast<uint32_t>(str.size()));
+			}
+
 			/// <summary>
 			/// Show a fatal tip and terminate the process.
 			/// </summary>
 			inline static void fatal_exit()
 			{
-#ifdef _MSC_VER
-                printf_s("Unauthorized SDK.\n");
-                exit(0);
-                //FatalAppExitA(0, base64_utils::base64_decode("JXU2MEE4JXU3Njg0JXU0RUE3JXU1NEMxJXU1REYyJXU4RkM3JXU2NzFGJXVGRjBDJXU4RjZGJXU0RUY2JXU1QzA2JXU0RjFBJXU1MTczJXU5NUVEJXUzMDAyJXU0RTNBJXU2QjY0JXU2MjExJXU0RUVDJXU2REYxJXU4ODY4JXU2QjQ5JXU2MTBGJXUzMDAy").c_str());
-#else
-                exit(0);
-#endif
+				printf("Unauthorized SDK.\n");
+				exit(0);
+				//FatalAppExitA(0, base64_utils::base64_decode("JXU2MEE4JXU3Njg0JXU0RUE3JXU1NEMxJXU1REYyJXU4RkM3JXU2NzFGJXVGRjBDJXU4RjZGJXU0RUY2JXU1QzA2JXU0RjFBJXU1MTczJXU5NUVEJXUzMDAyJXU0RTNBJXU2QjY0JXU2MjExJXU0RUVDJXU2REYxJXU4ODY4JXU2QjQ5JXU2MTBGJXUzMDAy").c_str());
 			}
 		private:
 			static const char hex_digits_[17];
