@@ -44,12 +44,4 @@ if(USE_OPENMP)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 endif()
 
-if(INT8_DATA)
-	add_definitions(-DINT8_DATA)
-endif()
-
-if(HALF_DATA)
-	add_definitions(-DHALF_DATA)
-endif()
-
 #include(cmake/Cuda.cmake)

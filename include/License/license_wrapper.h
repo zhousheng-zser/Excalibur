@@ -1,9 +1,5 @@
 #pragma once
 
-#ifndef _MSC_VER
-#error This facility only works under Windows 7 and later.
-#endif
-
 #include "license_context.h"
 
 namespace glasssix
@@ -29,11 +25,20 @@ namespace glasssix
         /// Check if a license is valid and terminate the process when failed.
         /// </summary>
         /// <param name="component_name">The component name</param>
+#ifdef _MSC_VER
         extern "C" __declspec(dllexport) void check_license_fatal_exit(const std::string& component_name);
 
 		/// <summary>
 		/// Start the watchdog timer.
 		/// </summary>
         extern "C" __declspec(dllexport) void start_watchdog(const std::string& component_name);
+#elif defined(__GNUC__)
+		extern "C" void check_license_fatal_exit(const std::string& component_name);
+
+		/// <summary>
+		/// Start the watchdog timer.
+		/// </summary>
+		extern "C" void start_watchdog(const std::string& component_name);
+#endif
 	}
 }

@@ -69,19 +69,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>D:\projects\openssl-1.1.0j\include;../../include/License;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(IncludePath)</IncludePath>
     <LibraryPath>D:\projects\openssl-1.1.0j;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VcpkgRoot)include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>D:\projects\openssl-1.1.0j\include;../../include/License;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(IncludePath)</IncludePath>
     <LibraryPath>D:\projects\openssl-1.1.0j;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>../../include/License;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
