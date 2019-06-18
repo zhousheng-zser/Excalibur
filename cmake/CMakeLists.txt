@@ -3,7 +3,7 @@ project(Excalibur C CXX)
 
 option(x86 "This option is necessary for x86 platform" ON)
 option(USE_CUDA "Build Excalibur with CUDA support" ON)
-option(USE_CUDNN "Build Excalibur with cuDNN library support" ON)
+option(USE_CUDNN "Build Excalibur with cuDNN library support" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(USE_OPENMP "Use OpenMP" ON)
 option(COSINE_DISTANCE "Use cosine distance" ON)

@@ -1,4 +1,4 @@
-option(USE_OPENCV "Use opencv library" ON)
+option(USE_OPENCV "Use opencv library for test" ON)
 if(USE_OPENCV)
 	add_definitions(-DUSE_OPENCV)
 endif()
