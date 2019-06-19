@@ -1,17 +1,9 @@
 
 include_directories(../../include/Gaius 
 			../../include/Excalibur)
-if(USE_CUDA)
-	file(GLOB Gaius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cu)
-else()
-	file(GLOB Gaius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cpp)
-endif()
+file(GLOB Gaius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cpp)
 
-if(USE_CUDA)
-	CUDA_ADD_LIBRARY(Gaius ${Gaius_source_files})
-else()
-	add_library(Gaius ${Gaius_source_files})
-endif()
+add_library(Gaius ${Gaius_source_files})
 
 target_link_libraries(Gaius Excalibur ${Excalibur_LINKER_LIBS})
 add_dependencies(Gaius Excalibur)
