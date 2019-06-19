@@ -42,17 +42,9 @@ namespace glasssix
 
 			~IrisvianSearch();
 
+			int buildGraph() const;
 
-#if defined(PROFILER) && defined(_MSC_VER)
-			void buildGraph(unsigned &maxMemoryUsage);
-
-			void buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage);
-#else
-			void buildGraph() const;
-
-			void buildGraph(const std::vector<const float*> *baseData) const;
-#endif 
-
+			int buildGraph(const std::vector<const float*> *baseData) const;
 
 			void saveGraph(const char *graphPath) const;
 
@@ -91,13 +83,8 @@ namespace glasssix
 
 			void optimizeGraph() const;
 
-#ifndef PROFILER
 			void searchVector(const std::vector<const float*>* queryData, unsigned topK,
 				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const;
-#else
-			void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) const;
-#endif // !PROFILER
 
 			void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const;
 

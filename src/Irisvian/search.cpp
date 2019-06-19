@@ -13,20 +13,16 @@ namespace glasssix
 	namespace Irisvian
 	{
 		Search::Search(const std::vector<const float*> *baseData, int dimension)
-			: baseData_(baseData), baseNum_((*baseData).size()), dimension_(dimension)
-		{
-
-		};
-
-		Search::Search(int dimension)
 			: dimension_(dimension)
 		{
-
-		};
-
-		Search::~Search() 
-		{
+			baseData_ = baseData;
+			baseNum_ = (*baseData).size();
 		}
+
+		Search::Search(int dimension)
+			: dimension_(dimension){}
+
+		Search::~Search(){}
 
 		void Search::loadGraph(const char *graphPath)
 		{
@@ -50,10 +46,16 @@ namespace glasssix
 			//load graph
 			ngraph.clear();
 			std::ifstream inGraph(graphPath, std::ios::binary);
+			if (!inGraph.is_open())
+			{
+				std::cout << "open file error" << std::endl; exit(-1);
+			}
+
 			inGraph.read((char *)&isNormalized, sizeof(bool));
 			inGraph.read((char *)&width, sizeof(unsigned));
 			inGraph.read((char *)&navigateNode, sizeof(unsigned));
-			while (!inGraph.eof()) {
+			while (!inGraph.eof()) 
+			{
 				unsigned k;
 				inGraph.read((char *)&k, sizeof(unsigned));
 				if (inGraph.eof())break;
@@ -65,9 +67,14 @@ namespace glasssix
 			//load basedata
 			baseDataPtr.clear();
 			std::ifstream inBaseData(basedataPath, std::ios::binary);
-			std::shared_ptr<tensor<float>> temp_tensor = std::make_shared<tensor<float>>(dimension_);
-			float *temp_data = temp_tensor->mutable_cpu_data();
-			while (!inBaseData.eof()) {
+			if (!inBaseData.is_open())
+			{
+				std::cout << "open file error" << std::endl; exit(-1);
+			}
+
+			while (!inBaseData.eof()) 
+			{
+				float *temp_data = (float*)malloc(dimension_ * sizeof(float));
 				inBaseData.read((char*)(temp_data), dimension_ * sizeof(float));
 				baseDataPtr.push_back(const_cast<const float*>(temp_data));
 			}
@@ -140,8 +147,7 @@ namespace glasssix
 			CompactGraph().swap(ngraph);
 		}
 
-#ifndef PROFILER
-		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, 
+		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs,
 			std::vector<std::vector<float>> &returnSimilarities)
 		{
 			queryData_ = queryData;
@@ -153,9 +159,9 @@ namespace glasssix
 			if (baseNum_ != 1)
 			{
 #ifdef _OPENMP
-				#pragma omp parallel for
+#pragma omp parallel for
 #endif
-				for (int i = 0; i < queryNum_; ++i) 
+				for (int i = 0; i < queryNum_; ++i)
 				{
 					searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnSimilarities[i]);
 				}
@@ -183,26 +189,7 @@ namespace glasssix
 				}
 			}
 		}
-#else
-		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, 
-			std::vector<std::vector<Neighbor>> &returnNeighbors)
-		{
-			queryData_ = queryData;
-			queryNum_ = (*queryData).size();
 
-			returnIDs.resize(queryNum_);
-			returnNeighbors.resize(queryNum_);
-
-//#pragma omp parallel for
-			for (int i = 0; i < queryNum_; ++i) {
-				searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnNeighbors[i]);
-			}
-		}
-#endif // !PROFILER
-
-
-
-#ifndef PROFILER
 		void Search::searchWithOptGraph(const float *singleQueryData, unsigned topK,
 			std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities)
 		{
@@ -298,7 +285,7 @@ namespace glasssix
 					neighbors++;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-					for (unsigned m = 0; m<MaxM; ++m)
+					for (unsigned m = 0; m < MaxM; ++m)
 						_mm_prefetch(optGraph_ + nodeSize * neighbors[m], _MM_HINT_T0);
 #endif
 
@@ -350,153 +337,12 @@ namespace glasssix
 				returnSimilarities[i] = 1.0f - returnNeighbors[i].distance;
 
 #else
-				returnSimilarities[i] = 1.0f - 1.0f * DistanceL2::compare(singleQueryData, (*baseData_).at(returnIDs[i]), 
+				returnSimilarities[i] = 1.0f - 1.0f * DistanceL2::compare(singleQueryData, (*baseData_).at(returnIDs[i]),
 					(unsigned)dimension_) / normQuery;
 #endif // COSINE_DISTANCE
 
 			}
 		}
-#else
-		void Search::searchWithOptGraph(
-			const float *singleQueryData,
-			unsigned topK,
-			std::vector<unsigned> &returnIDs, std::vector<Neighbor> &returnNeighbors)
-		{
-			if (topK > neighborsMaxLength)
-			{
-				cerr << "error, topK is bigger than " << neighborsMaxLength;
-			}
-
-			returnNeighbors.resize(neighborsMaxLength + 1);
-			returnIDs.resize(topK);
-			std::vector<unsigned> initIds(neighborsMaxLength);
-
-			boost::dynamic_bitset<> flags{ baseNum_, 0 };
-			unsigned count = 0;
-			unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * navigateNode + dataLen);
-			unsigned MaxM_ep = *neighbors;
-			neighbors++;
-
-			for (; count < neighborsMaxLength && count < MaxM_ep; count++)
-			{
-				initIds[count] = neighbors[count];
-				flags[initIds[count]] = true;
-			}
-
-			while (count < neighborsMaxLength)
-			{
-				unsigned id = rand() % baseNum_;
-				if (flags[id])continue;
-				flags[id] = true;
-				initIds[count] = id;
-				count++;
-			}
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-			for (unsigned i = 0; i < initIds.size(); i++)
-			{
-				unsigned id = initIds[i];
-				if (id >= baseNum_)continue;
-				_mm_prefetch(optGraph_ + nodeSize * id, _MM_HINT_T0);
-			}
-#endif
-
-			float normQuery = 0.0f;
-			if (isNormalized)
-			{
-				normQuery = 1.0f;
-			}
-			else
-			{
-#ifdef COSINE_DISTANCE
-				normQuery = DistanceCosine::norm(singleQueryData, dimension_);
-#else
-				normQuery = DistanceFastL2::norm(singleQueryData, dimension_);
-#endif // COSINE_DISTANCE
-			}
-
-			for (unsigned i = 0; i < initIds.size(); i++) {
-				unsigned id = initIds[i];
-				float *x = (float*)(optGraph_ + nodeSize * id);
-				float norm_x = *x; x++;
-
-#ifdef COSINE_DISTANCE
-				float dist = DistanceCosine::compare(x, norm_x, singleQueryData, normQuery, dimension_);
-#else
-				float dist = DistanceFastL2::compare(x, norm_x, singleQueryData, normQuery, dimension_);
-#endif // COSINE_DISTANCE
-
-				returnNeighbors[i] = Neighbor(id, dist, true);
-				flags[id] = true;
-
-			}
-
-			std::sort(returnNeighbors.begin(), returnNeighbors.begin() + neighborsMaxLength);
-			int i = 0;
-			while (i < (int)neighborsMaxLength) {
-				int minPos = neighborsMaxLength;
-				if (returnNeighbors[i].flag) {
-					returnNeighbors[i].flag = false;
-					unsigned n = returnNeighbors[i].id;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-					_mm_prefetch(optGraph_ + nodeSize * n + dataLen, _MM_HINT_T0);
-#endif
-
-					unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
-					unsigned MaxM = *neighbors;
-					neighbors++;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-					for (unsigned m = 0; m<MaxM; ++m)
-						_mm_prefetch(optGraph_ + nodeSize * neighbors[m], _MM_HINT_T0);
-#endif
-
-					for (unsigned m = 0; m < MaxM; ++m) {
-						unsigned id = neighbors[m];
-						if (flags[id])continue;
-						flags[id] = 1;
-						float *data = (float*)(optGraph_ + nodeSize * id);
-						float normID = *data; data++;
-
-#ifdef COSINE_DISTANCE
-						float dist = DistanceCosine::compare(data, normID, singleQueryData, normQuery, dimension_);
-#else
-						float dist = DistanceFastL2::compare(data, normID, singleQueryData, normQuery, dimension_);
-#endif // COSINE_DISTANCE
-
-						if (dist >= returnNeighbors[neighborsMaxLength - 1].distance)continue;
-						Neighbor nn(id, dist, true);
-
-						int insertPos = insertIntoPool(&returnNeighbors[0], neighborsMaxLength, nn);
-						if (returnNeighbors.size() > neighborsMaxLength + 1)
-						{
-							returnNeighbors.pop_back();
-						}
-
-						if (insertPos < minPos)
-						{
-							minPos = insertPos;
-						}
-					}
-				}
-
-				if (minPos <= i)
-				{
-					i = minPos;
-				}
-				else
-				{
-					++i;
-				}
-			}
-
-			for (size_t i = 0; i < topK; i++) {
-				returnIDs[i] = returnNeighbors[i].id;
-			}
-		}
-#endif // PROFILER
-
 
 		void Search::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) {
 			std::ofstream out(resultPath, std::ios::binary | std::ios::out);
@@ -512,5 +358,6 @@ namespace glasssix
 			}
 			out.close();
 		}
+
 	}
 }
