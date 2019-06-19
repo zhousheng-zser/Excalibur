@@ -62,13 +62,7 @@ namespace glasssix
 
 			void update();
 
-			/// Build the index
-#if defined(PROFILER) && defined(_MSC_VER)
-
-			void build(unsigned &maxMemoryUsage);
-#else
-			void build();
-#endif 
+			int build();
 
 			void linearSearch(unsigned queryID, unsigned K, std::vector<Neighbor> *pnns);
 
