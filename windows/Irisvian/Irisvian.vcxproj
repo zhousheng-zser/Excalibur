@@ -147,11 +147,6 @@
     <ClCompile Include="..\..\src\Irisvian\nGraph.cpp" />
     <ClCompile Include="..\..\src\Irisvian\search.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\License\License.vcxproj">
-      <Project>{b1dbda1f-7496-49bc-b423-c8924aa8e126}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

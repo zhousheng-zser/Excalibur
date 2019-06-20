@@ -147,7 +147,10 @@
     <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
     <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
+    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
     <ClInclude Include="..\..\include\Excalibur\eltwise.hpp" />
     <ClInclude Include="..\..\include\Excalibur\flip.hpp" />
     <ClInclude Include="..\..\include\Excalibur\ftensor.hpp" />
@@ -194,7 +197,10 @@
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\src\Excalibur\axpy.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
       <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

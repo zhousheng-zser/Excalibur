@@ -13,22 +13,15 @@ namespace glasssix
 
 			BaseIndex() = default;
 
-			BaseIndex(const std::vector<const float*> *baseData, int dimension) {}
+			BaseIndex(const std::vector<const float*> *baseData, int dimension) :baseData_(baseData), baseNum_((*baseData).size()) {}
 
 			BaseIndex(int dimension) {}
 
 			virtual ~BaseIndex() {}
 
-#if defined(PROFILER) && defined(_MSC_VER)
+			virtual int buildGraph() = 0;
 
-			virtual void buildGraph(unsigned &maxMemoryUsage) = 0;
-
-			virtual void buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage) = 0;
-#else
-			virtual void buildGraph() = 0;
-
-			virtual void buildGraph(const std::vector<const float*> *baseData) = 0;
-#endif 
+			virtual int buildGraph(const std::vector<const float*> *baseData) = 0;
 
 			virtual void saveGraph(const char *nGraphPath) = 0;
 
@@ -38,6 +31,9 @@ namespace glasssix
 			unsigned width = 0;
 			bool isNormalized = false;
 			std::vector<std::vector<unsigned > > finalGraph;
+			const std::vector<const float*> *baseData_;
+			unsigned baseNum_;
+			
 		};
 	}
 }
