@@ -68,7 +68,7 @@ namespace glasssix
 			int output_dim_w_;
 			int output_spatial_dim_;
 			int top_dim_;
-			bool isfirst=true;
+			bool isfirst = true;
 			int last_height;
 			int last_width;
 			float* gpu_temp_col_buffer_;
@@ -155,7 +155,6 @@ namespace glasssix
 			void set_weights(float* weights)
 			{
 				weights_->set_cpu_data(weights);
-
 				if (device_ < 0)
 				{
 					weights_data = weights_->cpu_data();
@@ -169,7 +168,6 @@ namespace glasssix
 			void set_weights(signed char* weights_int8)
 			{
 				weights_int8_->set_cpu_data(weights_int8);
-
 				if (device_ < 0)
 				{
 					weights_int8_data = weights_int8_->cpu_data();
@@ -183,7 +181,6 @@ namespace glasssix
 			void set_scales(float* scales)
 			{
 				scales_->set_cpu_data(scales);
-
 				if (device_ < 0)
 				{
 					scales_data = scales_->cpu_data();

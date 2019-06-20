@@ -218,10 +218,6 @@ namespace glasssix
 #define mm_fmadd_ps _mm512_fmadd_ps
 #endif
 
-#ifndef _mm_loadu_si64
-#define _mm_loadu_si64(p) _mm_loadl_epi64((__m128i const*)(p))
-#endif
-
 #ifndef mm_align_size
 #define mm_align_size 1
 #endif // !mm_align_size

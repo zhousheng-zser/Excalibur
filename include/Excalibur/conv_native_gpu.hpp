@@ -10,7 +10,7 @@ namespace glasssix
 		{
 		public:
 			conv_native_gpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = 0, bool int8_quantization = false)
-				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization) {}
+				: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization) { }
 
 			virtual ~conv_native_gpu() {}
 

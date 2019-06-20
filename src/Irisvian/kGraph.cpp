@@ -492,15 +492,10 @@ namespace glasssix
 			}
 		}
 
-#if defined(PROFILER) && defined(_MSC_VER)
-
-		void KGraph::build(unsigned &maxMemoryUsage)
-#else
-		void KGraph::build()
-#endif 
+		int KGraph::build()
 		{
 			init();
-
+			int maxMemoryUsage = 0;
 			unsigned N = baseNum_;
 			vector<Control> controls;
 			
@@ -518,7 +513,7 @@ namespace glasssix
 			if (!GetProcessMemoryInfo(handle, (PROCESS_MEMORY_COUNTERS*)&pmc, sizeof(pmc)))
 			{
 				DWORD errCode = GetLastError();
-				return;
+				return maxMemoryUsage;
 			}
 #endif // _MSC_VER
 #endif // PROFILER
@@ -576,6 +571,7 @@ namespace glasssix
 			maxMemoryUsage = pmc.WorkingSetSize / 1048576;
 #endif 
 			nhoods.clear();
+			return maxMemoryUsage;
 		}
 	}
 }

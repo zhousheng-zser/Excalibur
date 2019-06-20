@@ -25,17 +25,9 @@ namespace glasssix
 			delete search_;
 		}
 
-#if defined(PROFILER) && defined(_MSC_VER)
-		void IrisvianSearch::buildGraph(unsigned &maxMemoryUsage)
-#else
-		void IrisvianSearch::buildGraph() const
-#endif
+		int IrisvianSearch::buildGraph() const
 		{
-#if defined(PROFILER) && defined(_MSC_VER)
-			index_->buildGraph(maxMemoryUsage);
-#else
-			index_->buildGraph();
-#endif
+			int maxMemoryUsage = index_->buildGraph();
 			search_->navigateNode = index_->navigateNode;
 			search_->width = index_->width;
 			search_->isNormalized = index_->isNormalized;
@@ -50,24 +42,20 @@ namespace glasssix
 					search_->ngraph[i][j] = index_->finalGraph[i][j];
 				}
 			}
+
+			return maxMemoryUsage;
 		}
 
-#if defined(PROFILER) && defined(_MSC_VER)
-		void IrisvianSearch::buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage)
-#else
-		void IrisvianSearch::buildGraph(const std::vector<const float*> *baseData) const
-#endif
-		{
-#if defined(PROFILER) && defined(_MSC_VER)
-			index_->buildGraph(baseData, maxMemoryUsage);
-#else
-			index_->buildGraph(baseData);
-#endif
 
+		int IrisvianSearch::buildGraph(const std::vector<const float*> *baseData) const
+		{
+			int maxMemoryUsage = index_->buildGraph(baseData);
 			search_->navigateNode = index_->navigateNode;
 			search_->width = index_->width;
 			search_->isNormalized = index_->isNormalized;
 			search_->ngraph = index_->finalGraph;
+			search_->baseNum_ = index_->baseNum_;
+			search_->baseData_ = index_->baseData_;
 
 			search_->ngraph.resize(index_->finalGraph.size());
 			for (size_t i = 0; i < index_->finalGraph.size(); i++)
@@ -78,6 +66,8 @@ namespace glasssix
 					search_->ngraph[i][j] = index_->finalGraph[i][j];
 				}
 			}
+
+			return maxMemoryUsage;
 		} 
 
 
@@ -113,20 +103,11 @@ namespace glasssix
 			search_->optimizeGraph();
 		}
 
-#ifndef PROFILER
-		void IrisvianSearch::searchVector(const std::vector<const float*>* queryData, unsigned topK, 
+		void IrisvianSearch::searchVector(const std::vector<const float*>* queryData, unsigned topK,
 			std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const
 		{
 			search_->searchVector(queryData, topK, returnIDs, returnSimilarities);
 		}
-#else
-		void IrisvianSearch::searchVector(const std::vector<const float*>* queryData, unsigned topK, 
-			std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) const
-		{
-			search_->searchVector(queryData, topK, returnIDs, returnNeighbors);
-		}
-#endif // !PROFILER
-		
 
 		void IrisvianSearch::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
 		{
