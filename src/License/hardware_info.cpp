@@ -14,7 +14,7 @@ namespace glasssix
 		hardware_info::hardware_info()
 		{
 #ifdef _MSC_VER
-            windows_com_global::instance();
+			windows_com_global::instance();
 
             auto hr = wmi_locator_.CoCreateInstance(__uuidof(WbemLocator));
 

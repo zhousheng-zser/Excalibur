@@ -101,8 +101,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_WIN32_DCOM;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <LanguageStandard>
-      </LanguageStandard>
+      <LanguageStandard>stdcpp14</LanguageStandard>
       <EnableModules>
       </EnableModules>
       <UndefinePreprocessorDefinitions>
@@ -110,7 +109,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>bcrypt.lib;C:\Tools\vcpkg\buildtrees\json11\x64-windows-dbg\json11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -140,10 +139,12 @@
       <UndefinePreprocessorDefinitions>
       </UndefinePreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>C:\Tools\vcpkg\buildtrees\json11\x64-windows-rel\json11.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -151,7 +152,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="../../include/License/aes_provider.hpp" />
-    <ClInclude Include="../../include/License/base64_utils.h" />
     <ClInclude Include="../../include/License/event_signal.hpp" />
     <ClInclude Include="../../include/License/hardware_info_abstract.h" />
     <ClInclude Include="../../include/License/license_blob.hpp" />
@@ -166,7 +166,6 @@
     <ClInclude Include="../../include/License/windows_com_global.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="../../src/License/base64_utils.cpp" />
     <ClCompile Include="../../src/License/common.cpp" />
     <ClCompile Include="../../src/License/hardware_info.cpp" />
     <ClCompile Include="../../src/License/license_context.cpp" />
