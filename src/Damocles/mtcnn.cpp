@@ -351,6 +351,15 @@ namespace glasssix
 				break;
 			}
 
+			float *input_data;
+			if (device_id_ < 0)
+			{
+				input_data = input_layer->mutable_cpu_data();
+			}
+			else
+			{
+				input_data = input_layer->mutable_gpu_data();
+			}
 
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
@@ -365,10 +374,10 @@ namespace glasssix
 				int rect_h = (int)box.ymax - (int)box.ymin + 1;
 				int rect_w = (int)box.xmax - (int)box.xmin + 1;
 				glasssix::excalibur::rectangle<int> roi_rect((int)box.xmin, (int)box.ymin, rect_h, rect_w);
-
+				
 				if (device_id_ < 0)
 				{
-					float *input_data_n = input_layer->mutable_cpu_data() + input_layer->offset(n);
+					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h * rect_w>0)
 					{
 						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
@@ -380,11 +389,12 @@ namespace glasssix
 					{
 						memset(input_data_n, 0, channels * input_h * input_w * sizeof(float));
 					}
+					
 				}
 				else
 				{
 #ifdef USE_CUDA
-					float *input_data_n = input_layer->mutable_gpu_data() + input_layer->offset(n);
+					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h * rect_w>0)
 					{
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
@@ -401,6 +411,7 @@ namespace glasssix
 #endif // USE_CUDA
 				}
 			}
+
 			switch (stage_num) {
 			case 2: {
 				RNet_->Forward(input_layer);
@@ -420,6 +431,7 @@ namespace glasssix
 			if (reg_landmark) {
 				landmark_data = reg_landmark->cpu_data();
 			}
+			
 			for (int k = 0; k < batch_size; ++k) {
 				if (confidence_data[2 * k + 1] >= threshold) {
 					FaceInfomation info;
@@ -460,6 +472,7 @@ namespace glasssix
 			{
 				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor, order_);
 			}
+			
 			if (stage >= 2 && pnet_res.size()>0) {
 				if (pnet_max_detect_num < (int)pnet_res.size()) {
 					pnet_res.resize(pnet_max_detect_num);
@@ -477,6 +490,7 @@ namespace glasssix
 				BBoxRegression(rnet_res);
 				BBoxPadSquare(rnet_res, width, height);
 			}
+			
 			if (stage >= 3 && rnet_res.size()>0) {
 				int num = (int)rnet_res.size();
 				int size = (int)ceil(1.f*num / step_size);
