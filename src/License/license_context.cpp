@@ -38,7 +38,7 @@ namespace glasssix
 		/// Check if the license is valid.
 		/// </summary>
 		/// <returns>>The cipher text</returns>
-		std::string license_context::check()
+		std::string license_context::check(bool readonly)
 		{
 			// Get the cipher text and decrypt it.
 			auto cipher_text = get_raw_code_core();
@@ -50,8 +50,11 @@ namespace glasssix
 				throw license_error{ license_error_code::invalid_license };
 			}
 
-			// Update the license file.
-			update_file_core(blob);
+			if (!readonly)
+			{
+				// Update the license file.
+				update_file_core(blob);
+			}
 
 			return cipher_text;
 		}

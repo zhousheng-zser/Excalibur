@@ -11,9 +11,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="../../src/License/base64_utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="../../src/License/common.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -35,9 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../../include/License/aes_provider.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="../../include/License/base64_utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="../../include/License/event_signal.hpp">

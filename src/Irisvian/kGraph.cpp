@@ -30,15 +30,15 @@ namespace glasssix
 			unsigned nAccurate = 0;
 			while (nApproximate < approximateResults.size() && nAccurate < accurateResults.size())
 			{
-				if (accurateResults[nAccurate].distance < approximateResults[nApproximate].distance)
-				{
-					++nAccurate;
-				}
-				else if (abs(accurateResults[nAccurate].distance - approximateResults[nApproximate].distance)<1e-6)
+				if (abs(accurateResults[nAccurate].distance - approximateResults[nApproximate].distance) < 1e-5)
 				{
 					++found;
 					++nAccurate;
 					++nApproximate;
+				}
+				else if (accurateResults[nAccurate].distance < approximateResults[nApproximate].distance)
+				{
+					++nAccurate;
 				}
 				else {
 					cerr << "Distance is unstable." << endl;

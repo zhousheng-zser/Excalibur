@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <string>
 #include "baseIndex.hpp"
 #include "baseSearch.hpp"
 
@@ -92,6 +93,8 @@ namespace glasssix
 			{
 				saveResult(resultPath.c_str(), returnIDs);
 			}
+
+			static std::string getVersion();
 
 		private:
 			BaseIndex *index_;

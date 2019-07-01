@@ -29,7 +29,7 @@ namespace glasssix
 			/// Check if the license is valid.
 			/// </summary>
 			/// <returns>>The cipher text</returns>
-			std::string check();
+			std::string check(bool readonly = false);
 		protected:
 			/// <summary>
 			/// Get the machine code encoded in hexadecimal characters.

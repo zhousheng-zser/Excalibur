@@ -86,7 +86,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RELEASE_SDK;TRIAL;EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
   </ItemDefinitionGroup>
@@ -120,7 +120,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>RELEASE_SDK;TRIAL;EXPORT_IRISVIAN;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
