@@ -5,7 +5,9 @@
 #include "ImageOperation.hpp"
 #include "InternalLonginusCascade.hpp"
 #include "../../include/Romancia/banshee.hpp"
+#ifndef TRIAL
 #include "../../include/Damocles/mtcnn.hpp"
+#endif // !TRIAL
 
 using namespace glasssix::longinus;
 using namespace glasssix::excalibur;
@@ -14,10 +16,13 @@ LonginusDetector::LonginusDetector(int device): device_(device)
 {
 	cascades_ = new std::vector<std::shared_ptr<BaseLonginusCascade>>();
 	bansheelia_.reset(new Banshee(device_));
-	diodorus_.reset(new MTCNN(device_));
 	matcher_.reset(new Matcher());
 	int dstep = (((48 * 8 + 7) / 8) * 4 - 1) &(~(4 - 1));
 	data_.resize(dstep * 48);
+
+#ifndef TRIAL
+	diodorus_.reset(new MTCNN(device_));
+#endif // !TRIAL
 }
 LonginusDetector::~LonginusDetector()
 {
@@ -117,7 +122,7 @@ std::vector<FaceRect> LonginusDetector::detect(unsigned char *gray, int width, i
 			candidateRects.insert(candidateRects.end(), tempCandidateRects.begin(), tempCandidateRects.end());
 		}
 	}
-
+	
 	std::vector<FaceRect> rects;
 	for (size_t i = 0; i < candidateRects.size(); i++)
 	{
@@ -135,7 +140,7 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 	{
 		return std::vector<FaceRectwithFaceInfo>();
 	}
-
+	
 	std::vector<std::vector<float> > infoParam;
 	std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 	group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));
@@ -249,7 +254,11 @@ void LonginusDetector::set(DetectionType detectionType, int device)
 	device_ = device;
 	cascades_->resize(0);
 	bansheelia_.reset(new Banshee(device_));
+
+#ifndef TRIAL
 	diodorus_.reset(new MTCNN(device_));
+#endif // !TRIAL
+
 	InternalLonginusCascade * cascade = nullptr;
 	switch (detectionType)
 	{
@@ -317,12 +326,12 @@ std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_
 	return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 }
 
-
+#ifndef TRIAL
 std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char* image, const int channels, const int height, const int width,
-	const int minSize, const float* threshold, const float factor, const int stage) const
+	const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 {
 	std::vector<FaceRectwithFaceInfo> output;
-	auto res =  diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, 1);
+	auto res = diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
 	for (auto i = 0; i < res.size(); i++)
 	{
 		float w = res[i].bbox.xmax - res[i].bbox.xmin;
@@ -336,6 +345,16 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char
 			info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
 		}
 		output.push_back(info);
-	}
+}
 	return output;
+}
+#endif // !TRIAL
+
+std::string LonginusDetector::getVersion()
+{
+#ifdef TRIAL
+	return std::string("Glasssix Trial FaceSDK");
+#else
+	return std::string("Glasssix");
+#endif // TRIAL	
 }

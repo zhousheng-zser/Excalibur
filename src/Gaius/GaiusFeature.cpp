@@ -25,5 +25,14 @@ namespace glasssix
 		{
 			return mobile_unicornia_->Forward(input_data, num, order);
 		}
+
+		std::string GaiusFeature::getVersion()
+		{
+#ifdef TRIAL
+			return std::string("Glasssix Trial FaceSDK");
+#else
+			return std::string("Glasssix");
+#endif // TRIAL	
+		}
 	}
 }

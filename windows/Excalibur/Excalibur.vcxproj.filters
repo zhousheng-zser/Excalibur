@@ -111,9 +111,6 @@
     <ClInclude Include="..\..\include\Excalibur\axpy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
-      <Filter>Source Files\cu</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -233,6 +230,9 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

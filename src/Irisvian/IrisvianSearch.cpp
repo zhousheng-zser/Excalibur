@@ -113,5 +113,14 @@ namespace glasssix
 		{
 			search_->saveResult(resultPath, returnIDs);
 		}
+
+		std::string IrisvianSearch::getVersion()
+		{
+#ifdef TRIAL
+			return std::string("Glasssix Trial FaceSDK");
+#else
+			return std::string("Glasssix");
+#endif // TRIAL	
+		}
 	}
 }

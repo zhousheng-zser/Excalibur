@@ -387,6 +387,8 @@ namespace glasssix
 			FreeHost(relu3_4_ex_weights, false);
 			FreeHost(relu3_4_dw_weights, false);
 			FreeHost(relu3_5_ex_weights, false);
+			FreeHost(relu3_5_dw_weights, false);
+			FreeHost(relu3_6_ex_weights, false);
 			FreeHost(relu3_6_dw_weights, false);
 			FreeHost(relu4_ex_weights, false);
 			FreeHost(relu4_dw_weights, false);
