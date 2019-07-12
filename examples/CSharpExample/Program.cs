@@ -15,9 +15,11 @@ namespace CSharpExample
     {
         static void Main(string[] args)
         {
+            int device = -1;
+            Bitmap bmp2 = new Bitmap(@"D:\rr.jpg");
             Bitmap bmp = new Bitmap(@"D:\xiaoyuankeji.jpg");
             Longinucia longinucia = new Longinucia();
-            longinucia.set(DetectorType.MULTIVIEW_REINFORCE, 0);
+            longinucia.set(DetectorType.MULTIVIEW_REINFORCE, device);
             var res = longinucia.Face_Detect(bmp, 24, 1.1f, 3, false, false, true);
             //var res = longinucia.Face_DetectEx(bmp, 64, 1.414f, new float[3]{ 0.7f, 0.6f, 0.6f}, 3);
             //for (int i = 0; i < 100; i++)
@@ -29,6 +31,17 @@ namespace CSharpExample
             {
                 aligned_faces[i].Save(@"D:\xiaoyuankeji_align"+i+".jpg");
             }
+
+            var aligned_faces2 = longinucia.AlignFace(bmp2);
+            if (device < 0)
+            {
+                aligned_faces2.Save(@"D:\rr_cpu_align.jpg");
+            }
+            else
+            {
+                aligned_faces2.Save(@"D:\rr_gpu_align.jpg");
+            }
+
             //aligned_faces[0].Save(@"D:\xiaoyuankeji_align.jpg");
             for (int i = 0; i < res.Count; i++)
             {
