@@ -378,5 +378,13 @@ namespace glasssix
 			delete data;
 			return Uchar2Bitmaps(res.data(), infos->Count, 3, 128, 128);
 		}
+
+		System::Drawing::Bitmap^ Longinucia::AlignFace(System::Drawing::Bitmap^ extend_face_bmp)
+		{
+			auto data = Bitmap2Gray(extend_face_bmp);
+			auto res = long_wrap->alignFace(data, 1, 1, extend_face_bmp->Height, extend_face_bmp->Width);
+			delete data;
+			return Uchar2Bitmaps(res.data(), 1, 3, 128, 128)[0];
+		}
 	}
 }

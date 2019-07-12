@@ -142,6 +142,8 @@ namespace glasssix
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
 				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;
 
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
+
 #ifndef TRIAL
 			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;

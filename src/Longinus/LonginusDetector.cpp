@@ -326,6 +326,11 @@ std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_
 	return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 }
 
+std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const
+{
+	return bansheelia_->alignFace(ori_image, n, channels, height, width);
+}
+
 #ifndef TRIAL
 std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char* image, const int channels, const int height, const int width,
 	const int minSize, const float* threshold, const float factor, const int stage, const int order) const
