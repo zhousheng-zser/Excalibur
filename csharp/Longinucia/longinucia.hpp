@@ -96,6 +96,8 @@ namespace glasssix
 			array<System::Drawing::Bitmap^>^ AlignFace(List<FaceInfo>^ infos);
 
 			array<System::Drawing::Bitmap^>^ AlignFace(System::Drawing::Bitmap^ bmp, List<FaceInfo>^ infos);
+
+			System::Drawing::Bitmap^ AlignFace(System::Drawing::Bitmap^ extend_face_bmp);
 		};
 	}
 }
