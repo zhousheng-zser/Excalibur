@@ -7,6 +7,7 @@
 #include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
 #include <cstring>
+#include <cmath>
 
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
@@ -2060,7 +2061,7 @@ namespace glasssix
 						NOT_IMPLEMENTED;
 					}
 
-					delete fill_color;
+					delete[] fill_color;
 				}
 				else
 				{
@@ -2282,7 +2283,7 @@ namespace glasssix
 						NOT_IMPLEMENTED;
 					}
 
-					delete fill_color;
+					delete[] fill_color;
 				}
 				else
 				{
@@ -2457,7 +2458,7 @@ namespace glasssix
 									NOT_IMPLEMENTED;
 								}
 
-								delete fill_color;
+								delete[] fill_color;
 							}
 							else
 							{
@@ -2581,7 +2582,7 @@ namespace glasssix
 								NOT_IMPLEMENTED;
 							}
 
-							delete fill_color;
+							delete[] fill_color;
 						}
 						else
 						{
@@ -2764,7 +2765,7 @@ namespace glasssix
 									NOT_IMPLEMENTED;
 								}
 
-								delete fill_color;
+								delete[] fill_color;
 							}
 							else
 							{
@@ -2887,7 +2888,7 @@ namespace glasssix
 								NOT_IMPLEMENTED;
 							}
 
-							delete fill_color;
+							delete[] fill_color;
 						}
 						else
 						{
@@ -4921,7 +4922,7 @@ namespace glasssix
 						}
 					}
 
-					delete columnSum;
+					delete[] columnSum;
 				}
 				else if (src->order() == NHWC)
 				{
@@ -4964,7 +4965,7 @@ namespace glasssix
 						}
 					}
 
-					delete columnSum;
+					delete[] columnSum;
 				}
 				else
 				{
@@ -5039,7 +5040,7 @@ namespace glasssix
 						}
 					}
 
-					delete columnSum;
+					delete[] columnSum;
 				}
 				else if (src.order() == NHWC)
 				{
@@ -5082,7 +5083,7 @@ namespace glasssix
 						}
 					}
 
-					delete columnSum;
+					delete[] columnSum;
 				}
 				else
 				{
