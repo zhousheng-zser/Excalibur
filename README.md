@@ -23,17 +23,21 @@ Core component of Excalibur. Mainly math, image operation, IO and CNN topology o
 
 A SIMD supported [BLAS](http://www.netlib.org/blas/) library. For more details, please ref [doc](docs/Julius).
 
-### Cassius(Cassiunia)
+### Cassius(Cassiunia, Cassiutia)
 
-A light weighted CNN implementation(with C++/CLI wrapper) of Unicorn Net, aim at face feature extraction. For more details, please ref [doc](docs/Cassius).
+A light weighted CNN implementation(with C++/CLI, JNI wrapper) of Unicorn Net, aim at face feature extraction. For more details, please ref [doc](docs/Cassius).
+
+### Gaius(Gaiunia, Gaiulinya)
+
+An extremely light weighted and fast CNN implementation(with C++/CLI, JNI wrapper) of MobileUnicorn Net, aim at face feature extraction on low-power performance device. For more details, please ref [doc](docs/Cassius).
 
 ### Damocles
 
 An Excalibur based [MTCNN](https://arxiv.org/abs/1604.02878) implementation with faster half O-Net.
 
-### Longinus(Longinucia)
+### Longinus(Longinucia, Longimila)
 
-An extremely fast face detection and alignment library(with C++/CLI wrapper). The alignment part was implementated in [Damocles](README.md#Damocles) and [Romancia](README.md#Romancia).
+An extremely fast face detection and alignment library(with C++/CLI, JNI wrapper). The alignment part was implementated in [Damocles](README.md#Damocles) and [Romancia](README.md#Romancia).
 For more details, please ref [doc](docs/Longinus).
 
 ### Irisvian

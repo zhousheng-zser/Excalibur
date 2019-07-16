@@ -1,4 +1,4 @@
-#include "Gaius-jni.hpp"
+#include "Gaiulinya-jni.hpp"
 #include "GaiusFeature.hpp"
 #include <opencv2/opencv.hpp>
 #include <string>
