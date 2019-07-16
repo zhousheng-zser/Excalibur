@@ -260,6 +260,7 @@ namespace glasssix
 			return output;
 		}
 
+#ifndef TRIAL
 		List<FaceInfo>^ Longinucia::Face_DetectEx(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage)
 		{
 			List<FaceInfo>^ output = gcnew List<FaceInfo>();
@@ -277,7 +278,7 @@ namespace glasssix
 			{
 				th[i] = thresholds[i];
 			}
-			auto res = long_wrap->detectEx(data, 3, bmp->Height, bmp->Width, min_size, th, 1.0f / scale, stage);
+			auto res = long_wrap->detectEx(data, 3, bmp->Height, bmp->Width, min_size, th, 1.0f / scale, stage, 0);
 			delete data;
 			for (size_t i = 0; i < res.size(); i++)
 			{
@@ -292,6 +293,7 @@ namespace glasssix
 			}
 			return output;
 		}
+#endif // !TRIAL
 
 		void Longinucia::set(DetectorType type, int device)
 		{
@@ -351,7 +353,7 @@ namespace glasssix
 				bboxs.push_back(bbox);
 				landmarks.push_back(landmark);
 			}
-			auto res = long_wrap->alignFace(image_data, 1, 1, height, width, bboxs, landmarks);
+			auto res = long_wrap->alignFace(image_data, infos->Count, 1, height, width, bboxs, landmarks);
 			return Uchar2Bitmaps(res.data(), infos->Count, 3, 128, 128);
 		}
 
@@ -372,9 +374,17 @@ namespace glasssix
 				landmarks.push_back(landmark);
 			}
 			auto data = Bitmap2Gray(bmp);
-			auto res = long_wrap->alignFace(data, 1, 1, bmp->Height, bmp->Width, bboxs, landmarks);
+			auto res = long_wrap->alignFace(data, infos->Count, 1, bmp->Height, bmp->Width, bboxs, landmarks);
 			delete data;
 			return Uchar2Bitmaps(res.data(), infos->Count, 3, 128, 128);
+		}
+
+		System::Drawing::Bitmap^ Longinucia::AlignFace(System::Drawing::Bitmap^ extend_face_bmp)
+		{
+			auto data = Bitmap2Gray(extend_face_bmp);
+			auto res = long_wrap->alignFace(data, 1, 1, extend_face_bmp->Height, extend_face_bmp->Width);
+			delete data;
+			return Uchar2Bitmaps(res.data(), 1, 3, 128, 128)[0];
 		}
 	}
 }

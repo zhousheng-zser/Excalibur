@@ -1,21 +1,33 @@
 #pragma once
 #ifndef _SIMD_HELPER_HPP_
 #define _SIMD_HELPER_HPP_
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 
 namespace glasssix
 {
 #define NATIVE_CODE_WARNING LOG(WARNING) << "Unhandled Scenario: fall back to native code with extremely low performance."
 
-
 #if SIMD_TYPE >= SIMDTYPE_SSE
-#define mm_load_ps _mm_load_ps
-#define mm_store_ps _mm_store_ps
+#define mm_load_ps _mm_loadu_ps
+#define mm_store_ps _mm_storeu_ps
 #define mm_set1_ps _mm_set1_ps
 #define mm_setzero_ps _mm_setzero_ps
 #define mm_add_ps _mm_add_ps
+#define mm_sub_ps _mm_sub_ps
 #define mm_mul_ps _mm_mul_ps
 #define mm_type __m128
+#define mm_typei __m128i
+#define mm_round_ps _mm_round_ps
+#define mm_load_si _mm_load_si128
+#define mm_cvtepi32_ps _mm_cvtepi32_ps
+#define mm_cvtps_epi32	_mm_cvtps_epi32
+#define mm_cvtepu8_epi32 _mm_cvtepu8_epi32
+#define mm_cvtepi8_epi32 _mm_cvtepi8_epi32
+#define mm_cvtepi16_epi32 _mm_cvtepi16_epi32
+#define mm_mullo_epi32 _mm_mullo_epi32
+#define mm_store_si _mm_store_si128
+#define mm_setzero_si _mm_setzero_si128
+#define mm_add_epi32 _mm_add_epi32
 #define mm_align_size 4
 #define mm_align_size2 8
 #define mm_align_size3 12
@@ -74,13 +86,26 @@ namespace glasssix
 #endif
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-#define mm_load_ps _mm256_load_ps
-#define mm_store_ps _mm256_store_ps
+#define mm_load_ps _mm256_loadu_ps
+#define mm_store_ps _mm256_storeu_ps
 #define mm_set1_ps _mm256_set1_ps
 #define mm_setzero_ps _mm256_setzero_ps
 #define mm_add_ps _mm256_add_ps
+#define mm_sub_ps _mm256_sub_ps
 #define mm_mul_ps _mm256_mul_ps
 #define mm_type __m256
+#define mm_typei __m256i
+#define mm_round_ps _mm256_round_ps
+#define mm_load_si _mm256_load_si256
+#define mm_cvtepi32_ps _mm256_cvtepi32_ps
+#define mm_cvtps_epi32	_mm256_cvtps_epi32
+#define mm_cvtepu8_epi32 _mm256_cvtepu8_epi32
+#define mm_cvtepi8_epi32 _mm256_cvtepi8_epi32
+#define mm_cvtepi16_epi32 _mm256_cvtepi16_epi32
+#define mm_mullo_epi32 _mm256_mullo_epi32
+#define mm_store_si _mm256_store_si256
+#define mm_setzero_si _mm256_setzero_si256
+#define mm_add_epi32 _mm256_add_epi32
 #define mm_align_size 8
 #define mm_align_size2 16
 #define mm_align_size3 24
@@ -147,8 +172,8 @@ namespace glasssix
 #endif
 
 #if SIMD_TYPE >= SIMDTYPE_AVX512
-#define mm_load_ps _mm512_load_ps
-#define mm_store_ps _mm512_store_ps
+#define mm_load_ps _mm512_loadu_ps
+#define mm_store_ps _mm512_storeu_ps
 #define mm_set1_ps _mm512_set1_ps
 #define mm_setzero_ps _mm512_setzero_ps
 #define mm_add_ps _mm512_add_ps
@@ -345,9 +370,10 @@ namespace glasssix
 			const __m128i half_vector = _mm256_cvtps_ph(float_vector, 0);
 			_mm_store_si128((__m128i*)(halfs + i), half_vector);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-			const __m128 float_vector = _mm_load_ps(floats + i);
-			const __m128i half_vector = _mm_cvtps_ph(float_vector, 0);
-			_mm_store_si128((__m128i*)(halfs + i), half_vector);
+			for (int j = 0; j < mm_align_size; j++)
+			{
+				halfs[i + j] = float32_to_float16(floats[i + j]);
+			}
 #endif
 		}
 		for (int i = partl; i < length; i++)
@@ -371,14 +397,33 @@ namespace glasssix
 			const __m256 float_vector = _mm256_cvtph_ps(half_vector);
 			_mm256_store_ps(floats + i, float_vector);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-			const __m128i half_vector = _mm_load_si128((__m128i*)(halfs + i));
-			const __m128 float_vector = _mm_cvtph_ps(half_vector);
-			_mm_store_ps(floats + i, float_vector);
+			for (int j = 0; j < mm_align_size; j++)
+			{
+				floats[i + j] = float16_to_float32(halfs[i + j]);
+			}
 #endif
 		}
 		for (int i = partl; i < length; i++)
 		{
 			floats[i] = float16_to_float32(halfs[i]);
+		}
+	}
+
+	inline void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group)
+	{
+		if (num % group != 0)
+		{
+			LOG(FATAL) << "int8_data does not match group!!!";
+			return;
+		}
+		int offset = num / group;
+
+		for (int i = 0; i < offset; i++)
+		{
+			for (int j = 0; j < group; j++)
+			{
+				floats[j * offset + i] = int8_data[j * offset + i] / scales[j];
+			}			
 		}
 	}
 }

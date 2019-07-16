@@ -6,28 +6,63 @@ namespace glasssix
 	{
 		mtcnn_rnet::mtcnn_rnet(int device)
 		{
+			device_ = device;
+			if (device_ >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in GPU mode
+			}
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
+#endif // SIMD_TYPE >= SIMDTYPE_SSE
 
 			float quantize_level = INT_MAX;
-			Copy_Params(conv1_weights, RNet, quantize_level);
-			Copy_Params(conv1_bias, RNet, quantize_level);
-			Copy_Params(prelu1_weights, RNet, quantize_level);
-			Copy_Params(conv2_weights, RNet, quantize_level);
-			Copy_Params(conv2_bias, RNet, quantize_level);
-			Copy_Params(prelu2_weights, RNet, quantize_level);
-			Copy_Params(conv3_weights, RNet, quantize_level);
-			Copy_Params(conv3_bias, RNet, quantize_level);
-			Copy_Params(prelu3_weights, RNet, quantize_level);
-			Copy_Params(conv4_weights, RNet, quantize_level);
-			Copy_Params(conv4_bias, RNet, quantize_level);
-			Copy_Params(prelu4_weights, RNet, quantize_level);
-			Copy_Params(conv5_1_weights, RNet, quantize_level);
-			Copy_Params(conv5_1_bias, RNet, quantize_level);
-			Copy_Params(conv5_2_weights, RNet, quantize_level);
-			Copy_Params(conv5_2_bias, RNet, quantize_level);
-			/*Copy_Params(conv5_3_weights, RNet, quantize_level);
-			Copy_Params(conv5_3_bias, RNet, quantize_level);*/
+
+			if (int8_quantization_)
+			{
+				Copy_Int8_Params(conv1, RNet);
+				Copy_Params(prelu1_weights, RNet, quantize_level);
+				Copy_Int8_Params(conv2, RNet);
+				Copy_Params(prelu2_weights, RNet, quantize_level);
+				Copy_Int8_Params(conv3, RNet);
+				Copy_Params(prelu3_weights, RNet, quantize_level);
+				Copy_Params(conv4_weights, RNet, quantize_level);
+				Copy_Params(conv4_bias, RNet, quantize_level);
+				Copy_Params(prelu4_weights, RNet, quantize_level);
+				Copy_Params(conv5_1_weights, RNet, quantize_level);
+				Copy_Params(conv5_1_bias, RNet, quantize_level);
+				Copy_Params(conv5_2_weights, RNet, quantize_level);
+				Copy_Params(conv5_2_bias, RNet, quantize_level);
+				/*Copy_Params(conv5_3_weights, RNet, quantize_level);
+				Copy_Params(conv5_3_bias, RNet, quantize_level);*/
+			}
+			else
+			{
+				Copy_Params(conv1_weights, RNet, quantize_level);
+				Copy_Params(conv1_bias, RNet, quantize_level);
+				Copy_Params(prelu1_weights, RNet, quantize_level);
+				Copy_Params(conv2_weights, RNet, quantize_level);
+				Copy_Params(conv2_bias, RNet, quantize_level);
+				Copy_Params(prelu2_weights, RNet, quantize_level);
+				Copy_Params(conv3_weights, RNet, quantize_level);
+				Copy_Params(conv3_bias, RNet, quantize_level);
+				Copy_Params(prelu3_weights, RNet, quantize_level);
+				Copy_Params(conv4_weights, RNet, quantize_level);
+				Copy_Params(conv4_bias, RNet, quantize_level);
+				Copy_Params(prelu4_weights, RNet, quantize_level);
+				Copy_Params(conv5_1_weights, RNet, quantize_level);
+				Copy_Params(conv5_1_bias, RNet, quantize_level);
+				Copy_Params(conv5_2_weights, RNet, quantize_level);
+				Copy_Params(conv5_2_bias, RNet, quantize_level);
+
+
+				/*Copy_Params(conv5_3_weights, RNet, quantize_level);
+				Copy_Params(conv5_3_bias, RNet, quantize_level);*/
+			}
+			
 			//
-			device_ = device;
+			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
@@ -58,6 +93,7 @@ namespace glasssix
 
 		mtcnn_rnet::~mtcnn_rnet()
 		{
+			delete conv1;
 			delete prelu1;
 			delete pool1;
 			delete conv2;
@@ -70,6 +106,12 @@ namespace glasssix
 			delete conv5_1;
 			delete conv5_2;
 			delete prob1;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu2_weights, false);
+			FreeHost(prelu3_weights, false);
+			FreeHost(prelu4_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{

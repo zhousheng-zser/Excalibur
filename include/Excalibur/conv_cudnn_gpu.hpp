@@ -9,8 +9,8 @@ namespace glasssix
 		class conv_cudnn_gpu : public baseconv
 		{
 		public:
-			conv_cudnn_gpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device)
-			    : baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device) {}
+			conv_cudnn_gpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = 0, bool int8_quantization = false)
+			    : baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization) {}
 
 			virtual ~conv_cudnn_gpu() {}
 
@@ -19,6 +19,7 @@ namespace glasssix
 			
 		private:
 			void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
 			void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) {}
 
 #ifdef USE_CUDNN
@@ -30,6 +31,7 @@ namespace glasssix
 		private:
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
 			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
 			void forward_bias(float* output, const float* bias) {}
 		};
 	}

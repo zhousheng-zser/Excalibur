@@ -3,7 +3,6 @@
 #define _MATH_FUNCTIONS_HPP_
 #include "mkl_alternate.hpp"
 #include <vector>
-//#include <iostream>
 
 namespace glasssix
 {
@@ -19,6 +18,11 @@ namespace glasssix
 				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 				const float alpha, const float* A, const float* B, const float beta,
 				float* C);
+
+			static void cpu_fgemm(const CBLAS_TRANSPOSE TransA,
+				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+				const float alpha, const signed char* A, const signed char* B, const float beta,
+				int* C);
 
 			static void cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 				const int N, const float alpha, const float* A, const float* x,
@@ -56,7 +60,7 @@ namespace glasssix
 
 			static void cpu_abs(const int N, const float* a, float* y);
 
-			//高斯全主元排列求解方程，只支持M行N列矩阵与N行一列矩阵相乘得到M行一列矩阵的情况，情况不符时需扩充矩阵
+			//solve equation by Gauss Elimination Method(global principal component sort), only support: (M, N) * (N, 1) = (M, 1)
 			static std::vector<float> gauss_all(std::vector<std::vector<float> > A, std::vector<float> B)
 			{
 				int length = B.size();
@@ -95,7 +99,7 @@ namespace glasssix
 						B[k] = B[maxi];
 						B[maxi] = temp;
 					}
-					if (maxj != k)//exchange_a_col(A, maxj, k); //交换两列
+					if (maxj != k)//exchange_a_col(A, maxj, k); //exchange cols
 					{
 						for (i = 0; i<length; i++)
 						{
@@ -106,7 +110,7 @@ namespace glasssix
 
 						recordColExchange.push_back(k);
 						recordColExchange.push_back(maxj);
-						recordColExchange.push_back(999999);//标识
+						recordColExchange.push_back(999999);//mark
 					}
 					for (i = k + 1; i<length; i++)
 					{
@@ -138,151 +142,11 @@ namespace glasssix
 						}
 					}
 				}
-				else
-					//std::cout << "系数行列式等于零,方程没有唯一的解.\n";
 
 				return X;
 			}
 
-			////求解逆矩阵
-			//static std::vector<std::vector<float> > invert(std::vector<std::vector<float> > A)
-			//{
-			//	int length = A.size();
-			//	for (size_t i = 0; i < A.size(); i++)
-			//	{
-			//		CHECK_EQ(length, A[i].size());
-			//	}
-			//	std::vector<std::vector<float> > E(length, std::vector<float>(length));//单位矩阵
-			//	for (size_t i = 0; i < length; i++)
-			//	{
-			//		for (size_t j = 0; j < length; j++)
-			//		{
-			//			if (i == j)
-			//			{
-			//				E[i][j] = 1.0f;
-			//			}
-			//			else
-			//			{
-			//				E[i][j] = 0.0f;
-			//			}
-			//		}
-			//	}
-			//	std::vector<std::vector<float> > AT(length, std::vector<float>(length));//A的逆矩阵
-			//	std::vector<int> recordRowExchange;
-			//	std::vector<int> recordColExchange;
-			//	std::vector<double> recordRowDivide;
-			//	int i, j, k, maxi, maxj;
-			//	double lik, temp;
-			//	for (k = 0; k<length - 1; k++)
-			//	{
-			//		for (maxi = maxj = i = k; i<length; i++)
-			//		{
-			//			for (j = k; j<length; j++)
-			//				if (A[i][j]>A[maxi][maxj])
-			//				{
-			//					maxi = i;
-			//					maxj = j;
-			//				}
-			//		}
-			//		if (maxi != k)//exchange_row(A, B, k, maxi);
-			//		{
-			//			for (j = 0; j<length; j++)
-			//			{
-			//				temp = A[k][j];
-			//				A[k][j] = A[maxi][j];
-			//				A[maxi][j] = temp;
-			//			}
-			//			
-			//			recordRowExchange.push_back(k);
-			//			recordRowExchange.push_back(maxi);
-			//			recordRowExchange.push_back(999999);//标识
-			//			std::cout << "exchange row:" << k << "<->" << maxi << std::endl;
-			//		}
-			//		if (maxj != k)//exchange_a_col(A, maxj, k); //交换两列
-			//		{
-			//			for (i = 0; i<length; i++)
-			//			{
-			//				temp = A[i][maxj];
-			//				A[i][maxj] = A[i][k];
-			//				A[i][k] = temp;
-			//			}
-			//			recordColExchange.push_back(k);
-			//			recordColExchange.push_back(maxj);
-			//			recordColExchange.push_back(999999);//标识
-			//			std::cout << "exchange col:" << k << "<->" << maxj << std::endl;
-			//		}
-			//		recordRowDivide.push_back((double)999999);//标识
-			//		recordRowDivide.push_back((double)k);
-			//		for (i = k + 1; i<length; i++)
-			//		{
-			//			lik = A[i][k] / A[k][k];
-			//			recordRowDivide.push_back((double)lik);
-			//			for (j = k; j<length; j++)
-			//				A[i][j] = A[i][j] - A[k][j] * lik;
-			//			
-			//			//E[i][0] = E[i][0] - E[k][0] * lik;
-			//		}
-			//		
-			//	}
-			//	int index = 0;
-			//	for (k = 0; k < length - 1; k++)
-			//	{
-			//		if (recordSequence[index] == 999999999)
-			//		{
-			//			for (i = recordRowExchange.size() - 1; i >= 0; i--)
-			//			{
-			//				if (recordRowExchange[i] == 999999)
-			//				{
-			//					temp = X[recordColExchange[i - 1]];
-			//					X[recordColExchange[i - 1]] = X[recordColExchange[i - 2]];
-			//					X[recordColExchange[i - 2]] = temp;
-			//					std::cout << "recover:" << recordColExchange[i - 1] << "<->" << recordColExchange[i - 2] << std::endl;
-			//				}
-			//			}
-			//			maxi = recordSequence[++index];
-			//			temp = E[k][k];
-			//			E[k][k] = E[maxi][k];
-			//			E[maxi][k] = temp;
-			//		}
-			//		if (index < recordSequence.size())
-			//		{
-			//			lik = recordSequence[index++];
-			//			for (i = k + 1; i<length; i++)
-			//			{
-			//				E[i][k] = E[i][k] - E[k][k] * lik;
-			//			}
-			//		}
-			//	}
-			//	for (k = 0; k < length - 1; k++)
-			//	{
-			//		if (A[length - 1][length - 1] != 0)
-			//		{
-			//			double sum_ax;
-			//			AT[length - 1][k] = E[length - 1][k] / A[length - 1][length - 1];
-			//			for (i = length - 2; i >= 0; i--)
-			//			{
-			//				for (j = i + 1, sum_ax = 0; j<length; j++)
-			//					sum_ax += A[i][j] * AT[j][k];
-			//				AT[i][k] = (E[i][k] - sum_ax) / A[i][i];
-			//			}
-			//			for (i = recordColExchange.size() - 1; i >= 0; i--)
-			//			{
-			//				if (recordColExchange[i] == 999999)
-			//				{
-			//					temp = X[recordColExchange[i - 1]];
-			//					X[recordColExchange[i - 1]] = X[recordColExchange[i - 2]];
-			//					X[recordColExchange[i - 2]] = temp;
-			//					std::cout << "recover:" << recordColExchange[i - 1] << "<->" << recordColExchange[i - 2] << std::endl;
-			//				}
-			//			}
-			//		}
-			//		else
-			//			std::cout << "无法求出逆矩阵.\n";
-			//	}
-			//	return AT;
-			//}
-
-			//按第一行展开计算|A|
+			//calculate value of |A|
 			static double getA(std::vector<std::vector<double> > arcs, int n)
 			{
 				if (n == 1)
@@ -315,7 +179,7 @@ namespace glasssix
 				return ans;
 			}
 
-			//计算每一行每一列的每个元素所对应的余子式，组成A*
+			//calculate adjoint matrix A*
 			static void getAStart(std::vector<std::vector<double> > arcs, int n, std::vector<std::vector<double> > &ans)
 			{
 				if (n == 1)
@@ -347,7 +211,7 @@ namespace glasssix
 				}
 			}
 
-			//得到给定矩阵src的逆矩阵保存到des中。
+			//calculate invert matrix A^(-1)
 			static bool GetMatrixInverse(std::vector<std::vector<double> > src, std::vector<std::vector<double> > &des)
 			{
 				int n = src.size();
@@ -385,6 +249,10 @@ namespace glasssix
 				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 				const float alpha, const float* A, const float* B, const float beta,
 				float* C);
+
+			static void gpu_gemmEx(cublasHandle_t cublas_handle_, const CBLAS_TRANSPOSE TransA,
+				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+				const signed char* A, const signed char* B, int* C);
 
 			static void gpu_saxpy(cublasHandle_t cublas_handle_, const int N, const float alpha, const float* X, float* Y);
 

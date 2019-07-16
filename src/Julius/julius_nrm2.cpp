@@ -1,5 +1,5 @@
 #include "julius_nrm2.hpp"
-
+#include <cmath>
 namespace glasssix
 {
 	namespace excalibur

@@ -85,8 +85,9 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -105,8 +106,9 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -124,11 +126,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\PersonalReality\caffe.pb.h" />
     <ClInclude Include="..\..\include\PersonalReality\datafile.hpp" />
     <ClInclude Include="..\..\include\PersonalReality\prototxt2class.hpp" />
     <ClInclude Include="..\..\include\PersonalReality\readcaffemodel.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\PersonalReality\caffe.pb.cc" />
     <ClCompile Include="..\..\src\PersonalReality\datafile.cpp" />
     <ClCompile Include="..\..\src\PersonalReality\main.cpp" />
     <ClCompile Include="..\..\src\PersonalReality\prototxt2class.cpp" />

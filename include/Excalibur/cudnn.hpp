@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _CUDNN_HPP_
 #define _CUDNN_HPP_
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 
 #ifdef USE_CUDNN
 #include <cudnn.h>

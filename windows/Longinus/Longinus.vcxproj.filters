@@ -83,12 +83,13 @@
     <ClCompile Include="..\..\src\Longinus\tinyxml2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DllMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu" />
-    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu" />
+    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

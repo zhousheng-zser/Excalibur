@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <mutex>
-#include <glasssix\accelerator.hpp>
+#include <glasssix/accelerator.hpp>
 #include "boost/smart_ptr/detail/spinlock.hpp"
 
 namespace glasssix 
@@ -33,8 +33,6 @@ namespace glasssix
 			}
 		};
 
-		typedef std::vector<Neighbor> Neighbors;
-
 		struct LockNeighbor 
 		{
 			Lock lock;
@@ -46,48 +44,63 @@ namespace glasssix
 		struct Control 
 		{
 			unsigned id;
-			Neighbors neighbors;
+			std::vector<Neighbor> pool;
 		};
 
-		static inline int insertIntoPool(Neighbor *addr, unsigned topK, Neighbor nn) 
+		static inline int insertIntoPool(Neighbor *addr, unsigned topK, Neighbor nn)
 		{
-			// find the location to insert
-			unsigned j;
-			unsigned i = topK;
-			while (i > 0) 
+			if (topK == 0)
 			{
-				j = i - 1;
-				if (addr[j].distance <= nn.distance) 
-					break;
-				i = j;
+				addr[0] = nn;
+				return 0;
 			}
 
-			// check for equal ID
-			unsigned l = i;
-			while (l > 0) 
+			int start = 0;
+			int end = topK - 1;
+			int mid;
+
+			// binary search
+			while (start <= end)
 			{
-				j = l - 1;
-				if (addr[j].distance < nn.distance) 
-					break;
-				if (addr[j].id == nn.id) 
-					return topK + 1;
-				l = j;
+				mid = (start + end) / 2;
+				if (nn.distance < addr[mid].distance)
+				{
+					end = mid - 1;
+				}
+				else
+				{
+					start = mid + 1;
+				}
 			}
-			// i <= K-1
-			j = topK;
-			while (j > i) 
+
+		    // check for equal ID
+			int pos = start;
+			while (pos-- > 0)
+			{
+				if (addr[pos].distance < nn.distance)
+				{
+					break;
+				}
+					
+				if (addr[pos].id == nn.id)
+				{
+					return topK + 1;
+				}
+			}
+
+			for (int j = topK; j > start; j--) 
 			{
 				addr[j] = addr[j - 1];
-				--j;
 			}
-			addr[i] = nn;
-			return i;
+
+			addr[start] = nn;
+			return start;
 		}
 
 		struct Nhood 
 		{ // neighborhood
 			Lock lock;
-			Neighbors pool;
+			std::vector<Neighbor> pool;
 			unsigned neighborsLength;     // # valid items in the pool,  L + 1 <= pool.size()
 			unsigned M;     // we only join items in pool[0..M)
 			float radius;   // distance of interesting range

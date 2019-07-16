@@ -7,13 +7,13 @@
 #include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include <glasssix\accelerator.hpp>
-#include <glasssix\tensor.hpp>
+#include <glasssix/accelerator.hpp>
+#include <glasssix/tensor.hpp>
 #include <iostream>
 #ifdef USE_OPENCV
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 #endif
-#include <glasssix\timer.hpp>
+#include <glasssix/timer.hpp>
 
 
 namespace glasssix 
@@ -26,15 +26,14 @@ namespace glasssix
 			tensor_operation_gpu() {};
 			~tensor_operation_gpu() {};
 
-
 #ifdef USE_OPENCV
 
 			template <typename Dtype>
-			static void tensor2mat_gpu(const std::shared_ptr<tensor<Dtype>> &src, cv::Mat& dst);
+			static void tensor2mat_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::vector<cv::Mat>& dst);
 
 			template <typename Dtype>
 
-			static void tensor2mat_gpu(const tensor<Dtype>& src, cv::Mat& dst);
+			static void tensor2mat_gpu(const tensor<Dtype>& src, std::vector<cv::Mat>& dst);
 
 
 
@@ -75,21 +74,21 @@ namespace glasssix
 
 			template <typename Dtype>
 			static void rotate_with_center_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-				float theta, int &dst_height, int &dst_width, int fill = 0, interpolationType type = Bilinear);
+				float theta, int &dst_height, int &dst_width, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 			template <typename Dtype>
 			static void rotate_with_center_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
-				float theta, int &dst_height, int &dst_width, int fill = 0, interpolationType type = Bilinear);
+				float theta, int &dst_height, int &dst_width, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 
 
 			template <typename Dtype, typename Ptype>
 			static void rotate_with_points_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst,
-				const point<Ptype> &center, float theta, float scale = 1.0f, int fill = 0, interpolationType type = Bilinear);
+				const point<Ptype> &center, float theta, float scale = 1.0f, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 			template <typename Dtype, typename Ptype>
 			static void rotate_with_points_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst,
-				const point<Ptype> &center, float theta, float scale = 1.0f, int fill = 0, interpolationType type = Bilinear);
+				const point<Ptype> &center, float theta, float scale = 1.0f, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 
 
@@ -135,11 +134,11 @@ namespace glasssix
 
 			template <typename Dtype, typename Ptype>
 			static void warp_affine_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill = 0, excalibur::interpolationType type = Bilinear);
+				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill_pixel_value = 0, excalibur::interpolationType type = Bilinear);
 
 			template <typename Dtype, typename Ptype>
 			static void warp_affine_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
-				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill = 0, excalibur::interpolationType type = Bilinear);
+				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill_pixel_value = 0, excalibur::interpolationType type = Bilinear);
 
 
 
@@ -173,23 +172,23 @@ namespace glasssix
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void type_converter_gpu(const tensor<DtypeSRC>* src, tensor<DtypeDST>* dst);
+			static void type_converter_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst);
 
 
 
-			template <typename Dtype>
-			static void preprocess_tensors_gpu(std::shared_ptr<tensor<Dtype>> dst);
+			template <typename DtypeSRC, typename DtypeDST>
+			static void preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst);
 
 
 
-			template <typename Dtype>
-			static void preprocess_tensors_gpu(tensor<Dtype>* dst);
+			template <typename DtypeSRC, typename DtypeDST>
+			static void preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst);
 
 
 
 			template <typename Dtype>
 			static void make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-				int top, int bottom, int left, int right, borderType type = Border_Constant, int fill = 0);
+				int top, int bottom, int left, int right, borderType type = Border_Constant, int fill_pixel_value = 0);
 
 
 			template <typename Dtype>

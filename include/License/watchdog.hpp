@@ -13,6 +13,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <functional>
 
 #ifdef _MSC_VER
 #include <Windows.h>
@@ -30,7 +31,9 @@ namespace glasssix
 		public:
 			virtual ~watchdog()
 			{
+#ifdef _MSC_VER
 				signal_.set();
+#endif
                 timer_thread_.join();
 			}
 
@@ -43,16 +46,14 @@ namespace glasssix
 
 				if (!has_started_)
 				{
-#ifdef _MSC_VER
                     timer_thread_ = std::move(std::thread{ std::bind(&watchdog::timer_routine, this) });
                     has_started_ = true;
-#endif
 				}
 			}
 		private:
-#ifdef _MSC_VER
             void timer_routine()
             {
+#ifdef _MSC_VER
                 LARGE_INTEGER due_time = {};
                 std::shared_ptr<void> handle{ CreateWaitableTimer(nullptr, FALSE, nullptr), [](void* inner) { CloseHandle(inner); } };
 
@@ -72,11 +73,27 @@ namespace glasssix
                         common::fatal_exit();
                     }
                 }
-            }
+#elif defined(__GNUC__)
+				while (true)
+				{
+					std::this_thread::sleep_for((std::chrono::milliseconds(period_)));
+					try
+					{
+						std::lock_guard<std::mutex> lock{ mutex_ };
+						context_->check();
+					}
+					catch (license_error&)
+					{
+						common::fatal_exit();
+					}
+				}
 #endif
+            }
 		private:
             std::mutex mutex_;
+#ifdef _MSC_VER
 			event_signal signal_;
+#endif
             std::thread timer_thread_;
 			std::atomic_bool has_started_;
 			std::shared_ptr<license_context> context_;

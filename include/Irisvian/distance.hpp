@@ -1,28 +1,6 @@
 #ifndef _DISTANCE_HPP_
 #define _DISTANCE_HPP_
 
-
-
-//#ifdef _MSC_VER
-//#include <intrin.h>
-//#else
-//#include <x86intrin.h>
-//#include <avxintrin.h>
-//#endif
-//
-//#include <immintrin.h>
-//#include <xmmintrin.h>
-//
-//#include <iostream>
-//#include <fstream>
-//
-//#include <vector>
-//#include <bitset>
-//#include <array>
-//#include <string>
-//#include <math.h>
-
-
 namespace glasssix {
 	namespace Irisvian {
 

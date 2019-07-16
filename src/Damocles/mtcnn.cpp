@@ -15,7 +15,9 @@ namespace glasssix
 
 		MTCNN::MTCNN(int device_id) {
 			device_id_ = device_id;
+#ifdef _OPENMP
 			omp_set_num_threads(threads_num);
+#endif
 			PNet_ = new mtcnn_pnet(device_id_);
 			RNet_ = new mtcnn_rnet(device_id_);
 			ONet_ = new mtcnn_onet(device_id_);
@@ -71,7 +73,10 @@ namespace glasssix
 				float y2 = static_cast<float>(select_bbox.ymax);
 
 				select_idx++;
+
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 				for (int32_t i = select_idx; i < num_bbox; i++) {
 					if (mask_merged[i] == 1)
 						continue;
@@ -106,7 +111,9 @@ namespace glasssix
 
 		void MTCNN::BBoxRegression(std::vector<FaceInfomation>& bboxes)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif // _OPENMP
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				float *bbox_reg = bboxes[i].bbox_reg;
@@ -121,7 +128,9 @@ namespace glasssix
 
 		void MTCNN::BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				bbox.xmin = round(std::max(bbox.xmin, 0.f));
@@ -133,7 +142,9 @@ namespace glasssix
 
 		void MTCNN::BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				float w = bbox.xmax - bbox.xmin + 1;
@@ -147,20 +158,21 @@ namespace glasssix
 			}
 		}
 
-		void MTCNN::GenerateBBox(std::shared_ptr<tensor<float>> confidence, std::shared_ptr<tensor<float>> reg_box,
+		void MTCNN::GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box,
 			float scale, float thresh)
 		{
-			int feature_map_w_ = confidence->width();
-			int feature_map_h_ = confidence->height();
-			int spatical_size = feature_map_w_*feature_map_h_;
+			int feature_map_w = confidence->width();
+			int feature_map_h = confidence->height();
+			int spatical_size = feature_map_w * feature_map_h;
 			const float* confidence_data = confidence->cpu_data() + spatical_size;
 			const float* reg_data = reg_box->cpu_data();
+
 			candidate_boxes_.clear();
 			for (int i = 0; i<spatical_size; i++) {
 				if (confidence_data[i] >= thresh) {
 
-					int y = i / feature_map_w_;
-					int x = i - feature_map_w_ * y;
+					int y = i / feature_map_w;
+					int x = i - feature_map_w * y;
 					FaceInfomation FaceInfomation;
 					FaceBox &faceBox = FaceInfomation.bbox;
 
@@ -191,7 +203,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
 				}
 				else
 				{
@@ -242,15 +254,13 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					tensor_operation_cpu::resize_cpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_cpu::type_converter_cpu(resized_tensor, input_layer);
-					tensor_operation_cpu::preprocess_tensors_cpu(input_layer);
+					tensor_operation_cpu::preprocess_tensors_cpu(resized_tensor, input_layer);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					tensor_operation_gpu::resize_gpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_gpu::type_converter_gpu(resized_tensor, input_layer);
-					tensor_operation_gpu::preprocess_tensors_gpu(input_layer);
+					tensor_operation_gpu::preprocess_tensors_gpu(resized_tensor, input_layer);
 #else
 					NO_GPU;
 #endif // USE_CUDA
@@ -283,7 +293,7 @@ namespace glasssix
 			if (batch_size == 0)
 				return res;
 
-			std::shared_ptr<tensor<unsigned char>> src_tensor, roi_tensor, roi_resized_tensor;
+			std::shared_ptr<tensor<unsigned char>> src_tensor;
 			if (order == NHWC)
 			{
 				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
@@ -291,7 +301,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw(src_nhwc_tensor, src_tensor);
+					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
 				}
 				else
 				{
@@ -328,7 +338,6 @@ namespace glasssix
 			std::shared_ptr<tensor<float>> confidence;
 			std::shared_ptr<tensor<float>> reg_box;
 			std::shared_ptr<tensor<float>> reg_landmark;
-			std::shared_ptr<tensor<float>> roi_resized_float_tensor;
 
 			switch (stage_num) {
 			case 2: {
@@ -342,42 +351,55 @@ namespace glasssix
 				break;
 			}
 
-			roi_resized_float_tensor.reset(new tensor<float>(std::vector<int>{1, channels, input_h, input_w}, device_id_));
+			float *input_data;
+			if (device_id_ < 0)
+			{
+				input_data = input_layer->mutable_cpu_data();
+			}
+			else
+			{
+				input_data = input_layer->mutable_gpu_data();
+			}
 
+#ifdef _OPENMP
 #pragma omp parallel for num_threads(threads_num)
+#endif
 			for (int n = 0; n < batch_size; ++n)
 			{
+				std::shared_ptr<tensor<unsigned char>> roi_tensor, roi_resized_tensor;
+				std::shared_ptr<tensor<float>> roi_resized_float_tensor;
+				roi_resized_float_tensor.reset(new tensor<float>(std::vector<int>{1, channels, input_h, input_w}, device_id_));
+
 				FaceBox &box = pre_stage_res[n].bbox;
 				int rect_h = (int)box.ymax - (int)box.ymin + 1;
 				int rect_w = (int)box.xmax - (int)box.xmin + 1;
 				glasssix::excalibur::rectangle<int> roi_rect((int)box.xmin, (int)box.ymin, rect_h, rect_w);
-
+				
 				if (device_id_ < 0)
 				{
-					float *input_data_n = input_layer->mutable_cpu_data() + input_layer->offset(n);
+					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h * rect_w>0)
 					{
 						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_cpu::type_converter_cpu(roi_resized_tensor, roi_resized_float_tensor);
-						tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_float_tensor);
+						tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor);
 						memcpy(input_data_n, roi_resized_float_tensor->cpu_data(), channels * input_h * input_w * sizeof(float));
 					}
 					else
 					{
 						memset(input_data_n, 0, channels * input_h * input_w * sizeof(float));
 					}
+					
 				}
 				else
 				{
 #ifdef USE_CUDA
-					float *input_data_n = input_layer->mutable_gpu_data() + input_layer->offset(n);
+					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h * rect_w>0)
 					{
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_gpu::type_converter_gpu(roi_resized_tensor, roi_resized_float_tensor);
-						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_float_tensor);
+						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
 						cudaMemcpy(input_data_n, roi_resized_float_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault);
 					}
 					else
@@ -389,6 +411,7 @@ namespace glasssix
 #endif // USE_CUDA
 				}
 			}
+
 			switch (stage_num) {
 			case 2: {
 				RNet_->Forward(input_layer);
@@ -408,6 +431,7 @@ namespace glasssix
 			if (reg_landmark) {
 				landmark_data = reg_landmark->cpu_data();
 			}
+			
 			for (int k = 0; k < batch_size; ++k) {
 				if (confidence_data[2 * k + 1] >= threshold) {
 					FaceInfomation info;
@@ -448,6 +472,7 @@ namespace glasssix
 			{
 				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor, order_);
 			}
+			
 			if (stage >= 2 && pnet_res.size()>0) {
 				if (pnet_max_detect_num < (int)pnet_res.size()) {
 					pnet_res.resize(pnet_max_detect_num);
@@ -465,6 +490,7 @@ namespace glasssix
 				BBoxRegression(rnet_res);
 				BBoxPadSquare(rnet_res, width, height);
 			}
+			
 			if (stage >= 3 && rnet_res.size()>0) {
 				int num = (int)rnet_res.size();
 				int size = (int)ceil(1.f*num / step_size);

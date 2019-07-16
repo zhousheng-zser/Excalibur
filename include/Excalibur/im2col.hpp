@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _IM2COL_HPP_
 #define _IM2COL_HPP_
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -19,6 +19,12 @@ namespace glasssix
 			const int pad_h, const int pad_w, const int stride_h,
 			const int stride_w, const int dilation_h, const int dilation_w,
 			float* data_col, orderType order = NCHW, int num = 1);
+
+		void im2col_cpu(const signed char* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w, const int stride_h,
+			const int stride_w, const int dilation_h, const int dilation_w,
+			signed char* data_col, orderType order = NCHW, int num = 1);
 
 
 		void col2im_nd_cpu(const float* data_col, const int num_spatial_axes,
