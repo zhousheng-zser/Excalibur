@@ -1,5 +1,5 @@
-#ifndef _GAIUS_JNI_HPP_
-#define _GAIUS_JNI_HPP_
+#ifndef _GAIULINYA_JNI_HPP_
+#define _GAIULINYA_JNI_HPP_
 
 #include <jni.h>
 #ifdef __cplusplus
@@ -16,4 +16,4 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaius_GaiusFeature_Forward(JNIEn
 }
 #endif
 
-#endif
+#endif // !_GAIULINYA_JNI_HPP_

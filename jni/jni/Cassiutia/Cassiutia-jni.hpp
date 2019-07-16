@@ -1,5 +1,5 @@
-#ifndef _CASSIUS_JNI_HPP_
-#define _CASSIUS_JNI_HPP_
+#ifndef _CASSIUTIA_JNI_HPP_
+#define _CASSIUTIA_JNI_HPP_
 
 #include <jni.h>
 #ifdef __cplusplus
@@ -16,4 +16,4 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassius_CassiusFeature_Forward(J
 }
 #endif
 
-#endif
+#endif //!_CASSIUTIA_JNI_HPP_

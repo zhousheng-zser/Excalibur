@@ -76,7 +76,7 @@ at the same time, due to the existence of global mutex, this module is only able
 - Glasssix Research: [J. Hu](https://github.com/inlmouse)
 - Glasssix Research: [Y. Zhang](https://github.com/zhangyifu2016)
 - Glasssix Research: [J. Zhang](https://github.com/fengye2two)
-- Glasssix Engineering: [M. Zhang](https://github.com/mingyu92)
+- Glasssix Research: [M. Zhang](https://github.com/mingyu92)
 
 ## Copyright
 
