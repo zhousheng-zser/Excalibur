@@ -13,7 +13,7 @@ namespace glasssix
 		public:
 			BaseSearch() = default;
 
-			BaseSearch(const std::vector<const float*> *baseData, int dimension) {}
+			BaseSearch(const std::vector<const float*> *baseData, int dimension) : baseData_(baseData), baseNum_((*baseData).size()) {}
 
 			virtual ~BaseSearch() {}
 
@@ -25,19 +25,17 @@ namespace glasssix
 
 			virtual void optimizeGraph() = 0;
 
-#ifdef PROFILER
-			virtual void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) = 0;
-#else
 			virtual void searchVector(const std::vector<const float*>* queryData, unsigned topK,
 				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) = 0;
-#endif // !PROFILER
+
 			virtual void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) = 0;
 
 			unsigned navigateNode = 0;
 			unsigned width = 0;
 			bool isNormalized = false;
 			std::vector<std::vector<unsigned > > ngraph;
+			const std::vector<const float*>* baseData_;
+			unsigned baseNum_;
 		};
 	}
 }

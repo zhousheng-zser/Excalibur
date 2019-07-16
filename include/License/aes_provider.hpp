@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cstring>
 
 #include <openssl/aes.h>
 

@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include <glasssix\tensor.hpp>
+#include <glasssix/tensor.hpp>
 #include "common.hpp"
 #include "BaseLonginusCascade.hpp"
 

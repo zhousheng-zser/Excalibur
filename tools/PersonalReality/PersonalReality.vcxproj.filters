@@ -24,6 +24,9 @@
     <ClInclude Include="..\..\include\PersonalReality\readcaffemodel.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\PersonalReality\caffe.pb.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\PersonalReality\datafile.cpp">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\PersonalReality\prototxt2class.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\PersonalReality\caffe.pb.cc">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -1,4 +1,5 @@
 #include "index.hpp"
+#include <cmath>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -10,12 +11,16 @@ namespace glasssix
 {
 	namespace Irisvian
 	{
-		Index::Index() :baseData_(nullptr), baseNum_(0), dimension_(0) {};
+		Index::Index() {}
 
 		Index::Index(const vector<const float*> *baseData, int dimension)
-			:baseData_(baseData), baseNum_((*baseData).size()), dimension_(dimension)
+			:dimension_(dimension)
 		{			
-			normArray_ = (float*)malloc(baseNum_ * sizeof(float));
+			baseData_ = baseData;
+			baseNum_ = (*baseData).size();
+			
+			normArray_tensor_.reset(new glasssix::excalibur::tensor<float>(baseNum_));
+			normArray_ = normArray_tensor_->mutable_cpu_data();
 
 			//use 10 data to judge if normalized
 			float sum = 0;
@@ -32,7 +37,9 @@ namespace glasssix
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int i = 0; i < baseNum_; ++i)
 				{
 					normArray_[i] = 1;
@@ -71,20 +78,9 @@ namespace glasssix
 
 		Index::~Index() {}
 
-#if defined(PROFILER) && defined(_MSC_VER)
-			void Index::buildGraph(unsigned &maxMemoryUsage)
-#else
-			void Index::buildGraph()
-#endif 
-		{
-			//index kgraph
-			{
-#if defined(PROFILER) && defined(_MSC_VER)
-				kgraph_.build(maxMemoryUsage);
-#else
-				kgraph_.build();
-#endif 
-			}
+		int Index::buildGraph()
+		{	
+			int maxMemoryUsage = kgraph_.build();
 
 			//transfer kgraph to nGraph's finalGraph_
 			{
@@ -103,10 +99,7 @@ namespace glasssix
 				}
 			}
 
-			//index nGraph
-			{
-				ngraph_.build();
-			}
+			ngraph_.build();
 
 			width = ngraph_.width;
 			navigateNode = ngraph_.navigateNode;
@@ -120,106 +113,100 @@ namespace glasssix
 					finalGraph[i][j] = ngraph_.finalGraph_[i][j];
 				}
 			}
+
+			return maxMemoryUsage;
 		}
 
+		int Index::buildGraph(const std::vector<const float*> *baseData)
+		{
+			baseData_ = baseData;
+			baseNum_ = ((*baseData).size());
+			normArray_tensor_.reset(new glasssix::excalibur::tensor<float>(baseNum_));
+			normArray_ = normArray_tensor_->mutable_cpu_data();
 
-#if defined(PROFILER) && defined(_MSC_VER)
-			void Index::buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage)
-#else
-			void Index::buildGraph(const std::vector<const float*> *baseData)
-#endif
+			//use 10 data to judge if normalized
+			float sum = 0;
+			int calcNum = std::min(10, (int)baseNum_);
+			for (int i = 0; i < calcNum; ++i)
 			{
-				baseData_ = baseData;
-				baseNum_ = ((*baseData).size());
-				normArray_ = (float*)malloc(baseNum_ * sizeof(float));
+#ifdef COSINE_DISTANCE
+				sum += DistanceCosine::norm((*baseData_).at(i), dimension_);
+#else
+				sum += DistanceFastL2::norm((*baseData_).at(i), dimension_);
+#endif // COSINE_DISTANCE
+			}
 
-				//use 10 data to judge if normalized
-				float sum = 0;
-				int calcNum = std::min(10, (int)baseNum_);
-				for (int i = 0; i < calcNum; ++i)
+			if (std::abs(sum / calcNum - 1) <= 1e-5)
+			{
+				isNormalized = true;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int i = 0; i < baseNum_; ++i)
+				{
+					normArray_[i] = 1;
+				}
+			}
+			else
+			{
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int i = 0; i < baseNum_; ++i)
 				{
 #ifdef COSINE_DISTANCE
-					sum += DistanceCosine::norm((*baseData_).at(i), dimension_);
+					normArray_[i] = DistanceCosine::norm((*baseData_).at(i), dimension_);
 #else
-					sum += DistanceFastL2::norm((*baseData_).at(i), dimension_);
+					normArray_[i] = DistanceFastL2::norm((*baseData_).at(i), dimension_);
 #endif // COSINE_DISTANCE
 				}
+			}
 
-				if (abs(sum / calcNum - 1) <= 1e-5)
+			kgraph_.baseData_ = baseData_;
+			kgraph_.baseNum_ = baseNum_;
+			kgraph_.normArray_ = normArray_;
+
+			ngraph_.baseData_ = baseData_;
+			ngraph_.baseNum_ = baseNum_;
+			ngraph_.normArray_ = normArray_;
+			double elapsedTime = 0;
+
+			int maxMemoryUsage = kgraph_.build();
+
+			//transfer kgraph to nGraph's finalGraph_
+			{
+				std::vector<std::vector<Neighbor>> &kgraphTemp = kgraph_.kgraph;
+				ngraph_.finalGraph_.resize(kgraphTemp.size());
+				for (unsigned i = 0; i < kgraphTemp.size(); ++i)
 				{
-					isNormalized = true;
-#pragma omp parallel for
-					for (int i = 0; i < baseNum_; ++i)
+					auto const &neighbors = kgraphTemp[i];
+					uint32_t size = neighbors.size();
+					ngraph_.finalGraph_[i].resize(size);
+
+					for (unsigned j = 0; j < size; ++j)
 					{
-						normArray_[i] = 1;
-					}
-				}
-				else
-				{
-#pragma omp parallel for
-					for (int i = 0; i < baseNum_; ++i)
-					{
-#ifdef COSINE_DISTANCE
-						normArray_[i] = DistanceCosine::norm((*baseData_).at(i), dimension_);
-#else
-						normArray_[i] = DistanceFastL2::norm((*baseData_).at(i), dimension_);
-#endif // COSINE_DISTANCE
-					}
-				}
-
-				kgraph_.baseData_ = baseData_;
-				kgraph_.baseNum_ = baseNum_;
-				kgraph_.normArray_ = normArray_;
-
-				ngraph_.baseData_ = baseData_;
-				ngraph_.baseNum_ = baseNum_;
-				ngraph_.normArray_ = normArray_;
-				double elapsedTime = 0;
-
-				//index kgraph
-				{
-#if defined(PROFILER) && defined(_MSC_VER)
-					kgraph_.build(maxMemoryUsage);
-#else
-					kgraph_.build();
-#endif 
-				}
-				//transfer kgraph to nGraph's finalGraph_
-				{
-					std::vector<std::vector<Neighbor>> &kgraphTemp = kgraph_.kgraph;
-					ngraph_.finalGraph_.resize(kgraphTemp.size());
-					for (unsigned i = 0; i < kgraphTemp.size(); ++i)
-					{
-						auto const &neighbors = kgraphTemp[i];
-						uint32_t size = neighbors.size();
-						ngraph_.finalGraph_[i].resize(size);
-
-						for (unsigned j = 0; j < size; ++j)
-						{
-							ngraph_.finalGraph_[i][j] = neighbors[j].id;
-						}
-					}
-				}
-
-				//index nGraph
-				{
-					ngraph_.build();
-				}
-
-				width = ngraph_.width;
-				navigateNode = ngraph_.navigateNode;
-
-				finalGraph.resize(ngraph_.finalGraph_.size());
-				for (size_t i = 0; i < ngraph_.finalGraph_.size(); i++)
-				{
-					finalGraph[i].resize(ngraph_.finalGraph_[i].size());
-					for (size_t j = 0; j < ngraph_.finalGraph_[i].size(); j++)
-					{
-						finalGraph[i][j] = ngraph_.finalGraph_[i][j];
+						ngraph_.finalGraph_[i][j] = neighbors[j].id;
 					}
 				}
 			}
 
+			ngraph_.build();
+
+			width = ngraph_.width;
+			navigateNode = ngraph_.navigateNode;
+
+			finalGraph.resize(ngraph_.finalGraph_.size());
+			for (size_t i = 0; i < ngraph_.finalGraph_.size(); i++)
+			{
+				finalGraph[i].resize(ngraph_.finalGraph_[i].size());
+				for (size_t j = 0; j < ngraph_.finalGraph_[i].size(); j++)
+				{
+					finalGraph[i][j] = ngraph_.finalGraph_[i][j];
+				}
+			}
+
+			return maxMemoryUsage;
+		}
 
 		void Index::saveGraph(const char *nGraphPath) {
 			std::ofstream out(nGraphPath, std::ios::binary);

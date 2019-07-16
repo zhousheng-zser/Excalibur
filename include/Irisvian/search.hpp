@@ -8,6 +8,7 @@
 #include "kGraph.hpp"
 #include "distance.hpp"
 #include "baseSearch.hpp"
+#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -31,34 +32,20 @@ namespace glasssix
 
 				void optimizeGraph() override;
 
-#ifndef PROFILER
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
-#else
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<Neighbor>> &returnNeighbors) override;
-#endif // !PROFILER
+				void searchVector(const std::vector<const float*>* queryData, unsigned topK,
+					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
 
-				
 				void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) override;
 
-#ifdef PROFILER
-				const std::vector<const float*>* baseData_;
-				std::vector<const float*> baseDataPtr;
-				const std::vector<const float*>* queryData_;
-#endif // !PROFILER
-
 			private:
-
-#ifndef PROFILER
-				std::vector<std::vector<float> > baseDataVector;
-				std::vector<const float*> baseDataPtr;
-				const std::vector<const float*>* baseData_;
-				const std::vector<const float*>* queryData_;
-#endif // !PROFILER
-				unsigned baseNum_;
-				unsigned queryNum_;
 				unsigned dimension_;
+				const std::vector<const float*>* queryData_;
+				unsigned queryNum_;
+				std::vector<const float*> baseDataPtr;
 
+				std::shared_ptr<glasssix::excalibur::tensor<char>> optGraph_tensor_;
 				char* optGraph_;
+
 				size_t nodeSize;
 				size_t dataLen;
 				size_t neighborLen;
@@ -66,16 +53,9 @@ namespace glasssix
 				unsigned neighborsMaxLength = 0;
 				typedef std::vector<std::vector<unsigned > > CompactGraph;
 
-#ifndef PROFILER
 				void searchWithOptGraph(const float *singleQueryData, unsigned topK,
 					std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities);
-#else
-				void searchWithOptGraph(
-					const float *singleQueryData,
-					unsigned topK,
-					std::vector<unsigned> &returnIDs,
-					std::vector<Neighbor> &returnNeighbors);
-#endif // PROFILER
+
 			};
 	}
 }

@@ -6,6 +6,7 @@
 #include "kGraph.hpp"
 #include "distance.hpp"
 #include "baseIndex.hpp"
+#include <glasssix/tensor.hpp>
 
 namespace glasssix 
 {
@@ -23,27 +24,19 @@ namespace glasssix
 
 				virtual ~Index();
 
-#if defined(PROFILER) && defined(_MSC_VER)
+				int buildGraph() override;
 
-				void buildGraph(unsigned &maxMemoryUsage) override;
-
-				void buildGraph(const std::vector<const float*> *baseData, unsigned &maxMemoryUsage) override;
-#else
-				void buildGraph() override;
-
-				void buildGraph(const std::vector<const float*> *baseData) override;
-#endif 
+				int buildGraph(const std::vector<const float*> *baseData) override;
 
 				void saveGraph(const char *nGraphPath) override;
 
 				void saveGraph(const char *nGraphPath, const char *basedataPath) override;
 
 			private:
-				const std::vector<const float*> *baseData_;
-				unsigned baseNum_;
 				unsigned dimension_;
 				KGraph kgraph_;
 				NGraph ngraph_;
+				std::shared_ptr<glasssix::excalibur::tensor<float>> normArray_tensor_;
 				float *normArray_;
 			};
 	}

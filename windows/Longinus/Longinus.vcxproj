@@ -22,7 +22,7 @@
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{9700E429-6846-4C83-89CF-1881147FE5D6}</ProjectGuid>
     <RootNamespace>Longinus</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -87,7 +87,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -126,7 +126,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;EXPORT_LONGINUS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <OpenMPSupport>true</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
@@ -161,17 +161,6 @@
     <ClCompile Include="..\..\src\Longinus\LonginusDetector.cpp" />
     <ClCompile Include="..\..\src\Longinus\matcher.cpp" />
     <ClCompile Include="..\..\src\Longinus\tinyxml2.cpp" />
-    <ClCompile Include="DllMain.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
-    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu">
-      <FileType>Document</FileType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </CudaCompile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Damocles\Damocles.vcxproj">
@@ -180,12 +169,19 @@
     <ProjectReference Include="..\Excalibur\Excalibur.vcxproj">
       <Project>{546e42e9-516a-4d09-bbe0-d3d567ac1328}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\License\License.vcxproj">
-      <Project>{b1dbda1f-7496-49bc-b423-c8924aa8e126}</Project>
-    </ProjectReference>
     <ProjectReference Include="..\Romancia\Romancia.vcxproj">
       <Project>{9e81958b-61ae-4de2-b254-cfd4260f64a6}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\src\Longinus\ImageOperation.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Longinus\InternalLonginusCascade.cu">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

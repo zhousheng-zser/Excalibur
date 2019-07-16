@@ -6,11 +6,13 @@
 #include <memory>
 #include "BaseLonginusCascade.hpp"
 #include "../Romancia/romancia.hpp"
-#include "../Damocles/damocles.hpp"
 #include "matcher.hpp"
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
+#ifndef TRIAL
+#include "../Damocles/Damocles.hpp"
+#endif // !TRIAL
 
 namespace glasssix
 {
@@ -101,16 +103,17 @@ namespace glasssix
 		{
 			bboxes.clear();
 			landmarks.clear();
-			int index = -1;
+			int index = 0;
 			float area = 0.0f;
 			for (size_t i = 0; i < face_info.size(); i++)
 			{
-				if (face_info[index].width * face_info[index].height > area)
+				if (face_info[i].width * face_info[i].height > area)
 				{
 					index = i;
+					area = face_info[i].width * face_info[i].height;
 				}
 			}
-			if (index < 0)
+			if (area <= 0.0f)
 			{
 				return;
 			}
@@ -132,9 +135,6 @@ namespace glasssix
 			std::vector<FaceRectwithFaceInfo> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
 
-			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
-				const int minSize, const float* threshold, const float factor, const int stage) const;
-
 			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency) const;
 
 			std::vector<Match_Retval> match(std::vector<FaceRectwithFaceInfo> &faceRect, const int frame_extract_frequency) const;
@@ -142,20 +142,32 @@ namespace glasssix
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
 				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;
 
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
+
+#ifndef TRIAL
+			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
+				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
+#endif // !TRIAL
 
 #ifndef RELEASE_SDK
 			void load(std::vector<std::string> cascades, int device = -1);
 #endif
 			void set(DetectionType detectionType, int device = -1);
 
+			static std::string getVersion();
+
 
 		private:
 			int device_;
 			std::vector<std::shared_ptr<BaseLonginusCascade>> *cascades_;
 			std::unique_ptr<vBanshee> bansheelia_;
-			std::unique_ptr<vDamocles> diodorus_;
 			std::vector<unsigned char> data_;
 			std::unique_ptr<Matcher> matcher_;
+
+#ifndef TRIAL
+			std::unique_ptr<vDamocles> diodorus_;
+#endif // !TRIAL
+
 		};
 	}
 }

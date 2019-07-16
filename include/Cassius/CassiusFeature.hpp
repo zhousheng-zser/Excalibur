@@ -22,6 +22,7 @@
 #endif
 
 #include "vunicorn.hpp"
+#include <string>
 
 namespace glasssix
 {
@@ -31,7 +32,7 @@ namespace glasssix
 		{
 		public:
 
-			CassiusFeature();
+			CassiusFeature() {}
 
 			CassiusFeature(int device);
 
@@ -39,7 +40,10 @@ namespace glasssix
 
 			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
 
+			static std::string getVersion();
+
 		private:
+
 			vUnicorn* unicornia_;
 
 			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;

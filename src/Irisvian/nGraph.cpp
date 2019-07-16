@@ -3,7 +3,8 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-
+#include <glasssix/tensor.hpp>
+using namespace glasssix::excalibur;
 using namespace std;
 using namespace boost;
 
@@ -14,7 +15,7 @@ namespace glasssix
 		void NGraph::getNavigateNode(const float *approximateCenter, vector<Neighbor> *pnns)
 		{
 			int testNum = std::min(10, (int)baseNum_);
-			Neighbors neighbors(testNum + 1);
+			std::vector<Neighbor> neighbors(testNum + 1);
 			unsigned tempK = 0;
 			for (int i = 0; i < baseNum_; ++i)
 			{
@@ -232,7 +233,8 @@ namespace glasssix
 				range = baseNum_;
 			}
 
-			float* center = (float*)malloc(dimension_ * sizeof(float));
+			std::shared_ptr<tensor<float>> center_tensor = std::make_shared<tensor<float>>(dimension_);
+			float* center = center_tensor->mutable_cpu_data();
 			for (unsigned j = 0; j < dimension_; j++)
 			{
 				center[j] = 0;
@@ -306,7 +308,6 @@ namespace glasssix
 				}
 				pool.swap(result);
 			}
-
 		}
 
 		void NGraph::edgePrune(unsigned queryID, std::vector <Neighbor> &fullset, LockGraph &cutGraph_)
@@ -387,14 +388,13 @@ namespace glasssix
 
 		void NGraph::link(LockGraph &cutGraph_)
 		{
-#pragma omp parallel
-			{
-#pragma omp for
-				for (int n = 0; n < baseNum_; ++n) {
-					std::vector <Neighbor> pool, fullset;
-					getNeighbors(n, pool, fullset);
-					edgePrune(n, fullset, cutGraph_);
-				}
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int n = 0; n < baseNum_; ++n) {
+				std::vector <Neighbor> pool, fullset;
+				getNeighbors(n, pool, fullset);
+				edgePrune(n, fullset, cutGraph_);
 			}
 		}
 

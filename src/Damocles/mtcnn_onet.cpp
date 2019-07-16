@@ -6,30 +6,65 @@ namespace glasssix
 	{
 		mtcnn_onet::mtcnn_onet(int device)
 		{
-			float quantize_level = INT_MAX;
-			Copy_Params(conv1_weights, ONet, quantize_level);
-			Copy_Params(conv1_bias, ONet, quantize_level);
-			Copy_Params(prelu1_weights, ONet, quantize_level);
-			Copy_Params(conv2_weights, ONet, quantize_level);
-			Copy_Params(conv2_bias, ONet, quantize_level);
-			Copy_Params(prelu2_weights, ONet, quantize_level);
-			Copy_Params(conv3_weights, ONet, quantize_level);
-			Copy_Params(conv3_bias, ONet, quantize_level);
-			Copy_Params(prelu3_weights, ONet, quantize_level);
-			Copy_Params(conv4_weights, ONet, quantize_level);
-			Copy_Params(conv4_bias, ONet, quantize_level);
-			Copy_Params(prelu4_weights, ONet, quantize_level);
-			Copy_Params(conv5_weights, ONet, quantize_level);
-			Copy_Params(conv5_bias, ONet, quantize_level);
-			Copy_Params(prelu5_weights, ONet, quantize_level);
-			Copy_Params(conv6_1_weights, ONet, quantize_level);
-			Copy_Params(conv6_1_bias, ONet, quantize_level);
-			Copy_Params(conv6_2_weights, ONet, quantize_level);
-			Copy_Params(conv6_2_bias, ONet, quantize_level);
-			Copy_Params(conv6_3_weights, ONet, quantize_level);
-			Copy_Params(conv6_3_bias, ONet, quantize_level);
-			//
 			device_ = device;
+			if (device_ >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in GPU mode
+			}
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
+#endif // SIMD_TYPE >= SIMDTYPE_SSE
+
+			float quantize_level = INT_MAX;
+			if (int8_quantization_)
+			{
+				Copy_Int8_Params(conv1, ONet);
+				Copy_Params(prelu1_weights, ONet, quantize_level);
+				Copy_Int8_Params(conv2, ONet);
+				Copy_Params(prelu2_weights, ONet, quantize_level);
+				Copy_Int8_Params(conv3, ONet);
+				Copy_Params(prelu3_weights, ONet, quantize_level);
+				Copy_Int8_Params(conv4, ONet);
+				Copy_Params(prelu4_weights, ONet, quantize_level);
+				Copy_Params(conv5_weights, ONet, quantize_level);
+				Copy_Params(conv5_bias, ONet, quantize_level);
+				Copy_Params(prelu5_weights, ONet, quantize_level);
+				Copy_Params(conv6_1_weights, ONet, quantize_level);
+				Copy_Params(conv6_1_bias, ONet, quantize_level);
+				Copy_Params(conv6_2_weights, ONet, quantize_level);
+				Copy_Params(conv6_2_bias, ONet, quantize_level);
+				Copy_Params(conv6_3_weights, ONet, quantize_level);
+				Copy_Params(conv6_3_bias, ONet, quantize_level);
+			}
+			else
+			{
+				Copy_Params(conv1_weights, ONet, quantize_level);
+				Copy_Params(conv1_bias, ONet, quantize_level);
+				Copy_Params(prelu1_weights, ONet, quantize_level);
+				Copy_Params(conv2_weights, ONet, quantize_level);
+				Copy_Params(conv2_bias, ONet, quantize_level);
+				Copy_Params(prelu2_weights, ONet, quantize_level);
+				Copy_Params(conv3_weights, ONet, quantize_level);
+				Copy_Params(conv3_bias, ONet, quantize_level);
+				Copy_Params(prelu3_weights, ONet, quantize_level);
+				Copy_Params(conv4_weights, ONet, quantize_level);
+				Copy_Params(conv4_bias, ONet, quantize_level);
+				Copy_Params(prelu4_weights, ONet, quantize_level);
+				Copy_Params(conv5_weights, ONet, quantize_level);
+				Copy_Params(conv5_bias, ONet, quantize_level);
+				Copy_Params(prelu5_weights, ONet, quantize_level);
+				Copy_Params(conv6_1_weights, ONet, quantize_level);
+				Copy_Params(conv6_1_bias, ONet, quantize_level);
+				Copy_Params(conv6_2_weights, ONet, quantize_level);
+				Copy_Params(conv6_2_bias, ONet, quantize_level);
+				Copy_Params(conv6_3_weights, ONet, quantize_level);
+				Copy_Params(conv6_3_bias, ONet, quantize_level);
+			}
+			
+			//
+			
 #ifdef USE_CUDA
 			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
 				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
@@ -81,6 +116,13 @@ namespace glasssix
 			delete conv6_2;
 			delete conv6_3;
 			delete prob1;
+
+			FreeHost(prelu1_weights, false);
+			FreeHost(prelu2_weights, false);
+			FreeHost(prelu3_weights, false);
+			FreeHost(prelu4_weights, false);
+			FreeHost(prelu5_weights, false);
+
 #ifdef USE_CUDA
 			if (cublas_handle_)
 			{
