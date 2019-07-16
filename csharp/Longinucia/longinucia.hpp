@@ -89,6 +89,8 @@ namespace glasssix
 
 #ifndef TRIAL
 			List<FaceInfo>^ Face_DetectEx(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage);
+
+			System::Drawing::Bitmap^ AlignFace(System::Drawing::Bitmap^ extend_face_bmp);
 #endif // !TRIAL
 
 			void Match_Faces(List<FaceInfo>^% infos, int frame_extract_frequency);
@@ -96,8 +98,6 @@ namespace glasssix
 			array<System::Drawing::Bitmap^>^ AlignFace(List<FaceInfo>^ infos);
 
 			array<System::Drawing::Bitmap^>^ AlignFace(System::Drawing::Bitmap^ bmp, List<FaceInfo>^ infos);
-
-			System::Drawing::Bitmap^ AlignFace(System::Drawing::Bitmap^ extend_face_bmp);
 		};
 	}
 }
