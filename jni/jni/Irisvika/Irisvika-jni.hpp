@@ -1,5 +1,5 @@
-#ifndef _IRISVIAN_JNI_HPP_
-#define _IRISVIAN_JNI_HPP_
+#ifndef _IRISVIKA_JNI_HPP_
+#define _IRISVIKA_JNI_HPP_
 
 #include <jni.h>
 #ifdef __cplusplus
@@ -19,4 +19,4 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_saveResult(JNIEnv *, jo
 }
 #endif
 
-#endif
+#endif //!_IRISVIKA_JNI_HPP_
