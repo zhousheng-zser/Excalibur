@@ -4,13 +4,13 @@
 #include <string>
 #include <vector>
 
-static const char *FaceRectClassPath = "com/glasssix/Longinus/FaceRect";
-static const char *FaceRectwithFaceInfoClassPath = "com/glasssix/Longinus/FaceRectwithFaceInfo";
-static const char *PointClassPath = "com/glasssix/Longinus/Point";
-static const char *MatchRetvalClassPath = "com/glasssix/Longinus/Match_Retval";
+static const char *FaceRectClassPath = "com/glasssix/Longimila/FaceRect";
+static const char *FaceRectwithFaceInfoClassPath = "com/glasssix/Longimila/FaceRectwithFaceInfo";
+static const char *PointClassPath = "com/glasssix/Longimila/Point";
+static const char *MatchRetvalClassPath = "com/glasssix/Longimila/Match_Retval";
 
 
-JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_init(JNIEnv *env, jobject thiz, jint device)
+JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_init(JNIEnv *env, jobject thiz, jint device)
 {
 	glasssix::longinus::LonginusDetector *pDetector = new glasssix::longinus::LonginusDetector(device);
 	jclass clazz = env->GetObjectClass(thiz);
@@ -20,7 +20,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_init(JNIEnv *
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_set(JNIEnv *env, jobject thiz, jint detectionType, jint device)
+JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_set(JNIEnv *env, jobject thiz, jint detectionType, jint device)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -46,7 +46,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_set(JNIEnv *e
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_finalize(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -62,7 +62,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longinus_LonginusDetector_finalize(JNIE
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_detect_JIFI(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors)
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -95,7 +95,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_detec
 	return array;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_detect_JIFII(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors, jint order)
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFII(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -187,13 +187,13 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 	return jstr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Longinus_LonginusDetector_getVersion(JNIEnv *env, jclass clazz)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Longimila_Longimila_getVersion(JNIEnv *env, jclass clazz)
 {
 	std::string version = glasssix::longinus::LonginusDetector::getVersion();
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_match(JNIEnv *env, jobject thiz, jobjectArray faceRectArray, jint frame_extract_frequency)
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEnv *env, jobject thiz, jobjectArray faceRectArray, jint frame_extract_frequency)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -268,7 +268,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_match
 	return match_array;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_alignFace_J_3I_3I(JNIEnv *env, jobject thiz, jlong grayNativeObj, jintArray bboxArray, jintArray landmarkArray)
+JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFace_J_3I_3I(JNIEnv *env, jobject thiz, jlong grayNativeObj, jintArray bboxArray, jintArray landmarkArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -301,7 +301,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_alignFa
 	return aligned_array;
 }
 
-JNIEXPORT jbyteArray Java_com_glasssix_Longinus_LonginusDetector_alignFace_J(JNIEnv *env, jobject thiz, jlong grayNativeObj)
+JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignFace_J(JNIEnv *env, jobject thiz, jlong grayNativeObj)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");

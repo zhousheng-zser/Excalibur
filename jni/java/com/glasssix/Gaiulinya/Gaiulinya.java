@@ -1,13 +1,13 @@
-package com.glasssix.Cassius;
+package com.glasssix.Gaiulinya;
 
-public class CassiusFeature {
+public class Gaiulinya {
 	static {
-		System.loadLibrary("Cassius-java")
+		System.loadLibrary("Gaiulinya");
 	}
 	
 	private long mObject;
 	
-	public CassiusFeature(int device) {
+	public Gaiulinya(int device) {
 		init(device);
 	}
 	

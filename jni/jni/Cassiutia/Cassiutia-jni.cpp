@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_init(JNIEnv *env, jobject thiz, jint device)
+JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_init(JNIEnv *env, jobject thiz, jint device)
 {
 	glasssix::cassius::CassiusFeature *pCassius = new glasssix::cassius::CassiusFeature(device);
 	jclass clazz = env->GetObjectClass(thiz);
@@ -14,7 +14,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_init(JNIEnv *env
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_finalize(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -47,13 +47,13 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 	return jstr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Cassius_CassiusFeature_getVersion(JNIEnv *env, jclass clazz)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Cassiutia_Cassiutia_getVersion(JNIEnv *env, jclass clazz)
 {
 	std::string version = glasssix::cassius::CassiusFeature::getVersion();
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassius_CassiusFeature_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
