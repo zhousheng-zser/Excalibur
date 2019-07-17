@@ -1,13 +1,13 @@
-package com.glasssix.Gaius;
+package com.glasssix.Cassiutia;
 
-public class GaiusFeature {
+public class Cassiutia {
 	static {
-		System.loadLibrary("Gaius-java")
+		System.loadLibrary("Cassiutia");
 	}
 	
 	private long mObject;
 	
-	public GaiusFeature(int device) {
+	public Cassiutia(int device) {
 		init(device);
 	}
 	

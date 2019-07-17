@@ -93,7 +93,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Romancia.lib;$(CUDA_PATH)\x64\lib\*lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -113,7 +113,7 @@
       <PreprocessorDefinitions>EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Romancia.lib;$(CUDA_PATH)\x64\lib\*lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

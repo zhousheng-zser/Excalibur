@@ -6,10 +6,10 @@
 extern "C" {
 #endif
 
-JNIEXPORT void JNICALL Java_com_glasssix_Gaius_GaiusFeature_init(JNIEnv *, jobject, jint);
-JNIEXPORT void JNICALL Java_com_glasssix_Gaius_GaiusFeature_finalize(JNIEnv *, jobject);
-JNIEXPORT jstring JNICALL Java_com_glasssix_Gaius_GaiusFeature_getVersion(JNIEnv *, jclass);
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaius_GaiusFeature_Forward(JNIEnv *, jobject, jlong, jint);
+JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_init(JNIEnv *, jobject, jint);
+JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_finalize(JNIEnv *, jobject);
+JNIEXPORT jstring JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_getVersion(JNIEnv *, jclass);
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIEnv *, jobject, jlong, jint);
 
 
 #ifdef __cplusplus
