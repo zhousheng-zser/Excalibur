@@ -1,17 +1,17 @@
-package com.glasssix.Irisvian;
+package com.glasssix.Irisvika;
 
-public class Search {
+public class Irisvika {
 	static {
-		System.loadLibrary("Irisvian-java")
+		System.loadLibrary("Irisvika");
 	}
 	
 	private long mObject;
 	
-	public Search(float[][] baseData) {
-		init(baseData);
+	public Irisvika(float[][] baseData) {
+		init_withData(baseData);
 	}
 	
-	public Search(int dimension) {
+	public Irisvika(int dimension) {
 		init(dimension);
 	}
 	
@@ -20,7 +20,7 @@ public class Search {
 	public native void optimizeGraph();
 	public native void searchVector(float[][] queryData, int topK, int[][] returnIDs, float[][] returnSimilarities);
 	public native void saveResult(String resultPath, int[][] returnIDs);
-	private native void init(float[][] baseData);
+	private native void init_withData(float[][] baseData);
 	private native void init(int dimension);
 	protected native void finalize();
 }

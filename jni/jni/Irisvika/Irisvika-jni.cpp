@@ -3,7 +3,7 @@
 #include <vector>
 #include <string.h>
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_init__3_3F(JNIEnv *env, jobject thiz, jobjectArray baseDataArray)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init_withData(JNIEnv *env, jobject thiz, jobjectArray baseDataArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -30,7 +30,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_init__3_3F(JNIEnv *env,
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_init_I(JNIEnv *env, jobject thiz, jint dimension)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *env, jobject thiz, jint dimension)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -41,7 +41,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_init_I(JNIEnv *env, job
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_finalize(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -84,7 +84,7 @@ std::string jstring2string(JNIEnv *env, jstring jstr)
 	return str;
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_loadGraph_LJava_lang_String_2(JNIEnv *env, jobject thiz, jstring graphPath)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *env, jobject thiz, jstring graphPath)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -96,7 +96,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_loadGraph_LJava_lang_St
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_loadGraph_LJava_lang_String_2LJava_lang_String_2(JNIEnv *env, jobject thiz, jstring graphPath, jstring basedataPath)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNIEnv *env, jobject thiz, jstring graphPath, jstring basedataPath)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -108,7 +108,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_loadGraph_LJava_lang_St
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_optimizeGraph(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_optimizeGraph(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -120,7 +120,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_optimizeGraph(JNIEnv *e
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_searchVector(JNIEnv *env, jobject thiz, jobjectArray queryData, jint topK, jobjectArray returnIDsArray, jobjectArray returnSimilaritiesArray)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_searchVector(JNIEnv *env, jobject thiz, jobjectArray queryData, jint topK, jobjectArray returnIDsArray, jobjectArray returnSimilaritiesArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -167,7 +167,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_searchVector(JNIEnv *en
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvian_Search_saveResult(JNIEnv *env, jobject thiz, jstring resultPath, jobjectArray returnIDsArray)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveResult(JNIEnv *env, jobject thiz, jstring resultPath, jobjectArray returnIDsArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
