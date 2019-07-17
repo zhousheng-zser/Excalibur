@@ -1,4 +1,4 @@
-#include "Longinus-jni.hpp"
+#include "Longimila-jni.hpp"
 #include "LonginusDetector.hpp"
 #include <opencv2/opencv.hpp>
 #include <string>
@@ -278,13 +278,13 @@ JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longinus_LonginusDetector_alignFa
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
 	jsize bboxArraySize = env->GetArrayLength(bboxArray);
 	std::vector<int> bbox_vec(bboxArraySize);
-	env->GetIntArrayRegion(bboxArray, 0, bboxArraySize, const_cast<int *>(bbox_vec.data()));
+	env->GetIntArrayRegion(bboxArray, 0, bboxArraySize, (jint *)(bbox_vec.data()));
 	std::vector<std::vector<int> > bbox_vecs;
 	bbox_vecs.push_back(bbox_vec);
 	
 	jsize landmarkArraySize = env->GetArrayLength(landmarkArray);
 	std::vector<int> landmark_vec(landmarkArraySize);
-	env->GetIntArrayRegion(landmarkArray, 0, landmarkArraySize, const_cast<int *>(landmark_vec.data()));
+	env->GetIntArrayRegion(landmarkArray, 0, landmarkArraySize, (jint *)(landmark_vec.data()));
 	std::vector<std::vector<int> > landmark_vecs;
 	landmark_vecs.push_back(landmark_vec);
 	
