@@ -71,3 +71,39 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIE
 	
 	return featureArray;
 }
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardwithMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::gaius::GaiusFeature *pGaius = (glasssix::gaius::GaiusFeature *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+
+	std::vector<std::vector<float> > feature_vecs = pGaius->Forward((unsigned char *)data_vec.data(), faceCount, order);
+
+	jsize featureArraySize = feature_vecs.size();
+	jsize dimension = feature_vecs[0].size();
+
+	jclass floatArrayClazz = env->FindClass("[F");
+
+	jobjectArray featureArray = env->NewObjectArray(featureArraySize, floatArrayClazz, nullptr);
+
+	jfloatArray feature = env->NewFloatArray(dimension);
+
+	for (size_t i = 0; i < featureArraySize; i++)
+	{
+		env->SetFloatArrayRegion(feature, 0, dimension, feature_vecs[i].data());
+		env->SetObjectArrayElement(featureArray, i, feature);
+	}
+
+	env->DeleteLocalRef(feature);
+	env->DeleteLocalRef(floatArrayClazz);
+	env->DeleteLocalRef(clazz);
+
+	return featureArray;
+}
