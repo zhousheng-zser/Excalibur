@@ -1,10 +1,10 @@
-#include "Gaius-jni.hpp"
+#include "Gaiulinya-jni.hpp"
 #include "GaiusFeature.hpp"
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
 
-JNIEXPORT void JNICALL Java_com_glasssix_Gaius_GaiusFeature_init(JNIEnv *env, jobject thiz, jint device)
+JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_init(JNIEnv *env, jobject thiz, jint device)
 {
 	glasssix::gaius::GaiusFeature *pGaius = new glasssix::gaius::GaiusFeature(device);
 	jclass clazz = env->GetObjectClass(thiz);
@@ -14,7 +14,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Gaius_GaiusFeature_init(JNIEnv *env, jo
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Gaius_GaiusFeature_finalize(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -47,13 +47,13 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 	return jstr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Gaius_GaiusFeature_getVersion(JNIEnv *env, jclass clazz)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_getVersion(JNIEnv *env, jclass clazz)
 {
 	std::string version = glasssix::gaius::GaiusFeature::getVersion();
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaius_GaiusFeature_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -69,5 +69,41 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaius_GaiusFeature_Forward(JNIEn
 	
 	env->DeleteLocalRef(clazz);
 	
+	return featureArray;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardwithMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::gaius::GaiusFeature *pGaius = (glasssix::gaius::GaiusFeature *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+
+	std::vector<std::vector<float> > feature_vecs = pGaius->Forward((unsigned char *)data_vec.data(), faceCount, order);
+
+	jsize featureArraySize = feature_vecs.size();
+	jsize dimension = feature_vecs[0].size();
+
+	jclass floatArrayClazz = env->FindClass("[F");
+
+	jobjectArray featureArray = env->NewObjectArray(featureArraySize, floatArrayClazz, nullptr);
+
+	jfloatArray feature = env->NewFloatArray(dimension);
+
+	for (size_t i = 0; i < featureArraySize; i++)
+	{
+		env->SetFloatArrayRegion(feature, 0, dimension, feature_vecs[i].data());
+		env->SetObjectArrayElement(featureArray, i, feature);
+	}
+
+	env->DeleteLocalRef(feature);
+	env->DeleteLocalRef(floatArrayClazz);
+	env->DeleteLocalRef(clazz);
+
 	return featureArray;
 }

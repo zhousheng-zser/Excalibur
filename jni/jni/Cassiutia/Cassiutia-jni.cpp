@@ -1,10 +1,10 @@
-#include "Cassius-jni.hpp"
+#include "Cassiutia-jni.hpp"
 #include "CassiusFeature.hpp"
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <vector>
 
-JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_init(JNIEnv *env, jobject thiz, jint device)
+JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_init(JNIEnv *env, jobject thiz, jint device)
 {
 	glasssix::cassius::CassiusFeature *pCassius = new glasssix::cassius::CassiusFeature(device);
 	jclass clazz = env->GetObjectClass(thiz);
@@ -14,7 +14,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_init(JNIEnv *env
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Cassius_CassiusFeature_finalize(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -47,13 +47,13 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 	return jstr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Cassius_CassiusFeature_getVersion(JNIEnv *env, jclass clazz)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Cassiutia_Cassiutia_getVersion(JNIEnv *env, jclass clazz)
 {
 	std::string version = glasssix::cassius::CassiusFeature::getVersion();
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassius_CassiusFeature_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -69,5 +69,41 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassius_CassiusFeature_Forward(J
 	
 	env->DeleteLocalRef(clazz);
 	
+	return featureArray;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_ForwardwithMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::cassius::CassiusFeature *pCassius = (glasssix::cassius::CassiusFeature *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+
+	std::vector<std::vector<float> > feature_vecs = pCassius->Forward((unsigned char *)data_vec.data(), faceCount, order);
+
+	jsize featureArraySize = feature_vecs.size();
+	jsize dimension = feature_vecs[0].size();
+
+	jclass floatArrayClazz = env->FindClass("[F");
+
+	jobjectArray featureArray = env->NewObjectArray(featureArraySize, floatArrayClazz, nullptr);
+
+	jfloatArray feature = env->NewFloatArray(dimension);
+
+	for (size_t i = 0; i < featureArraySize; i++)
+	{
+		env->SetFloatArrayRegion(feature, 0, dimension, feature_vecs[i].data());
+		env->SetObjectArrayElement(featureArray, i, feature);
+	}
+
+	env->DeleteLocalRef(feature);
+	env->DeleteLocalRef(floatArrayClazz);
+	env->DeleteLocalRef(clazz);
+
 	return featureArray;
 }
