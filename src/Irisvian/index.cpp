@@ -1,4 +1,5 @@
 #include "index.hpp"
+#include <cmath>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -135,7 +136,7 @@ namespace glasssix
 #endif // COSINE_DISTANCE
 			}
 
-			if (abs(sum / calcNum - 1) <= 1e-5)
+			if (std::abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
 #ifdef _OPENMP
