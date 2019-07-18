@@ -1,4 +1,5 @@
 #include "julius_asum.hpp"
+#include <cmath>
 
 namespace glasssix
 {
@@ -105,7 +106,7 @@ namespace glasssix
 				float sum = 0.0f;
 				for (int i = 0; i < n; i++)
 				{
-					sum += abs(x[i * incx]);
+					sum += std::abs(x[i * incx]);
 				}
 				return sum;
 #undef UNHANDLED
@@ -132,7 +133,7 @@ namespace glasssix
 				double sum = 0.0f;
 				for (int i = 0; i < n; i++)
 				{
-					sum += abs(x[i * incx]);
+					sum += std::abs(x[i * incx]);
 				}
 				return sum;
 #undef UNHANDLED
