@@ -10,6 +10,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_init(JNIEnv *, jobj
 JNIEXPORT void JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_finalize(JNIEnv *, jobject);
 JNIEXPORT jstring JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_getVersion(JNIEnv *, jclass);
 JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIEnv *, jobject, jlong, jint);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardwithMetaData(JNIEnv *, jobject, jbyteArray, jint, jint);
 
 
 #ifdef __cplusplus
