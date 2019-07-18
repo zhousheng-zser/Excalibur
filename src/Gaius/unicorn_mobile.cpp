@@ -1,4 +1,3 @@
-
 #include "unicorn_mobile.hpp"
 #include <iostream>
 #include <vector>
