@@ -15,6 +15,12 @@ public class Irisvika {
 		init(dimension);
 	}
 	
+	public static native String getVersion();
+	public native int buildGraph();
+	public native int buildGraph_withData(float[][] baseData);
+	public native void saveGraph(String graphPath);
+	public native void saveGraph_withData(String graphPath, String baseDataPath);
+	public native float[][] getBaseData();
 	public native void loadGraph(String graphPath);
 	public native void loadGraph(String graphPath, String basedataPath);
 	public native void optimizeGraph();

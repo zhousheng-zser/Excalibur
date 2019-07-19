@@ -1,8 +1,3 @@
-#cmake_minimum_required(VERSION 3.0.0)
-#project(Damocles)
-
-#find_package(CUDA)
-#add_definitions(-Dx86)
 
 include_directories(../../include/Damocles 
 			../../include/Excalibur)
