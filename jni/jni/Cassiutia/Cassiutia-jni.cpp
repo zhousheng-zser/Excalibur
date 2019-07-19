@@ -93,15 +93,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_Forwardwith
 
 	jobjectArray featureArray = env->NewObjectArray(featureArraySize, floatArrayClazz, nullptr);
 
-	jfloatArray feature = env->NewFloatArray(dimension);
-
 	for (size_t i = 0; i < featureArraySize; i++)
 	{
+		jfloatArray feature = env->NewFloatArray(dimension);
 		env->SetFloatArrayRegion(feature, 0, dimension, feature_vecs[i].data());
 		env->SetObjectArrayElement(featureArray, i, feature);
+		env->DeleteLocalRef(feature);
 	}
-
-	env->DeleteLocalRef(feature);
+	
 	env->DeleteLocalRef(floatArrayClazz);
 	env->DeleteLocalRef(clazz);
 

@@ -6,4 +6,4 @@ include_directories(../../include/License)
 file(GLOB License_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/License/*.cpp)
 
 add_library(License ${License_source_files})
-target_link_libraries(License ssl stdc++fs)
+target_link_libraries(License ssl crypto pthread stdc++fs)
