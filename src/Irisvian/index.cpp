@@ -123,7 +123,6 @@ namespace glasssix
 			baseNum_ = ((*baseData).size());
 			normArray_tensor_.reset(new glasssix::excalibur::tensor<float>(baseNum_));
 			normArray_ = normArray_tensor_->mutable_cpu_data();
-
 			//use 10 data to judge if normalized
 			float sum = 0;
 			int calcNum = std::min(10, (int)baseNum_);

@@ -87,7 +87,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>COSINE_DISTANCE;EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -108,7 +108,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>COSINE_DISTANCE;EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -136,7 +136,7 @@
     <ClInclude Include="..\..\include\Irisvian\nGraph.hpp" />
     <ClInclude Include="..\..\include\Irisvian\search.hpp" />
     <ClInclude Include="..\..\jni\jni\Irisvika\Irisvika-jni.hpp" />
-    <ClInclude Include="..\..\jni\jni\Irisvika\SearchWrapper.hpp" />
+    <ClInclude Include="..\..\jni\jni\Irisvika\IrisvianSearchWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\jni\jni\Irisvika\Irisvika-jni.cpp" />

@@ -35,7 +35,7 @@ public class Gaiulinya {
 		if (feat1.length != feat2.length)
 			return Float.MIN_VALUE;
 		output = innerproduct(feat1, feat2)
-				/ Math.sqrt(innerproduct(feat1, feat2) * innerproduct(feat1, feat2));
+				/ Math.sqrt(innerproduct(feat1, feat1) * innerproduct(feat2, feat2));
 		return (float)output;
 	}
 }
