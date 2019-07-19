@@ -18,7 +18,6 @@ public class Main {
         System.out.println(Gaiulinya.getVersion());
         String v = Cassiutia.getVersion();
         System.out.println(v);
-        Irisvika s = new Irisvika(512);
         Longimila ll = new Longimila(-1);
         Gaiulinya gg = new Gaiulinya(-1);
         ll.set(DetectionType.FRONTALVIEW, -1);
@@ -33,9 +32,33 @@ public class Main {
         //}
         byte[] aligned_face_data = ll.alignFace(gray.getNativeObjAddr(), rein);
         Mat[] aligned_faces = encode2mats(aligned_face_data, rein.length);
-        HighGui.imshow("test", aligned_faces[0]);
-        HighGui.waitKey();
+        //ighGui.imshow("test", aligned_faces[0]);
+        //ighGui.waitKey();
+        Mat img2 = Imgcodecs.imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswvisible.jpg");
+        Mat img3 = Imgcodecs.imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswinfread.jpg");
         float[][] features = gg.ForwardwithMetaData(aligned_face_data, rein.length, 0);
+        float[] feat2 = gg.Forward(img2.getNativeObjAddr(), 1);
+        float[] feat3 = gg.Forward(img3.getNativeObjAddr(), 1);
+
+        Irisvika s = new Irisvika(128);
+        String graph_path = "D:\\Research\\Excalibur\\data\\test.graph";
+        String data_path = "D:\\Research\\Excalibur\\data\\test.data";
+        //s.buildGraphwithData(new float[][]{feat3, features[0]});
+        //s.saveGraph("D:\\Research\\Excalibur\\data\\test.graph");
+
+        //s.saveGraphwithData(graph_path, data_path);
+        //s.loadGraph("D:\\Research\\Excalibur\\data\\test.graph");
+        s.loadGraphwithData(graph_path, data_path);
+        s.optimizeGraph();
+        int topK = 1;
+        int [][] ids = new int[1][];
+        float [][] similaries = new float[1][];
+        for (int i = 0; i < topK; i++)
+        {
+            ids[i] = new int[topK];
+            similaries[i] = new float[topK];
+        }
+        s.searchVector(new float[][]{feat2}, 1, ids, similaries);
         System.out.println(features[0][127]);
     }
 
