@@ -348,7 +348,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectEx(JN
 	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
 	
 	cv::Mat &mat = *(cv::Mat *)matNativeObj;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), factor, stage, order);
+	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
 	jobjectArray array = env->NewObjectArray(size, FaceRectwithFaceInfoClazz, nullptr);
