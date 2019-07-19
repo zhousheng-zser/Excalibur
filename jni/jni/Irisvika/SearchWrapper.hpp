@@ -1,33 +1,35 @@
-#ifndef _SearchWrapper_HPP_
-#define _SearchWrapper_HPP_
+#ifndef _IRISVIANSEARCHWRAPPER_HPP_
+#define _IRISVIANSEARCHWRAPPER_HPP_
 
-#include "search.hpp"
+#include "IrisvianSearch.hpp"
 #include <vector>
 
 namespace glasssix
 {
 	namespace Irisvian
 	{
-		class SearchWrapper
+		class IrisvianSearchWrapper
 		{
 		public:
-			SearchWrapper() = delete;
+			IrisvianSearchWrapper() = delete;
 			
-			SearchWrapper(std::vector<const float *> *baseDataPtr, int dimension)
+			IrisvianSearchWrapper(std::vector<const float *> *baseDataPtr, int dimension)
 			{
 				for(size_t i = 0; i < baseDataPtr->size(); i++)
 				{
 					baseData.push_back((*baseDataPtr)[i]);
 				}
-				search = new Search(baseDataPtr, dimension);
+				search = new IrisvianSearch(baseDataPtr, dimension);
+				dimension_ = dimension;
 			}
 			
-			SearchWrapper(int dimension)
-			{
-				search = new Search(dimension);
+			IrisvianSearchWrapper(int dimension)
+			{				
+				search = new IrisvianSearch(dimension);
+				dimension_ = dimension;
 			}
 			
-			~SearchWrapper()
+			~IrisvianSearchWrapper()
 			{
 				delete search;
 				
@@ -35,6 +37,38 @@ namespace glasssix
 				{
 					delete[] baseData[i];
 				}
+			}
+			
+			int buildGraph()
+			{
+				search->buildGraph();
+			}
+			
+			int buildGraph(const std::vector<const float*> *baseDataPtr)
+			{
+				for(size_t i = 0; i < baseData.size(); i++)
+				{
+					delete[] baseData[i];
+				}
+				
+				baseData.resize(0);
+				
+				for(size_t i = 0; i < baseDataPtr->size(); i++)
+				{
+					baseData.push_back((*baseDataPtr)[i]);
+				}
+				
+				search->buildGraph(baseDataPtr);
+			}
+			
+			void saveGraph(const char *graphPath)
+			{
+				search->saveGraph(graphPath);
+			}
+			
+			void saveGraph(const char *graphPath, const char *basedataPath)
+			{
+				search->saveGraph(graphPath, basedataPath);
 			}
 			
 			void loadGraph(const char* graphPath)
@@ -50,6 +84,11 @@ namespace glasssix
 			const std::vector<const float*>* getBasedata()
 			{
 				return search->getBasedata();
+			}
+			
+			const int getDimension()
+			{
+				return dimension_;
 			}
 			
 			void optimizeGraph()
@@ -70,7 +109,8 @@ namespace glasssix
 			
 		private:
 			std::vector<const float *> baseData;
-			Search *search;
+			IrisvianSearch *search;
+			int dimension_;
 		};
 	}
 }

@@ -18,7 +18,7 @@ elseif(BLAS STREQUAL "Open" OR BLAS STREQUAL "open")
 	add_definitions(-DUSE_OPENBLAS)
 else()
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include/Julius)
-#	list(APPEND Excalibur_LINKER_LIBS Julius)
+	list(APPEND Excalibur_LINKER_LIBS Julius)
 endif()
 
 if(COSINE_DISTANCE)
