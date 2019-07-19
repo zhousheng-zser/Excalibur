@@ -15,6 +15,9 @@ JNIEXPORT jstring JNICALL Java_com_glasssix_Longimila_Longimila_getVersion(JNIEn
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEnv *, jobject, jobjectArray, jint);
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFace(JNIEnv *, jobject, jlong, jobjectArray, jobjectArray);
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignSingleFace(JNIEnv *, jobject, jlong);
+#ifndef TRIAL
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectEx(JNIEnv *, jobject, jlong, jint, jfloatArray, jfloat, jint, jint);
+#endif
 
 #ifdef __cplusplus
 }
