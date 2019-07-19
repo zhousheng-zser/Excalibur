@@ -54,6 +54,7 @@ public class Longimila {
 	public static native String getVersion();
 	public native FaceRect[] detect(long grayNativeObj, int minSize, float scale, int minNeighbors);
 	public native FaceRectwithFaceInfo[] detectwithInfo(long grayNativeObj, int minSize, float scale, int minNeighbors, int order);
+	public native  FaceRectwithFaceInfo[] detectEx(long matNativeObj, int minSize, float[] threshold, float factor, int stage, int order);
 	public native Match_Rectval[] match(FaceRect[] faceRect, int frame_extract_frequency);
 	public native byte[] alignFace(long grayNativeObj, int[][] bbox, int[][] landmarks);
 	public native byte[] alignSingleFace(long grayNativeObj);
