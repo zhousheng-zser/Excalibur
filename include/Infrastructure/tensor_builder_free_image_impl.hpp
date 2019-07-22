@@ -3,13 +3,12 @@
 #include "tensor_helper.hpp"
 #include "tensor_builder.hpp"
 
-#include <atomic>
 #include <string>
 #include <memory>
 #include <functional>
 #include <unordered_map>
 
-#include <FreeImagePlus.h>
+class fipImage;
 
 namespace glasssix
 {
@@ -71,18 +70,54 @@ namespace glasssix
             virtual void tensor_parameters(orderType order, int device) override;
 
             /// <summary>
-            /// Create a floating tensor.
+            /// Create a bitmap from a floating-point tensor.
             /// </summary>
-            /// <param name="type">The destintation bitmap type</param>
+            /// <param name="data">The tensor data</param>
+            /// <param name="layout">The tensor layout</param>
+            /// <returns>
+            /// True: success
+            /// False: failure
+            ///</returns>
+            virtual bool from_tensor(const tensor<float>& data, tensor_layout layout) override;
+
+            /// <summary>
+            /// Create a bitmap from a uint8 tensor.
+            /// </summary>
+            /// <param name="data">The tensor data</param>
+            /// <param name="layout">The tensor layout</param>
+            /// <returns>
+            /// True: success
+            /// False: failure
+            ///</returns>
+            virtual bool from_tensor(const tensor<uint8_t>& data, tensor_layout layout) override;
+
+            /// <summary>
+            /// Create a floating-point tensor.
+            /// </summary>
+            /// <param name="layout">The destintation bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<float>> to_tensor(tensor_float_type type) override;
+            virtual std::optional<tensor<float>> to_tensor_float(tensor_layout layout) override;
 
             /// <summary>
             /// Create a uint8 tensor.
             /// </summary>
-            /// <param name="type">The destination bitmap type</param>
+            /// <param name="layout">The destination bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<uint8_t>> to_tensor(tensor_uint8_type type) override;
+            virtual std::optional<tensor<uint8_t>> to_tensor_uint8(tensor_layout layout) override;
+
+            /// <summary>
+            /// Create a shared floating-point tensor.
+            /// </summary>
+            /// <param name="layout">The destintation bitmap type</param>
+            /// <returns>The result</returns>
+            virtual std::shared_ptr<tensor<float>> to_tensor_float_shared(tensor_layout layout) override;
+
+            /// <summary>
+            /// Create a shared uint8 tensor.
+            /// </summary>
+            /// <param name="layout">The destination bitmap type</param>
+            /// <returns>The result</returns>
+            virtual std::shared_ptr<tensor<uint8_t>> to_tensor_uint8_shared(tensor_layout layout) override;
         private:
             /// <summary>
             /// Update the parameters of the image.
@@ -103,62 +138,22 @@ namespace glasssix
             /// <param name="type">The destintion bitmap type</param>
             /// <param name="converters">The converter cache</param>
             /// <returns>The result</returns>
-            template<typename TEnum, typename TUnderlyingType>
-            std::optional<tensor<TUnderlyingType>> to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
-            {
-                static_assert(std::is_enum_v<TEnum>, "The TEnum must be an enumeration type.");
-                static_assert(std::is_integral_v<TUnderlyingType> || std::is_floating_point_v<TUnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
-
-                if (!image_->isValid())
-                {
-                    std::nullopt;
-                }
-
-                // Find the appropriate floating converter.
-                auto item = converters.find(type);
-                if (item == converters.end() || !item->second(*image_))
-                {
-                    return std::nullopt;
-                }
-
-                update_image_parameters_core();
-
-                return tensor_helper::create<TUnderlyingType>(image_->accessPixels(), order_, device_, width_, height_, stride_, channels_);
-            }
+            template<typename TEnum, typename TUnderlyingType, bool shared>
+            auto to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
+                ->std::conditional_t<shared, std::shared_ptr<tensor<TUnderlyingType>>, std::optional<tensor<TUnderlyingType>>>;
         private:
             int width_;
             int height_;
             int stride_;
+            int device_;
             int channels_;
-            std::atomic_int device_;
-            std::atomic<orderType> order_;
+            orderType order_;
             std::shared_ptr<fipImage> image_;
         private:
             static constexpr int uint8_bits_ = 8;
-            inline static std::unordered_map<FREE_IMAGE_TYPE, size_t> channel_byte_mapping_ =
-            {
-                { FREE_IMAGE_TYPE::FIT_BITMAP, sizeof(uint8_t) },
-                { FREE_IMAGE_TYPE::FIT_FLOAT, sizeof(float) },
-                { FREE_IMAGE_TYPE::FIT_DOUBLE, sizeof(double) },
-                { FREE_IMAGE_TYPE::FIT_RGBF, sizeof(float) },
-                { FREE_IMAGE_TYPE::FIT_RGBAF, sizeof(float) },
-                { FREE_IMAGE_TYPE::FIT_RGB16, sizeof(uint16_t) },
-                { FREE_IMAGE_TYPE::FIT_RGBA16, sizeof(uint16_t) }
-            };
-
-            inline static bitmap_converter_map<tensor_float_type> float_converters_ =
-            {
-                { tensor_float_type::rgb, [](fipImage& inner) { return inner.convertToRGBF(); } },
-                { tensor_float_type::rgba, [](fipImage& inner) { return inner.convertToRGBAF(); } },
-                { tensor_float_type::grayscale, [](fipImage& inner) { return inner.convertToFloat(); } }
-            };
-
-            inline static bitmap_converter_map<tensor_uint8_type> uint8_converters_ =
-            {
-                { tensor_uint8_type::rgb_24bit, [](fipImage& inner) { return inner.convertTo24Bits(); } },
-                { tensor_uint8_type::rgba_32bit, [](fipImage& inner) { return inner.convertTo32Bits(); } },
-                { tensor_uint8_type::grayscale_8bit, [](fipImage& inner) { return inner.convertToGrayscale(); } }
-            };
+            static std::unordered_map<int, size_t> channel_byte_mapping_;
+            static bitmap_converter_map<tensor_layout> float_converters_;
+            static bitmap_converter_map<tensor_layout> uint8_converters_;
         };
     }
 }

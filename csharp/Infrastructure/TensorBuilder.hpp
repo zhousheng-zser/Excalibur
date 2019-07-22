@@ -12,14 +12,7 @@ namespace glasssix
 {
     namespace excalibur
     {
-        public enum class TensorSingleType
-        {
-            RGB,
-            RGBA,
-            Grayscale
-        };
-
-        public enum class TensorByteType
+        public enum class TensorLayout
         {
             RGB,
             RGBA,
@@ -132,29 +125,29 @@ namespace glasssix
             /// <summary>
             /// Create a floating tensor.
             /// </summary>
-            /// <param name="type">The destintation bitmap type</param>
+            /// <param name="type">The layout</param>
             /// <returns>The result</returns>
-            Tensor<float>^ ToTensor(TensorSingleType type)
+            Tensor<float>^ ToTensorSingle(TensorLayout layout)
             {
                 CheckPointer();
 
-                auto result = builder_->to_tensor(static_cast<tensor_float_type>(type));
+                auto result = builder_->to_tensor_float(static_cast<tensor_layout>(layout));
                 
-                return result ? gcnew Tensor<float>{ *result } : nullptr;
+                return result ? gcnew Tensor<float>{ System::IntPtr(&*result) } : nullptr;
             }
 
             /// <summary>
             /// Create a uint8 tensor.
             /// </summary>
-            /// <param name="type">The destination bitmap type</param>
+            /// <param name="type">The layout</param>
             /// <returns>The result</returns>
-            Tensor<System::Byte>^ ToTensor(TensorByteType type)
+            Tensor<System::Byte>^ ToTensorByte(TensorLayout layout)
             {
                 CheckPointer();
 
-                auto result = builder_->to_tensor(static_cast<tensor_uint8_type>(type));
+                auto result = builder_->to_tensor_uint8(static_cast<tensor_layout>(layout));
 
-                return result ? gcnew Tensor<System::Byte>{ *result } : nullptr;
+                return result ? gcnew Tensor<System::Byte>{ System::IntPtr(&*result) } : nullptr;
             }
         protected:
             /// <summary>

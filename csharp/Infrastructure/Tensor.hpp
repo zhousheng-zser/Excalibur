@@ -183,9 +183,9 @@ namespace glasssix
             /// Create an instance of a tensor using a native object.
             /// </summary>
             /// <param name="native">The native object</param>
-            Tensor(tensor_& native) : Tensor{}
+            Tensor(System::IntPtr native) : Tensor{}
             {
-                tensor_ = native.clone_new();
+                tensor_ = static_cast<excalibur::tensor_*>(native.ToPointer())->clone_new();
                 tensor_ptr_ = new std::shared_ptr<excalibur::tensor_>{ tensor_, std::default_delete<excalibur::tensor_>{} };
             }
 

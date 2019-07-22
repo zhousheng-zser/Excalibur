@@ -19,6 +19,9 @@
     <Filter Include="源文件\impl">
       <UniqueIdentifier>{d162269d-0304-4fb6-89c4-a16f3f5d8151}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\free_image">
+      <UniqueIdentifier>{c90e75a7-91f7-44fa-bf82-211b8d59229e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../../include/Infrastructure/tensor_builder.hpp">
@@ -38,6 +41,18 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Infrastructure\tensor_converter.hpp">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\tensor_or_shared.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\init_free_image.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\FreeImagePlus.h">
+      <Filter>头文件\free_image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\FreeImage.h">
+      <Filter>头文件\free_image</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
