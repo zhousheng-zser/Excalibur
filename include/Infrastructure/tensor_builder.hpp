@@ -1,7 +1,10 @@
 #pragma once
 
+#include "tensor_layout.hpp"
+
 #include <istream>
 #include <optional>
+
 #include <glasssix/tensor.hpp>
 
 namespace glasssix
@@ -9,32 +12,11 @@ namespace glasssix
     namespace excalibur
     {
         /// <summary>
-        /// Define supported floating bitmap types.
-        /// </summary>
-        enum class tensor_float_type
-        {
-            rgb,
-            rgba,
-            grayscale
-        };
-
-        /// <summary>
-        /// Define supported uint8 bitmap types.
-        /// </summary>
-        enum class tensor_uint8_type
-        {
-            rgb_24bit,
-            rgba_32bit,
-            grayscale_8bit
-        };
-
-        /// <summary>
         /// Abstraction for a tensor builder.
         /// </summary>
         class tensor_builder
         {
         public:
-
             virtual ~tensor_builder() = default;
 
             /// <summary>
@@ -81,18 +63,54 @@ namespace glasssix
             virtual void tensor_parameters(orderType order, int device) = 0;
 
             /// <summary>
+            /// Create a bitmap from a floating-point tensor.
+            /// </summary>
+            /// <param name="data">The tensor data</param>
+            /// <param name="layout">The tensor layout</param>
+            /// <returns>
+            /// True: success
+            /// False: failure
+            ///</returns>
+            virtual bool from_tensor(const tensor<float>& data, tensor_layout layout) = 0;
+
+            /// <summary>
+            /// Create a bitmap from a uint8 tensor.
+            /// </summary>
+            /// <param name="data">The tensor data</param>
+            /// <param name="layout">The tensor layout</param>
+            /// <returns>
+            /// True: success
+            /// False: failure
+            ///</returns>
+            virtual bool from_tensor(const tensor<uint8_t>& data, tensor_layout layout) = 0;
+
+            /// <summary>
             /// Create a floating tensor.
             /// </summary>
-            /// <param name="type">The destintation bitmap type</param>
+            /// <param name="layout">The destintation bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<float>> to_tensor(tensor_float_type type) = 0;
+            virtual std::optional<tensor<float>> to_tensor_float(tensor_layout layout) = 0;
 
             /// <summary>
             /// Create a uint8 tensor.
             /// </summary>
-            /// <param name="type">The destination bitmap type</param>
+            /// <param name="layout">The destination bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<uint8_t>> to_tensor(tensor_uint8_type type) = 0;
+            virtual std::optional<tensor<uint8_t>> to_tensor_uint8(tensor_layout layout) = 0;
+
+            /// <summary>
+            /// Create a shared floating tensor.
+            /// </summary>
+            /// <param name="layout">The destintation bitmap type</param>
+            /// <returns>The result</returns>
+            virtual std::shared_ptr<tensor<float>> to_tensor_float_shared(tensor_layout layout) = 0;
+
+            /// <summary>
+            /// Create a shared uint8 tensor.
+            /// </summary>
+            /// <param name="layout">The destination bitmap type</param>
+            /// <returns>The result</returns>
+            virtual std::shared_ptr<tensor<uint8_t>> to_tensor_uint8_shared(tensor_layout layout) = 0;
         };
     }
 }

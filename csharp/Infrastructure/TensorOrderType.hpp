@@ -9,8 +9,8 @@ namespace glasssix
         /// </summary>
         public enum class TensorOrderType
         {
-            NCHW,
-            NHWC
+            NHWC,
+            NCHW
         };
     }
 }
