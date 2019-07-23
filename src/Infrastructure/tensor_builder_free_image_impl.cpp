@@ -1,8 +1,7 @@
 #include "tensor_builder_free_image_impl.hpp"
 #include "init_free_image.hpp"
 #include "tensor_convertions.hpp"
-
-#include <FreeImagePlus.h>
+#include "FreeImagePlus.h"
 
 namespace glasssix
 {
