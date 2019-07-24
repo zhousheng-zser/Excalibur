@@ -88,7 +88,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_OPENCV;EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -110,7 +110,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_OPENCV;EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Romancia.lib;$(CUDA_PATH)\x64\lib\*lib;%(AdditionalDependencies)</AdditionalDependencies>
