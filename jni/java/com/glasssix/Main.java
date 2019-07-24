@@ -11,6 +11,19 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
+import java.awt.Graphics;
+import java.awt.Image;
+import java.awt.Label;
+import java.awt.MediaTracker;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -24,31 +37,35 @@ public class Main {
         Mat img = Imgcodecs.imread("C:\\Users\\Glasssix-Admin\\Desktop\\exciting.png");
         Mat gray = new Mat();
         Imgproc.cvtColor(img, gray, Imgproc.COLOR_BGR2GRAY);
-        FaceRect[] re = ll.detect(gray.getNativeObjAddr(),100, 1.2F, 3);
-        FaceRectwithFaceInfo[] rein = ll.detectwithInfo(gray.getNativeObjAddr(), 100, 1.2f, 3, 1);
+        FaceRect[] re = ll.detectbyMetaData(encode2bytes(gray), gray.width(), gray.height(), 100, 1.2F, 3);
+        FaceRectwithFaceInfo[] rein = ll.detectwithInfobyMetaData(encode2bytes(gray), gray.width(), gray.height(), 100, 1.2f, 3, 1);
         //if (re.length>0)
         //{
         //    Imgproc.rectangle(img, new Rect(re[0].x, re[0].y,re[0].width,re[0].height), new Scalar(0,0,255));
+        //    HighGui.imshow("test", img);
+        //    HighGui.waitKey();
         //}
-        byte[] aligned_face_data = ll.alignFace(gray.getNativeObjAddr(), rein);
+        byte[] aligned_face_data = ll.alignFacebyMetaData(encode2bytes(gray), gray.width(), gray.height(), rein);
         Mat[] aligned_faces = encode2mats(aligned_face_data, rein.length);
-        //ighGui.imshow("test", aligned_faces[0]);
-        //ighGui.waitKey();
+        if (aligned_faces.length>0)
+        {
+            HighGui.imshow("align", aligned_faces[0]);
+            HighGui.waitKey();
+        }
         Mat img2 = Imgcodecs.imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswvisible.jpg");
         Mat img3 = Imgcodecs.imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswinfread.jpg");
-        float[][] features = gg.ForwardwithMetaData(aligned_face_data, rein.length, 0);
-        float[] feat2 = gg.Forward(img2.getNativeObjAddr(), 1);
-        float[] feat3 = gg.Forward(img3.getNativeObjAddr(), 1);
-
+        float[][] features = gg.ForwardbyMetaData(aligned_face_data, rein.length, 0);
+        float[][] feat2 = gg.ForwardbyMetaData(encode2bytes(img2), 1, 1);
+        float[][] feat3 = gg.ForwardbyMetaData(encode2bytes(img3), 1, 1);
         Irisvika s = new Irisvika(128);
         String graph_path = "D:\\Research\\Excalibur\\data\\test.graph";
         String data_path = "D:\\Research\\Excalibur\\data\\test.data";
-        //s.buildGraphwithData(new float[][]{feat3, features[0]});
+        s.buildGraphwithData(new float[][]{feat3[0], features[0]});
         //s.saveGraph("D:\\Research\\Excalibur\\data\\test.graph");
 
         //s.saveGraphwithData(graph_path, data_path);
         //s.loadGraph("D:\\Research\\Excalibur\\data\\test.graph");
-        s.loadGraphwithData(graph_path, data_path);
+        //s.loadGraphwithData(graph_path, data_path);
         s.optimizeGraph();
         int topK = 1;
         int [][] ids = new int[1][];
@@ -58,8 +75,15 @@ public class Main {
             ids[i] = new int[topK];
             similaries[i] = new float[topK];
         }
-        s.searchVector(new float[][]{feat2}, 1, ids, similaries);
+        s.searchVector(feat2, 1, ids, similaries);
         System.out.println(features[0][127]);
+    }
+
+    public static byte[] encode2bytes(Mat img)
+    {
+        byte[] buffer = new byte[img.cols() * img.rows() * img.channels()];
+        img.get(0,0, buffer);
+        return buffer;
     }
 
     public static Mat[] encode2mats(byte[] metadata, int face_count)
