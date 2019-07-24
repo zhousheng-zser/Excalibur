@@ -47,29 +47,21 @@ namespace glasssix
             std::optional<fi_image_ex> convert_to_uint16();
             std::optional<fi_image_ex> convert_to_rgb16();
             std::optional<fi_image_ex> convert_to_rgba16();
+            std::optional<fi_image_ex> convert_to_standard_type();
+
+            // Self-conversions.
+            bool convert_to_standard_type_self();
 
             // Extended functions.
             int width() const;
             int height() const;
             int stride() const;
             int channels() const;
-
-            /// <summary>
-            /// Convert the image to a standard type.
-            /// </summary>
-            /// <returns>
-            /// True: success
-            /// False: failure
-            /// </returns>
-            bool convert_to_standard_type();
         private:
-            static FIBITMAP* rgbf_to_standard_type_core(FIBITMAP* bitmap);
-            static FIBITMAP* rgbaf_to_standard_type_core(FIBITMAP* bitmap);
             bool convert_to_core(const std::function<FIBITMAP* (FIBITMAP*)>& handler, fipImage& other);
             std::optional<fi_image_ex> convert_to_core(const std::function<FIBITMAP* (FIBITMAP*)>& handler);
         private:
             static constexpr size_t uint8_bits_ = 8;
-            static const std::unordered_map<int, std::function<FIBITMAP* (FIBITMAP*)>> extended_standard_type_converters_;
         };
     }
 }

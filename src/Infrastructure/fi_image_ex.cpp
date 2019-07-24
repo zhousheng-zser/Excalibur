@@ -1,4 +1,5 @@
 #include "fi_image_ex.hpp"
+#include "fi_extended_conversions.hpp"
 
 namespace glasssix
 {
@@ -151,13 +152,23 @@ namespace glasssix
 
         int fi_image_ex::channels() const
         {
-            return static_cast<int>(getBitsPerPixel()) / static_cast<int>(channel_byte_mapping_[getImageType()]) / uint8_bits_;
+            return static_cast<int>(getBitsPerPixel()) / static_cast<int>(fi_extended_conversions::channel_bytes_of(getImageType())) / uint8_bits_;
+        }
+
+        std::optional<fi_image_ex> fi_image_ex::convert_to_standard_type()
+        {
+            return convert_to_core(&fi_extended_conversions::to_standard_type);
+        }
+
+        bool fi_image_ex::convert_to_standard_type_self()
+        {
+            return convert_to_core(&fi_extended_conversions::to_standard_type, *this);
         }
 
         bool fi_image_ex::convert_to_core(const std::function<FIBITMAP*(FIBITMAP*)>& handler, fipImage& other)
         {
             auto bitmap = handler ? handler(*this) : nullptr;
-
+            
             if (bitmap != nullptr)
             {
                 other = bitmap;

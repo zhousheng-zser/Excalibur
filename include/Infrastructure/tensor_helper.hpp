@@ -126,8 +126,8 @@ namespace glasssix
                 transform_tensor_core<true>(source, destination, channels, [&](orderType order)
                 {
                     return order == NCHW ?
-                        std::function<TUnderlyingType(int, int)>{ [&](int w, int h) { return static_cast<TUnderlyingType>(input_data[width * h + w] * 0.299 + input_data[width * height + width * h + w] * 0.587 + input_data[width * height * 2 + width * h + w] * 0.114); } } :
-                        std::function<TUnderlyingType(int, int)>{ [&](int w, int h) { return static_cast<TUnderlyingType>(input_data[(width * h + w) * source_channels] * 0.299 + input_data[(width * h + w) * source_channels + 1] * 0.587 + input_data[(width * h + w) * source_channels + 2] * 0.114); } };
+                        std::function{ [&](int w, int h) { return static_cast<TUnderlyingType>(input_data[width * h + w] * 0.299 + input_data[width * height + width * h + w] * 0.587 + input_data[width * height * 2 + width * h + w] * 0.114); } } :
+                        std::function{ [&](int w, int h) { return static_cast<TUnderlyingType>(input_data[(width * h + w) * source_channels] * 0.299 + input_data[(width * h + w) * source_channels + 1] * 0.587 + input_data[(width * h + w) * source_channels + 2] * 0.114); } };
                 });
             }
 
@@ -279,8 +279,8 @@ namespace glasssix
             inline static auto pixel_setter_core(const tensor<TUnderlyingType>& data)
             {
                 return data.order() == NCHW ?
-                    std::function<void(int, int, int, TUnderlyingType)>{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, TUnderlyingType pixel) { output_data[width * height * c + width * h + w] = pixel; } } :
-                    std::function<void(int, int, int, TUnderlyingType)>{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, TUnderlyingType pixel) { output_data[channels * width * h + channels * w + c] = pixel; } };
+                    std::function{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, TUnderlyingType pixel) { output_data[width * height * c + width * h + w] = pixel; } } :
+                    std::function{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, TUnderlyingType pixel) { output_data[channels * width * h + channels * w + c] = pixel; } };
             }
 
             template<typename TUnderlyingType, bool shared, typename... TArgs>

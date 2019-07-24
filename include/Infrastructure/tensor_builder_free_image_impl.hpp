@@ -3,6 +3,7 @@
 #include "tensor_helper.hpp"
 #include "tensor_builder.hpp"
 
+#include <tuple>
 #include <string>
 #include <memory>
 #include <functional>
@@ -14,8 +15,10 @@ namespace glasssix
 {
     namespace excalibur
     {
+        class fi_image_ex;
+
         template<typename TEnum>
-        using bitmap_converter_map = std::unordered_map<TEnum, std::function<bool(fipImage&)>>;
+        using bitmap_converter_map = std::unordered_map<TEnum, std::function<std::optional<fi_image_ex>(fi_image_ex&)>>;
 
         /// <summary>
         /// FreeImage implementation.
@@ -70,7 +73,7 @@ namespace glasssix
             virtual void tensor_parameters(orderType order, int device) override;
 
             /// <summary>
-            /// Create a bitmap from a floating-point tensor.
+            /// Create an image from a floating-point tensor.
             /// </summary>
             /// <param name="data">The tensor data</param>
             /// <param name="layout">The tensor layout</param>
@@ -148,10 +151,9 @@ namespace glasssix
             int device_;
             int channels_;
             orderType order_;
-            std::shared_ptr<fipImage> image_;
+            std::shared_ptr<fi_image_ex> image_;
         private:
             static constexpr int uint8_bits_ = 8;
-            static std::unordered_map<int, size_t> channel_byte_mapping_;
             static bitmap_converter_map<tensor_layout> float_converters_;
             static bitmap_converter_map<tensor_layout> uint8_converters_;
         };
