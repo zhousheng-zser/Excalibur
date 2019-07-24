@@ -8,7 +8,7 @@ namespace glasssix
 		{
 			float cblas_snrm2(const int n, const float *x, const int incx)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 				float sum = 0.0f;
 				const int restn = n % mm_align_size;
 				const int partn = n - restn;
@@ -108,7 +108,7 @@ namespace glasssix
 
 			double cblas_dnrm2(const int n, const double *x, const int incx)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX

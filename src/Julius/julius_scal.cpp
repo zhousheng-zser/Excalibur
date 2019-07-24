@@ -8,7 +8,7 @@ namespace glasssix
 		{
 			void cblas_sscal(const int n, const float alpha, float *x, const int incx)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
@@ -50,7 +50,7 @@ namespace glasssix
 
 			void cblas_dscal(const int n, const double alpha, double *x, const int incx)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX
