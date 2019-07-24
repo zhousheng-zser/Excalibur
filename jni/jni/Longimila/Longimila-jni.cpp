@@ -1,6 +1,8 @@
 #include "Longimila-jni.hpp"
 #include "LonginusDetector.hpp"
+#ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 #include <string>
 #include <vector>
 
@@ -62,6 +64,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_finalize(JNIEnv *en
 	env->DeleteLocalRef(clazz);
 }
 
+#ifdef USE_OPENCV
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors)
 {
 	jclass clazz = env->GetObjectClass(thiz);
@@ -163,6 +166,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithI
 	env->DeleteLocalRef(clazz);
 	return array;
 }
+#endif
 
 jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 {
@@ -262,6 +266,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEn
 	return match_array;
 }
 
+#ifdef USE_OPENCV
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFace(JNIEnv *env, jobject thiz, jlong grayNativeObj, jobjectArray bboxArray, jobjectArray landmarkArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
@@ -334,8 +339,10 @@ JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignSingleFace(JNIEn
 	
 	return aligned_array;
 }
+#endif
 
 #ifndef TRIAL
+#ifdef USE_OPENCV
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectEx(JNIEnv *env, jobject thiz, jlong matNativeObj, jint minSize, jfloatArray threshold, jfloat factor, jint stage, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
@@ -410,4 +417,5 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectEx(JN
 	env->DeleteLocalRef(clazz);
 	return array;
 }
+#endif
 #endif
