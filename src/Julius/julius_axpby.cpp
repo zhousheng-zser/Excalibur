@@ -9,7 +9,7 @@ namespace glasssix
 			void cblas_saxpby(const int n, const float alpha, const float* x,
 				const int incx, const float beta, float* y, const int incy)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX
@@ -115,7 +115,7 @@ namespace glasssix
 			void cblas_daxpby(const int n, const double alpha, const double* x,
 				const int incx, const double beta, double* y, const int incy)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX

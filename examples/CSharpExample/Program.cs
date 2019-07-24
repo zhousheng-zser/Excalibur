@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using glasssix.longinus;
 using glasssix.cassius;
 using glasssix.gaius;
+using glasssix.excalibur;
 
 namespace CSharpExample
 {
@@ -21,6 +22,7 @@ namespace CSharpExample
             Longinucia longinucia = new Longinucia();
             longinucia.set(DetectorType.MULTIVIEW_REINFORCE, device);
             var res = longinucia.Face_Detect(bmp, 24, 1.1f, 3, false, false, true);
+            TensorBuilder b = new TensorBuilder();
             //var res = longinucia.Face_DetectEx(bmp, 64, 1.414f, new float[3]{ 0.7f, 0.6f, 0.6f}, 3);
             //for (int i = 0; i < 100; i++)
             //{
