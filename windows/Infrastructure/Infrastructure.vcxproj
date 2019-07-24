@@ -102,7 +102,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ShowIncludes>true</ShowIncludes>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -163,7 +163,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ShowIncludes>true</ShowIncludes>
+      <ShowIncludes>false</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -183,6 +183,8 @@
     <ClInclude Include="../../include/Infrastructure/tensor_builder_factory.hpp" />
     <ClInclude Include="../../include/Infrastructure/tensor_builder_free_image_impl.hpp" />
     <ClInclude Include="../../include/Infrastructure/tensor_helper.hpp" />
+    <ClInclude Include="..\..\include\Infrastructure\fi_extended_conversions.hpp" />
+    <ClInclude Include="..\..\include\Infrastructure\fi_image_ex.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\FreeImage.h" />
     <ClInclude Include="..\..\include\Infrastructure\FreeImagePlus.h" />
     <ClInclude Include="..\..\include\Infrastructure\init_free_image.hpp" />
@@ -193,6 +195,8 @@
   <ItemGroup>
     <ClCompile Include="../../src/Infrastructure/tensor_builder_factory.cpp" />
     <ClCompile Include="../../src/Infrastructure/tensor_builder_free_image_impl.cpp" />
+    <ClCompile Include="..\..\src\Infrastructure\fi_extended_conversions.cpp" />
+    <ClCompile Include="..\..\src\Infrastructure\fi_image_ex.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

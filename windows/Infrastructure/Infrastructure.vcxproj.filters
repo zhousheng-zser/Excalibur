@@ -22,6 +22,9 @@
     <Filter Include="头文件\free_image">
       <UniqueIdentifier>{c90e75a7-91f7-44fa-bf82-211b8d59229e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\free_image">
+      <UniqueIdentifier>{036e7d17-d798-42d8-840a-741edb567c28}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../../include/Infrastructure/tensor_builder.hpp">
@@ -54,6 +57,12 @@
     <ClInclude Include="..\..\include\Infrastructure\FreeImage.h">
       <Filter>头文件\free_image</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\fi_image_ex.hpp">
+      <Filter>头文件\free_image</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\fi_extended_conversions.hpp">
+      <Filter>头文件\free_image</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../../src/Infrastructure/tensor_builder_factory.cpp">
@@ -61,6 +70,12 @@
     </ClCompile>
     <ClCompile Include="../../src/Infrastructure/tensor_builder_free_image_impl.cpp">
       <Filter>源文件\impl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Infrastructure\fi_image_ex.cpp">
+      <Filter>源文件\free_image</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Infrastructure\fi_extended_conversions.cpp">
+      <Filter>源文件\free_image</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
