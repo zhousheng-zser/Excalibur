@@ -72,7 +72,7 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, typename TDestination, bool shared>
+        template<bool shared, typename TSource, typename TDestination>
         auto convert_to_core(const tensor_or_shared<TSource, shared>& source, const tensor_convert_to_tag<TDestination>& tag)
         {
             assert_numeric<TSource>();
@@ -99,7 +99,7 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<bool shared, typename TSource, tensor_layout layout>
+        template<typename TSource, bool shared, tensor_layout layout>
         auto convert_layout_to_core(const tensor_or_shared<TSource, shared>& source, const tensor_convert_layout_to_tag<layout>& tag)
         {
             assert_numeric<TSource>();
@@ -128,7 +128,7 @@ namespace glasssix
         template<typename TSource, typename TDestination>
         inline tensor<TDestination> operator|(const tensor<TSource>& source, const tensor_convert_to_tag<TDestination>& tag)
         {
-            return convert_to_core<TSource, TDestination, false>(source, tag);
+            return convert_to_core<false, TSource>(source, tag);
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace glasssix
         template<typename TSource, typename TDestination>
         inline std::shared_ptr<tensor<TDestination>> operator|(const std::shared_ptr<tensor<TSource>>& source, const tensor_convert_to_tag<TDestination>& tag)
         {
-            return convert_to_core<TSource, TDestination, true>(source, tag);
+            return convert_to_core<true, TSource>(source, tag);
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace glasssix
         template<typename TSource, tensor_layout layout>
         inline tensor<TSource> operator|(const tensor<TSource>& source, const tensor_convert_layout_to_tag<layout>& tag)
         {
-            return convert_layout_to_core<TSource, layout, false>(source, tag);
+            return convert_layout_to_core<TSource, false>(source, tag);
         }
 
         /// <summary>
@@ -164,7 +164,7 @@ namespace glasssix
         template<typename TSource, tensor_layout layout>
         inline std::shared_ptr<tensor<TSource>> operator|(const std::shared_ptr<tensor<TSource>>& source, const tensor_convert_layout_to_tag<layout>& tag)
         {
-            return convert_layout_to_core<TSource, layout, true>(source, tag);
+            return convert_layout_to_core<TSource, true>(source, tag);
         }
     }
 }
