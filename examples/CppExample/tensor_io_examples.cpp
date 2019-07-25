@@ -32,10 +32,19 @@ namespace glasssix
                 // Convert to grayscale and save it to the disk.
                 if (rgba_float)
                 {
-                    auto test = *rgba_float/* | tensor_convert_layout_to<tensor_layout::grayscale>*/;
+                    auto test = *rgba_float;
                     if (builder->from_tensor(test, tensor_layout::rgba))
                     {
                         builder->save_to(R"(F:\込込込.png)");
+                    }
+                }
+
+                if (rgba_uint8)
+                {
+                    auto test = *rgba_uint8 | tensor_convert_layout_to<tensor_layout::grayscale_3>;
+                    if (builder->from_tensor(test, tensor_layout::grayscale_3))
+                    {
+                        builder->save_to(R"(F:\込込込2.png)");
                     }
                 }
 
