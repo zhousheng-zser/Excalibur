@@ -67,6 +67,10 @@
       <Project>{d7880356-7b3e-4f4b-a41a-a4a1fc03791d}</Project>
       <Name>Gaiunia</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\csharp\Infrastructure\InfrastructureSharp.vcxproj">
+      <Project>{8fa1d277-7f60-47f6-9138-7d68b6a2e333}</Project>
+      <Name>InfrastructureSharp</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\csharp\Longinucia\Longinucia.vcxproj">
       <Project>{6e707998-0fb7-4690-97aa-b17d55993523}</Project>
       <Name>Longinucia</Name>
