@@ -9,7 +9,10 @@ extern "C" {
 JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_init(JNIEnv *, jobject, jint);
 JNIEXPORT void JNICALL Java_com_glasssix_Cassiutia_Cassiutia_finalize(JNIEnv *, jobject);
 JNIEXPORT jstring JNICALL Java_com_glasssix_Cassiutia_Cassiutia_getVersion(JNIEnv *, jclass);
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_Forward(JNIEnv *, jobject, jlong, jint);
+#ifdef USE_OPENCV
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_ForwardbyMat(JNIEnv *, jobject, jlong, jint);
+#endif
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Cassiutia_Cassiutia_ForwardbyMetaData(JNIEnv *, jobject, jbyteArray, jint, jint );
 
 
 #ifdef __cplusplus

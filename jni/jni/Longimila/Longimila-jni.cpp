@@ -1,8 +1,11 @@
 #include "Longimila-jni.hpp"
 #include "LonginusDetector.hpp"
+#ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 #include <string>
 #include <vector>
+#include <iostream>
 
 static const char *FaceRectClassPath = "com/glasssix/Longimila/FaceRect";
 static const char *FaceRectwithFaceInfoClassPath = "com/glasssix/Longimila/FaceRectwithFaceInfo";
@@ -62,7 +65,8 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_finalize(JNIEnv *en
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors)
+#ifdef USE_OPENCV
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectbyMat(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -70,9 +74,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
 	
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
-	
 	std::vector<glasssix::longinus::FaceRect> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, false, false);
-	
 	jsize size = rects.size();
 	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
 	jobjectArray array = env->NewObjectArray(size, FaceRectClazz, nullptr);
@@ -95,7 +97,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
 	return array;
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFII(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors, jint order)
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithInfobyMat(JNIEnv *env, jobject thiz, jlong grayNativeObj, jint minSize, jfloat scale, jint minNeighbors, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -103,14 +105,12 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
 	
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
-	
 	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, order, false, false);
-	
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
 	jobjectArray array = env->NewObjectArray(size, FaceRectwithFaceInfoClazz, nullptr);
 	jmethodID mid_FaceRectwithFaceInfo_constructor = env->GetMethodID(FaceRectwithFaceInfoClazz, "<init>", "()V");
-	jfieldID fid_pts = env->GetFieldID(FaceRectwithFaceInfoClazz, "pts", "[Ljava/lang/Object;");
+	jfieldID fid_pts = env->GetFieldID(FaceRectwithFaceInfoClazz, "pts", "[Lcom/glasssix/Longimila/Point;");
 	jfieldID fid_yaw = env->GetFieldID(FaceRectwithFaceInfoClazz, "yaw", "F");
 	jfieldID fid_pitch = env->GetFieldID(FaceRectwithFaceInfoClazz, "pitch", "F");
 	jfieldID fid_roll = env->GetFieldID(FaceRectwithFaceInfoClazz, "roll", "F");
@@ -126,7 +126,6 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
 	
 	jclass PointClazz = env->FindClass(PointClassPath);
 	jmethodID mid_Point_constructor = env->GetMethodID(PointClazz, "<init>", "()V");
-	jobject PointObj = env->NewObject(PointClazz, mid_Point_constructor);
 	
 	jfieldID fid_Point_x = env->GetFieldID(PointClazz, "x", "I");
 	jfieldID fid_Point_y = env->GetFieldID(PointClazz, "y", "I");
@@ -134,7 +133,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
     for (size_t i = 0; i < size; ++i)
 	{
 		jobject FaceRectwithFaceInfoObj = env->NewObject(FaceRectwithFaceInfoClazz, mid_FaceRectwithFaceInfo_constructor);
-		
+
 		env->SetIntField(FaceRectwithFaceInfoObj, fid_x, rects[i].x);
 		env->SetIntField(FaceRectwithFaceInfoObj, fid_y, rects[i].y);
 		env->SetIntField(FaceRectwithFaceInfoObj, fid_width, rects[i].width);
@@ -144,29 +143,157 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detect_JIFI
 		
 		jobjectArray ptsArray = (jobjectArray)env->GetObjectField(FaceRectwithFaceInfoObj, fid_pts);
 		jsize ptsArraySize = env->GetArrayLength(ptsArray);
-		
 		for (size_t j = 0; j < ptsArraySize; j++)
 		{
+			jobject PointObj = env->NewObject(PointClazz, mid_Point_constructor);
 			env->SetIntField(PointObj, fid_Point_x, rects[i].pts[j].x);
 			env->SetIntField(PointObj, fid_Point_y, rects[i].pts[j].y);
 			env->SetObjectArrayElement(ptsArray, j, PointObj);
+			env->DeleteLocalRef(PointObj);
 		}
-		
+
 		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
 		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
 		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
 		
 		env->SetObjectArrayElement(array, i, FaceRectwithFaceInfoObj);
-		
+
 		env->DeleteLocalRef(ptsArray);
 		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
     }
-	
-	env->DeleteLocalRef(PointObj);
+
 	env->DeleteLocalRef(PointClazz);
 	env->DeleteLocalRef(FaceRectClazz);
 	env->DeleteLocalRef(clazz);
-	
+	return array;
+}
+#endif
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectbyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray,
+	jint width, jint height, jint minSize, jfloat scale, jint minNeighbors)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+	jsize size;
+	std::vector<glasssix::longinus::FaceRect> rects;
+	if (data_vec.size() != width * height)
+	{
+		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		size = 0;
+	}
+	else
+	{
+		rects = pDetector->detect((unsigned char *)data_vec.data(), width, height, width * sizeof(unsigned char), minSize, scale, minNeighbors, false, false);
+	}
+	size = rects.size();
+	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
+	jobjectArray array = env->NewObjectArray(size, FaceRectClazz, nullptr);
+
+	jmethodID mid_FaceRect_constructor = env->GetMethodID(FaceRectClazz, "<init>", "(IIIIID)V");
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		jobject FaceRectObj = env->NewObject(FaceRectClazz, mid_FaceRect_constructor,
+			rects[i].x, rects[i].y, rects[i].width, rects[i].height,
+			rects[i].neighbors, rects[i].confidence);
+
+		env->SetObjectArrayElement(array, i, FaceRectObj);
+		env->DeleteLocalRef(FaceRectObj);
+	}
+
+	env->DeleteLocalRef(FaceRectClazz);
+	env->DeleteLocalRef(clazz);
+
+	return array;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithInfobyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, 
+	jint width, jint height, jint minSize, jfloat scale, jint minNeighbors, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+	jsize size;
+	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	if (data_vec.size() != width * height)
+	{
+		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		size = 0;
+	}
+	else
+	{
+		rects = pDetector->detect((unsigned char *)data_vec.data(), width, height, width * sizeof(unsigned char), minSize, scale, minNeighbors, order, false, false);
+	}
+	size = rects.size();
+	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
+	jobjectArray array = env->NewObjectArray(size, FaceRectwithFaceInfoClazz, nullptr);
+	jmethodID mid_FaceRectwithFaceInfo_constructor = env->GetMethodID(FaceRectwithFaceInfoClazz, "<init>", "()V");
+	jfieldID fid_pts = env->GetFieldID(FaceRectwithFaceInfoClazz, "pts", "[Lcom/glasssix/Longimila/Point;");
+	jfieldID fid_yaw = env->GetFieldID(FaceRectwithFaceInfoClazz, "yaw", "F");
+	jfieldID fid_pitch = env->GetFieldID(FaceRectwithFaceInfoClazz, "pitch", "F");
+	jfieldID fid_roll = env->GetFieldID(FaceRectwithFaceInfoClazz, "roll", "F");
+
+	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
+
+	jfieldID fid_x = env->GetFieldID(FaceRectClazz, "x", "I");
+	jfieldID fid_y = env->GetFieldID(FaceRectClazz, "y", "I");
+	jfieldID fid_width = env->GetFieldID(FaceRectClazz, "width", "I");
+	jfieldID fid_height = env->GetFieldID(FaceRectClazz, "height", "I");
+	jfieldID fid_neighbors = env->GetFieldID(FaceRectClazz, "neighbors", "I");
+	jfieldID fid_confidence = env->GetFieldID(FaceRectClazz, "confidence", "D");
+
+	jclass PointClazz = env->FindClass(PointClassPath);
+	jmethodID mid_Point_constructor = env->GetMethodID(PointClazz, "<init>", "()V");
+
+	jfieldID fid_Point_x = env->GetFieldID(PointClazz, "x", "I");
+	jfieldID fid_Point_y = env->GetFieldID(PointClazz, "y", "I");
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		jobject FaceRectwithFaceInfoObj = env->NewObject(FaceRectwithFaceInfoClazz, mid_FaceRectwithFaceInfo_constructor);
+
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_x, rects[i].x);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_y, rects[i].y);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_width, rects[i].width);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_height, rects[i].height);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_neighbors, rects[i].neighbors);
+		env->SetDoubleField(FaceRectwithFaceInfoObj, fid_confidence, rects[i].confidence);
+
+		jobjectArray ptsArray = (jobjectArray)env->GetObjectField(FaceRectwithFaceInfoObj, fid_pts);
+		jsize ptsArraySize = env->GetArrayLength(ptsArray);
+		for (size_t j = 0; j < ptsArraySize; j++)
+		{
+			jobject PointObj = env->NewObject(PointClazz, mid_Point_constructor);
+			env->SetIntField(PointObj, fid_Point_x, rects[i].pts[j].x);
+			env->SetIntField(PointObj, fid_Point_y, rects[i].pts[j].y);
+			env->SetObjectArrayElement(ptsArray, j, PointObj);
+			env->DeleteLocalRef(PointObj);
+		}
+
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+
+		env->SetObjectArrayElement(array, i, FaceRectwithFaceInfoObj);
+
+		env->DeleteLocalRef(ptsArray);
+		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
+	}
+
+	env->DeleteLocalRef(PointClazz);
+	env->DeleteLocalRef(FaceRectClazz);
+	env->DeleteLocalRef(clazz);
 	return array;
 }
 
@@ -233,15 +360,14 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEn
 	
 	jobjectArray match_array = env->NewObjectArray(vec_size, MatchRetvalClazz, nullptr);
 	
-	jobject FaceRectObj = env->NewObject(FaceRectClazz, mid_FaceRect_constructor);
-	jobject MatchRetvalObj = env->NewObject(MatchRetvalClazz, mid_MatchRetval_constructor);
-	
 	jfieldID fid_rect = env->GetFieldID(MatchRetvalClazz, "rect", "Ljava/lang/Object;");
 	jfieldID fid_id = env->GetFieldID(MatchRetvalClazz, "id", "Ljava/lang/String;");
 	jfieldID fid_is_new = env->GetFieldID(MatchRetvalClazz, "is_new", "Z");
 	
 	for(size_t i = 0; i < vec_size; i++)
 	{
+		jobject FaceRectObj = env->NewObject(FaceRectClazz, mid_FaceRect_constructor);
+		jobject MatchRetvalObj = env->NewObject(MatchRetvalClazz, mid_MatchRetval_constructor);
 		env->SetIntField(FaceRectObj, fid_x, match_vec[i].rect.x);
 		env->SetIntField(FaceRectObj, fid_y, match_vec[i].rect.y);
 		env->SetIntField(FaceRectObj, fid_width, match_vec[i].rect.width);
@@ -257,10 +383,11 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEn
 		env->SetObjectArrayElement(match_array, i, MatchRetvalObj);
 		
 		env->DeleteLocalRef(jstr_id);
+		env->DeleteLocalRef(MatchRetvalObj);
+		env->DeleteLocalRef(FaceRectObj);
 	}
 	
-	env->DeleteLocalRef(MatchRetvalObj);
-	env->DeleteLocalRef(FaceRectObj);
+	
 	env->DeleteLocalRef(MatchRetvalClazz);
 	env->DeleteLocalRef(FaceRectClazz);
 	env->DeleteLocalRef(clazz);
@@ -268,57 +395,335 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEn
 	return match_array;
 }
 
-JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFace_J_3I_3I(JNIEnv *env, jobject thiz, jlong grayNativeObj, jintArray bboxArray, jintArray landmarkArray)
+#ifdef USE_OPENCV
+JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFacebyMat(JNIEnv *env, jobject thiz, jlong grayNativeObj, jobjectArray bboxArray, jobjectArray landmarkArray)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
-	
-	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
+
+	cv::Mat &mat = *(cv::Mat *)grayNativeObj;
 	jsize bboxArraySize = env->GetArrayLength(bboxArray);
-	std::vector<int> bbox_vec(bboxArraySize);
-	env->GetIntArrayRegion(bboxArray, 0, bboxArraySize, (jint *)(bbox_vec.data()));
-	std::vector<std::vector<int> > bbox_vecs;
-	bbox_vecs.push_back(bbox_vec);
-	
 	jsize landmarkArraySize = env->GetArrayLength(landmarkArray);
-	std::vector<int> landmark_vec(landmarkArraySize);
-	env->GetIntArrayRegion(landmarkArray, 0, landmarkArraySize, (jint *)(landmark_vec.data()));
-	std::vector<std::vector<int> > landmark_vecs;
-	landmark_vecs.push_back(landmark_vec);
-	
-	std::vector<unsigned char> aligned_vec = pDetector->alignFace(gray.data, 1, gray.channels(), gray.rows, gray.cols, bbox_vecs, landmark_vecs);
-	
+
+	jintArray bbox0 = (jintArray)env->GetObjectArrayElement(bboxArray, 0);
+	jintArray landmark0 = (jintArray)env->GetObjectArrayElement(landmarkArray, 0);
+
+	jsize bboxDimension = env->GetArrayLength(bbox0);
+	jsize landmarkDimension = env->GetArrayLength(landmark0);
+
+	env->DeleteLocalRef(landmark0);
+	env->DeleteLocalRef(bbox0);
+
+	std::vector<std::vector<int> > bbox_vec(bboxArraySize, std::vector<int>(bboxDimension));
+	std::vector<std::vector<int> > landmark_vec(landmarkArraySize, std::vector<int>(landmarkDimension));
+
+	for (size_t i = 0; i < bboxArraySize; i++)
+	{
+		jintArray bbox = (jintArray)env->GetObjectArrayElement(bboxArray, i);
+		env->GetIntArrayRegion(bbox, 0, bboxDimension, (jint *)bbox_vec[i].data());
+		env->DeleteLocalRef(bbox);
+	}
+
+	for (size_t i = 0; i < landmarkArraySize; i++)
+	{
+		jintArray landmark = (jintArray)env->GetObjectArrayElement(landmarkArray, i);
+		env->GetIntArrayRegion(landmark, 0, landmarkDimension, (jint *)landmark_vec[i].data());
+		env->DeleteLocalRef(landmark);
+	}
+
+
+	std::vector<unsigned char> aligned_vec = pDetector->alignFace(mat.data, bbox_vec.size(), mat.channels(), mat.rows, mat.cols, bbox_vec, landmark_vec);
+
 	jsize alignedSize = aligned_vec.size();
-	
+
 	jbyteArray aligned_array = env->NewByteArray(alignedSize);
 	env->SetByteArrayRegion(aligned_array, 0, alignedSize, (const jbyte *)aligned_vec.data());
-	
-	
+
+
 	env->DeleteLocalRef(clazz);
-	
+
+	return aligned_array;
+}
+#endif
+
+JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFacebyMetaData(JNIEnv *env, jobject thiz,
+	jbyteArray dataArray, jint width, jint height, jobjectArray bboxArray, jobjectArray landmarkArray)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
+	jsize bboxArraySize = env->GetArrayLength(bboxArray);
+	jsize landmarkArraySize = env->GetArrayLength(landmarkArray);
+
+	jintArray bbox0 = (jintArray)env->GetObjectArrayElement(bboxArray, 0);
+	jintArray landmark0 = (jintArray)env->GetObjectArrayElement(landmarkArray, 0);
+
+	jsize bboxDimension = env->GetArrayLength(bbox0);
+	jsize landmarkDimension = env->GetArrayLength(landmark0);
+
+	env->DeleteLocalRef(landmark0);
+	env->DeleteLocalRef(bbox0);
+
+	std::vector<std::vector<int> > bbox_vec(bboxArraySize, std::vector<int>(bboxDimension));
+	std::vector<std::vector<int> > landmark_vec(landmarkArraySize, std::vector<int>(landmarkDimension));
+
+	for (size_t i = 0; i < bboxArraySize; i++)
+	{
+		jintArray bbox = (jintArray)env->GetObjectArrayElement(bboxArray, i);
+		env->GetIntArrayRegion(bbox, 0, bboxDimension, (jint *)bbox_vec[i].data());
+		env->DeleteLocalRef(bbox);
+	}
+
+	for (size_t i = 0; i < landmarkArraySize; i++)
+	{
+		jintArray landmark = (jintArray)env->GetObjectArrayElement(landmarkArray, i);
+		env->GetIntArrayRegion(landmark, 0, landmarkDimension, (jint *)landmark_vec[i].data());
+		env->DeleteLocalRef(landmark);
+	}
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+	jsize alignedSize;
+	std::vector<unsigned char> aligned_vec;
+	if (data_vec.size() != width * height)
+	{
+		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		alignedSize = 0;
+	}
+	else
+	{
+		aligned_vec = pDetector->alignFace((unsigned char *)data_vec.data(), bbox_vec.size(), 1, height, width, bbox_vec, landmark_vec);
+		alignedSize = aligned_vec.size();
+	}
+	jbyteArray aligned_array = env->NewByteArray(alignedSize);
+	env->SetByteArrayRegion(aligned_array, 0, alignedSize, (const jbyte *)aligned_vec.data());
+
+
+	env->DeleteLocalRef(clazz);
+
 	return aligned_array;
 }
 
-JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignFace_J(JNIEnv *env, jobject thiz, jlong grayNativeObj)
+#ifndef TRIAL
+#ifdef USE_OPENCV
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMat(JNIEnv *env, jobject thiz, jlong matNativeObj, jint minSize, jfloatArray threshold, jfloat factor, jint stage, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
 	
+	jsize thresholdSize = env->GetArrayLength(threshold);
+	std::vector<float> threshold_vec(thresholdSize);
+	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
+	
+	cv::Mat &mat = *(cv::Mat *)matNativeObj;
+	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
+	jsize size = rects.size();
+	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
+	jobjectArray array = env->NewObjectArray(size, FaceRectwithFaceInfoClazz, nullptr);
+	jmethodID mid_FaceRectwithFaceInfo_constructor = env->GetMethodID(FaceRectwithFaceInfoClazz, "<init>", "()V");
+	jfieldID fid_pts = env->GetFieldID(FaceRectwithFaceInfoClazz, "pts", "[Lcom/glasssix/Longimila/Point;");
+	jfieldID fid_yaw = env->GetFieldID(FaceRectwithFaceInfoClazz, "yaw", "F");
+	jfieldID fid_pitch = env->GetFieldID(FaceRectwithFaceInfoClazz, "pitch", "F");
+	jfieldID fid_roll = env->GetFieldID(FaceRectwithFaceInfoClazz, "roll", "F");
+	
+	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
+	
+	jfieldID fid_x = env->GetFieldID(FaceRectClazz, "x", "I");
+	jfieldID fid_y = env->GetFieldID(FaceRectClazz, "y", "I");
+	jfieldID fid_width = env->GetFieldID(FaceRectClazz, "width", "I");
+	jfieldID fid_height = env->GetFieldID(FaceRectClazz, "height", "I");
+	jfieldID fid_neighbors = env->GetFieldID(FaceRectClazz, "neighbors", "I");
+	jfieldID fid_confidence = env->GetFieldID(FaceRectClazz, "confidence", "D");
+	
+	jclass PointClazz = env->FindClass(PointClassPath);
+	jmethodID mid_Point_constructor = env->GetMethodID(PointClazz, "<init>", "()V");
+	
+	jfieldID fid_Point_x = env->GetFieldID(PointClazz, "x", "I");
+	jfieldID fid_Point_y = env->GetFieldID(PointClazz, "y", "I");
+	
+    for (size_t i = 0; i < size; ++i)
+	{
+		jobject FaceRectwithFaceInfoObj = env->NewObject(FaceRectwithFaceInfoClazz, mid_FaceRectwithFaceInfo_constructor);
+
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_x, rects[i].x);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_y, rects[i].y);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_width, rects[i].width);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_height, rects[i].height);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_neighbors, rects[i].neighbors);
+		env->SetDoubleField(FaceRectwithFaceInfoObj, fid_confidence, rects[i].confidence);
+		
+		jobjectArray ptsArray = (jobjectArray)env->GetObjectField(FaceRectwithFaceInfoObj, fid_pts);
+		jsize ptsArraySize = env->GetArrayLength(ptsArray);
+		for (size_t j = 0; j < ptsArraySize; j++)
+		{
+			jobject PointObj = env->NewObject(PointClazz, mid_Point_constructor);
+			env->SetIntField(PointObj, fid_Point_x, rects[i].pts[j].x);
+			env->SetIntField(PointObj, fid_Point_y, rects[i].pts[j].y);
+			env->SetObjectArrayElement(ptsArray, j, PointObj);
+			env->DeleteLocalRef(PointObj);
+		}
+
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+		
+		env->SetObjectArrayElement(array, i, FaceRectwithFaceInfoObj);
+
+		env->DeleteLocalRef(ptsArray);
+		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
+    }
+
+	env->DeleteLocalRef(PointClazz);
+	env->DeleteLocalRef(FaceRectClazz);
+	env->DeleteLocalRef(clazz);
+	return array;
+}
+
+JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignSingleFacebyMat(JNIEnv *env, jobject thiz, jlong grayNativeObj)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
-	
+
 	std::vector<unsigned char> aligned_vec = pDetector->alignFace(gray.data, 1, gray.channels(), gray.rows, gray.cols);
-	
+
 	jsize alignedSize = aligned_vec.size();
-	
+
 	jbyteArray aligned_array = env->NewByteArray(alignedSize);
 	env->SetByteArrayRegion(aligned_array, 0, alignedSize, (const jbyte *)aligned_vec.data());
-	
-	
+
+
 	env->DeleteLocalRef(clazz);
-	
+
 	return aligned_array;
 }
+#endif
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray,
+	jint width, jint height, jint minSize, jfloatArray threshold, jfloat factor, jint stage, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
+	jsize thresholdSize = env->GetArrayLength(threshold);
+	std::vector<float> threshold_vec(thresholdSize);
+	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+	jsize size;
+	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	if (data_vec.size() != width * height * 3)
+	{
+		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		size = 0;
+	}
+	else
+	{
+		rects = pDetector->detectEx((unsigned char *)data_vec.data(), 3, height, width, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
+		size = rects.size();
+	}
+	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
+	jobjectArray array = env->NewObjectArray(size, FaceRectwithFaceInfoClazz, nullptr);
+	jmethodID mid_FaceRectwithFaceInfo_constructor = env->GetMethodID(FaceRectwithFaceInfoClazz, "<init>", "()V");
+	jfieldID fid_pts = env->GetFieldID(FaceRectwithFaceInfoClazz, "pts", "[Lcom/glasssix/Longimila/Point;");
+	jfieldID fid_yaw = env->GetFieldID(FaceRectwithFaceInfoClazz, "yaw", "F");
+	jfieldID fid_pitch = env->GetFieldID(FaceRectwithFaceInfoClazz, "pitch", "F");
+	jfieldID fid_roll = env->GetFieldID(FaceRectwithFaceInfoClazz, "roll", "F");
+
+	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
+
+	jfieldID fid_x = env->GetFieldID(FaceRectClazz, "x", "I");
+	jfieldID fid_y = env->GetFieldID(FaceRectClazz, "y", "I");
+	jfieldID fid_width = env->GetFieldID(FaceRectClazz, "width", "I");
+	jfieldID fid_height = env->GetFieldID(FaceRectClazz, "height", "I");
+	jfieldID fid_neighbors = env->GetFieldID(FaceRectClazz, "neighbors", "I");
+	jfieldID fid_confidence = env->GetFieldID(FaceRectClazz, "confidence", "D");
+
+	jclass PointClazz = env->FindClass(PointClassPath);
+	jmethodID mid_Point_constructor = env->GetMethodID(PointClazz, "<init>", "()V");
+
+	jfieldID fid_Point_x = env->GetFieldID(PointClazz, "x", "I");
+	jfieldID fid_Point_y = env->GetFieldID(PointClazz, "y", "I");
+
+	for (size_t i = 0; i < size; ++i)
+	{
+		jobject FaceRectwithFaceInfoObj = env->NewObject(FaceRectwithFaceInfoClazz, mid_FaceRectwithFaceInfo_constructor);
+
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_x, rects[i].x);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_y, rects[i].y);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_width, rects[i].width);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_height, rects[i].height);
+		env->SetIntField(FaceRectwithFaceInfoObj, fid_neighbors, rects[i].neighbors);
+		env->SetDoubleField(FaceRectwithFaceInfoObj, fid_confidence, rects[i].confidence);
+
+		jobjectArray ptsArray = (jobjectArray)env->GetObjectField(FaceRectwithFaceInfoObj, fid_pts);
+		jsize ptsArraySize = env->GetArrayLength(ptsArray);
+		for (size_t j = 0; j < ptsArraySize; j++)
+		{
+			jobject PointObj = env->NewObject(PointClazz, mid_Point_constructor);
+			env->SetIntField(PointObj, fid_Point_x, rects[i].pts[j].x);
+			env->SetIntField(PointObj, fid_Point_y, rects[i].pts[j].y);
+			env->SetObjectArrayElement(ptsArray, j, PointObj);
+			env->DeleteLocalRef(PointObj);
+		}
+
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+
+		env->SetObjectArrayElement(array, i, FaceRectwithFaceInfoObj);
+
+		env->DeleteLocalRef(ptsArray);
+		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
+	}
+
+	env->DeleteLocalRef(PointClazz);
+	env->DeleteLocalRef(FaceRectClazz);
+	env->DeleteLocalRef(clazz);
+	return array;
+}
+
+JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignSingleFacebyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint width, jint height)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+	std::vector<unsigned char> aligned_vec;
+	if (data_vec.size() != width * height * 1)
+	{
+		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+	}
+	else
+	{
+		aligned_vec = pDetector->alignFace((unsigned char *)data_vec.data(), 1, 1, height, width);
+	}
+	jsize alignedSize = aligned_vec.size();
+
+	jbyteArray aligned_array = env->NewByteArray(alignedSize);
+	env->SetByteArrayRegion(aligned_array, 0, alignedSize, (const jbyte *)aligned_vec.data());
+
+
+	env->DeleteLocalRef(clazz);
+
+	return aligned_array;
+}
+#endif

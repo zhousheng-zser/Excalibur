@@ -45,7 +45,7 @@
     <ClInclude Include="..\..\jni\jni\Irisvika\Irisvika-jni.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\jni\jni\Irisvika\SearchWrapper.hpp">
+    <ClInclude Include="..\..\jni\jni\Irisvika\IrisvianSearchWrapper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

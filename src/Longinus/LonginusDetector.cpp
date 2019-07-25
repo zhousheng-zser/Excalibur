@@ -140,7 +140,6 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 	{
 		return std::vector<FaceRectwithFaceInfo>();
 	}
-	
 	std::vector<std::vector<float> > infoParam;
 	std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 	group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));
@@ -159,7 +158,6 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 			tensor_operation_cpu::resize_cpu(rect_tensor, rect48_tensor, 48, 48);
 			memcpy(group_rect_tensor->mutable_cpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->cpu_data(), 1 * 48 * 48 * sizeof(unsigned char));
 		}
-
 		bansheelia_->Forward(group_rect_tensor->cpu_data(), rects.size(), order);
 		bansheelia_->getParam(infoParam, rects.size());
 	}
@@ -207,7 +205,6 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 			rectsWithLandmark[i].pts[j].y = infoParam[i][4 + 2 * j + 1] * rectsWithLandmark[i].height + rectsWithLandmark[i].y;
 		}
 	}
-
 	return rectsWithLandmark;
 }
 

@@ -1,6 +1,8 @@
 #include "Gaiulinya-jni.hpp"
 #include "GaiusFeature.hpp"
+#ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 #include <string>
 #include <vector>
 
@@ -53,7 +55,8 @@ JNIEXPORT jstring JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_getVersion(JNIEn
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
+#ifdef USE_OPENCV
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardbyMat(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -69,5 +72,42 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIE
 	
 	env->DeleteLocalRef(clazz);
 	
+	return featureArray;
+}
+#endif
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardbyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::gaius::GaiusFeature *pGaius = (glasssix::gaius::GaiusFeature *)p;
+
+	jsize dataSize = env->GetArrayLength(dataArray);
+	std::vector<unsigned char> data_vec(dataSize, 0);
+
+	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
+
+	std::vector<std::vector<float> > feature_vecs = pGaius->Forward((unsigned char *)data_vec.data(), faceCount, order);
+
+	jsize featureArraySize = feature_vecs.size();
+	jsize dimension = feature_vecs[0].size();
+
+	jclass floatArrayClazz = env->FindClass("[F");
+
+	jobjectArray featureArray = env->NewObjectArray(featureArraySize, floatArrayClazz, nullptr);
+
+	for (size_t i = 0; i < featureArraySize; i++)
+	{
+		jfloatArray feature = env->NewFloatArray(dimension);
+		
+		env->SetFloatArrayRegion(feature, 0, dimension, feature_vecs[i].data());
+		env->SetObjectArrayElement(featureArray, i, feature);
+		env->DeleteLocalRef(feature);
+	}
+
+	env->DeleteLocalRef(floatArrayClazz);
+	env->DeleteLocalRef(clazz);
+
 	return featureArray;
 }
