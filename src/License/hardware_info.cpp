@@ -1,7 +1,7 @@
 #include "hardware_info.h"
 
 #ifdef _MSC_VER
-#include "windows_com_global.hpp"
+// #include "windows_com_global.hpp"
 #elif defined(__GNUC__)
 #include <glasssix/simd_config.hpp>
 #include "DmiDecoder.hpp"
@@ -14,7 +14,7 @@ namespace glasssix
 		hardware_info::hardware_info()
 		{
 #ifdef _MSC_VER
-			windows_com_global::instance();
+			// windows_com_global::instance();
 
             auto hr = wmi_locator_.CoCreateInstance(__uuidof(WbemLocator));
 
