@@ -1,41 +1,30 @@
 #include "tensor_builder_free_image_impl.hpp"
+#include "fi_image_ex.hpp"
 #include "init_free_image.hpp"
 #include "tensor_convertions.hpp"
-#include "FreeImagePlus.h"
 
 namespace glasssix
 {
     namespace excalibur
     {
-        std::unordered_map<int, size_t> tensor_builder_free_image_impl::channel_byte_mapping_ =
-        {
-            { FIT_BITMAP, sizeof(uint8_t) },
-            { FIT_FLOAT, sizeof(float) },
-            { FIT_DOUBLE, sizeof(double) },
-            { FIT_RGBF, sizeof(float) },
-            { FIT_RGBAF, sizeof(float) },
-            { FIT_RGB16, sizeof(uint16_t) },
-            { FIT_RGBA16, sizeof(uint16_t) }
-        };
-
         bitmap_converter_map<tensor_layout> tensor_builder_free_image_impl::float_converters_ =
         {
-            { tensor_layout::rgb, [](fipImage& inner) { return inner.convertToRGBF(); } },
-            { tensor_layout::rgba, [](fipImage& inner) { return inner.convertToRGBAF(); } },
-            { tensor_layout::grayscale, [](fipImage& inner) { return inner.convertToFloat(); } }
+            { tensor_layout::rgb, [](fi_image_ex& inner) { return inner.convert_to_rgbf(); } },
+            { tensor_layout::rgba, [](fi_image_ex& inner) { return inner.convert_to_rgbaf(); } },
+            { tensor_layout::grayscale, [](fi_image_ex& inner) { return inner.convert_to_float(); } }
         };
 
         bitmap_converter_map<tensor_layout> tensor_builder_free_image_impl::uint8_converters_ =
         {
-            { tensor_layout::rgb, [](fipImage& inner) { return inner.convertTo24Bits(); } },
-            { tensor_layout::rgba, [](fipImage& inner) { return inner.convertTo32Bits(); } },
-            { tensor_layout::grayscale, [](fipImage& inner) { return inner.convertToGrayscale(); } }
+            { tensor_layout::rgb, [](fi_image_ex& inner) { return inner.convert_to_24bits(); } },
+            { tensor_layout::rgba, [](fi_image_ex& inner) { return inner.convert_to_32bits(); } },
+            { tensor_layout::grayscale, [](fi_image_ex& inner) { return inner.convert_to_grayscale(); } }
         };
 
         tensor_builder_free_image_impl::tensor_builder_free_image_impl() : device_{ -1 }, order_{ NHWC }, width_{}, height_{}, stride_{}, channels_{}
         {
             init_free_image::instance().invoke();
-            image_ = std::make_shared<fipImage>();
+            image_ = std::make_shared<fi_image_ex>();
         }
 
         tensor_builder_free_image_impl::~tensor_builder_free_image_impl()
@@ -134,7 +123,7 @@ namespace glasssix
         }
 
         /// <summary>
-        /// Create a bitmap from a floating-point tensor.
+        /// Create an image from a floating-point tensor.
         /// </summary>
         /// <param name="data">The tensor data</param>
         /// <param name="layout">The tensor layout</param>
@@ -144,46 +133,40 @@ namespace glasssix
         ///</returns>
         bool tensor_builder_free_image_impl::from_tensor(const tensor<float>& data, tensor_layout layout)
         {
+            FREE_IMAGE_TYPE type;
+
             switch (layout)
             {
             case tensor_layout::rgb:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_RGBF, data.width(), data.height(), sizeof(float) * 3 * CHAR_BIT);
+                type = FIT_RGBF;
                 break;
             case tensor_layout::rgba:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_RGBAF, data.width(), data.height(), sizeof(float) * 4 * CHAR_BIT);
+                type = FIT_RGBAF;
                 break;
             case tensor_layout::grayscale:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_FLOAT, data.width(), data.height(), sizeof(float) * CHAR_BIT);
+                type = FIT_FLOAT;
                 break;
             case tensor_layout::grayscale_3:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_RGBF, data.width(), data.height(), sizeof(float) * 3 * CHAR_BIT);
+                type = FIT_RGBF;
                 break;
             default:
                 return false;
             }
+
+            // Create a new instance.
+            image_ = std::make_shared<fi_image_ex>(type, data.width(), data.height(), static_cast<uint32_t>(sizeof(float) * data.channels() * uint8_bits_));
 
             if (!image_->isValid())
             {
                 return false;
             }
 
+            // Copy the data.
+            tensor_helper::copy_to_bitmap(data, image_->accessPixels(), image_->getScanWidth());
+
             // Floating-float numbers are not supported by the stardard bitmap.
             // Thus, we need to convert it to a standard type.
-            auto converter = uint8_converters_.find(layout);
-            if (converter == uint8_converters_.end())
-            {
-                return false;
-            }
-
-            if (converter->second(*image_))
-            {
-                // Copy the data.
-                tensor_helper::copy_to_bitmap(data, image_->accessPixels(), image_->getScanWidth());
-
-                return true;
-            }
-
-            return false;
+            return image_->convert_to_standard_type_self();
         }
 
         /// <summary>
@@ -200,23 +183,17 @@ namespace glasssix
             switch (layout)
             {
             case tensor_layout::rgb:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_BITMAP, data.width(), data.height(), sizeof(uint8_t) * 3 * CHAR_BIT);
-                break;
             case tensor_layout::rgba:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_BITMAP, data.width(), data.height(), sizeof(uint8_t) * 4 * CHAR_BIT);
-                break;
             case tensor_layout::grayscale:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_BITMAP, data.width(), data.height(), sizeof(uint8_t) * CHAR_BIT);
-                break;
             case tensor_layout::grayscale_3:
-                image_ = std::make_shared<fipImage>(FREE_IMAGE_TYPE::FIT_BITMAP, data.width(), data.height(), sizeof(uint8_t) * 3 * CHAR_BIT);
+                image_ = std::make_shared<fi_image_ex>(FIT_BITMAP, data.width(), data.height(), static_cast<uint32_t>(sizeof(uint8_t) * data.channels() * uint8_bits_));
                 break;
             default:
                 return false;
             }
 
             // Copy the data.
-            if (!image_->isValid())
+            if (image_->isValid())
             {
                 tensor_helper::copy_to_bitmap(data, image_->accessPixels(), image_->getScanWidth());
 
@@ -251,10 +228,10 @@ namespace glasssix
         /// </summary>
         void tensor_builder_free_image_impl::update_image_parameters_core()
         {
-            width_ = image_->getWidth();
-            height_ = image_->getHeight();
-            stride_ = image_->getScanWidth();
-            channels_ = image_->getBitsPerPixel() / static_cast<int>(channel_byte_mapping_[image_->getImageType()]) / uint8_bits_;
+            width_ = image_->width();
+            height_ = image_->height();
+            stride_ = image_->stride();
+            channels_ = image_->channels();
         }
 
         /// <summary>
@@ -328,14 +305,19 @@ namespace glasssix
 
             // Find the appropriate converter.
             auto item = converters.find(type);
-            if (item == converters.end() || !item->second(*image_))
+            if (item == converters.end())
             {
                 return return_null_wrapper();
             }
 
-            update_image_parameters_core();
+            // Convert the bitmap.
+            auto result = item->second(*image_);
+            if (!result)
+            {
+                return return_null_wrapper();
+            }
 
-            return tensor_helper::create<TUnderlyingType, shared>(image_->accessPixels(), order_, device_, width_, height_, stride_, channels_);
+            return tensor_helper::create<TUnderlyingType, shared>(result->accessPixels(), order_, device_, result->width(), result->height(), result->stride(), result->channels());
         }
     }
 }
