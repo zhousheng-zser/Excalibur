@@ -1,10 +1,10 @@
 #pragma once
 
-#include "marshal_fx.hpp"
 #include "NativeTensorProxy.hpp"
 
 #include <memory>
 
+#include <marshal_fx.hpp>
 #include <glasssix/tensor.hpp>
 
 using System::Runtime::InteropServices::OptionalAttribute;
