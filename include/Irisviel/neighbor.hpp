@@ -8,7 +8,7 @@
 
 namespace glasssix 
 {
-	namespace Irisvian 
+	namespace irisviel 
 	{
 		typedef boost::detail::spinlock Lock;
 		typedef std::lock_guard<Lock> LockGuard;

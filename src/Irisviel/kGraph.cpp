@@ -19,7 +19,7 @@ using namespace std;
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
 		// both pool and knn should be sorted in ascending order
 		static float evaluateRecall(std::vector<Neighbor> const &approximateResults, std::vector<Neighbor> const &accurateResults)

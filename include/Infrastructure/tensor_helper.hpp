@@ -155,8 +155,8 @@ namespace glasssix
                 transform_tensor_core<false>(source, destination, channels, [&](orderType order)
                 {
                     return order == NCHW ?
-                        std::function<TUnderlyingType(int, int, int)>{ [&](int w, int h, int c) { return input_data[width * height * c + width * h + w]; } } :
-                        std::function<TUnderlyingType(int, int, int)>{ [&](int w, int h, int c) { return input_data[(width * h + w) * source_channels + c]; } };
+                        std::function{ [&](int w, int h, int c) { return input_data[width * height * c + width * h + w]; } } :
+                        std::function{ [&](int w, int h, int c) { return input_data[(width * h + w) * source_channels + c]; } };
                 });
             }
         private:
