@@ -12,7 +12,7 @@
 
 namespace glasssix
 {
-	namespace Irisvian 
+	namespace irisviel 
 	{
 
 			class Search : public BaseSearch
