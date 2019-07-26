@@ -29,6 +29,12 @@
     <ClCompile Include="..\..\include\License\license_blob.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\License\DllMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\License\json11_lib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="../../include/License/aes_provider.hpp">
@@ -68,6 +74,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="../../include/License/windows_com_global.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\License\json11_lib.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,10 +1,9 @@
 #include "license_context.h"
 #include "aes_provider.hpp"
 #include "hardware_info.h"
+#include "json11_lib.hpp"
 
 #include <fstream>
-
-#include <json11.hpp>
 
 namespace filesystem = std::experimental::filesystem;
 
