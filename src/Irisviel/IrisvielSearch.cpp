@@ -1,31 +1,31 @@
 #include "index.hpp"
 #include "search.hpp"
-#include "IrisvianSearch.hpp"
+#include "IrisvielSearch.hpp"
 
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
-		IrisvianSearch::IrisvianSearch(const std::vector<const float*> *baseData, int dimension)
+		IrisvielSearch::IrisvielSearch(const std::vector<const float*> *baseData, int dimension)
 		{
 			index_ = new Index(baseData, dimension);
 			search_ = new Search(baseData, dimension);
 		}
 
-		IrisvianSearch::IrisvianSearch(int dimension)
+		IrisvielSearch::IrisvielSearch(int dimension)
 		{
 			index_ = new Index(dimension);
 			search_ = new Search(dimension);
 		}
 
-		IrisvianSearch::~IrisvianSearch()
+		IrisvielSearch::~IrisvielSearch()
 		{
 			delete index_;
 			delete search_;
 		}
 
-		int IrisvianSearch::buildGraph() const
+		int IrisvielSearch::buildGraph() const
 		{
 			int maxMemoryUsage = index_->buildGraph();
 			search_->navigateNode = index_->navigateNode;
@@ -47,7 +47,7 @@ namespace glasssix
 		}
 
 
-		int IrisvianSearch::buildGraph(const std::vector<const float*> *baseData) const
+		int IrisvielSearch::buildGraph(const std::vector<const float*> *baseData) const
 		{
 			int maxMemoryUsage = index_->buildGraph(baseData);
 			search_->navigateNode = index_->navigateNode;
@@ -71,50 +71,50 @@ namespace glasssix
 		} 
 
 
-		void IrisvianSearch::saveGraph(const char *graphPath) const
+		void IrisvielSearch::saveGraph(const char *graphPath) const
 		{
 			index_->saveGraph(graphPath);
 		}
 
 
-		void IrisvianSearch::saveGraph(const char *graphPath, const char *basedataPath) const
+		void IrisvielSearch::saveGraph(const char *graphPath, const char *basedataPath) const
 		{
 			index_->saveGraph(graphPath, basedataPath);
 		}
 
 
-		void IrisvianSearch::loadGraph(const char* graphPath) const
+		void IrisvielSearch::loadGraph(const char* graphPath) const
 		{
 			search_->loadGraph(graphPath);
 		}
 
-		void IrisvianSearch::loadGraph(const char* graphPath, const char *basedataPath) const
+		void IrisvielSearch::loadGraph(const char* graphPath, const char *basedataPath) const
 		{
 			search_->loadGraph(graphPath, basedataPath);
 		}
 
-		const std::vector<const float*>* IrisvianSearch::getBasedata() const 
+		const std::vector<const float*>* IrisvielSearch::getBasedata() const 
 		{
 			return search_->getBasedata();
 		}
 
-		void IrisvianSearch::optimizeGraph() const
+		void IrisvielSearch::optimizeGraph() const
 		{
 			search_->optimizeGraph();
 		}
 
-		void IrisvianSearch::searchVector(const std::vector<const float*>* queryData, unsigned topK,
+		void IrisvielSearch::searchVector(const std::vector<const float*>* queryData, unsigned topK,
 			std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const
 		{
 			search_->searchVector(queryData, topK, returnIDs, returnSimilarities);
 		}
 
-		void IrisvianSearch::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
+		void IrisvielSearch::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
 		{
 			search_->saveResult(resultPath, returnIDs);
 		}
 
-		std::string IrisvianSearch::getVersion()
+		std::string IrisvielSearch::getVersion()
 		{
 #ifdef TRIAL
 			return std::string("Glasssix Trial FaceSDK");

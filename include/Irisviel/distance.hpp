@@ -2,7 +2,7 @@
 #define _DISTANCE_HPP_
 
 namespace glasssix {
-	namespace Irisvian {
+	namespace irisviel {
 
 		class DistanceL2 
 		{
