@@ -1,5 +1,5 @@
-#ifndef _IRISVIAN_SEARACH_HPP_
-#define _IRISVIAN_SEARACH_HPP_
+#ifndef _IRISVIEL_SEARCH_HPP_
+#define _IRISVIEL_SEARCH_HPP_
 
 #include <iostream>
 #include <vector>
@@ -8,40 +8,40 @@
 #include "baseSearch.hpp"
 
 
-#ifdef EXPORT_IRISVIAN
-#undef EXPORT_IRISVIAN
+#ifdef EXPORT_IRISVIEL
+#undef EXPORT_IRISVIEL
 #ifdef _MSC_VER
-#define EXPORT_IRISVIAN __declspec(dllexport)
+#define EXPORT_IRISVIEL __declspec(dllexport)
 #else
-#define EXPORT_IRISVIAN
+#define EXPORT_IRISVIEL
 #endif
 #else
 #ifdef _MSC_VER
-#define EXPORT_IRISVIAN __declspec(dllimport)
+#define EXPORT_IRISVIEL __declspec(dllimport)
 #else
-#define EXPORT_IRISVIAN
+#define EXPORT_IRISVIEL
 #endif
 #endif
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
-		class EXPORT_IRISVIAN IrisvianSearch
+		class EXPORT_IRISVIEL IrisvielSearch
 		{
-			IrisvianSearch() {}
+			IrisvielSearch() {}
 
-			IrisvianSearch(const IrisvianSearch&){}
+			IrisvielSearch(const IrisvielSearch&){}
 
-			IrisvianSearch& operator=(const IrisvianSearch&);
+			IrisvielSearch& operator=(const IrisvielSearch&);
 
 		public:
 
-			IrisvianSearch(const std::vector<const float*> *baseData, int dimension);
+			IrisvielSearch(const std::vector<const float*> *baseData, int dimension);
 
-			IrisvianSearch(int dimension);
+			IrisvielSearch(int dimension);
 
-			~IrisvianSearch();
+			~IrisvielSearch();
 
 			int buildGraph() const;
 
@@ -103,4 +103,4 @@ namespace glasssix
 	}
 }
 
-#endif // !_IRISVIAN_SEARACH_HPP_
+#endif // !_IRISVIEL_SEARCH_HPP_
