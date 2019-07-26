@@ -55,6 +55,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "InfrastructureSharp", "..\c
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Irisviel", "Irisviel\Irisviel.vcxproj", "{D73D41D7-9C35-4E48-A85A-ABA45068223A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Irisvian", "Irisvian\Irisvian.vcxproj", "{F42063CF-4616-4951-B551-52DD7CE53A25}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -287,6 +289,16 @@ Global
 		{D73D41D7-9C35-4E48-A85A-ABA45068223A}.Release|x64.Build.0 = Release|x64
 		{D73D41D7-9C35-4E48-A85A-ABA45068223A}.Release|x86.ActiveCfg = Release|Win32
 		{D73D41D7-9C35-4E48-A85A-ABA45068223A}.Release|x86.Build.0 = Release|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Debug|x64.ActiveCfg = Debug|x64
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Debug|x64.Build.0 = Debug|x64
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Debug|x86.ActiveCfg = Debug|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Debug|x86.Build.0 = Debug|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Release|Any CPU.ActiveCfg = Release|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Release|x64.ActiveCfg = Release|x64
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Release|x64.Build.0 = Release|x64
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Release|x86.ActiveCfg = Release|Win32
+		{F42063CF-4616-4951-B551-52DD7CE53A25}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

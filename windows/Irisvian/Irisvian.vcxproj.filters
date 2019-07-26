@@ -13,33 +13,15 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="头文件\Tensor">
-      <UniqueIdentifier>{8e2a0efe-1e18-460a-82f3-31194b1a66a7}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="源文件\Tensor">
-      <UniqueIdentifier>{64fc16c5-c5e9-44ac-86d3-98aeb4918306}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Tensor.hpp">
-      <Filter>头文件\Tensor</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeTensorConstructors.hpp">
-      <Filter>头文件\Tensor</Filter>
-    </ClInclude>
-    <ClInclude Include="NativeTensorProxy.hpp">
-      <Filter>头文件\Tensor</Filter>
-    </ClInclude>
-    <ClInclude Include="TensorOrderType.hpp">
-      <Filter>头文件\Tensor</Filter>
-    </ClInclude>
-    <ClInclude Include="TensorBuilder.hpp">
-      <Filter>头文件\Tensor</Filter>
+    <ClInclude Include="..\..\include\Irisvian\IrisvianSearch.hpp">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Tensor.cpp">
-      <Filter>源文件\Tensor</Filter>
+    <ClCompile Include="..\..\src\Irisvian\IrisvianSearch.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
