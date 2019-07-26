@@ -10,7 +10,7 @@ using namespace glasssix::excalibur;
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
 		Search::Search(const std::vector<const float*> *baseData, int dimension)
 			: dimension_(dimension)
