@@ -5,7 +5,7 @@
 
 namespace glasssix 
 {
-	namespace Irisvian 
+	namespace irisviel 
 	{
 		static unsigned const defaultK = 40;
 		static unsigned const defaultPoolSize = 90;//结果kgraph文件中，每个点实际返回的neighbors的数量
