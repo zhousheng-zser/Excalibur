@@ -11,9 +11,10 @@ namespace glasssix
 
     namespace irisvian
     {
-        using IrisvianSearchResultType = cli::array<System::UInt32, 2>^;
-        using IrisvianSearchDataType = System::Collections::Generic::IList<cli::array<float>^>^;
-        
+        using IrisvianSearchSimilaritiesType = cli::array<cli::array<float>^>;
+        using IrisvianSearchResultType = cli::array<cli::array<System::UInt32>^>;
+        using IrisvianSearchDataType = System::Collections::Generic::IList<cli::array<float>^>;
+
         class IrisvielSearch;
 
         /// <summary>
@@ -33,9 +34,9 @@ namespace glasssix
             /// <summary>
             /// Get the cached base data.
             /// </summary>
-            property IrisvianSearchDataType BaseData
+            property IrisvianSearchDataType^ BaseData
             {
-                IrisvianSearchDataType get();
+                IrisvianSearchDataType^ get();
             }
         public:
             /// <summary>
@@ -49,7 +50,7 @@ namespace glasssix
             /// </summary>
             /// <param name="baseData">The feature group</param>
             /// <param name="dimension">The dimension of a feature</param>
-            IrisvianSearch(IrisvianSearchDataType baseData, int dimension);
+            IrisvianSearch(IrisvianSearchDataType^ baseData, int dimension);
 
             /// <summary>
             /// The finalizer.
@@ -67,7 +68,7 @@ namespace glasssix
             /// </summary>
             /// <param name="baseData">The base data</param>
             /// <returns></returns>
-            int BuildGraph(IrisvianSearchDataType baseData);
+            int BuildGraph(IrisvianSearchDataType^ baseData);
 
             /// <summary>
             /// Save the graph.
@@ -100,25 +101,26 @@ namespace glasssix
             /// <param name="topK">The top K</param>
             /// <param name="returnSimilarities">The similarities in percent</param>
             /// <returns>The matched indexes</returns>
-            IrisvianSearchResultType SearchVector(IrisvianSearchDataType queryData, System::UInt32 topK, cli::array<float, 2>^% returnSimilarities);
+            IrisvianSearchResultType^ SearchVector(IrisvianSearchDataType^ queryData, System::UInt32 topK, [System::Runtime::InteropServices::OutAttribute] IrisvianSearchSimilaritiesType^% returnSimilarities);
 
             /// <summary>
             /// Save the search result.
             /// </summary>
             /// <param name="path">The path</param>
             /// <param name="result">The result</param>
-            void SaveResult(System::String^ path, IrisvianSearchResultType result);
+            void SaveResult(System::String^ path, IrisvianSearchResultType^ result);
         protected:
             !IrisvianSearch();
             void CheckPointer();
         private:
             void LoadBaseData();
+            void LoadData(IrisvianSearchDataType^ data, std::vector<float>& native_data, std::vector<const float*>& native_data_entries);
         private:
             int dimension_;
-            IrisvianSearchDataType base_data_;
+            IrisvianSearchDataType^ base_data_;
             irisviel::IrisvielSearch* searcher_;
             std::vector<float>* native_base_data_;
-            std::vector<const float*>* native_base_data_ptr_;
+            std::vector<const float*>* native_base_data_entries_;
         };
     }
 }

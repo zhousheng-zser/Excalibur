@@ -1,6 +1,6 @@
 #include "IrisvianSearch.hpp"
+#include "marshal_fx_ex.hpp"
 
-#include <marshal_fx.hpp>
 #include <IrisvielSearch.hpp>
 
 namespace glasssix
@@ -18,7 +18,7 @@ namespace glasssix
         /// <summary>
         /// Get the cached base data.
         /// </summary>
-        IrisvianSearchDataType IrisvianSearch::BaseData::get()
+        IrisvianSearchDataType^ IrisvianSearch::BaseData::get()
         {
             return base_data_;
         }
@@ -31,7 +31,7 @@ namespace glasssix
         {
             dimension_ = dimension;
             native_base_data_ = new std::vector<float>{};
-            native_base_data_ptr_ = new std::vector<const float*>{};
+            native_base_data_entries_ = new std::vector<const float*>{};
 
             searcher_ = new irisviel::IrisvielSearch{ dimension_ };
         }
@@ -41,15 +41,15 @@ namespace glasssix
         /// </summary>
         /// <param name="baseData">The feature group</param>
         /// <param name="dimension">The dimension of a feature</param>
-        IrisvianSearch::IrisvianSearch(IrisvianSearchDataType baseData, int dimension)
+        IrisvianSearch::IrisvianSearch(IrisvianSearchDataType^ baseData, int dimension)
         {
             base_data_ = baseData;
             dimension_ = dimension;
             native_base_data_ = new std::vector<float>{};
-            native_base_data_ptr_ = new std::vector<const float*>{};
+            native_base_data_entries_ = new std::vector<const float*>{};
 
             LoadBaseData();
-            searcher_ = new irisviel::IrisvielSearch{ native_base_data_ptr_, dimension_ };
+            searcher_ = new irisviel::IrisvielSearch{ native_base_data_entries_, dimension_ };
         }
 
         /// <summary>
@@ -66,7 +66,9 @@ namespace glasssix
         /// <returns></returns>
         int IrisvianSearch::BuildGraph()
         {
-            return 0;
+            CheckPointer();
+
+            return searcher_->buildGraph();
         }
 
         /// <summary>
@@ -74,9 +76,14 @@ namespace glasssix
         /// </summary>
         /// <param name="baseData">The base data</param>
         /// <returns></returns>
-        int IrisvianSearch::BuildGraph(IrisvianSearchDataType baseData)
+        int IrisvianSearch::BuildGraph(IrisvianSearchDataType^ baseData)
         {
-            return 0;
+            CheckPointer();
+
+            base_data_ = baseData;
+            LoadBaseData();
+
+            return searcher_->buildGraph(native_base_data_entries_);
         }
 
         /// <summary>
@@ -85,7 +92,9 @@ namespace glasssix
         /// <param name="path">The path</param>
         void IrisvianSearch::SaveGraph(System::String^ path)
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(path));
         }
 
         /// <summary>
@@ -95,7 +104,9 @@ namespace glasssix
         /// <param name="baseDataPath">The path of the base data</param>
         void IrisvianSearch::SaveGraph(System::String^ graphPath, System::String^ baseDataPath)
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(graphPath), marshal_fx::marshal_as<std::string>(baseDataPath));
         }
 
         /// <summary>
@@ -104,7 +115,9 @@ namespace glasssix
         /// <param name="path">The graph path</param>
         void IrisvianSearch::LoadGraph(System::String^ path)
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            searcher_->loadGraph(marshal_fx::marshal_as<std::string>(path));
         }
 
         /// <summary>
@@ -112,7 +125,9 @@ namespace glasssix
         /// </summary>
         void IrisvianSearch::OptimizeGraph()
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            searcher_->optimizeGraph();
         }
 
         /// <summary>
@@ -122,9 +137,25 @@ namespace glasssix
         /// <param name="topK">The top K</param>
         /// <param name="returnSimilarities">The similarities in percent</param>
         /// <returns>The matched indexes</returns>
-        IrisvianSearchResultType IrisvianSearch::SearchVector(IrisvianSearchDataType queryData, System::UInt32 topK, [System::Runtime::InteropServices::OutAttribute] cli::array<float, 2> ^ %returnSimilarities)
+        IrisvianSearchResultType^ IrisvianSearch::SearchVector(IrisvianSearchDataType^ queryData, System::UInt32 topK, [System::Runtime::InteropServices::OutAttribute] IrisvianSearchSimilaritiesType^% returnSimilarities)
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            // Load native query data.
+            std::vector<float> native_data;
+            std::vector<const float*> native_data_entries;
+            LoadData(queryData, native_data, native_data_entries);
+
+            // Search to fetch native results.
+            std::vector<std::vector<uint32_t>> native_result;
+            std::vector<std::vector<float>> native_similarities;
+            searcher_->searchVector(&native_data_entries, topK, native_result, native_similarities);
+
+            // Allocate the result buffers.
+            auto result = marshal_fx::marshal_as<IrisvianSearchResultType^>(native_result);
+            returnSimilarities = marshal_fx::marshal_as<IrisvianSearchSimilaritiesType^>(native_similarities);
+
+            return result;
         }
 
         /// <summary>
@@ -132,14 +163,39 @@ namespace glasssix
         /// </summary>
         /// <param name="path">The path</param>
         /// <param name="result">The result</param>
-        void IrisvianSearch::SaveResult(System::String^ path, IrisvianSearchResultType result)
+        void IrisvianSearch::SaveResult(System::String^ path, IrisvianSearchResultType^ result)
         {
-            throw gcnew System::NotImplementedException();
+            CheckPointer();
+
+            auto native_result = marshal_fx::marshal_as<std::vector<std::vector<uint32_t>>>(result);
+
+            searcher_->saveResult(marshal_fx::marshal_as<std::string>(path), native_result);
         }
 
         IrisvianSearch::!IrisvianSearch()
         {
-            throw gcnew System::NotImplementedException();
+            if (searcher_ != nullptr)
+            {
+                delete searcher_;
+                searcher_ = nullptr;
+            }
+
+            if (base_data_ != nullptr)
+            {
+                base_data_ = nullptr;
+            }
+
+            if (native_base_data_ != nullptr)
+            {
+                delete native_base_data_;
+                native_base_data_ = nullptr;
+            }
+
+            if (native_base_data_entries_ != nullptr)
+            {
+                delete native_base_data_entries_;
+                native_base_data_entries_ = nullptr;
+            }
         }
 
         void IrisvianSearch::CheckPointer()
@@ -152,13 +208,20 @@ namespace glasssix
 
         void IrisvianSearch::LoadBaseData()
         {
-            CheckPointer();
-
             // Clear the old data.
-            native_base_data_->swap({});
-            native_base_data_ptr_->swap({});
+            std::decay_t<decltype(*native_base_data_)> new_native_base_data;
+            std::decay_t<decltype(*native_base_data_entries_)> new_native_base_data_ptr;
 
-            for each (auto item in base_data_)
+            native_base_data_->swap(new_native_base_data);
+            native_base_data_entries_->swap(new_native_base_data_ptr);
+
+            // Load data.
+            LoadData(base_data_, *native_base_data_, *native_base_data_entries_);
+        }
+
+        void IrisvianSearch::LoadData(IrisvianSearchDataType^ data, std::vector<float>& native_data, std::vector<const float*>& native_data_entries)
+        {
+            for each (auto item in data)
             {
                 auto list = safe_cast<System::Collections::Generic::IList<float>^>(item);
 
@@ -168,13 +231,14 @@ namespace glasssix
                     cli::pin_ptr<float> pinned = &item[0];
                     float* data = pinned;
 
-                    // Copy the data.
-                    auto old_size = native_base_data_->size();
-                    native_base_data_->resize(old_size + list->Count);
-                    memcpy(native_base_data_->data + old_size, data, list->Count * sizeof(float));
+                    // Enlarge the buffer.
+                    auto old_size = native_data.size();
+                    native_data.resize(old_size + list->Count);
 
-                    // Add the feature pointer.
-                    native_base_data_ptr_->emplace_back(native_base_data_->data + old_size);
+                    // Add the feature.
+                    auto merged_data = native_data.data() + old_size;
+                    memcpy(merged_data, data, list->Count * sizeof(float));
+                    native_data_entries.emplace_back(merged_data);
                 }
             }
         }
