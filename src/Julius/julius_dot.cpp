@@ -8,7 +8,7 @@ namespace glasssix
 		{
 			float  cblas_sdot(const int n, const float  *x, const int incx, const float  *y, const int incy)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX
@@ -70,7 +70,7 @@ namespace glasssix
 
 			double cblas_ddot(const int n, const double *x, const int incx, const double *y, const int incy)
 			{
-#if SIDM_TYPE >= SIMDTYPE_AVX512
+#if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #elif SIMD_TYPE >= SIMDTYPE_AVX
