@@ -1581,6 +1581,178 @@ namespace glasssix
 
 
 		/// <summary>
+		/// convert rgb image to hsv image
+		/// </summary>
+		/// <param name="src_data">original rgb image data</param>
+		/// <param name="dst_data">new hsv image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="order">orderType: NHWC / NCHW</param>
+		template<typename Dtype>
+		__global__
+			void kernel_rgb2hsv(const Dtype* src_data, Dtype* dst_data, int channels, int height, int width, orderType order)
+		{
+			int totalID = (blockIdx.z * gridDim.x * gridDim.y + blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
+			int offset = height * width;
+			int numID = totalID / offset;
+			int remainID = totalID % offset;
+			int rowID = remainID / width;
+			int colID = remainID % width;
+			int src_num_offset = numID * channels * height * width;
+			int dst_num_offset = numID * 3 * height * width;
+
+			int index = rowID * width + colID;
+			unsigned char B, G, R, minVal, maxVal, interval;
+
+			if (order == NCHW)
+			{
+				B = src_data[src_num_offset + index];
+				G = src_data[src_num_offset + offset * 1 + index];
+				R = src_data[src_num_offset + offset * 2 + index];
+
+				minVal = min(B, G);
+				minVal = min(minVal, R);
+				maxVal = max(B, G);
+				maxVal = max(maxVal, R);
+				interval = maxVal - minVal;
+			}
+			else if (order == NHWC)
+			{
+				B = src_data[src_num_offset + 3 * index];
+				G = src_data[src_num_offset + 3 * index + 1];
+				R = src_data[src_num_offset + 3 * index + 2];
+				
+				minVal = min(B, G);
+				minVal = min(minVal, R);
+				maxVal = max(B, G);
+				maxVal = max(maxVal, R);
+				interval = maxVal - minVal;
+			}
+			else
+			{
+				return;
+			}
+
+			//v
+			dst_data[dst_num_offset + 2 * offset + index] = maxVal;
+
+			//s
+			if (maxVal == 0)
+			{
+				dst_data[dst_num_offset + offset + index] = 0;
+			}
+			else
+			{
+				dst_data[dst_num_offset + offset + index] = 255 * interval / maxVal;
+			}
+
+			//h
+			int H;
+			if (maxVal == minVal)
+			{
+				H = 0;
+			}
+			else if ((maxVal == R) && (G >= B))
+			{
+				H = 60 * (G - B) / interval;
+			}
+			else if ((maxVal == R) && (G < B))
+			{
+				H = 60 * (G - B) / interval + 360;
+			}
+			else if (maxVal == G)
+			{
+				H = 120 + 60 * (B - R) / interval;
+			}
+			else if (maxVal == B)
+			{
+				H = 240 + 60 * (R - G) / interval;
+			}
+
+			dst_data[dst_num_offset + index] = H / 2;
+		}
+
+
+
+		/// <summary>
+		/// convert rgb image to hsv image
+		/// </summary>
+		/// <param name="src">original tensor</param>
+		/// <param name="dst">new tensor</param>
+		template<typename Dtype>
+		void tensor_operation_gpu::rgb2hsv_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+		{
+			if (src->device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			int num = src->num();
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+
+			if (!(channels == 3 || channels == 4))
+			{
+				LOG(ERROR) << "Incorrect input channel.";
+				return;
+			}
+
+			dst.reset(new tensor<Dtype>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
+
+			const Dtype* src_data = src->gpu_data();
+			Dtype* dst_data = dst->mutable_gpu_data();
+
+			const dim3 block_size(1, 1, 1);
+			const dim3 grid_size(width, height, num);
+
+			kernel_rgb2hsv << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, src->order());
+		}
+
+
+
+
+		/// <summary>
+		/// convert rgb image to hsv image
+		/// </summary>
+		/// <param name="src">original tensor</param>
+		/// <param name="dst">new tensor</param>
+		template<typename Dtype>
+		void tensor_operation_gpu::rgb2hsv_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst)
+		{
+			if (src.device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			int num = src.num();
+			int channels = src.channels();
+			int height = src.height();
+			int width = src.width();
+
+			if (!(channels == 3 || channels == 4))
+			{
+				LOG(ERROR) << "Incorrect input channel.";
+				return;
+			}
+
+			dst = tensor<Dtype>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
+
+			const Dtype* src_data = src.gpu_data();
+			Dtype* dst_data = dst.mutable_gpu_data();
+
+			const dim3 block_size(1, 1, 1);
+			const dim3 grid_size(width, height, num);
+
+			kernel_rgb2hsv << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, src.order());
+		}
+
+
+
+
+		/// <summary>
 		/// matrix transpose
 		/// </summary>
 		/// <param name="src_data">original image data</param>
@@ -4079,6 +4251,22 @@ namespace glasssix
 		template void tensor_operation_gpu::rgb2gray_gpu<unsigned int>(const tensor<unsigned int> &src, tensor<unsigned int>& dst);
 		template void tensor_operation_gpu::rgb2gray_gpu<int>(const tensor<int> &src, tensor<int>& dst);
 		template void tensor_operation_gpu::rgb2gray_gpu<float>(const tensor<float> &src, tensor<float>& dst);
+
+
+
+		template void tensor_operation_gpu::rgb2hsv_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>>& dst);
+
+
+
+		template void tensor_operation_gpu::rgb2hsv_gpu<unsigned char>(const tensor<unsigned char> &src, tensor<unsigned char>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<char>(const tensor<char> &src, tensor<char>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<unsigned int>(const tensor<unsigned int> &src, tensor<unsigned int>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<int>(const tensor<int> &src, tensor<int>& dst);
+		template void tensor_operation_gpu::rgb2hsv_gpu<float>(const tensor<float> &src, tensor<float>& dst);
 
 
 
