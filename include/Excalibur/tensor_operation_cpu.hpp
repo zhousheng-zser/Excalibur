@@ -512,7 +512,7 @@ namespace glasssix
 				int channels = src.channels();
 				int offset = height * width;
 
-				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), NHWC);
+				dst = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -560,7 +560,7 @@ namespace glasssix
 				int channels = src->channels();
 				int offset = height * width;
 
-				dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), NCHW));
+				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
 				Dtype* dst_data = dst->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -608,7 +608,7 @@ namespace glasssix
 				int channels = src.channels();
 				int offset = height * width;
 
-				dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), NCHW);
+				dst = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
 				Dtype* dst_data = dst.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -3578,6 +3578,328 @@ namespace glasssix
 								dst_data[n * offset + dst_pos2] = (unsigned char)(src_data[n * num_offset + src_pos2] * 0.114f +
 																		          src_data[n * num_offset + src_pos2 + 1] * 0.587f +
 																				  src_data[n * num_offset + src_pos2 + 2] * 0.299f);
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
+			/// convert rgb image to hsv image
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			static void rgb2hsv_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				int channels = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				if (!(channels == 3 || channels == 4))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				dst.reset(new tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
+				const unsigned char* src_data = src->cpu_data();
+				unsigned char* dst_data = dst->mutable_cpu_data();
+
+				if (src->order() == NCHW)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+
+						for (int row = 0; row < height; row++)
+						{
+							int row_offset = row * width;
+							for (int col = 0; col < width; col++)
+							{
+								std::vector<unsigned char> pixel;
+								unsigned char B = src_data[n_offset + row_offset + col];
+								unsigned char G = src_data[n_offset + offset + row_offset + col];
+								unsigned char R = src_data[n_offset + 2 * offset + row_offset + col];
+								pixel.push_back(B);
+								pixel.push_back(G);
+								pixel.push_back(R);
+								std::sort(pixel.begin(), pixel.end());
+
+								//v
+								dst_data[n_offset + 2 * offset + row_offset + col] = pixel[2];
+
+								//s
+								if (pixel[2] == 0)
+								{
+									dst_data[n_offset + offset + row_offset + col] = 0;
+								}
+								else
+								{
+									dst_data[n_offset + offset + row_offset + col] = 255 * (pixel[2] - pixel[0]) / pixel[2];
+								}
+
+								//h
+								int H;
+								if (pixel[2] == pixel[0])
+								{
+									H = 0;
+								}
+								else if ((pixel[2] == R) && (G >= B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]);
+								}
+								else if ((pixel[2] == R) && (G < B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]) + 360;
+								}
+								else if (pixel[2] == G)
+								{
+									H = 120 + 60 * (B - R) / (pixel[2] - pixel[0]);
+								}
+								else if (pixel[2] == B)
+								{
+									H = 240 + 60 * (R - G) / (pixel[2] - pixel[0]);
+								}
+
+								dst_data[n_offset + row * width + col] = H / 2;
+							}
+						}
+					}
+				}
+				else if (src->order() == NHWC)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+
+						for (int row = 0; row < height; ++row)
+						{
+							int row_offset = channels * row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								int col_offset = channels * col;
+								std::vector<unsigned char> pixel;
+								unsigned char B = src_data[n_offset + row_offset + col_offset];
+								unsigned char G = src_data[n_offset + row_offset + col_offset + 1];
+								unsigned char R = src_data[n_offset + row_offset + col_offset + 2];
+								pixel.push_back(B);
+								pixel.push_back(G);
+								pixel.push_back(R);
+								std::sort(pixel.begin(), pixel.end());
+
+								//v
+								dst_data[n_offset + 2 * offset + row * width + col] = pixel[2];
+
+								//s
+								if (pixel[2] == 0)
+								{
+									dst_data[n_offset + offset + row * width + col] = 0;
+								}
+								else
+								{
+									dst_data[n_offset + offset + row * width + col] = 255 * (pixel[2] - pixel[0]) / pixel[2];
+								}
+
+								//h
+								int H;
+								if (pixel[2] == pixel[0])
+								{
+									H = 0;
+								}
+								else if ((pixel[2] == R) && (G >= B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]);
+								}
+								else if ((pixel[2] == R) && (G < B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]) + 360;
+								}
+								else if (pixel[2] == G)
+								{
+									H = 120 + 60 * (B - R) / (pixel[2] - pixel[0]);
+								}
+								else if (pixel[2] == B)
+								{
+									H = 240 + 60 * (R - G) / (pixel[2] - pixel[0]);
+								}
+
+								dst_data[n_offset + row * width + col] = H / 2;
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
+			/// convert rgb image to hsv image
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			static void rgb2hsv_cpu(const tensor<unsigned char> &src, tensor<unsigned char>& dst)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src.num();
+				int channels = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				if (!(channels == 3 || channels == 4))
+				{
+					LOG(ERROR) << "Incorrect input channel.";
+					return;
+				}
+
+				dst = tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
+				const unsigned char* src_data = src.cpu_data();
+				unsigned char* dst_data = dst.mutable_cpu_data();
+
+				if (src.order() == NCHW)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+
+						for (int row = 0; row < height; row++)
+						{
+							int row_offset = row * width;
+							for (int col = 0; col < width; col++)
+							{
+								std::vector<unsigned char> pixel;
+								unsigned char B = src_data[n_offset + row_offset + col];
+								unsigned char G = src_data[n_offset + offset + row_offset + col];
+								unsigned char R = src_data[n_offset + 2 * offset + row_offset + col];
+								pixel.push_back(B);
+								pixel.push_back(G);
+								pixel.push_back(R);
+								std::sort(pixel.begin(), pixel.end());
+
+								//v
+								dst_data[n_offset + 2 * offset + row_offset + col] = pixel[2];
+
+								//s
+								if (pixel[2] == 0)
+								{
+									dst_data[n_offset + offset + row_offset + col] = 0;
+								}
+								else
+								{
+									dst_data[n_offset + offset + row_offset + col] = 255 * (pixel[2] - pixel[0]) / pixel[2];
+								}
+
+								//h
+								int H;
+								if (pixel[2] == pixel[0])
+								{
+									H = 0;
+								}
+								else if ((pixel[2] == R) && (G >= B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]);
+								}
+								else if ((pixel[2] == R) && (G < B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]) + 360;
+								}
+								else if (pixel[2] == G)
+								{
+									H = 120 + 60 * (B - R) / (pixel[2] - pixel[0]);
+								}
+								else if (pixel[2] == B)
+								{
+									H = 240 + 60 * (R - G) / (pixel[2] - pixel[0]);
+								}
+
+								dst_data[n_offset + row * width + col] = H / 2;
+							}
+						}
+					}
+				}
+				else if (src.order() == NHWC)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int n_offset = n * num_offset;
+
+						for (int row = 0; row < height; ++row)
+						{
+							int row_offset = channels * row * width;
+							for (int col = 0; col < width; ++col)
+							{
+								int col_offset = channels * col;
+								std::vector<unsigned char> pixel;
+								unsigned char B = src_data[n_offset + row_offset + col_offset];
+								unsigned char G = src_data[n_offset + row_offset + col_offset + 1];
+								unsigned char R = src_data[n_offset + row_offset + col_offset + 2];
+								pixel.push_back(B);
+								pixel.push_back(G);
+								pixel.push_back(R);
+								std::sort(pixel.begin(), pixel.end());
+
+								//v
+								dst_data[n_offset + 2 * offset + row * width + col] = pixel[2];
+
+								//s
+								if (pixel[2] == 0)
+								{
+									dst_data[n_offset + offset + row * width + col] = 0;
+								}
+								else
+								{
+									dst_data[n_offset + offset + row * width + col] = 255 * (pixel[2] - pixel[0]) / pixel[2];
+								}
+
+								//h
+								int H;
+								if (pixel[2] == pixel[0])
+								{
+									H = 0;
+								}
+								else if ((pixel[2] == R) && (G >= B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]);
+								}
+								else if ((pixel[2] == R) && (G < B))
+								{
+									H = 60 * (G - B) / (pixel[2] - pixel[0]) + 360;
+								}
+								else if (pixel[2] == G)
+								{
+									H = 120 + 60 * (B - R) / (pixel[2] - pixel[0]);
+								}
+								else if (pixel[2] == B)
+								{
+									H = 240 + 60 * (R - G) / (pixel[2] - pixel[0]);
+								}
+
+								dst_data[n_offset + row * width + col] = H / 2;
 							}
 						}
 					}

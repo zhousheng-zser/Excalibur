@@ -109,6 +109,14 @@ namespace glasssix
 
 
 			template <typename Dtype>
+			static void rgb2hsv_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
+
+			template <typename Dtype>
+			static void rgb2hsv_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst);
+
+
+
+			template <typename Dtype>
 			static void matrix_transpose_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
 
 			template <typename Dtype>

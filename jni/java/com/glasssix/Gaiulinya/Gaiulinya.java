@@ -12,8 +12,8 @@ public class Gaiulinya {
 	}
 	
 	public static native String getVersion();
-	public native float[] Forward(long MatNativeObj, int order);
-	public native float[][] ForwardwithMetaData(byte[] data, int faceCount, int order);
+	public native float[] ForwardbyMat(long MatNativeObj, int order);
+	public native float[][] ForwardbyMetaData(byte[] data, int faceCount, int order);
 	private native void init(int device);
 	protected native void finalize();
 

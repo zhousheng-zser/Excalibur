@@ -34,5 +34,6 @@ namespace glasssix
 		{
 			return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 		}
+
 	}
 }
