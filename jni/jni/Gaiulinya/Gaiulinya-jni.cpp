@@ -1,6 +1,8 @@
 #include "Gaiulinya-jni.hpp"
 #include "GaiusFeature.hpp"
+#ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
+#endif
 #include <string>
 #include <vector>
 
@@ -53,7 +55,8 @@ JNIEXPORT jstring JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_getVersion(JNIEn
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
-JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
+#ifdef USE_OPENCV
+JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardbyMat(JNIEnv *env, jobject thiz, jlong MatNativeObj, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
@@ -71,8 +74,9 @@ JNIEXPORT jfloatArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_Forward(JNIE
 	
 	return featureArray;
 }
+#endif
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardwithMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Gaiulinya_Gaiulinya_ForwardbyMetaData(JNIEnv *env, jobject thiz, jbyteArray dataArray, jint faceCount, jint order)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
