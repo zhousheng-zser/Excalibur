@@ -29,19 +29,19 @@ namespace glasssix
 	{
 		class EXPORT_IRISVIEL IrisvielSearch
 		{
-			IrisvielSearch() {}
 
 			IrisvielSearch(const IrisvielSearch&){}
 
 			IrisvielSearch& operator=(const IrisvielSearch&);
 
 		public:
+            IrisvielSearch() = delete;
 
 			IrisvielSearch(const std::vector<const float*> *baseData, int dimension);
 
 			IrisvielSearch(int dimension);
 
-			~IrisvielSearch();
+			virtual ~IrisvielSearch();
 
 			int buildGraph() const;
 
