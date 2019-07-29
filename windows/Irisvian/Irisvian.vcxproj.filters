@@ -18,6 +18,9 @@
     <ClInclude Include="..\..\include\Irisvian\IrisvianSearch.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Irisvian\marshal_fx_ex.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Irisvian\IrisvianSearch.cpp">
