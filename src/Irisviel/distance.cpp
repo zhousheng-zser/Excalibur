@@ -12,7 +12,7 @@ using namespace std;
 
 namespace glasssix 
 {
-	namespace Irisvian 
+	namespace irisviel 
 	{
 		float DistanceL2::compare(const float* a, const float* b, unsigned size)
 		{

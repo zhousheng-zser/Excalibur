@@ -76,23 +76,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(SolutionDir)..\include\Infrastructure;$(SolutionDir)..\include\Interop;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>../../include/Infrastructure;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\3rdparty\windows\freeimage\libd;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\include\Infrastructure;$(SolutionDir)..\include\Interop;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(SolutionDir)..\include\Infrastructure;$(SolutionDir)..\include\Interop;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>../../include/Infrastructure;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)..\3rdparty\windows\freeimage\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)..\include\Infrastructure;$(SolutionDir)..\include\Interop;$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -149,8 +151,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="TensorBuilder.hpp" />
-    <ClInclude Include="marshal_fx.hpp" />
-    <ClInclude Include="marshal_fx_details.hpp" />
     <ClInclude Include="NativeTensorConstructors.hpp" />
     <ClInclude Include="NativeTensorProxy.hpp" />
     <ClInclude Include="Tensor.hpp" />

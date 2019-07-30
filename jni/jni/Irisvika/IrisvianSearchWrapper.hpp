@@ -6,7 +6,7 @@
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
 		class IrisvianSearchWrapper
 		{
@@ -19,13 +19,13 @@ namespace glasssix
 				{
 					baseData_.push_back((*baseDataPtr)[i]);
 				}
-				search = new IrisvianSearch(&baseData_, dimension);
+				search = new IrisvielSearch(&baseData_, dimension);
 				dimension_ = dimension;
 			}
 
 			IrisvianSearchWrapper(int dimension)
 			{
-				search = new IrisvianSearch(dimension);
+				search = new IrisvielSearch(dimension);
 				dimension_ = dimension;
 			}
 
@@ -126,7 +126,7 @@ namespace glasssix
 		private:
 			std::vector<const float *> baseData_;
 			std::vector<const float *> queryData_;
-			IrisvianSearch *search;
+			IrisvielSearch *search;
 			int dimension_;
 		};
 	}

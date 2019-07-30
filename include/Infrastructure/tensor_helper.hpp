@@ -67,7 +67,7 @@ namespace glasssix
                 assert(bitmap != nullptr);
 
                 // Initialize the tensor parameters.
-                auto input_data = reinterpret_cast<const uint8_t*>(bitmap);
+                auto input_data = reinterpret_cast<const TUnderlyingType*>(bitmap);
                 auto input_vector = order == NHWC ? std::vector<int>{ 1, height, width, channels } : std::vector<int>{ 1, channels, height, width };
 
                 // Create a tensor according to the memory order.
@@ -96,7 +96,7 @@ namespace glasssix
                 assert(bitmap != nullptr);
 
                 // Initialize necessary buffers.
-                auto input_data = reinterpret_cast<const uint8_t*>(data.cpu_data());
+                auto input_data = data.cpu_data();
                 auto output_data = reinterpret_cast<TUnderlyingType*>(bitmap);
 
                 // Copy the data to the bitmap.
@@ -155,18 +155,20 @@ namespace glasssix
                 transform_tensor_core<false>(source, destination, channels, [&](orderType order)
                 {
                     return order == NCHW ?
-                        std::function<TUnderlyingType(int, int, int)>{ [&](int w, int h, int c) { return input_data[width * height * c + width * h + w]; } } :
-                        std::function<TUnderlyingType(int, int, int)>{ [&](int w, int h, int c) { return input_data[(width * h + w) * source_channels + c]; } };
+                        std::function{ [&](int w, int h, int c) { return input_data[width * height * c + width * h + w]; } } :
+                        std::function{ [&](int w, int h, int c) { return input_data[(width * h + w) * source_channels + c]; } };
                 });
             }
         private:
             template<bool to_bitmap, typename TUnderlyingType>
-            static void copy_data_core(orderType order, const uint8_t* input_data, TUnderlyingType* output_data, int width, int height, int channels, int stride)
+            static void copy_data_core(orderType order, const TUnderlyingType* input_data, TUnderlyingType* output_data, int width, int height, int channels, int stride)
             {
                 auto channel_bytes = sizeof(TUnderlyingType);
                 auto pixel_bytes = channel_bytes * channels;
                 auto line_bytes = width * pixel_bytes;
                 auto padding_bytes = stride - width * pixel_bytes;
+                auto raw_output_data = reinterpret_cast<uint8_t*>(output_data);
+                auto raw_input_data = reinterpret_cast<const uint8_t*>(input_data);
 
                 switch (order)
                 {
@@ -182,11 +184,11 @@ namespace glasssix
                                 // In the "to-bitmap" mode, padding bytes are required.
                                 if constexpr (to_bitmap)
                                 {
-                                    output_data[(channels * width * h + channels * w + c) * channel_bytes + padding_bytes * h] = *reinterpret_cast<const TUnderlyingType*>(input_data + width * height * c + width * h + w);
+                                    *reinterpret_cast<TUnderlyingType*>(raw_output_data + (channels * width * h + channels * w + c) * channel_bytes + padding_bytes * h) = input_data[width * height * c + width * h + w];
                                 }
                                 else
                                 {
-                                    output_data[width * height * c + width * h + w] = *reinterpret_cast<const TUnderlyingType*>(input_data + (channels * width * h + channels * w + c) * channel_bytes + padding_bytes * h);
+                                    output_data[width * height * c + width * h + w] = *reinterpret_cast<const TUnderlyingType*>(raw_input_data + (channels * width * h + channels * w + c) * channel_bytes + padding_bytes * h);
                                 }
                             }
                         }
@@ -203,11 +205,11 @@ namespace glasssix
                         // In the "to-bitmap" mode, padding bytes are required.
                         if constexpr (to_bitmap)
                         {
-                            memcpy(reinterpret_cast<uint8_t*>(output_data) + index + padding_bytes * h, input_data + index, line_bytes);
+                            memcpy(raw_output_data + index + padding_bytes * h, raw_input_data + index, line_bytes);
                         }
                         else
                         {
-                            memcpy(reinterpret_cast<uint8_t*>(output_data) + index, input_data + index + padding_bytes * h, line_bytes);
+                            memcpy(raw_output_data + index, raw_input_data + index + padding_bytes * h, line_bytes);
                         }
                     }
                     break;
