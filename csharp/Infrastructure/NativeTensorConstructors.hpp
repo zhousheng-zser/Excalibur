@@ -1,7 +1,8 @@
 #pragma once
 
-#include "marshal_fx.hpp"
 #include "TensorOrderType.hpp"
+
+#include <marshal_fx.hpp>
 
 namespace glasssix
 {

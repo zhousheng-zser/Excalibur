@@ -9,9 +9,11 @@ using namespace boost;
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
-		Index::Index() {}
+        Index::Index() : dimension_{} 
+        {
+        }
 
 		Index::Index(const vector<const float*> *baseData, int dimension)
 			:dimension_(dimension)

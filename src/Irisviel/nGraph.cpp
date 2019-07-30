@@ -10,7 +10,7 @@ using namespace boost;
 
 namespace glasssix
 {
-	namespace Irisvian
+	namespace irisviel
 	{
 		void NGraph::getNavigateNode(const float *approximateCenter, vector<Neighbor> *pnns)
 		{

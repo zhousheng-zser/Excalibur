@@ -10,7 +10,7 @@
 
 namespace glasssix 
 {
-	namespace Irisvian
+	namespace irisviel
 	{
 			class Index : public BaseIndex
 			{

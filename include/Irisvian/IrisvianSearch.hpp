@@ -1,106 +1,126 @@
-#ifndef _IRISVIAN_SEARACH_HPP_
-#define _IRISVIAN_SEARACH_HPP_
+#pragma once
 
-#include <iostream>
 #include <vector>
-#include <string>
-#include "baseIndex.hpp"
-#include "baseSearch.hpp"
-
-
-#ifdef EXPORT_IRISVIAN
-#undef EXPORT_IRISVIAN
-#ifdef _MSC_VER
-#define EXPORT_IRISVIAN __declspec(dllexport)
-#else
-#define EXPORT_IRISVIAN
-#endif
-#else
-#ifdef _MSC_VER
-#define EXPORT_IRISVIAN __declspec(dllimport)
-#else
-#define EXPORT_IRISVIAN
-#endif
-#endif
 
 namespace glasssix
 {
-	namespace Irisvian
-	{
-		class EXPORT_IRISVIAN IrisvianSearch
-		{
-			IrisvianSearch() {}
+    namespace irisviel
+    {
+        class IrisvielSearch;
+    }
 
-			IrisvianSearch(const IrisvianSearch&){}
+    namespace irisvian
+    {
+        using IrisvianSearchSimilaritiesType = cli::array<cli::array<float>^>;
+        using IrisvianSearchResultType = cli::array<cli::array<System::UInt32>^>;
+        using IrisvianSearchDataType = System::Collections::Generic::IList<cli::array<float>^>;
 
-			IrisvianSearch& operator=(const IrisvianSearch&);
+        class IrisvielSearch;
 
-		public:
+        /// <summary>
+        /// A Face Search Interface for .NET Framework.
+        /// </summary>
+        public ref class IrisvianSearch
+        {
+        public:
+            /// <summary>
+            /// Get the version of the library.
+            /// </summary>
+            static property System::String^ Version
+            {
+                System::String^ get();
+            }
 
-			IrisvianSearch(const std::vector<const float*> *baseData, int dimension);
+            /// <summary>
+            /// Get the cached base data.
+            /// </summary>
+            property IrisvianSearchDataType^ BaseData
+            {
+                IrisvianSearchDataType^ get();
+            }
+        public:
+            /// <summary>
+            /// Create an instance.
+            /// </summary>
+            /// <param name="dimension">The dimension of a feature</param>
+            IrisvianSearch(int dimension);
 
-			IrisvianSearch(int dimension);
+            /// <summary>
+            /// Create an instance.
+            /// </summary>
+            /// <param name="baseData">The feature group</param>
+            /// <param name="dimension">The dimension of a feature</param>
+            IrisvianSearch(IrisvianSearchDataType^ baseData, int dimension);
 
-			~IrisvianSearch();
+            /// <summary>
+            /// The finalizer.
+            /// </summary>
+            ~IrisvianSearch();
 
-			int buildGraph() const;
+            /// <summary>
+            /// Build a graph of the cached data.
+            /// </summary>
+            /// <returns></returns>
+            int BuildGraph();
 
-			int buildGraph(const std::vector<const float*> *baseData) const;
+            /// <summary>
+            /// Build a graph of the input base data.
+            /// </summary>
+            /// <param name="baseData">The base data</param>
+            /// <returns></returns>
+            int BuildGraph(IrisvianSearchDataType^ baseData);
 
-			void saveGraph(const char *graphPath) const;
+            /// <summary>
+            /// Save the graph.
+            /// </summary>
+            /// <param name="path">The path</param>
+            void SaveGraph(System::String^ path);
 
+            /// <summary>
+            /// Save the graph and the cached base data.
+            /// </summary>
+            /// <param name="graphPath">The graph path</param>
+            /// <param name="baseDataPath">The path of the base data</param>
+            void SaveGraph(System::String^ graphPath, System::String^ baseDataPath);
 
-			void saveGraph(std::string graphPath) const
-			{
-				saveGraph(graphPath.c_str());
-			}
+            /// <summary>
+            /// Load a graph.
+            /// </summary>
+            /// <param name="path">The graph path</param>
+            void LoadGraph(System::String^ path);
 
+            /// <summary>
+            /// Optimize the graph.
+            /// </summary>
+            void OptimizeGraph();
 
-			void saveGraph(const char *graphPath, const char *basedataPath) const;
+            /// <summary>
+            /// Search one or more features.
+            /// </summary>
+            /// <param name="queryData">The data to search</param>
+            /// <param name="topK">The top K</param>
+            /// <param name="returnSimilarities">The similarities in percent</param>
+            /// <returns>The matched indexes</returns>
+            IrisvianSearchResultType^ SearchVector(IrisvianSearchDataType^ queryData, System::UInt32 topK, [System::Runtime::InteropServices::OutAttribute] IrisvianSearchSimilaritiesType^% returnSimilarities);
 
-
-			void saveGraph(std::string graphPath, std::string basedataPath) const
-			{
-				saveGraph(graphPath.c_str(), basedataPath.c_str());
-			}
-
-
-			void loadGraph(const char* graphPath) const;
-
-
-			void loadGraph(std::string graphPath) const
-			{
-				loadGraph(graphPath.c_str());
-			}
-
-			const std::vector<const float*>* getBasedata() const;
-
-			void loadGraph(const char* graphPath, const char *basedataPath) const;
-
-			void loadGraph(std::string graphPath, std::string basedataPath) const
-			{
-				loadGraph(graphPath.c_str(), basedataPath.c_str());
-			}
-
-			void optimizeGraph() const;
-
-			void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-				std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const;
-
-			void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const;
-
-			void saveResult(std::string resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
-			{
-				saveResult(resultPath.c_str(), returnIDs);
-			}
-
-			static std::string getVersion();
-
-		private:
-			BaseIndex *index_;
-			BaseSearch *search_;
-		};
-	}
+            /// <summary>
+            /// Save the search result.
+            /// </summary>
+            /// <param name="path">The path</param>
+            /// <param name="result">The result</param>
+            void SaveResult(System::String^ path, IrisvianSearchResultType^ result);
+        protected:
+            !IrisvianSearch();
+            void CheckPointer();
+        private:
+            void LoadBaseData();
+            void LoadData(IrisvianSearchDataType^ data, std::vector<float>& native_data, std::vector<const float*>& native_data_entries);
+        private:
+            int dimension_;
+            IrisvianSearchDataType^ base_data_;
+            irisviel::IrisvielSearch* searcher_;
+            std::vector<float>* native_base_data_;
+            std::vector<const float*>* native_base_data_entries_;
+        };
+    }
 }
-
-#endif // !_IRISVIAN_SEARACH_HPP_

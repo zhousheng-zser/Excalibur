@@ -479,9 +479,6 @@ namespace glasssix
 						bbox[i][2] * 1.4f);
 
 					tensor_operation_cpu::safty_cut_cpu(ori_image, ROI, &MarginRect);
-					//std::vector<cv::Mat> rr;
-					//tensor_operation_cpu::tensor2mat_cpu(ROI, rr);
-					//cv::imwrite("D:/rr.jpg", rr[0]);
 
 					point<float> ldmk5[5];
 					for (size_t j = 0; j < landmarks[i].size() / 2; j++)
@@ -577,5 +574,6 @@ namespace glasssix
 			}
 			return res;
 		}
+
 	}
 }
