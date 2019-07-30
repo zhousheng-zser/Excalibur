@@ -2,10 +2,6 @@
 
 ## Information
 
-<style>
-    table { empty-cells: hide;}
-</style>
-
 |   |   |
 |---|---|
 |Header|tensor_builder.hpp|
