@@ -2,8 +2,8 @@
 
 ## Information
 
-|||
-|-|-|
+|   |   |
+|---|---|
 |Header|tensor_builder.hpp|
 |Namespace|**```glasssix::excalibur```**|
 |Description|An interface class for I/O operations between standard bitmap files and standard tensors.|
@@ -32,8 +32,8 @@ public:
 
 ## Member Functions
 
-| | |
-|-|-|
+|   |   |
+|---|---|
 |**[~tensor_builder()]()**|The default virtual destructor.|
 |**[load_from(const std::string&)]()**|Loads an image from the disk.|
 |**[load_from(const std::istream&)]()**|Loads an image from a **```std::istream```**.|
