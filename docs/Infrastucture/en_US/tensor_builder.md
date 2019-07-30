@@ -2,22 +2,24 @@
 
 ## Information
 
-<table markdown="1">
-  <tbody>
-    <tr>
-      <td>Header</td>
-      <td>tensor_builder.hpp</td>
-    </tr>
-    <tr>
-      <td>Namespace</td>
-      <td><span style="display:block">**```glasssix::excalibur```**</span></td>
-    </tr>
-    <tr>
-      <td>Description</td>
-      <td>An interface class for I/O operations between standard bitmap files and standard tensors.</td>
-    </tr>
-  </tbody>
-</table>
+<div markdown="1">
+    <table>
+        <tbody>
+        <tr>
+            <td>Header</td>
+            <td>tensor_builder.hpp</td>
+        </tr>
+        <tr>
+            <td>Namespace</td>
+            <td>**```glasssix::excalibur```**</td>
+        </tr>
+        <tr>
+            <td>Description</td>
+            <td>An interface class for I/O operations between standard bitmap files and standard tensors.</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
 
 |   |   |
 |---|---|
