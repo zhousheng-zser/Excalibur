@@ -7,18 +7,21 @@
 #include "baseIndex.hpp"
 #include "baseSearch.hpp"
 
-
 #ifdef EXPORT_IRISVIEL
 #undef EXPORT_IRISVIEL
-#ifdef _MSC_VER
+#ifdef _MSC_VER // For Windows
+#ifdef _WINDLL // Dynamic lib
 #define EXPORT_IRISVIEL __declspec(dllexport)
-#else
+#else // Static lib
+#define EXPORT_IRISVIEL
+#endif // !_WINDLL
+#elif defined(__linux__) // For Linux
 #define EXPORT_IRISVIEL
 #endif
 #else
 #ifdef _MSC_VER
 #define EXPORT_IRISVIEL __declspec(dllimport)
-#else
+#elif defined(__linux__)
 #define EXPORT_IRISVIEL
 #endif
 #endif
@@ -50,37 +53,25 @@ namespace glasssix
 			void saveGraph(const char *graphPath) const;
 
 
-			void saveGraph(std::string graphPath) const
-			{
-				saveGraph(graphPath.c_str());
-			}
+			void saveGraph(std::string graphPath) const;
 
 
 			void saveGraph(const char *graphPath, const char *basedataPath) const;
 
 
-			void saveGraph(std::string graphPath, std::string basedataPath) const
-			{
-				saveGraph(graphPath.c_str(), basedataPath.c_str());
-			}
+			void saveGraph(std::string graphPath, std::string basedataPath) const;
 
 
 			void loadGraph(const char* graphPath) const;
 
 
-			void loadGraph(std::string graphPath) const
-			{
-				loadGraph(graphPath.c_str());
-			}
+			void loadGraph(std::string graphPath) const;
 
 			const std::vector<const float*>* getBasedata() const;
 
 			void loadGraph(const char* graphPath, const char *basedataPath) const;
 
-			void loadGraph(std::string graphPath, std::string basedataPath) const
-			{
-				loadGraph(graphPath.c_str(), basedataPath.c_str());
-			}
+			void loadGraph(std::string graphPath, std::string basedataPath) const;
 
 			void optimizeGraph() const;
 
@@ -89,10 +80,7 @@ namespace glasssix
 
 			void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const;
 
-			void saveResult(std::string resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
-			{
-				saveResult(resultPath.c_str(), returnIDs);
-			}
+			void saveResult(std::string resultPath, std::vector<std::vector<unsigned>>& returnIDs) const;
 
 			static std::string getVersion();
 

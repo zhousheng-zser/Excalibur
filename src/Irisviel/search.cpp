@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include <glasssix/accelerator.hpp>
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #include <omp.h>
 #endif
 
@@ -158,7 +158,7 @@ namespace glasssix
 
 			if (baseNum_ != 1)
 			{
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < queryNum_; ++i)

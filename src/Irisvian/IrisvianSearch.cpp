@@ -93,8 +93,7 @@ namespace glasssix
         void IrisvianSearch::SaveGraph(System::String^ path)
         {
             CheckPointer();
-
-            return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(path));
+			return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(path));
         }
 
         /// <summary>
@@ -105,8 +104,7 @@ namespace glasssix
         void IrisvianSearch::SaveGraph(System::String^ graphPath, System::String^ baseDataPath)
         {
             CheckPointer();
-
-            return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(graphPath), marshal_fx::marshal_as<std::string>(baseDataPath));
+			return searcher_->saveGraph(marshal_fx::marshal_as<std::string>(graphPath), marshal_fx::marshal_as<std::string>(baseDataPath));
         }
 
         /// <summary>
