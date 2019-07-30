@@ -2,7 +2,7 @@
 
 ## Information
 
-<div markdown="1">
+<div markdown=1>
     <table>
         <tbody>
         <tr>
