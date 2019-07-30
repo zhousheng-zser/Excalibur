@@ -21,9 +21,9 @@ Tensor I/O 为用户提供了 3 个轻量级接口头文件，以方便地使用
 
 ## 接口列表
 - 命名空间 **```glasssix::excalibur```**
-   
+   zh_cn
    - **公共模块**
-      - [**```tensor_layout```**]() 枚举
+      - [**```tensor_layout```**](zh_CN/tensor_layout.md) 枚举
 
    - **标准图像输入输出** 功能模块
       - [**```tensor_builder```**]() 接口类

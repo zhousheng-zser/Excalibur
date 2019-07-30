@@ -1,6 +1,6 @@
 # Tensor I/O Manual
 
-## Revision
+## Revisions
 |Content|Date|Author|
 |---|---|---|
 |Origin|2019.07.29 Mon.|Zhang Mingyu|
@@ -23,7 +23,7 @@ The header files listed above can be located at /include/Infrastructure folder i
 - Namespace **```glasssix::excalibur```**
    
    - **Common**
-      - [**```tensor_layout```**]() enum
+      - [**```tensor_layout```**](en_US/tensor_layout.md) Enum
 
    - **Standard Bitmap I/O** Module
       - [**```tensor_builder```**]() Interface
