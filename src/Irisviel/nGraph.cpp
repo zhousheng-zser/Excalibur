@@ -1,6 +1,6 @@
 #include "nGraph.hpp"
 #include "distance.hpp"
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #include <omp.h>
 #endif
 #include <glasssix/tensor.hpp>
@@ -388,7 +388,7 @@ namespace glasssix
 
 		void NGraph::link(LockGraph &cutGraph_)
 		{
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
 #endif
 			for (int n = 0; n < baseNum_; ++n) {
