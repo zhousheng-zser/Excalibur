@@ -2,6 +2,10 @@
 
 ## Information
 
+<style>
+    table { empty-cells: hide;}
+</style>
+
 |   |   |
 |---|---|
 |Header|tensor_builder.hpp|
@@ -32,7 +36,7 @@ public:
 
 ## Member Functions
 
-|Signature|Description|
+|||
 |---|---|
 |**[~tensor_builder()]()**|The default virtual destructor.|
 |**[load_from(const std::string&)]()**|Loads an image from the disk.|
