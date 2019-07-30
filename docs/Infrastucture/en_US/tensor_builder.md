@@ -10,7 +10,7 @@
     </tr>
     <tr>
       <td>Namespace</td>
-      <td>**```glasssix::excalibur```***</td>
+      <td><span style="display:block">**```glasssix::excalibur```**</span></td>
     </tr>
     <tr>
       <td>Description</td>
