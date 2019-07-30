@@ -2,6 +2,15 @@
 
 ## Information
 
+<style>
+    td, th { padding : 6px } 
+             th { background-color : coral ; 
+                  color : white; 
+                  border : 1px solid white; } 
+             td { color : black ; 
+                  border : 1px solid skyblue }
+</style>
+
 |   |   |
 |---|---|
 |Header|tensor_builder.hpp|
