@@ -192,4 +192,4 @@ Converts the cached bitmap to a floating-point tensor.
     </tr>
 </table>
 
-## [![Home](../images/home.png)](../Tensor_IO_Manual_en_US.md)
+## [![Home](../images/home.png =64x64)](../Tensor_IO_Manual_en_US.md)
