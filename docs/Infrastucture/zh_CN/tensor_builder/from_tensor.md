@@ -41,7 +41,7 @@ tensor_builder.hpp
     <tr>
     <td>
 
-**[from_tensor(const tensor<float>&, tensor_layout)](#from_tensorconst-tensorfloat-tensor_layout)**
+**[from_tensor(const tensor\<float\>&, tensor_layout)](#from_tensorconst-tensorfloat-tensor_layout)**
     </td>
     <td>
 
@@ -62,7 +62,7 @@ tensor_builder.hpp
 
 <br>
 
-## from_tensor(const tensor<float>&, tensor_layout)
+## from_tensor(const tensor\<float\>&, tensor_layout)
 
 将一个浮点型张量转换为标准位图。
 

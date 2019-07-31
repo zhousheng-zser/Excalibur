@@ -41,7 +41,7 @@ Converts a tensor to a standard bitmap.
     <tr>
     <td>
 
-**[from_tensor(const tensor<float>&, tensor_layout)](#from_tensorconst-tensorfloat-tensor_layout)**
+**[from_tensor(const tensor\<float\>&, tensor_layout)](#from_tensorconst-tensorfloat-tensor_layout)**
     </td>
     <td>
 
@@ -62,7 +62,7 @@ Converts a uint8 tensor to a standard bitmap.
 
 <br>
 
-## from_tensor(const tensor<float>&, tensor_layout)
+## from_tensor(const tensor<\float\>&, tensor_layout)
 
 Converts a floating-point tensor to a standard bitmap.
 
