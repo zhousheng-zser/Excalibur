@@ -41,7 +41,7 @@ tensor_builder.hpp
     <tr>
     <td>
 
-**[load_from(const std::string&)](#load_from%28const_std::string&%29)**
+**[load_from(const std::string&)](#load_from_const_std__string__)**
     </td>
     <td>
 
