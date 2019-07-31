@@ -4,9 +4,9 @@
 
 <div markdown="1">
 
-<table markdown="1">
-    <tr markdown="1">
-        <td markdown="1">```January```</td>
+<table>
+    <tr>
+        <td><span markdown="1">```January```</span></td>
         <td>$100</td>
       </tr>
 </table>
