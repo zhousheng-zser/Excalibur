@@ -5,10 +5,11 @@
 <div markdown="1">
 
 <table>
-    <tr>
-        <td><span markdown="1">```January```</span></td>
-        <td>$100</td>
-      </tr>
+    <tr><td>
+
+**markdown**
+
+    </td></tr>
 </table>
 
 |   |   |
