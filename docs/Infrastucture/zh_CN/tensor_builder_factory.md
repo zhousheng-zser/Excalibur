@@ -4,7 +4,7 @@
 
 <table>
     <tr>
-    <td style="text-align: center; vertical-align: middle;">
+    <td>
 
 头文件
     </td>
