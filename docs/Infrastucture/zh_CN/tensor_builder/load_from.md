@@ -140,4 +140,4 @@ virtual bool load_from(const std::string& path) = 0;
 图像文件的路径。
 
 ## 链接
-<a href="../Tensor_IO_Manual_zh_CN.md"><img src="../images/home.png" width="32" height="32"></img></a>
+<a href="../../Tensor_IO_Manual_zh_CN.md"><img src="../../images/home.png" width="32" height="32"></img></a>
