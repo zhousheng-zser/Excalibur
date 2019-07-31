@@ -41,7 +41,7 @@ tensor_builder.hpp
     <tr>
     <td>
 
-**[load_from(const std::string&)](#function1)**
+**[load_from(const std::string&)](#load_from%28const%20std::string&%29)**
     </td>
     <td>
 
@@ -70,10 +70,7 @@ tensor_builder.hpp
     </tr>
 </table>
 
-<span name="function1">
-
 ## load_from(const std::string&)
-</span>
 
 从磁盘加载一个图像文件。
 
