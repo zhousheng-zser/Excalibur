@@ -36,7 +36,7 @@ The header files listed above can be located at /include/Infrastructure folder i
       - [**```tensor_convert_layout_to_tag```**](en_US/tensor_convert_layout_to_tag.md) Class Template
       - [**```tensor_convert_to```**](en_US/tensor_convert_to.md) Variable Template
       - [**```tensor_convert_layout_to```**](en_US/tensor_convert_layout_to.md) Variable Template
-      - [**```operator|```**]() Operator
+      - [**```operator|```**](en_US/operator_or.md) Operator
 
 ## Contributors
 - Zhang Mingyu / Glasssix
