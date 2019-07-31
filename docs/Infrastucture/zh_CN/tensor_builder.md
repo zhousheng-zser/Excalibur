@@ -1,4 +1,4 @@
-# tensor_builder Class
+# tensor_builder 类
 
 ## 信息
 
@@ -30,7 +30,7 @@ tensor_builder.hpp
     </td>
     <td>
 
-An interface class for I/O operations between standard bitmap files and standard tensors.
+提供标准位图和张量间的 I/O 操作。
     </td>
     </tr>
 </table>
