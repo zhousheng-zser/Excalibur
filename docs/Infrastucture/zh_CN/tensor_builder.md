@@ -143,7 +143,7 @@ public:
     <tr>
     <td>
 
-**[from_tensor(const tensor<uint8_t>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensor<uint8_t-tensor_layout)**
+**[from_tensor(const tensor<uint8_t>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensoruint8_t-tensor_layout)**
     </td>
     <td>
 

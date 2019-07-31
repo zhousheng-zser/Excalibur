@@ -64,7 +64,7 @@ Indicates the channel count and the pixel format.
 
 **```std::shared_ptr<glasssix::tensor<float>>```**
 
-A smart pointer known as **```std::shared_ptr<glasssix::tensor<float>>```**, which contains the converted tensor if the operation was successful and otherwise, an null pointer is included.
+A smart pointer known as **```std::shared_ptr<glasssix::tensor<float>>```**, which contains the converted tensor if the operation was successful and otherwise, a null pointer is included.
 
 <br>
 
