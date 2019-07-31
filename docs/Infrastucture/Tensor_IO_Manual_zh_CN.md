@@ -26,7 +26,7 @@ Tensor I/O 为用户提供了 3 个轻量级接口头文件，以方便地使用
       - [**```tensor_layout```**](zh_CN/tensor_layout.md) 枚举
 
    - **标准图像输入输出** 功能模块
-      - [**```tensor_builder```**]() 接口类
+      - [**```tensor_builder```**](zh_CN/tensor_builder.md) 接口类
       - [**```tensor_builder_factory```**]() 工厂类
       - [**```tensor_builder_implementation```**]() 枚举
 

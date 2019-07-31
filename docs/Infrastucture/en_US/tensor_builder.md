@@ -73,7 +73,7 @@ The default virtual destructor.
     <tr>
     <td>
 
-**[load_from(const std::string&)]()**
+**[load_from(const std::string&)](tensor_builder/load_from.md#load_fromconst-stdstring)**
     </td>
     <td>
 
@@ -83,7 +83,7 @@ Loads an image from the disk.
     <tr>
     <td>
 
-**[load_from(const std::istream&)]()**
+**[load_from(std::istream&)](tensor_builder/load_from.md#load_fromstdistream)**
     </td>
     <td>
 
@@ -93,7 +93,7 @@ Loads an image from a **```std::istream```**.
     <tr>
     <td>
 
-**[load_from(const void*, size_t)]()**
+**[load_from(const void*, size_t)](tensor_builder/load_from.md#load_fromconst-void-size_t)**
     </td>
     <td>
 
@@ -103,7 +103,7 @@ Loads an image from a memory buffer.
     <tr>
     <td>
 
-**[save_to(const std::string&)]()**
+**[save_to(const std::string&)](tensor_builder/save_to.md#save_toconst-stdstring)**
     </td>
     <td>
 
@@ -113,7 +113,7 @@ Saves the image to a disk file.
     <tr>
     <td>
 
-**[tensor_parameters(orderType)]()**
+**[tensor_parameters(orderType)](tensor_builder/tensor_parameters.md#tensor_parametersorderType)**
     </td>
     <td>
 
@@ -123,7 +123,7 @@ Sets the tensor parameters.
     <tr>
     <td>
 
-**[tensor_parameters(orderType, int)]()**
+**[tensor_parameters(orderType, int)](tensor_builder/tensor_parameters.md#tensor_parametersorderType-int)**
     </td>
     <td>
 
@@ -133,7 +133,7 @@ Sets the tensor parameters.
     <tr>
     <td>
 
-**[from_tensor(const tensor<float>&, tensor_layout)]()**
+**[from_tensor(const tensor<float>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensorfloat-tensor_layout)**
     </td>
     <td>
 
@@ -143,7 +143,7 @@ Converts a floating-point tensor to a standard bitmap.
     <tr>
     <td>
 
-**[from_tensor(const tensor<uint8_t>&, tensor_layout)]()**
+**[from_tensor(const tensor<uint8_t>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensor<uint8_t-tensor_layout)**
     </td>
     <td>
 
@@ -153,41 +153,41 @@ Converts a uint8 tensor to a standard bitmap.
     <tr>
     <td>
 
-**[to_tensor_float(tensor_layout)]()**
+**[to_tensor_float(tensor_layout)](tensor_builder/to_tensor_float.md#to_tensor_floattensor_layout)**
     </td>
     <td>
 
-Converts the cached bitmap to a floating-point tensor.
-    </td>
-    </tr>
-    <tr>
-    <td>
-
-**[to_tensor_float_shared(tensor_layout)]()**
-    </td>
-    <td>
-
-Allocates a **```std::shared_ptr<tensor<float>>```**  which it converts the cached bitmap to.
+Converts the loaded bitmap to a floating-point tensor.
     </td>
     </tr>
     <tr>
     <td>
 
-**[to_tensor_uint8(tensor_layout)]()**
+**[to_tensor_float_shared(tensor_layout)](tensor_builder/to_tensor_float_shared.md#to_tensor_float_sharedtensor_layout)**
     </td>
     <td>
 
-Converts the cached bitmap to a uint8 tensor.
+Allocates a **```std::shared_ptr<tensor<float>>```**  which it converts the loaded bitmap to.
     </td>
     </tr>
     <tr>
     <td>
 
-**[to_tensor_uint8_shared(tensor_layout)]()**
+**[to_tensor_uint8(tensor_layout)](tensor_builder/to_tensor_uint8.md#to_tensor_uint8tensor_layout)**
     </td>
     <td>
 
-Converts the cached bitmap to a floating-point tensor.
+Converts the loaded bitmap to a uint8 tensor.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[to_tensor_uint8_shared(tensor_layout)](tensor_builder/to_tensor_uint8_shared.md#to_tensor_uint8_sharedtensor_layout)**
+    </td>
+    <td>
+
+Allocates a **```std::shared_ptr<tensor<uint8_t>>```**  which it converts the loaded bitmap to.
     </td>
     </tr>
 </table>
