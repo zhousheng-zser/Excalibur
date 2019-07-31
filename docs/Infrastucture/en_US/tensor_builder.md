@@ -35,12 +35,6 @@ An interface class for I/O operations between standard bitmap files and standard
     </tr>
 </table>
 
-|   |   |
-|---|---|
-|Header|tensor_builder.hpp|
-|Namespace|**```glasssix::excalibur```**|
-|Description|An interface class for I/O operations between standard bitmap files and standard tensors.|
-
 ## Syntax
 
 ```C++
