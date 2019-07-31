@@ -5,9 +5,7 @@
 <table>
     <tr>
     <td>
-    
 **markdown**
-
 </table>
 
 |   |   |
