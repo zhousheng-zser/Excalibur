@@ -2,7 +2,7 @@
 
 ## Information
 
-<table>
+<table border="0">
     <tr>
     <td>
 
