@@ -5,9 +5,13 @@
 <div markdown="1">
 
 <table>
-    <tr><td>
+    <tr>
+    <td>
+    
 **markdown**
-    </td></tr>
+
+    </td>
+    </tr>
 </table>
 
 |   |   |
