@@ -7,7 +7,9 @@
 <table markdown="1">
     <tr markdown="1">
         <td markdown="1">
+        
         **January**
+        
         </td>
         <td>$100</td>
       </tr>
