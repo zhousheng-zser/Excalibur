@@ -41,7 +41,7 @@ tensor_builder.hpp
     <tr>
     <td>
 
-**[load_from(const std::string&)]()**
+**[load_from(const std::string&)](#function1)**
     </td>
     <td>
 
@@ -68,10 +68,12 @@ tensor_builder.hpp
 从内存缓冲区加载一个图像。
     </td>
     </tr>
-    <tr>
 </table>
 
+<span name="function1">
+
 ## load_from(const std::string&)
+</span>
 
 从磁盘加载一个图像文件。
 
@@ -81,7 +83,7 @@ virtual bool load_from(const std::string& path) = 0;
 
 ### 参数
 
-<dl style="display: flex;">
+<dl display="flex">
     <dt>
 
 **path**
