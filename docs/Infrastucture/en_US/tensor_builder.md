@@ -2,16 +2,12 @@
 
 ## Information
 
-<div markdown="1">
-
 <table>
     <tr>
     <td>
     
 **markdown**
 
-    </td>
-    </tr>
 </table>
 
 |   |   |
@@ -19,8 +15,6 @@
 |Header|tensor_builder.hpp|
 |Namespace|**```glasssix::excalibur```**|
 |Description|An interface class for I/O operations between standard bitmap files and standard tensors.|
-
-</div>
 
 ## Syntax
 
