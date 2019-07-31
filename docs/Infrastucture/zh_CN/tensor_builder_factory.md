@@ -2,11 +2,38 @@
 
 ## 信息
 
-|   |   |
-|---|---|
-|头文件|tensor_builder_factory.hpp|
-|命名空间|**```glasssix::excalibur```**|
-|功能描述|创建一个 [**```tensor_builder```**]() 的示例。
+<table>
+    <tr>
+    <td>
+
+头文件
+    </td>
+    <td>
+
+tensor_builder_factory.hpp
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+命名空间
+    </td>
+    <td>
+
+**```glasssix::excalibur```**
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+功能描述
+    </td>
+    <td>
+
+类工厂，用于创建 [**```tensor_builder```**](tensor_builder.md) 的实例。
+    </td>
+    </tr>
+</table>
 
 ## 语法
 
@@ -20,8 +47,18 @@ public:
 
 ## 成员函数
 
-|   |   |
-|---|---|---|
-|[**create(tensor_builder_implementation)**]()|创建一个 **```tensor_builder```** 的实例。|
+<table>
+    <tr>
+    <td>
 
-## [返回](../Tensor_IO_Manual_zh_CN.md)
+[**create(tensor_builder_implementation)**]()
+    </td>
+    <td>
+
+创建一个 [**```tensor_builder```**](tensor_builder.md) 的实例。
+    </td>
+    </tr>
+</table>
+
+## 链接
+<a href="../Tensor_IO_Manual_zh_CN.md"><img src="../images/home.png" width="32" height="32"></img></a>

@@ -2,11 +2,38 @@
 
 ## Information
 
-|   |   |
-|---|---|
-|Header|tensor_layout.hpp|
-|Namespace|**```glasssix::excalibur```**|
-|Description|Defines the layout of a **```glasssix::tensor<T>```** .
+<table>
+    <tr>
+    <td>
+
+Header
+    </td>
+    <td>
+    
+tensor_layout.hpp
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+Namespace
+    </td>
+    <td>
+    
+**```glasssix::excalibur```**
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+Description
+    </td>
+    <td>
+
+Defines the layout of a **```glasssix::tensor<T>```** .
+    </td>
+    </tr>
+</table>
 
 ## Syntax
 
@@ -22,11 +49,48 @@ enum class tensor_layout
 
 ## Constants
 
-|   |   |
-|---|---|
-|rgb|A triple-channel true color image in RGB format.|
-|rgba|A quadruplet-channel true color image in RGBA format with an alpha channel.|
-|grayscale|A single-channel grayscale image.|
-|grayscale_3|A triple-channel grayscale image of which each pixel has three channels with identical values.|
+<table>
+    <tr>
+    <td>
 
-## [Return](../Tensor_IO_Manual_en_US.md)
+rgb
+    </td>
+    <td>
+    
+A triple-channel true color image in RGB format.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+rgba
+    </td>
+    <td>
+    
+A quadruplet-channel true color image in RGBA format with an alpha channel.
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+grayscale
+    </td>
+    <td>
+
+A single-channel grayscale image.
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+grayscale_3
+    </td>
+    <td>
+
+A triple-channel grayscale image of which each pixel has three channels with identical values.
+    </td>
+    </tr>
+</table>
+
+## Links
+<a href="../Tensor_IO_Manual_en_US.md"><img src="../images/home.png" width="32" height="32"></img></a>
