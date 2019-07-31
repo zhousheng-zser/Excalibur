@@ -6,11 +6,7 @@
 
 <table>
     <tr>
-        <td>
-        
-        ## January
-        
-        </td>
+        <td>**January**</td>
         <td>$100</td>
       </tr>
 </table>
