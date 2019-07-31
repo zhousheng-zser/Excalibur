@@ -41,7 +41,7 @@ Supports conversions of the underlying type and the layout on a **```glasssix::t
     <tr>
     <td>
 
-**[template<typename TSource, typename TDestination><br>operator|(const tensor\<TSource\>&, const tensor_convert_to_tag\<TDestination\>&)](#templatetypename-tsource-typename-tdestinationbroperatorconst-tensortsource-const-tensor_convert_to_tagtdestination)**
+**[template<typename TSource, typename TDestination><br>operator|(const tensor\<TSource\>&, const tensor_convert_to_tag\<TDestination\>&)](#templatetypename-tsource-typename-tdestinationoperatorconst-tensortsource-const-tensor_convert_to_tagtdestination)**
     </td>
     <td>
 
@@ -51,7 +51,7 @@ Converts the underlying type of a **```glasssix::tensor<T>```** .
     <tr>
     <td>
 
-**[template<typename TSource, typename TDestination><br>operator|(const std::shared_ptr\<tensor\<TSource\>\>&, const tensor_convert_to_tag\<TDestination\>&)](#templatetypename-tsource-typename-tdestinationbroperatorconst-stdshared_ptrtensortsource-const-tensor_convert_to_tagtdestination)**
+**[template<typename TSource, typename TDestination><br>operator|(const std::shared_ptr\<tensor\<TSource\>\>&, const tensor_convert_to_tag\<TDestination\>&)](#templatetypename-tsource-typename-tdestinationoperatorconst-stdshared_ptrtensortsource-const-tensor_convert_to_tagtdestination)**
     </td>
     <td>
 
@@ -61,7 +61,7 @@ Converts the underlying type of a **```std::shared_ptr<glasssix::tensor<T>>```**
     <tr>
     <td>
 
-**[template<typename TSource, tensor_layout layout><br>operator|(const tensor\<TSource\>&, const tensor_convert_layout_to_tag\<layout\>&)](#templatetypename-tsource-tensor_layout-layoutbroperatorconst-tensortsource-const-tensor_convert_layout_to_taglayout)**
+**[template<typename TSource, tensor_layout layout><br>operator|(const tensor\<TSource\>&, const tensor_convert_layout_to_tag\<layout\>&)](#templatetypename-tsource-tensor_layout-layoutoperatorconst-tensortsource-const-tensor_convert_layout_to_taglayout)**
     </td>
     <td>
 
@@ -71,7 +71,7 @@ Converts the layout of a **```glasssix::tensor<T>```** .
     <tr>
     <td>
 
-**[template<typename TSource, tensor_layout layout><br>operator|(const std::shared_ptr\<tensor\<TSource\>\>&, const tensor_convert_layout_to_tag\<layout\>&)](#templatetypename-tsource-tensor_layout-layoutbroperatorconst-stdshared_ptrtensortsource-const-tensor_convert_layout_to_taglayout)**
+**[template<typename TSource, tensor_layout layout><br>operator|(const std::shared_ptr\<tensor\<TSource\>\>&, const tensor_convert_layout_to_tag\<layout\>&)](#templatetypename-tsource-tensor_layout-layoutoperatorconst-stdshared_ptrtensortsource-const-tensor_convert_layout_to_taglayout)**
     </td>
     <td>
 
@@ -322,4 +322,4 @@ The destination tensor.
 <br>
 
 ## Links
-<a href="../../Tensor_IO_Manual_zh_CN.md"><img src="../../images/home.png" width="32" height="32"></img></a>
+<a href="../Tensor_IO_Manual_zh_CN.md"><img src="../images/home.png" width="32" height="32"></img></a>
