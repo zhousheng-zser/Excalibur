@@ -6,9 +6,33 @@
     <tr>
     <td>
         
-**markdown**
-
-    </td></tr>
+Header
+    </td>
+    <td>
+    
+tensor_builder.hpp
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+Namespace
+    </td>
+    <td>
+    
+**```glasssix::excalibur```**
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+Description
+    </td>
+    <td>
+    
+An interface class for I/O operations between standard bitmap files and standard tensors.
+    </td>
+    </tr>
 </table>
 
 |   |   |
