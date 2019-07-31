@@ -3,7 +3,8 @@
 ## 修订记录
 |内容|时间|作者|
 |---|---|---|
-|编撰第一版|2019.07.29 Mon.|张铭雨|
+|初稿|2019.07.29 Mon.|张铭雨|
+|完成 API 文档|2019.07.31 Wed.|张铭雨|
 
 ## 简介
 Tensor I/O 是一款基于开源图像处理类库开发的标准张量（**```glasssix::tensor<T>```**）输入输出模块。它为库开发者和最终用户提供了易用的接口，以处理标准图像文件（.jpg、.bmp、.png、.tiff）和标准张量间的数据转换，并提供了常用的像素转换函数。
@@ -21,21 +22,21 @@ Tensor I/O 为用户提供了 3 个轻量级接口头文件，以方便地使用
 
 ## 接口列表
 - 命名空间 **```glasssix::excalibur```**
-   
+   zh_cn
    - **公共模块**
-      - [**```tensor_layout```**]() 枚举
+      - [**```tensor_layout```**](zh_CN/tensor_layout.md) 枚举
 
    - **标准图像输入输出** 功能模块
-      - [**```tensor_builder```**]() 接口类
-      - [**```tensor_builder_factory```**]() 工厂类
-      - [**```tensor_builder_implementation```**]() 枚举
+      - [**```tensor_builder```**](zh_CN/tensor_builder.md) 类
+      - [**```tensor_builder_factory```**](zh_CN/tensor_builder_factory.md) 类
+      - [**```tensor_builder_implementation```**](zh_CN/tensor_builder_implementation.md) 枚举
 
    - **标准张量像素转换** 功能模块
-      - [**```tensor_convert_to_tag```**]() 类
-      - [**```tensor_convert_layout_to_tag```**]() 类
-      - [**```tensor_convert_to```**]() 全局变量
-      - [**```tensor_convert_layout_to```**]() 全局变量
-      - [**```operator|```**]() 运算符
+      - [**```tensor_convert_to_tag```**](zh_CN/tensor_convert_to_tag.md) 类模板
+      - [**```tensor_convert_layout_to_tag```**](zh_CN/tensor_convert_layout_to_tag.md) 类模板
+      - [**```tensor_convert_to```**](zh_CN/tensor_convert_to.md) 变量模板
+      - [**```tensor_convert_layout_to```**](zh_CN/tensor_convert_layout_to.md) 变量模板
+      - [**```operator|```**](zh_CN/operator_or.md) 运算符
 
 ## 贡献者
 - Zhang Mingyu / Glassix
