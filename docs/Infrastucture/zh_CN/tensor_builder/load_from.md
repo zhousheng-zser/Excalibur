@@ -93,5 +93,51 @@ virtual bool load_from(const std::string& path) = 0;
 
 图像文件的路径。
 
+## load_from(const std::string&)
+
+从磁盘加载一个图像文件。
+
+```C++
+virtual bool load_from(const std::string& path) = 0;
+```
+
+### 参数
+
+<dl display="flex">
+    <dt>
+
+**path**
+    </dt>
+    <dd>
+
+**```std::string```**
+    </dd>
+</dl>
+
+图像文件的路径。
+
+## load_from(const std::string&)
+
+从磁盘加载一个图像文件。
+
+```C++
+virtual bool load_from(const std::string& path) = 0;
+```
+
+### 参数
+
+<dl display="flex">
+    <dt>
+
+**path**
+    </dt>
+    <dd>
+
+**```std::string```**
+    </dd>
+</dl>
+
+图像文件的路径。
+
 ## 链接
 <a href="../Tensor_IO_Manual_zh_CN.md"><img src="../images/home.png" width="32" height="32"></img></a>
