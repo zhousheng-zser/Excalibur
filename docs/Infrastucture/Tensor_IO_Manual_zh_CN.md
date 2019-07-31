@@ -36,7 +36,7 @@ Tensor I/O 为用户提供了 3 个轻量级接口头文件，以方便地使用
       - [**```tensor_convert_layout_to_tag```**](zh_CN/tensor_convert_layout_to_tag.md) 类模板
       - [**```tensor_convert_to```**](zh_CN/tensor_convert_to.md) 变量模板
       - [**```tensor_convert_layout_to```**](zh_CN/tensor_convert_layout_to.md) 变量模板
-      - [**```operator|```**]() 运算符
+      - [**```operator|```**](zh_CN/operator_or.md) 运算符
 
 ## 贡献者
 - Zhang Mingyu / Glassix
