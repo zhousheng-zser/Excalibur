@@ -5,7 +5,7 @@
 <table>
     <tr>
     <td>
-        
+
 Header
     </td>
     <td>
@@ -15,7 +15,7 @@ tensor_builder.hpp
     </tr>
     <tr>
     <td>
-        
+
 Namespace
     </td>
     <td>
