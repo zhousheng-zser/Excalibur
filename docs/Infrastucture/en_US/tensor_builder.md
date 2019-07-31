@@ -2,11 +2,38 @@
 
 ## Information
 
-|   |   |
-|---|---|
-|Header|tensor_builder.hpp|
-|Namespace|**```glasssix::excalibur```**|
-|Description|An interface class for I/O operations between standard bitmap files and standard tensors.|
+<table>
+    <tr>
+    <td>
+
+Header
+    </td>
+    <td>
+    
+tensor_builder.hpp
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+Namespace
+    </td>
+    <td>
+    
+**```glasssix::excalibur```**
+    </td>
+    </tr>
+    <tr>
+    <td>
+        
+Description
+    </td>
+    <td>
+
+An interface class for I/O operations between standard bitmap files and standard tensors.
+    </td>
+    </tr>
+</table>
 
 ## Syntax
 
@@ -32,20 +59,137 @@ public:
 
 ## Member Functions
 
-|   |   |
-|---|---|
-|**[~tensor_builder()]()**|The default virtual destructor.|
-|**[load_from(const std::string&)]()**|Loads an image from the disk.|
-|**[load_from(const std::istream&)]()**|Loads an image from a **```std::istream```**.|
-|**[load_from(const void*, size_t)]()**|Loads an image from a memory buffer.|
-|**[save_to(const std::string&)]()**|Saves the image to a disk file.|
-|**[tensor_parameters(orderType)]()**|Sets the tensor parameters.|
-|**[tensor_parameters(orderType, int)]()**|Sets the tensor parameters.|
-|**[from_tensor(const tensor<float>&, tensor_layout)]()**|Converts a floating-point tensor to a standard bitmap.|
-|**[from_tensor(const tensor<uint8_t>&, tensor_layout)]()**|Converts a uint8 tensor to a standard bitmap.|
-|**[to_tensor_float(tensor_layout)]()**|Converts the cached bitmap to a floating-point tensor.|
-|**[to_tensor_float_shared(tensor_layout)]()**|Allocates a **```std::shared_ptr<tensor<float>>```**  which it converts the cached bitmap to.|
-|**[to_tensor_uint8(tensor_layout)]()**|Converts the cached bitmap to a uint8 tensor.|
-|**[to_tensor_uint8_shared(tensor_layout)]()**|Allocates a **```std::shared_ptr<tensor<uint8_t>>```**  which it converts the cached bitmap to.|
+<table>
+    <tr>
+    <td>
 
-## [Return](../Tensor_IO_Manual_en_US.md)
+**[~tensor_builder()]()**
+    </td>
+    <td>
+
+The default virtual destructor.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[load_from(const std::string&)]()**
+    </td>
+    <td>
+
+Loads an image from the disk.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[load_from(const std::istream&)]()**
+    </td>
+    <td>
+
+Loads an image from a **```std::istream```**.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[load_from(const void*, size_t)]()**
+    </td>
+    <td>
+
+Loads an image from a memory buffer.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[save_to(const std::string&)]()**
+    </td>
+    <td>
+
+Saves the image to a disk file.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[tensor_parameters(orderType)]()**
+    </td>
+    <td>
+
+Sets the tensor parameters.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[tensor_parameters(orderType, int)]()**
+    </td>
+    <td>
+
+Sets the tensor parameters.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[from_tensor(const tensor<float>&, tensor_layout)]()**
+    </td>
+    <td>
+
+Converts a floating-point tensor to a standard bitmap.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[from_tensor(const tensor<uint8_t>&, tensor_layout)]()**
+    </td>
+    <td>
+
+Converts a uint8 tensor to a standard bitmap.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[to_tensor_float(tensor_layout)]()**
+    </td>
+    <td>
+
+Converts the cached bitmap to a floating-point tensor.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[to_tensor_float_shared(tensor_layout)]()**
+    </td>
+    <td>
+
+Allocates a **```std::shared_ptr<tensor<float>>```**  which it converts the cached bitmap to.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[to_tensor_uint8(tensor_layout)]()**
+    </td>
+    <td>
+
+Converts the cached bitmap to a uint8 tensor.
+    </td>
+    </tr>
+    <tr>
+    <td>
+
+**[to_tensor_uint8_shared(tensor_layout)]()**
+    </td>
+    <td>
+
+Converts the cached bitmap to a floating-point tensor.
+    </td>
+    </tr>
+</table>
+
+## [![Home](../images/home.png)](../Tensor_IO_Manual_en_US.md)
