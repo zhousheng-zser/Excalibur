@@ -73,7 +73,7 @@ public:
     <tr>
     <td>
 
-**[load_from(const std::string&)]()**
+**[load_from(const std::string&)](tensor_builder/load_from.md#load_fromconst-stdstring)**
     </td>
     <td>
 
@@ -83,7 +83,7 @@ public:
     <tr>
     <td>
 
-**[load_from(const std::istream&)]()**
+**[load_from(std::istream&)](tensor_builder/load_from.md#load_fromstdistream)**
     </td>
     <td>
 
@@ -93,7 +93,7 @@ public:
     <tr>
     <td>
 
-**[load_from(const void*, size_t)]()**
+**[load_from(const void*, size_t)](tensor_builder/load_from.md#load_fromconst-void-size_t)**
     </td>
     <td>
 
@@ -103,17 +103,17 @@ public:
     <tr>
     <td>
 
-**[save_to(const std::string&)]()**
+**[save_to(const std::string&)](tensor_builder/save_to.md#save_toconst-stdstring)**
     </td>
     <td>
 
-将保存图像到磁盘文件。
+将图像保存到磁盘文件。
     </td>
     </tr>
     <tr>
     <td>
 
-**[tensor_parameters(orderType)]()**
+**[tensor_parameters(orderType)](tensor_builder/tensor_parameters.md#tensor_parametersorderType)**
     </td>
     <td>
 
@@ -123,7 +123,7 @@ public:
     <tr>
     <td>
 
-**[tensor_parameters(orderType, int)]()**
+**[tensor_parameters(orderType, int)](tensor_builder/tensor_parameters.md#tensor_parametersorderType-int)**
     </td>
     <td>
 
@@ -133,7 +133,7 @@ public:
     <tr>
     <td>
 
-**[from_tensor(const tensor<float>&, tensor_layout)]()**
+**[from_tensor(const tensor<float>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensorfloat-tensor_layout)**
     </td>
     <td>
 
@@ -143,17 +143,17 @@ public:
     <tr>
     <td>
 
-**[from_tensor(const tensor<uint8_t>&, tensor_layout)]()**
+**[from_tensor(const tensor<uint8_t>&, tensor_layout)](tensor_builder/from_tensor.md#from_tensorconst-tensor<uint8_t-tensor_layout)**
     </td>
     <td>
 
-将一字节型张量转换为标准位图。
+将一个字节型张量转换为标准位图。
     </td>
     </tr>
     <tr>
     <td>
 
-**[to_tensor_float(tensor_layout)]()**
+**[to_tensor_float(tensor_layout)](tensor_builder/to_tensor_float.md#to_tensor_floattensor_layout)**
     </td>
     <td>
 
@@ -163,7 +163,7 @@ public:
     <tr>
     <td>
 
-**[to_tensor_float_shared(tensor_layout)]()**
+**[to_tensor_float_shared(tensor_layout)](tensor_builder/to_tensor_float_shared.md#to_tensor_float_sharedtensor_layout)**
     </td>
     <td>
 
@@ -173,7 +173,7 @@ public:
     <tr>
     <td>
 
-**[to_tensor_uint8(tensor_layout)]()**
+**[to_tensor_uint8(tensor_layout)](tensor_builder/to_tensor_uint8.md#to_tensor_uint8tensor_layout)**
     </td>
     <td>
 
@@ -183,7 +183,7 @@ public:
     <tr>
     <td>
 
-**[to_tensor_uint8_shared(tensor_layout)]()**
+**[to_tensor_uint8_shared(tensor_layout)](tensor_builder/to_tensor_uint8_shared.md#to_tensor_uint8_sharedtensor_layout)**
     </td>
     <td>
 

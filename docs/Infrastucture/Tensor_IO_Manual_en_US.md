@@ -26,7 +26,7 @@ The header files listed above can be located at /include/Infrastructure folder i
       - [**```tensor_layout```**](en_US/tensor_layout.md) Enum
 
    - **Standard Bitmap I/O** Module
-      - [**```tensor_builder```**]() Interface
+      - [**```tensor_builder```**](en_US/tensor_builder.md) Interface
       - [**```tensor_builder_factory```**]() Class Factory
       - [**```tensor_builder_implementation```**]() Enum
 
