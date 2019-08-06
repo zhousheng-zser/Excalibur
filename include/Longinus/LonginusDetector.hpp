@@ -11,7 +11,7 @@
 #include <opencv2/opencv.hpp>
 #endif
 #ifndef TRIAL
-#include "../Damocles/Damocles.hpp"
+#include "../Damocles/damocles.hpp"
 #endif // !TRIAL
 
 namespace glasssix

@@ -39,7 +39,7 @@ namespace glasssix
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -49,7 +49,9 @@ namespace glasssix
 			}
 			else
 			{
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
+#endif
 				for (int i = 0; i < baseNum_; ++i)
 				{
 #ifdef COSINE_DISTANCE
@@ -140,7 +142,7 @@ namespace glasssix
 			if (std::abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -150,7 +152,7 @@ namespace glasssix
 			}
 			else
 			{
-#ifdef _OPENMP
+#if defined( _OPENMP) && !defined(TRIAL)
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
