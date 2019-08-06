@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -198,6 +198,7 @@
     <ClInclude Include="..\..\include\Infrastructure\init_free_image.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_converter.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_convertions.hpp" />
+    <ClInclude Include="..\..\include\Infrastructure\tensor_layout.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_or_shared.hpp" />
   </ItemGroup>
   <ItemGroup>
