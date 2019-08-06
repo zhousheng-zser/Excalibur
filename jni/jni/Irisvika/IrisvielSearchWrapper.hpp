@@ -1,19 +1,19 @@
 #ifndef _IRISVIANSEARCHWRAPPER_HPP_
 #define _IRISVIANSEARCHWRAPPER_HPP_
 
-#include "IrisvianSearch.hpp"
+#include "IrisvielSearch.hpp"
 #include <vector>
 
 namespace glasssix
 {
 	namespace irisviel
 	{
-		class IrisvianSearchWrapper
+		class IrisvielSearchWrapper
 		{
 		public:
-			IrisvianSearchWrapper() = delete;
+			IrisvielSearchWrapper() = delete;
 
-			IrisvianSearchWrapper(std::vector<const float *> *baseDataPtr, int dimension)
+			IrisvielSearchWrapper(std::vector<const float *> *baseDataPtr, int dimension)
 			{
 				for (size_t i = 0; i < baseDataPtr->size(); i++)
 				{
@@ -23,13 +23,13 @@ namespace glasssix
 				dimension_ = dimension;
 			}
 
-			IrisvianSearchWrapper(int dimension)
+			IrisvielSearchWrapper(int dimension)
 			{
 				search = new IrisvielSearch(dimension);
 				dimension_ = dimension;
 			}
 
-			~IrisvianSearchWrapper()
+			~IrisvielSearchWrapper()
 			{
 				delete search;
 

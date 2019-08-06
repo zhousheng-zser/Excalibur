@@ -72,12 +72,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Irisvian;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Irisviel;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Irisvian;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Irisviel;$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -87,7 +87,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>COSINE_DISTANCE;EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TRIAL;COSINE_DISTANCE;EXPORT_IRISVIEL;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -108,7 +108,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>COSINE_DISTANCE;EXPORT_IRISVIAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>TRIAL;COSINE_DISTANCE;EXPORT_IRISVIEL;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -126,26 +126,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Irisvian\baseIndex.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\baseSearch.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\distance.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\index.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\IrisvianSearch.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\kGraph.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\neighbor.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\nGraph.hpp" />
-    <ClInclude Include="..\..\include\Irisvian\search.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\baseIndex.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\baseSearch.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\distance.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\index.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\IrisvielSearch.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\kGraph.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\neighbor.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\nGraph.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\search.hpp" />
     <ClInclude Include="..\..\jni\jni\Irisvika\Irisvika-jni.hpp" />
-    <ClInclude Include="..\..\jni\jni\Irisvika\IrisvianSearchWrapper.hpp" />
+    <ClInclude Include="..\..\jni\jni\Irisvika\IrisvielSearchWrapper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\jni\jni\Irisvika\Irisvika-jni.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\distance.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\index.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\IrisvianSearch.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\kGraph.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\nGraph.cpp" />
-    <ClCompile Include="..\..\src\Irisvian\search.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\distance.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\index.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\IrisvielSearch.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\kGraph.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\nGraph.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\search.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
