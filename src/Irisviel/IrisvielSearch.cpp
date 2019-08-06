@@ -76,10 +76,20 @@ namespace glasssix
 			index_->saveGraph(graphPath);
 		}
 
+		void IrisvielSearch::saveGraph(std::string graphPath) const
+		{
+			saveGraph(graphPath.c_str());
+		}
+
 
 		void IrisvielSearch::saveGraph(const char *graphPath, const char *basedataPath) const
 		{
 			index_->saveGraph(graphPath, basedataPath);
+		}
+
+		void IrisvielSearch::saveGraph(std::string graphPath, std::string basedataPath) const
+		{
+			saveGraph(graphPath.c_str(), basedataPath.c_str());
 		}
 
 
@@ -88,9 +98,22 @@ namespace glasssix
 			search_->loadGraph(graphPath);
 		}
 
+		// For C++/CLI, implementations shuold not be done in header files.
+		// Or it will report C2001 bugs for the un-support functions.
+
+		void IrisvielSearch::loadGraph(std::string graphPath) const
+		{
+			loadGraph(graphPath.c_str());
+		}
+
 		void IrisvielSearch::loadGraph(const char* graphPath, const char *basedataPath) const
 		{
 			search_->loadGraph(graphPath, basedataPath);
+		}
+
+		void IrisvielSearch::loadGraph(std::string graphPath, std::string basedataPath) const
+		{
+			loadGraph(graphPath.c_str(), basedataPath.c_str());
 		}
 
 		const std::vector<const float*>* IrisvielSearch::getBasedata() const 
@@ -112,6 +135,11 @@ namespace glasssix
 		void IrisvielSearch::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
 		{
 			search_->saveResult(resultPath, returnIDs);
+		}
+
+		void IrisvielSearch::saveResult(std::string resultPath, std::vector<std::vector<unsigned>>& returnIDs) const
+		{
+			saveResult(resultPath.c_str(), returnIDs);
 		}
 
 		std::string IrisvielSearch::getVersion()
