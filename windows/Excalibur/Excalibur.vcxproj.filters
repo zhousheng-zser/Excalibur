@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\include\Excalibur\axpy.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="tensor_io.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -174,6 +177,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="tensor_io.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
