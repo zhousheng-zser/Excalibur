@@ -89,6 +89,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -126,6 +127,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
