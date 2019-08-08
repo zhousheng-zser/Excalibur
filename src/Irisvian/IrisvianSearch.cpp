@@ -16,7 +16,7 @@ namespace glasssix
         }
 
         /// <summary>
-        /// Get the cached base data.
+        /// Get the loaded base data.
         /// </summary>
         IrisvianSearchDataType^ IrisvianSearch::BaseData::get()
         {
@@ -61,9 +61,9 @@ namespace glasssix
         }
 
         /// <summary>
-        /// Build a graph of the cached data.
+        /// Build a graph of the loaded base data.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The memory peak during the calculation</returns>
         int IrisvianSearch::BuildGraph()
         {
             CheckPointer();
@@ -75,7 +75,7 @@ namespace glasssix
         /// Build a graph of the input base data.
         /// </summary>
         /// <param name="baseData">The base data</param>
-        /// <returns></returns>
+        /// <returns>The memory peak during the calculation</returns>
         int IrisvianSearch::BuildGraph(IrisvianSearchDataType^ baseData)
         {
             CheckPointer();

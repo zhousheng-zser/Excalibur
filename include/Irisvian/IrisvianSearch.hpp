@@ -32,7 +32,7 @@ namespace glasssix
             }
 
             /// <summary>
-            /// Get the cached base data.
+            /// Get the loaded base data.
             /// </summary>
             property IrisvianSearchDataType^ BaseData
             {
@@ -58,16 +58,16 @@ namespace glasssix
             ~IrisvianSearch();
 
             /// <summary>
-            /// Build a graph of the cached data.
+            /// Build a graph of the loaded base data.
             /// </summary>
-            /// <returns></returns>
+            /// <returns>The memory peak during the calculation</returns>
             int BuildGraph();
 
             /// <summary>
             /// Build a graph of the input base data.
             /// </summary>
             /// <param name="baseData">The base data</param>
-            /// <returns></returns>
+            /// <returns>The memory peak during the calculation</returns>
             int BuildGraph(IrisvianSearchDataType^ baseData);
 
             /// <summary>
