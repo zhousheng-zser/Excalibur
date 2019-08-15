@@ -8,8 +8,8 @@ using System.Threading.Tasks;
 using glasssix.longinus;
 using glasssix.cassius;
 using glasssix.gaius;
-using glasssix.excalibur;
-
+//using glasssix.excalibur;
+//
 namespace CSharpExample
 {
     class Program
@@ -18,11 +18,11 @@ namespace CSharpExample
         {
             int device = -1;
             Bitmap bmp2 = new Bitmap(@"D:\rr.jpg");
-            Bitmap bmp = new Bitmap(@"D:\xiaoyuankeji.jpg");
+            Bitmap bmp = new Bitmap(@"D:\2016201316.jpg");
             Longinucia longinucia = new Longinucia();
             longinucia.set(DetectorType.MULTIVIEW_REINFORCE, device);
             var res = longinucia.Face_Detect(bmp, 24, 1.1f, 3, false, false, true);
-            TensorBuilder b = new TensorBuilder();
+            //TensorBuilder b = new TensorBuilder();
             //var res = longinucia.Face_DetectEx(bmp, 64, 1.414f, new float[3]{ 0.7f, 0.6f, 0.6f}, 3);
             //for (int i = 0; i < 100; i++)
             //{
@@ -31,7 +31,7 @@ namespace CSharpExample
             var aligned_faces = longinucia.AlignFace(bmp, res);
             for (int i = 0; i < aligned_faces.Length; i++)
             {
-                aligned_faces[i].Save(@"D:\xiaoyuankeji_align"+i+".jpg");
+                aligned_faces[i].Save(@"D:\2016201316_align" + i+".jpg");
             }
 
             var aligned_faces2 = longinucia.AlignFace(bmp2);
