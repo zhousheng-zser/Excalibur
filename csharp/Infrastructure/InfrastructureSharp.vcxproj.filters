@@ -21,12 +21,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="marshal_fx.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="marshal_fx_details.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Tensor.hpp">
       <Filter>头文件\Tensor</Filter>
     </ClInclude>

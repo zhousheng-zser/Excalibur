@@ -3851,10 +3851,10 @@ namespace glasssix
 			for (int n = 0; n < num; n++)
 			{
 				int n_offset = n * offset;
-				unsigned char gray_value[256] = { 0 };
+				int gray_value[256] = { 0 };
 				float probability_distribution[256] = { 0 };
 				float accumulate_probability_distribution[256] = { 0 };
-				unsigned char normalized_gray_value[256] = { 0 };
+				int normalized_gray_value[256] = { 0 };
 
 				//Count the number of pixels in each grayscale
 				for (size_t i = 0; i < offset; i++)
