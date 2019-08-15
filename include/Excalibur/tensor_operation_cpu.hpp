@@ -6868,6 +6868,386 @@ namespace glasssix
 
 
 			/// <summary>
+			/// mean value blur
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
+			template <typename Dtype>
+			static void mean_value_blur_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				if (ksize % 2 != 1)
+				{
+					LOG(WARNING) << "convolution kernel: width and height should be odd.";
+					return;
+				}
+
+				if (ksize == 1)
+				{
+					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					return;
+				}
+
+				int num = src->num();
+				int channels = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				int half = (ksize - 1) * 0.5;
+				std::vector<double> convolution_kernel(ksize);
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[col] = double(1) / ksize;
+				}
+
+				const Dtype* src_data = src->cpu_data();
+				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_cpu_data();
+
+				if (src->order() == NCHW)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col)];
+										}
+									}
+									temp_data[index + col] = (Dtype)sum2;
+								}
+							}
+						}
+
+						//vertical
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									int pos = index + col;
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width];
+										}
+									}
+									dst_data[n * num_offset + pos] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else if (src->order() == NHWC)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col) * channels + ch];
+										}
+									}
+									temp_data[index + col * channels + ch] = (Dtype)sum2;
+								}
+							}
+						}
+
+
+						//vertical
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								int pos = index + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width * channels + ch];
+										}
+									}
+									dst_data[n * num_offset + pos + ch] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
+			/// mean value blur
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
+			template <typename Dtype>
+			static void mean_value_blur_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				if (ksize % 2 != 1)
+				{
+					LOG(WARNING) << "convolution kernel: width and height should be odd.";
+					return;
+				}
+
+				if (ksize == 1)
+				{
+					dst = src.clone();
+					return;
+				}
+
+				int num = src.num();
+				int channels = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				int half = (ksize - 1) * 0.5;
+				std::vector<double> convolution_kernel(ksize);
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[col] = double(1) / ksize;
+				}
+
+				const Dtype* src_data = src.cpu_data();
+				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst.mutable_cpu_data();
+
+				if (src.order() == NCHW)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col)];
+										}
+									}
+									temp_data[index + col] = (Dtype)sum2;
+								}
+							}
+						}
+
+						//vertical
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									int pos = index + col;
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width];
+										}
+									}
+									dst_data[n * num_offset + pos] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else if (src.order() == NHWC)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col) * channels + ch];
+										}
+									}
+									temp_data[index + col * channels + ch] = (Dtype)sum2;
+								}
+							}
+						}
+
+
+						//vertical
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								int pos = index + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width * channels + ch];
+										}
+									}
+									dst_data[n * num_offset + pos + ch] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
 			/// calculate gradient in horizontal / vertical direction
 			/// </summary>
 			/// <param name="src">original tensor</param>
