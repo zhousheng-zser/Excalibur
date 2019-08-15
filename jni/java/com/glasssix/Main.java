@@ -11,23 +11,15 @@ import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Label;
-import java.awt.MediaTracker;
-import java.awt.Toolkit;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.IOException;
-
-import javax.imageio.ImageIO;
 
 public class Main {
 
     public static void main(String[] args) {
-        System.loadLibrary("opencv_java400");
+        try {
+            System.loadLibrary("opencv_java400");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         System.out.println(Gaiulinya.getVersion());
         String v = Cassiutia.getVersion();
         System.out.println(v);
