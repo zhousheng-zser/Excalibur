@@ -11,6 +11,7 @@ namespace glasssix
 	{
 		class inner_product
 		{
+		protected:
 			bool bias_term_;
 			int num_output_;
 			std::shared_ptr<tensor<float>> weights_;

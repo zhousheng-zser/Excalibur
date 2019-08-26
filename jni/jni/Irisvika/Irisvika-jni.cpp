@@ -23,7 +23,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_initwithData(JNIEnv *
 		env->DeleteLocalRef(array);
 	}
 	
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = new glasssix::Irisvian::IrisvielSearchWrapper(&baseData, dimension);
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = new glasssix::Irisviel::IrisvielSearchWrapper(&baseData, dimension);
 	env->SetLongField(thiz, fid_mObject, (jlong)pIrisvielSearchWrapper);
 	
 	env->DeleteLocalRef(clazz);
@@ -34,7 +34,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *env, job
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = new glasssix::Irisvian::IrisvielSearchWrapper(dimension);
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = new glasssix::Irisviel::IrisvielSearchWrapper(dimension);
 	env->SetLongField(thiz, fid_mObject, (jlong)pIrisvielSearchWrapper);
 	
 	env->DeleteLocalRef(clazz);
@@ -45,7 +45,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_finalize(JNIEnv *env,
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	if(pIrisvielSearchWrapper != nullptr)
 	{
 		delete pIrisvielSearchWrapper;
@@ -88,7 +88,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *env
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	pIrisvielSearchWrapper->loadGraph(jstring2string(env, graphPath).c_str());
 	
@@ -100,7 +100,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNI
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	pIrisvielSearchWrapper->loadGraph(jstring2string(env, graphPath).c_str(), jstring2string(env, basedataPath).c_str());
 	
@@ -112,7 +112,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_optimizeGraph(JNIEnv 
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	pIrisvielSearchWrapper->optimizeGraph();
 	
@@ -124,7 +124,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_searchVector(JNIEnv *
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	jsize querySize = env->GetArrayLength(queryData);
 	std::vector<const float *> query_vec(querySize, nullptr);
@@ -166,7 +166,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveResult(JNIEnv *en
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	jsize IDSize = env->GetArrayLength(returnIDsArray);	
 	jintArray array0 = (jintArray)env->GetObjectArrayElement(returnIDsArray, 0);
@@ -207,7 +207,7 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 
 JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_getVersion(JNIEnv *env, jobject thiz)
 {
-	std::string version = glasssix::Irisvian::IrisvianSearch::getVersion();
+	std::string version = glasssix::Irisviel::IrisvielSearch::getVersion();
 	return char2Jstring(env, version.c_str(), version.length());
 }
 
@@ -216,7 +216,7 @@ JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraph(JNIEnv *en
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	int ret = pIrisvielSearchWrapper->buildGraph();
 	
@@ -230,7 +230,7 @@ JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraphwithData(JN
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	jsize dataSize = env->GetArrayLength(baseData);
 	std::vector<const float *> data_vec(dataSize, nullptr);
@@ -260,7 +260,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraph(JNIEnv *env
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	pIrisvielSearchWrapper->saveGraph(jstring2string(env, graphPath).c_str());
 	
@@ -272,7 +272,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraphwithData(JNI
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	pIrisvielSearchWrapper->saveGraph(jstring2string(env, graphPath).c_str(), jstring2string(env, baseDataPath).c_str());
 	
@@ -284,7 +284,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_getBaseData(J
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::Irisvian::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisvian::IrisvielSearchWrapper *)p;
+	glasssix::Irisviel::IrisvielSearchWrapper *pIrisvielSearchWrapper = (glasssix::Irisviel::IrisvielSearchWrapper *)p;
 	
 	const std::vector<const float *> *baseDataPtr = pIrisvielSearchWrapper->getBasedata();
 	int dimension = pIrisvielSearchWrapper->getDimension();
