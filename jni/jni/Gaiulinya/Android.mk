@@ -20,9 +20,9 @@ SRC_PATH := $(LOCAL_PATH)/../../../src/Gaius
 
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Gaius
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Gaius-java
+LOCAL_MODULE := Gaiulinya
 LOCAL_SRC_FILES := $(SRC_PATH)/GaiusFeature.cpp $(SRC_PATH)/unicorn_mobile.cpp \
-					Gaius-jni.cpp
+					Gaiulinya-jni.cpp
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
 LOCAL_STATIC_LIBRARIES := Excalibur

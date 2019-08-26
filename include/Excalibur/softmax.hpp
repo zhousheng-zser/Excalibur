@@ -13,6 +13,7 @@ namespace glasssix
 	{
 		class softmax
 		{
+		protected:
 			int outer_num_;
 			int inner_num_;
 			int softmax_axis_;
@@ -27,9 +28,9 @@ namespace glasssix
 
 		public:
 			softmax(int input_channel, int device);
-			~softmax();
+			virtual ~softmax();
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
 			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDNN
