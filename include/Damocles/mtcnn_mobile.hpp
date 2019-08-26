@@ -46,20 +46,6 @@ namespace glasssix
 			}
 
 			~Longinus_CNN_BBox() {}
-
-			bool ReadFromBinary(FILE* in)
-			{
-				if (fread(this, sizeof(Longinus_CNN_BBox), 1, in) != 1)
-					return false;
-				return true;
-			}
-
-			bool WriteBinary(FILE* out) const
-			{
-				if (fwrite(this, sizeof(Longinus_CNN_BBox), 1, out) != 1)
-					return false;
-				return true;
-			}
 		};
 
 		class mtcnn_mobile : public vDamocles

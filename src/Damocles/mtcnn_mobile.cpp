@@ -111,29 +111,40 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile::Detect(const unsig
 		count++;
 	}
 
+	std::vector<Longinus_CNN_BBox> result_bbox;
+	
 	std::vector<Longinus_CNN_BBox> pnet_bbox;
-	PNet_Process(src_tensor, threshold[0], nms_thresh[0], scales, pnet_bbox);
-
+	if(stage >= 1)
+		PNet_Process(src_tensor, threshold[0], nms_thresh[0], scales, pnet_bbox);
+	
 	std::vector<Longinus_CNN_BBox> rnet_bbox;
-	RNet_Process(pnet_bbox, rnet_bbox, src_tensor, minSize_, threshold[1], nms_thresh[1]);
-
+	if(stage >= 2)
+		RNet_Process(pnet_bbox, rnet_bbox, src_tensor, minSize_, threshold[1], nms_thresh[1]);
 
 	std::vector<Longinus_CNN_BBox> onet_bbox;
-	ONet_Process(rnet_bbox, onet_bbox, src_tensor, minSize_, threshold[2], nms_thresh[2], true);
+	if(stage >= 3)
+		ONet_Process(rnet_bbox, onet_bbox, src_tensor, minSize_, threshold[2], nms_thresh[2], true);
+	
+	if(stage >= 3)
+		result_bbox = onet_bbox;
+	else if(stage >= 2)
+		result_bbox = rnetBbox;
+	else if(stage >= 1)
+		result_bbox = pnetBbox;
 
 	std::vector<FaceInfomation> faceInfo;
-	for (int i = 0; i < onet_bbox.size(); i++)
+	for (int i = 0; i < result_bbox.size(); i++)
 	{
 		FaceInfomation f;
-		f.bbox.score = onet_bbox[i].score;
-		f.bbox.xmin = onet_bbox[i].col1;
-		f.bbox.ymin = onet_bbox[i].row1;
-		f.bbox.xmax = onet_bbox[i].col2;
-		f.bbox.ymax = onet_bbox[i].row2;
+		f.bbox.score = result_bbox[i].score;
+		f.bbox.xmin = result_bbox[i].col1;
+		f.bbox.ymin = result_bbox[i].row1;
+		f.bbox.xmax = result_bbox[i].col2;
+		f.bbox.ymax = result_bbox[i].row2;
 
-		std::memcpy(f.landmark, onet_bbox[i].ppoint, 10 * sizeof(float));
-		std::memcpy(f.headpose, onet_bbox[i].headpose, 3 * sizeof(float));
-		std::memcpy(f.bbox_reg, onet_bbox[i].regreCoord, 4 * sizeof(float));
+		std::memcpy(f.landmark, result_bbox[i].ppoint, 10 * sizeof(float));
+		std::memcpy(f.headpose, result_bbox[i].headpose, 3 * sizeof(float));
+		std::memcpy(f.bbox_reg, result_bbox[i].regreCoord, 4 * sizeof(float));
 		
 		faceInfo.push_back(f);
 	}
@@ -728,7 +739,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 			else
 			{
 #ifdef USE_CUDA
-				if (rect_h * rect_w > 0)
+				if (rect_h > 0 && rect_w > 0)
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
@@ -947,7 +958,7 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 			else
 			{
 #ifdef USE_CUDA
-				if (rect_h * rect_w > 0)
+				if (rect_h > 0 && rect_w > 0)
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
