@@ -13,6 +13,7 @@ namespace glasssix
 	{
 		class softmax
 		{
+		protected:
 			int outer_num_;
 			int inner_num_;
 			int softmax_axis_;

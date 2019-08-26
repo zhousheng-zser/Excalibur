@@ -12,6 +12,7 @@ namespace glasssix
 	{
 		class pooling
 		{
+		protected:
 			int channels_;
 			int height_, width_;
 			int pooled_height_, pooled_width_;

@@ -10,6 +10,7 @@ namespace glasssix
 	{
 		class prelu
 		{
+		protected:
 			std::shared_ptr<tensor<float>> slope_data_;
 			bool isrelu_;
 			bool is_shared_;
