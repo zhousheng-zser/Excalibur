@@ -94,7 +94,9 @@ namespace glasssix
 			for (size_t i = 0; i < imgDatas->Length; i++)
 			{
 				memcpy(pma + i * 512, res[i].data(), 512 * sizeof(float));
-			}			
+			}	
+
+			delete[] data;
 			return m_array;
 		}
 	}

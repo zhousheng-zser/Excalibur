@@ -83,7 +83,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>RELEASE_SDK;TRIAL;_MBCS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;_MBCS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
@@ -120,7 +120,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>RELEASE_SDK;TRIAL;_MBCS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;_MBCS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
@@ -130,12 +130,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\windows\Irisvian\Irisvian.vcxproj">
-      <Project>{d73d41d7-9c35-4e48-a85a-aba45068223a}</Project>
-    </ProjectReference>
+    <ClCompile Include="IrisvianExample.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="IrisvianExample.cpp" />
+    <ProjectReference Include="..\..\windows\Irisviel\Irisviel.vcxproj">
+      <Project>{d73d41d7-9c35-4e48-a85a-aba45068223a}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
