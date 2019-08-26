@@ -179,9 +179,6 @@
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tensor_io.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
