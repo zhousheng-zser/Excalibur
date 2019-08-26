@@ -75,6 +75,21 @@ namespace glasssix
 #endif
 #endif
 			//
+#ifdef __ARM_NEON
+			Init_Conv_arm_Params(conv1, 3, 28, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu1, 28, false, false);
+			Init_Pooling_arm_Params(pool1, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv2, 28, 48, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu2, 48, false, false);
+			Init_Pooling_arm_Params(pool2, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv3, 48, 64, 1, 2, 1, 0, true);
+			Init_PReLU_arm_Params(prelu3, 64, false, false);
+			Init_InnerProduct_arm_Params(conv4, 64, 3, 3, 128, true);
+			Init_PReLU_arm_Params(prelu4, 128, false, false);
+			Init_InnerProduct_arm_Params(conv5_1, 128, 1, 1, 2, true);
+			Init_InnerProduct_arm_Params(conv5_2, 128, 1, 1, 4, true);
+			Init_Softmax_arm_Params(prob1, 2);
+#else
 			Init_Conv_Params(conv1, 3, 28, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu1, 28, false);
 			Init_Pooling_Params(pool1, 3, 2, 0, 0);
@@ -88,6 +103,7 @@ namespace glasssix
 			Init_InnerProduct_Params(conv5_1, 128, 1, 1, 2, true);
 			Init_InnerProduct_Params(conv5_2, 128, 1, 1, 4, true);
 			Init_Softmax_Params(prob1, 2);
+#endif
 		}
 
 

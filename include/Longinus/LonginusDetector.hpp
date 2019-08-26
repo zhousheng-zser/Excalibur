@@ -147,6 +147,8 @@ namespace glasssix
 #ifndef TRIAL
 			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
+			std::vector<FaceRectwithFaceInfo> detectEx_mobile(const unsigned char* image, const int channels, const int height, const int width,
+				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
 #endif // !TRIAL
 
 #ifndef RELEASE_SDK
@@ -166,6 +168,7 @@ namespace glasssix
 
 #ifndef TRIAL
 			std::unique_ptr<vDamocles> diodorus_;
+			std::unique_ptr<vDamocles> diodorus_mobile_;
 #endif // !TRIAL
 
 		};

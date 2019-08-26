@@ -135,7 +135,7 @@ namespace glasssix
 
 			};
 
-			void set_bias(float* bias)
+			virtual void set_bias(float* bias)
 			{
 				if (bias_term_)
 				{
@@ -152,7 +152,7 @@ namespace glasssix
 				}				
 			}
 
-			void set_weights(float* weights)
+			virtual void set_weights(float* weights)
 			{
 				weights_->set_cpu_data(weights);
 				if (device_ < 0)

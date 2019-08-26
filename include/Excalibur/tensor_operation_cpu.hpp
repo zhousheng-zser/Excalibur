@@ -239,7 +239,11 @@ namespace glasssix
 
 				if (type_id == 0)
 				{
+#ifdef __linux__
+					if (type_name != std::string("h"))
+#else
 					if (type_name != std::string("unsigned char"))
+#endif
 					{
 						LOG(ERROR) << "Un-matched data type.";
 						return;
