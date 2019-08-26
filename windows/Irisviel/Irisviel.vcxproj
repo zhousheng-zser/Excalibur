@@ -138,8 +138,6 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Irisviel\baseIndex.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\baseSearch.hpp" />
     <ClInclude Include="..\..\include\Irisviel\distance.hpp" />
     <ClInclude Include="..\..\include\Irisviel\index.hpp" />
     <ClInclude Include="..\..\include\Irisviel\IrisvielSearch.hpp" />
