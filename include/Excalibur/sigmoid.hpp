@@ -13,9 +13,9 @@ namespace glasssix
 		public:
 			sigmoid();
 
-			~sigmoid();
+			virtual ~sigmoid();
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
+			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
 #ifdef USE_CUDA
 			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom);
 #endif

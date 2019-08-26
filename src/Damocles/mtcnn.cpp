@@ -378,7 +378,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					float *input_data_n = input_data + input_layer->offset(n);
-					if ((rect_h  > 0) && (rect_w > 0))
+					if (rect_h > 0 && rect_w > 0)
 					{
 						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, input_h, input_w);
@@ -395,7 +395,7 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					float *input_data_n = input_data + input_layer->offset(n);
-					if ((rect_h  > 0) && (rect_w > 0))
+					if (rect_h > 0 && rect_w > 0)
 					{
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);

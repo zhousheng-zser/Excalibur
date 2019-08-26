@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 RELEASE_SDK := 1
-TRIAL := 1
+TRIAL := 0
 QUANTIZATION_TYPE := INT8_DATA
 COSINE_DISTANCE := 1
 USE_OPENMP := 1
