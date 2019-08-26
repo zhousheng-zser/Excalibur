@@ -1,6 +1,6 @@
 #include "Irisvika-jni.hpp"
 #include <vector>
-#include "IrisvianSearchWrapper.hpp"
+#include "IrisvielSearchWrapper.hpp"
 
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_initwithData(JNIEnv *env, jobject thiz, jobjectArray baseDataArray)
 {
