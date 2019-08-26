@@ -1,3 +1,5 @@
+#ifndef _NEON_MATHFUNC_HPP_
+#define _NEON_MATHFUNC_HPP_
 #include <arm_neon.h>
 
 namespace glasssix
@@ -293,3 +295,4 @@ namespace glasssix
 		}
 	}
 }
+#endif
