@@ -19,10 +19,10 @@ include $(CLEAR_VARS)
 SRC_PATH := $(LOCAL_PATH)/../../../src/Irisvian
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Irisvian
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Irisvian-java
+LOCAL_MODULE := Irisvika
 LOCAL_SRC_FILES := $(SRC_PATH)/distance.cpp $(SRC_PATH)/index.cpp $(SRC_PATH)/IrisvianSearch.cpp \
 					$(SRC_PATH)/kGraph.cpp $(SRC_PATH)/nGraph.cpp $(SRC_PATH)/search.cpp \
-					Irisvian-jni.cpp
+					Irisvika-jni.cpp
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
 

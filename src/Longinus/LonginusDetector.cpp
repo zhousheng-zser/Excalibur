@@ -7,6 +7,7 @@
 #include "../../include/Romancia/banshee.hpp"
 #ifndef TRIAL
 #include "../../include/Damocles/mtcnn.hpp"
+#include "../../include/Damocles/mtcnn_mobile.hpp"
 #endif // !TRIAL
 
 using namespace glasssix::longinus;
@@ -22,6 +23,7 @@ LonginusDetector::LonginusDetector(int device): device_(device)
 
 #ifndef TRIAL
 	diodorus_.reset(new MTCNN(device_));
+	diodorus_mobile_.reset(new mtcnn_mobile(device_));
 #endif // !TRIAL
 }
 LonginusDetector::~LonginusDetector()
@@ -347,10 +349,30 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char
 			info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
 		}
 		output.push_back(info);
-}
+	}
 	return output;
 }
-#endif // !TRIAL
+std::vector<FaceRectwithFaceInfo> glasssix::longinus::LonginusDetector::detectEx_mobile(const unsigned char * image, const int channels, const int height, const int width, const int minSize, const float * threshold, const float factor, const int stage, const int order) const
+{
+	std::vector<FaceRectwithFaceInfo> output;
+	auto res = diodorus_mobile_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
+	for (auto i = 0; i < res.size(); i++)
+	{
+		float w = res[i].bbox.xmax - res[i].bbox.xmin;
+		float h = res[i].bbox.ymax - res[i].bbox.ymin;
+		FaceRectwithFaceInfo info(FaceRect(res[i].bbox.xmin + w / 2 - h / 2, res[i].bbox.ymin, h, h, 0, res[i].bbox.score));
+		info.yaw = res[i].headpose[0];
+		info.pitch = res[i].headpose[1];
+		info.roll = res[i].headpose[2];
+		for (auto j = 0; j < 5; j++)
+		{
+			info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
+		}
+		output.push_back(info);
+	}
+	return output;
+}
+#endif
 
 std::string LonginusDetector::getVersion()
 {

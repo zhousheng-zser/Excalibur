@@ -22,11 +22,11 @@ namespace glasssix
 		public:
 			prelu(int input_channel, bool isrelu = false, int device = -1, bool is_shared = false);
 
-			~prelu();
+			virtual ~prelu();
 
 			void setslope(float* slope_data);
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
+			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
 #ifdef USE_CUDA
 			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom);
 #endif

@@ -98,6 +98,7 @@ namespace glasssix
 		typedef struct FaceInfomation {
 			float bbox_reg[4];
 			float landmark[10];
+			float headpose[3];
 			FaceBox bbox;
 		} FaceInfomation;
 	}
