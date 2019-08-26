@@ -55,8 +55,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Irisviel", "Irisviel\Irisvi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpExample", "..\examples\CSharpExample\CSharpExample.csproj", "{A2764D42-919E-4817-927F-BB6CF13CEEC1}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CPUtestRotateWithPoints", "..\..\testCV\CPUtestRotateWithPoints\CPUtestRotateWithPoints.vcxproj", "{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -289,16 +287,6 @@ Global
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|x64.Build.0 = Release|x64
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|x86.ActiveCfg = Release|Any CPU
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|x86.Build.0 = Release|Any CPU
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Debug|Any CPU.ActiveCfg = Debug|Win32
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Debug|x64.ActiveCfg = Debug|x64
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Debug|x64.Build.0 = Debug|x64
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Debug|x86.ActiveCfg = Debug|Win32
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Debug|x86.Build.0 = Debug|Win32
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Release|Any CPU.ActiveCfg = Release|Win32
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Release|x64.ActiveCfg = Release|x64
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Release|x64.Build.0 = Release|x64
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Release|x86.ActiveCfg = Release|Win32
-		{D78CCF3B-F47E-45D6-A033-AF1F202ECF97}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

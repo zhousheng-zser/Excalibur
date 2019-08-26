@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "baseIndex.hpp"
-#include "baseSearch.hpp"
+#include <memory>
+#include <Windows.h>
 
 #ifdef EXPORT_IRISVIEL
 #undef EXPORT_IRISVIEL
@@ -28,6 +28,10 @@
 
 namespace glasssix
 {
+	class Index;
+	class Search;
+	class mutex_wrapper;
+
 	namespace irisviel
 	{
 		class EXPORT_IRISVIEL IrisvielSearch
@@ -85,8 +89,9 @@ namespace glasssix
 			static std::string getVersion();
 
 		private:
-			BaseIndex *index_;
-			BaseSearch *search_;
+			Index *index_;
+			Search *search_;
+			mutex_wrapper *mutex_wrapper_;
 		};
 	}
 }
