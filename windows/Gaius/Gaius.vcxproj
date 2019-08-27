@@ -135,7 +135,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\Gaius\GaiusFeature.hpp" />
     <ClInclude Include="..\..\include\Gaius\unicorn_mobile.hpp" />
-    <ClInclude Include="..\..\include\Gaius\vunicorn_mobile.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Gaius\GaiusFeature.cpp" />

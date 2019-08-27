@@ -21,13 +21,15 @@
 #endif
 #endif
 
-#include "vunicorn_mobile.hpp"
 #include <string>
+#include <vector>
 
 namespace glasssix
 {
 	namespace gaius
 	{
+		class Unicorn_mobile;
+
 		class EXPORT_GAIUS GaiusFeature
 		{
 		public:
@@ -44,7 +46,7 @@ namespace glasssix
 
 		private:
 
-			vUnicornMobile* mobile_unicornia_;
+			std::shared_ptr<Unicorn_mobile> mobile_unicornia_;
 
 			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;
 		};
