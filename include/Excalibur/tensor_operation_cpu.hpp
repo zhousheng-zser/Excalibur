@@ -237,13 +237,11 @@ namespace glasssix
 				int type_id = src.type() % 8;
 				auto type_name = std::string(typeid(Dtype).name());
 
+#ifdef _MSC_VER
+
 				if (type_id == 0)
 				{
-#ifdef __linux__
-					if (type_name != std::string("h"))
-#else
 					if (type_name != std::string("unsigned char"))
-#endif
 					{
 						LOG(ERROR) << "Un-matched data type.";
 						return;
@@ -278,6 +276,51 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
+
+#elif defined __linux__
+
+				if (type_id == 0)
+				{
+					if (type_name != std::string("h"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 1)
+				{
+					if (type_name != std::string("c"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 4)
+				{
+					if (type_name != std::string("i"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 5)
+				{
+					if (type_name != std::string("f"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support data type.";
+					return;
+				}
+
+#else
+				NOT_IMPLEMENTED;
+				return;
+#endif // _MSC_VER
 
 				if (order == NCHW)
 				{
@@ -343,6 +386,8 @@ namespace glasssix
 				int type_id = src.type() % 8;
 				auto type_name = std::string(typeid(Dtype).name());
 
+#ifdef _MSC_VER
+
 				if (type_id == 0)
 				{
 					if (type_name != std::string("unsigned char"))
@@ -380,6 +425,51 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
+
+#elif defined __linux__
+
+				if (type_id == 0)
+				{
+					if (type_name != std::string("h"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 1)
+				{
+					if (type_name != std::string("c"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 4)
+				{
+					if (type_name != std::string("i"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 5)
+				{
+					if (type_name != std::string("f"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support data type.";
+					return;
+				}
+
+#else
+				NOT_IMPLEMENTED;
+				return;
+#endif // _MSC_VER
 
 				if (order == NCHW)
 				{

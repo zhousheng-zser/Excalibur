@@ -162,7 +162,7 @@ namespace glasssix
 		private:
 			int device_;
 			std::vector<std::shared_ptr<BaseLonginusCascade>> *cascades_;
-			std::unique_ptr<vBanshee> bansheelia_;
+			std::unique_ptr<Banshee> bansheelia_;
 			std::vector<unsigned char> data_;
 			std::unique_ptr<Matcher> matcher_;
 

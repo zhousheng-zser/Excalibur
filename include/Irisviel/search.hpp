@@ -7,15 +7,13 @@
 #include "nGraph.hpp"
 #include "kGraph.hpp"
 #include "distance.hpp"
-#include "baseSearch.hpp"
 #include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
 	namespace irisviel 
 	{
-
-			class Search : public BaseSearch
+			class Search
 			{
 			public:
 				Search(const std::vector<const float*> *baseData, int dimension);
@@ -24,18 +22,25 @@ namespace glasssix
 
 				virtual ~Search();
 
-				void loadGraph(const char* graphPath) override;
+				void loadGraph(const char* graphPath);
 
-				void loadGraph(const char* graphPath, const char *basedataPath) override;
+				void loadGraph(const char* graphPath, const char *basedataPath);
 
-				const std::vector<const float*>* getBasedata() override;
+				const std::vector<const float*>* getBasedata();
 
-				void optimizeGraph() override;
+				void optimizeGraph();
 
 				void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
+					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities);
 
-				void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) override;
+				void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs);
+
+				unsigned navigateNode = 0;
+				unsigned width = 0;
+				bool isNormalized = false;
+				std::vector<std::vector<unsigned > > ngraph;
+				const std::vector<const float*>* baseData_;
+				unsigned baseNum_;
 
 			private:
 				unsigned dimension_;
