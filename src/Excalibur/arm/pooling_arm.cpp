@@ -1,7 +1,7 @@
 #include "arm/pooling_arm.hpp"
 #include "tensor_operation_cpu.hpp"
 #include "arm/pooling_arm_func.hpp" 
-
+#include <cfloat>
 
 void glasssix::excalibur::pooling_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 {
