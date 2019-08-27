@@ -218,6 +218,30 @@
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\batchnorm_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\conv_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\inner_product_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\pooling_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\prelu_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\scale_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\sigmoid_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
