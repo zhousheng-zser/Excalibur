@@ -3,6 +3,9 @@
 #include <vector>
 #include "../../include/Julius/simd_helper.hpp"
 #include "unicorn_mobile_data.hpp"
+#ifdef __ARM_NEON
+#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#endif
 
 namespace glasssix
 {
@@ -833,7 +836,14 @@ namespace glasssix
 				float* tensor_data = tensor_float_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float));
 				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
-				Forward_cpu(tensor_float_data);
+
+				tensor<float> src_tensor = tensor_float_data;
+#ifdef __ARM_NEON
+				if (order == 1)
+					tensor_operation_cpu::nhwc2nchw_cpu(tensor_float_data, src_tensor);
+#endif
+
+				Forward_cpu(src_tensor);
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(128);
@@ -871,7 +881,7 @@ namespace glasssix
 				return feature;
 #endif
 			}
-			}
+		}
 
 		std::vector<std::vector<float> > Unicorn_mobile::Forward(const unsigned char* input_data, unsigned num, int order)
 		{

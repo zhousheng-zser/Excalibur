@@ -1,8 +1,8 @@
 if(WITH_JNI)
-include_directories(../../include/Irisvian 
+include_directories(../../include/Irisviel 
 			${JNI_INCLUDE})
 else()
-include_directories(../../include/Irisvian)
+include_directories(../../include/Irisviel)
 endif()
 
 file(GLOB Irisviel_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cpp)
