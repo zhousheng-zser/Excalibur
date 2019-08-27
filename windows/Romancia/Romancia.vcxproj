@@ -135,7 +135,6 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\Romancia\banshee.hpp" />
     <ClInclude Include="..\..\include\Romancia\romancia.hpp" />
-    <ClInclude Include="..\..\include\Romancia\vbanshee.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Romancia\banshee.cpp" />

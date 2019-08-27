@@ -21,7 +21,7 @@ namespace glasssix
 				const int min_size, const float* threshold, const float factor, const int stage, int order) const;
 
 		private:
-			vDamocles *diodorus_;
+			std::shared_ptr<vDamocles> diodorus_;
 		};
 	}
 }

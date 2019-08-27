@@ -1,7 +1,6 @@
 #ifndef _Lindburg_HPP_
 #define _Lindburg_HPP_
 
-#include "vbanshee.hpp"
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
@@ -12,7 +11,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		class Banshee : public vBanshee
+		class Banshee
 		{
 			Declear_Params(conv1);
 			Declear_Params(prelu1);
@@ -94,7 +93,7 @@ namespace glasssix
 			Banshee(int device);
 			virtual ~Banshee();
 
-			void Forward(const float* input_data, unsigned num, int order = 0) override
+			void Forward(const float* input_data, int num, int order = 0)
 			{
 				if (order == 0)//NCHW
 				{
@@ -130,7 +129,7 @@ namespace glasssix
 				}
 			}
 
-			void Forward(const unsigned char* input_data, unsigned num, int order = 0) override
+			void Forward(const unsigned char* input_data, int num, int order = 0)
 			{
 				if (order == 0)//NCHW
 				{
@@ -168,11 +167,12 @@ namespace glasssix
 				}
 			}
 
-			void getParam(std::vector<std::vector<float> > &keypointParam, unsigned num) override;
+			void getParam(std::vector<std::vector<float> > &keypointParam, int num);
 
-			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) override;
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
+				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks);
 
-			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) override;
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width);
 
 		};
 	}
