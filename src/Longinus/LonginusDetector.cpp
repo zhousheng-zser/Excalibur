@@ -256,6 +256,7 @@ void LonginusDetector::set(DetectionType detectionType, int device)
 
 #ifndef TRIAL
 	diodorus_.reset(new MTCNN(device_));
+	diodorus_mobile_.reset(new mtcnn_mobile(device_));
 #endif // !TRIAL
 
 	InternalLonginusCascade * cascade = nullptr;

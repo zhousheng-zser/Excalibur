@@ -21,14 +21,12 @@
 #include "axpy.hpp"
 #include "deconv.hpp"
 
-#ifdef __ARM_NEON
 #include "arm/conv_arm.hpp"
 #include "arm/inner_product_arm.hpp"
 #include "arm/pooling_arm.hpp"
 #include "arm/prelu_arm.hpp"
 #include "arm/softmax_arm.hpp"
 #include "arm/sigmoid_arm.hpp"
-#endif
 #include "arm/batchnorm_arm.hpp"
 #include "arm/scale_arm.hpp"
 
