@@ -5,14 +5,13 @@
 #include "nGraph.hpp"
 #include "kGraph.hpp"
 #include "distance.hpp"
-#include "baseIndex.hpp"
 #include <glasssix/tensor.hpp>
 
 namespace glasssix 
 {
 	namespace irisviel
 	{
-			class Index : public BaseIndex
+			class Index
 			{
 			public:
 
@@ -24,13 +23,20 @@ namespace glasssix
 
 				virtual ~Index();
 
-				int buildGraph() override;
+				int buildGraph();
 
-				int buildGraph(const std::vector<const float*> *baseData) override;
+				int buildGraph(const std::vector<const float*> *baseData);
 
-				void saveGraph(const char *nGraphPath) override;
+				void saveGraph(const char *nGraphPath);
 
-				void saveGraph(const char *nGraphPath, const char *basedataPath) override;
+				void saveGraph(const char *nGraphPath, const char *basedataPath);
+
+				unsigned navigateNode = 0;
+				unsigned width = 0;
+				bool isNormalized = false;
+				std::vector<std::vector<unsigned > > finalGraph;
+				const std::vector<const float*> *baseData_;
+				unsigned baseNum_;
 
 			private:
 				unsigned dimension_;
@@ -38,6 +44,7 @@ namespace glasssix
 				NGraph ngraph_;
 				std::shared_ptr<glasssix::excalibur::tensor<float>> normArray_tensor_;
 				float *normArray_;
+
 			};
 	}
 }

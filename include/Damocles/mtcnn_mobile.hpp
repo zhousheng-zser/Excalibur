@@ -55,7 +55,7 @@ namespace glasssix
 			~mtcnn_mobile();
 
 			std::vector<FaceInfomation> Detect(const unsigned char* gray, const int channels, const int height, const int width,
-				const int minSize, const float* threshold, const float factor, const int stage, int order);
+				const int minSize, const float* threshold, const float factor, const int stage, int order) override;
 
 		protected:
 

@@ -1,7 +1,6 @@
 #include "index.hpp"
 #include "search.hpp"
 #include "IrisvielSearch.hpp"
-
 #include <glasssix/mutex_wrapper.hpp>
 
 namespace glasssix
@@ -10,23 +9,32 @@ namespace glasssix
 	{
 		IrisvielSearch::IrisvielSearch(const std::vector<const float*> *baseData, int dimension)
 		{
-			index_ = new Index(baseData, dimension);
-			search_ = new Search(baseData, dimension);
-			mutex_wrapper_ = new mutex_wrapper();
+			index_.reset(new Index(baseData, dimension));
+			search_.reset(new Search(baseData, dimension));
+			mutex_wrapper_.reset(new mutex_wrapper());
 		}
 
 		IrisvielSearch::IrisvielSearch(int dimension)
 		{
-			index_ = new Index(dimension);
-			search_ = new Search(dimension);
-			mutex_wrapper_ = new mutex_wrapper();
+			index_.reset(new Index(dimension));
+			search_.reset(new Search(dimension));
+			mutex_wrapper_.reset(new mutex_wrapper());
+		}
+
+		IrisvielSearch::IrisvielSearch(const std::vector<const float*> *baseData, int dimension, const std::shared_ptr<mutex_wrapper> &lock)
+			:IrisvielSearch(baseData, dimension)
+		{
+			mutex_wrapper_ = lock;
+		}
+
+		IrisvielSearch::IrisvielSearch(int dimension, const std::shared_ptr<mutex_wrapper> &lock)
+			: IrisvielSearch(dimension)
+		{
+			mutex_wrapper_ = lock;
 		}
 
 		IrisvielSearch::~IrisvielSearch()
 		{
-			delete index_;
-			delete search_;
-			delete mutex_wrapper_;
 		}
 
 		int IrisvielSearch::buildGraph() const

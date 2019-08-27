@@ -4,7 +4,6 @@
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
-#include "vunicorn.hpp"
 
 using namespace glasssix::excalibur;
 
@@ -12,7 +11,7 @@ namespace glasssix
 {
 	namespace cassius
 	{
-		class Unicorn: public vUnicorn
+		class Unicorn
 		{
 			Declear_Params(conv1a);
 			Declear_Params(relu1a);
@@ -74,7 +73,7 @@ namespace glasssix
 			//
 			int device_;
 			bool cudnn_ready_ = false;
-			bool int8_quantization_ = false;
+			bool int8_quantization_ = true;
 
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
@@ -247,9 +246,9 @@ namespace glasssix
 			Unicorn(int device);
 			virtual ~Unicorn();
 
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const float* input_data, int num, int order = 0);
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, int num, int order = 0);
 
 
 			static int get_input_channel()

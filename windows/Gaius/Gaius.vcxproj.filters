@@ -21,9 +21,6 @@
     <ClInclude Include="..\..\include\Gaius\GaiusFeature.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Gaius\vunicorn_mobile.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Gaius\unicorn_mobile.cpp">

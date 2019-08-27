@@ -837,7 +837,7 @@ namespace glasssix
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float));
 				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
 
-				tensor<float> src_tensor = tensor_float_data;
+				std::shared_ptr<tensor<float>> src_tensor = tensor_float_data;
 #ifdef __ARM_NEON
 				if (order == 1)
 					tensor_operation_cpu::nhwc2nchw_cpu(tensor_float_data, src_tensor);
