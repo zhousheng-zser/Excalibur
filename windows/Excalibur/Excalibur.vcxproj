@@ -97,7 +97,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;INT8_DATA;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -127,7 +127,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;INT8_DATA;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -217,7 +217,6 @@
     <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp" />
-    <ClCompile Include="tensor_io.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
