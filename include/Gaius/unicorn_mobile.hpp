@@ -4,7 +4,6 @@
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
-#include "vunicorn_mobile.hpp"
 
 using namespace glasssix::excalibur;
 
@@ -12,7 +11,7 @@ namespace glasssix
 {
 	namespace gaius
 	{
-		class Unicorn_mobile : public vUnicornMobile
+		class Unicorn_mobile
 		{
 			Declear_Params(conv1);
 			Declear_Params(relu1);
@@ -313,9 +312,9 @@ namespace glasssix
 			Unicorn_mobile(int device);
 			virtual ~Unicorn_mobile();
 
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0);
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0);
 		};
 	}
 }

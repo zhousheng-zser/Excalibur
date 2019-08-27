@@ -8,12 +8,11 @@ namespace glasssix
 	{
 		Damocles::Damocles(int device)
 		{
-			diodorus_ = new MTCNN(device);
+			diodorus_.reset(new MTCNN(device));
 		}
 
 		Damocles::~Damocles()
 		{
-			delete diodorus_;
 		};
 
 		std::vector<FaceInfomation> Damocles::Detect(const unsigned char* img, const int channels, const int height, const int width,

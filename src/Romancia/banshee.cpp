@@ -276,7 +276,7 @@ namespace glasssix
 #endif 
 #endif
 
-		void Banshee::getParam(std::vector<std::vector<float> > &keypointParam, unsigned num)
+		void Banshee::getParam(std::vector<std::vector<float> > &keypointParam, int num)
 		{
 			if (device_ < 0)
 			{
