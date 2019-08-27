@@ -1,6 +1,7 @@
 #include "arm/softmax_arm.hpp"
 #include <cfloat>
 #include <cmath>
+#include <cstring>
 #include <algorithm>
 
 #if __ARM_NEON

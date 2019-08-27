@@ -1,5 +1,5 @@
 #include "arm/sigmoid_arm.hpp"
-
+#include <cmath>
 #if __ARM_NEON
 #include <arm_neon.h>
 #include "arm/neon_mathfun.hpp"
@@ -46,7 +46,7 @@ void glasssix::excalibur::sigmoid_arm::Forward_cpu(const std::shared_ptr<tensor<
 #endif // __ARM_NEON
 			for (; remain>0; remain--)
 			{
-				*ptr = 1.f / (1.f + exp(-*ptr));
+				*ptr = 1.f / (1.f + std::exp(-*ptr));
 
 				ptr++;
 			}
