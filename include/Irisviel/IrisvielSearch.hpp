@@ -28,12 +28,13 @@
 
 namespace glasssix
 {
-	class Index;
-	class Search;
 	class mutex_wrapper;
 
 	namespace irisviel
 	{
+		class Index;
+		class Search;
+
 		class EXPORT_IRISVIEL IrisvielSearch
 		{
 
@@ -47,6 +48,10 @@ namespace glasssix
 			IrisvielSearch(const std::vector<const float*> *baseData, int dimension);
 
 			IrisvielSearch(int dimension);
+
+			IrisvielSearch(const std::vector<const float*> *baseData, int dimension, const std::shared_ptr<mutex_wrapper> &lock);
+
+			IrisvielSearch(int dimension, const std::shared_ptr<mutex_wrapper> &lock);
 
 			virtual ~IrisvielSearch();
 
@@ -89,9 +94,9 @@ namespace glasssix
 			static std::string getVersion();
 
 		private:
-			Index *index_;
-			Search *search_;
-			mutex_wrapper *mutex_wrapper_;
+			std::shared_ptr<Index> index_;
+			std::shared_ptr<Search> search_;
+			std::shared_ptr<mutex_wrapper> mutex_wrapper_;
 		};
 	}
 }

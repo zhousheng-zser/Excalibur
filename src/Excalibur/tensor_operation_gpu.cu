@@ -259,6 +259,9 @@ namespace glasssix
 			}
 			int type_id = src.type() % 8;
 			auto type_name = std::string(typeid(Dtype).name());
+
+#ifdef _MSC_VER
+
 			if (type_id == 0)
 			{
 				if (type_name != std::string("unsigned char"))
@@ -297,6 +300,50 @@ namespace glasssix
 				return;
 			}
 
+#elif defined __linux__
+
+			if (type_id == 0)
+			{
+				if (type_name != std::string("h"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("c"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("i"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("f"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+#else
+			NOT_IMPLEMENTED;
+			return;
+#endif // _MSC_VER
 
 			if (order == NHWC)
 			{
@@ -337,6 +384,9 @@ namespace glasssix
 			}
 			int type_id = src.type() % 8;
 			auto type_name = std::string(typeid(Dtype).name());
+
+#ifdef _MSC_VER
+
 			if (type_id == 0)
 			{
 				if (type_name != std::string("unsigned char"))
@@ -375,6 +425,50 @@ namespace glasssix
 				return;
 			}
 
+#elif defined __linux__
+
+			if (type_id == 0)
+			{
+				if (type_name != std::string("h"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("c"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("i"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("f"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+#else
+			NOT_IMPLEMENTED;
+			return;
+#endif // _MSC_VER
 
 			if (order == NHWC)
 			{
@@ -3406,7 +3500,7 @@ namespace glasssix
 		template <typename DtypeSRC, typename DtypeDST>
 		void tensor_operation_gpu::preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
 		{
-			if (dst->device() < 0)
+			if (src->device() < 0)
 			{
 				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
 				return;
@@ -3438,16 +3532,16 @@ namespace glasssix
 		template <typename DtypeSRC, typename DtypeDST>
 		void tensor_operation_gpu::preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 		{
-			if (dst.device() < 0)
+			if (src.device() < 0)
 			{
 				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
 				return;
 			}
 
-			int num = dst.num();
-			int channels = dst.channels();
-			int height = dst.height();
-			int width = dst.width();
+			int num = src.num();
+			int channels = src.channels();
+			int height = src.height();
+			int width = src.width();
 
 			const DtypeSRC* src_data = src.gpu_data();
 			dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());

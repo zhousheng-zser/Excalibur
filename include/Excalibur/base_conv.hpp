@@ -115,14 +115,32 @@ namespace glasssix
 #ifdef USE_CUDNN
 				if (device_ >= 0)
 				{
-				    CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
-					CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
-					CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
-					CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
-					
+					if (xdesc != nullptr)
+					{
+						CUDNN_CHECK(cudnnDestroyTensorDescriptor(xdesc));
+					}
+
+					if (ydesc != nullptr)
+					{
+						CUDNN_CHECK(cudnnDestroyTensorDescriptor(ydesc));
+					}
+
+					if (wdesc != nullptr)
+					{
+						CUDNN_CHECK(cudnnDestroyFilterDescriptor(wdesc));
+					}
+
+					if (conv_desc != nullptr)
+					{
+						CUDNN_CHECK(cudnnDestroyConvolutionDescriptor(conv_desc));
+					}
+				    
 					if (bias_term_)
 					{
-				        CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+						if (bdesc != nullptr)
+						{
+							CUDNN_CHECK(cudnnDestroyTensorDescriptor(bdesc));
+						}
 					}
 					
 					if (extra != nullptr)

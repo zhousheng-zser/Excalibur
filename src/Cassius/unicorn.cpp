@@ -717,7 +717,7 @@ namespace glasssix
 #endif
 #endif
 
-		std::vector<std::vector<float> > Unicorn::Forward(const float* input_data, unsigned num, int order)
+		std::vector<std::vector<float> > Unicorn::Forward(const float* input_data, int num, int order)
 		{
 			if (num <= 0)
 			{
@@ -781,7 +781,7 @@ namespace glasssix
 			}
 		}
 
-		std::vector<std::vector<float> > Unicorn::Forward(const unsigned char* input_data, unsigned num, int order)
+		std::vector<std::vector<float> > Unicorn::Forward(const unsigned char* input_data, int num, int order)
 		{
 			if (num <= 0)
 			{
