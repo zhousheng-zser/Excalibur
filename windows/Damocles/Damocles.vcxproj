@@ -132,17 +132,25 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\Damocles\damocles.hpp" />
     <ClInclude Include="..\..\include\Damocles\mtcnn.hpp" />
+    <ClInclude Include="..\..\include\Damocles\mtcnn_mobile.hpp" />
     <ClInclude Include="..\..\include\Damocles\mtcnn_onet.hpp" />
     <ClInclude Include="..\..\include\Damocles\mtcnn_pnet.hpp" />
     <ClInclude Include="..\..\include\Damocles\mtcnn_rnet.hpp" />
+    <ClInclude Include="..\..\include\Damocles\onet_mobile.hpp" />
+    <ClInclude Include="..\..\include\Damocles\pnet_mobile.hpp" />
+    <ClInclude Include="..\..\include\Damocles\rnet_mobile.hpp" />
     <ClInclude Include="..\..\include\Damocles\vdamocles.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Damocles\damocles.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn.cpp" />
+    <ClCompile Include="..\..\src\Damocles\mtcnn_mobile.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn_onet.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn_pnet.cpp" />
     <ClCompile Include="..\..\src\Damocles\mtcnn_rnet.cpp" />
+    <ClCompile Include="..\..\src\Damocles\onet_mobile.cpp" />
+    <ClCompile Include="..\..\src\Damocles\pnet_mobile.cpp" />
+    <ClCompile Include="..\..\src\Damocles\rnet_mobile.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

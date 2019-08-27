@@ -128,9 +128,9 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile::Detect(const unsig
 	if(stage >= 3)
 		result_bbox = onet_bbox;
 	else if(stage >= 2)
-		result_bbox = rnetBbox;
+		result_bbox = rnet_bbox;
 	else if(stage >= 1)
-		result_bbox = pnetBbox;
+		result_bbox = pnet_bbox;
 
 	std::vector<FaceInfomation> faceInfo;
 	for (int i = 0; i < result_bbox.size(); i++)
