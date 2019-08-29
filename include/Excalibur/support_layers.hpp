@@ -133,7 +133,7 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 if(device_ < 0){\
     bool int8_quantization = int8_quantization_;\
     if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
-    if(kernel_size == 3 && stride == 1 && pad > 0){\
+    if(kernel_size == 3 && stride == 1){\
         conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     else{\
         conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\

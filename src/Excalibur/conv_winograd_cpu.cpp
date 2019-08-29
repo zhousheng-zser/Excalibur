@@ -129,8 +129,8 @@ namespace glasssix
 
 					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+					h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+					w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
 					int total_tile_num = h_tile_num_ * w_tile_num_;
 					int w_tile_stride = w_tile_num_ * tile_length_;
 					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
@@ -783,8 +783,8 @@ namespace glasssix
 
 					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+					h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+					w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
 					int total_tile_num = h_tile_num_ * w_tile_num_;
 					int w_tile_stride = w_tile_num_ * tile_length_;
 					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
@@ -1376,8 +1376,8 @@ namespace glasssix
 
 					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+					h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+					w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
 					int total_tile_num = h_tile_num_ * w_tile_num_;
 					int w_tile_stride = w_tile_num_ * tile_length_;
 					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
@@ -1884,8 +1884,8 @@ namespace glasssix
 
 					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
 					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+					h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+					w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
 					int total_tile_num = h_tile_num_ * w_tile_num_;
 					int w_tile_stride = w_tile_num_ * tile_length_;
 					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
