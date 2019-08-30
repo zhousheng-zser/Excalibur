@@ -15,7 +15,7 @@ namespace glasssix
 				bias_.reset(new tensor<float>(std::vector<int>{1, input_channel_, 1, 1}, -1, NCHW));
 			}
 
-			void Forward_cpu(std::shared_ptr<tensor<float> >& bottom);
+			void Forward_cpu(const std::shared_ptr<tensor<float> >& bottom);
 			void set_bias(float* bias)
 			{
 				bias_->set_cpu_data(bias);

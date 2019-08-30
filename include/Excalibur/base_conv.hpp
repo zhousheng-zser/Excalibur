@@ -324,11 +324,11 @@ namespace glasssix
 #ifdef USE_CUDNN
 			float one = 1.0, zero = 0.0;
 			size_t size;
-			cudnnTensorDescriptor_t xdesc;
-			cudnnTensorDescriptor_t	ydesc;
-			cudnnTensorDescriptor_t bdesc;
-			cudnnFilterDescriptor_t wdesc;
-			cudnnConvolutionDescriptor_t conv_desc;
+			cudnnTensorDescriptor_t xdesc = nullptr;
+			cudnnTensorDescriptor_t	ydesc = nullptr;
+			cudnnTensorDescriptor_t bdesc = nullptr;
+			cudnnFilterDescriptor_t wdesc = nullptr;
+			cudnnConvolutionDescriptor_t conv_desc = nullptr;
 			// algorithms for forward and backwards convolutions
 			cudnnConvolutionFwdAlgo_t fwd_algo_;
 			size_t workspace_limit_bytes = 8 * 1024 * 1024;
