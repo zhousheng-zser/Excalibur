@@ -4,7 +4,7 @@
 #include <arm_neon.h>
 #endif // __ARM_NEON
 
-void glasssix::excalibur::inner_product_arm::Forward_cpu(std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+void glasssix::excalibur::inner_product_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 {
 	orderType order = bottom->order();
 	if (order == NCHW)
