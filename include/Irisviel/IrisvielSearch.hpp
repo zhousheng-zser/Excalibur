@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <Windows.h>
+//#include <Windows.h>
 
 #ifdef EXPORT_IRISVIEL
 #undef EXPORT_IRISVIEL
