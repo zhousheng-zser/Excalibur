@@ -153,6 +153,9 @@
     <ClInclude Include="..\..\include\Excalibur\arm\softmax_arm.hpp">
       <Filter>Header Files\arm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
