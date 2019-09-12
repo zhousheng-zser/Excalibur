@@ -39,7 +39,7 @@ namespace glasssix
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -49,7 +49,7 @@ namespace glasssix
 			}
 			else
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -142,7 +142,7 @@ namespace glasssix
 			if (std::abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -152,7 +152,7 @@ namespace glasssix
 			}
 			else
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
