@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include <glasssix/accelerator.hpp>
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
@@ -28,6 +28,11 @@ namespace glasssix
 		{
 			ngraph.clear();
 			std::ifstream in(graphPath, std::ios::binary);
+			if (!in.is_open())
+			{
+				std::cout << "open file error" << std::endl; exit(-1);
+			}
+
 			in.read((char *)&isNormalized, sizeof(bool));
 			in.read((char *)&width, sizeof(unsigned));
 			in.read((char *)&navigateNode, sizeof(unsigned));
@@ -158,7 +163,7 @@ namespace glasssix
 
 			if (baseNum_ != 1)
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < queryNum_; ++i)
