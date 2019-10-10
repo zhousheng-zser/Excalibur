@@ -235,7 +235,7 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
-			
+
 
 			float scale = 12.f / minSize;
 			float minWH = std::min(height, width) *scale;

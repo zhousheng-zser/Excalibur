@@ -274,8 +274,8 @@ namespace glasssix
 			Init_PReLU_Params(relu1_dw, 64, false);//nchw:1*64*64*64->1*64*64*64
 			Init_Conv_Params(conv2_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*64*64->1*128*64*64
 			Init_PReLU_Params(relu2_ex, 128, false);//nchw:1*128*64*64->1*128*64*64
-			Init_Conv_Params(conv2_dw, 128, 128, 128, 3, 2, 1, true);//nchw:1*128*64*64->1*128*64*64
-			Init_PReLU_Params(relu2_dw, 128, false);//nchw:1*128*64*64->1*128*32*32
+			Init_Conv_Params(conv2_dw, 128, 128, 128, 3, 2, 1, true);//nchw:1*128*64*64->1*128*32*32
+			Init_PReLU_Params(relu2_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
 			Init_Conv_Params(conv2_1_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_1_ex, 128, false);//nchw:1*128*32*32->1*128*32*32

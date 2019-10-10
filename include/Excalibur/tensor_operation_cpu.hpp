@@ -5110,9 +5110,9 @@ namespace glasssix
 				int dst_offset = dst_height * dst_width;
 				int dst_num_offset = channels * dst_height * dst_width;
 
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
 				if (dst_height == height && dst_width == width)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -5211,9 +5211,9 @@ namespace glasssix
 				int dst_offset = dst_height * dst_width;
 				int dst_num_offset = channels * dst_height * dst_width;
 
+				dst = src.clone();
 				if (dst_height == height && dst_width == width)
 				{
-					dst = src.clone();
 					return;
 				}
 

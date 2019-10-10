@@ -107,6 +107,29 @@ namespace glasssix
 				bias_.reset(new tensor<float>(std::vector<int>{output_Channel_}, device_));
 				kernel_dim_ = input_Channel_*kernelSize_*kernelSize_;
 				weight_offset_ = kernelSize_*kernelSize_;
+
+				//winograd
+				if ((kernelSize_ == 3) && (stride_ == 1))
+				{
+					useWinograd23 = true;
+					tile_size_ = m_ + kernelSize_ - 1;//m+r-1
+					tile_length_ = tile_size_ * tile_size_;
+					kernel_length_ = kernelSize_ * kernelSize_;
+					m_length_ = m_ * m_;
+					U_num_ = output_Channel_ * input_Channel_ / group_;
+
+					//U=G*g*GT,so U has the same number as kernel g, there are tile_size_ * tile_size_ elements in single U
+					if (int8_quantization)
+					{
+						U_int16.reset(new tensor<short>(std::vector<int>{U_num_ * tile_length_}));
+						U_int16_data = U_int16->mutable_cpu_data();
+					}
+					else
+					{
+						U_.reset(new tensor<float>(std::vector<int>{U_num_ * tile_length_}));
+						U_data = U_->mutable_cpu_data();
+					}
+				}
 			}
 
 			virtual ~baseconv() 
@@ -173,9 +196,22 @@ namespace glasssix
 			virtual void set_weights(float* weights)
 			{
 				weights_->set_cpu_data(weights);
+
 				if (device_ < 0)
 				{
 					weights_data = weights_->cpu_data();
+
+					if (useWinograd23)
+					{
+						//calculate U_
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int n = 0; n < U_num_; ++n)
+						{
+							calculate_GgGT(weights_data + kernel_length_ * n, U_data + tile_length_ * n);//calculate U
+						}
+					}
 				}
 				else
 				{
@@ -211,6 +247,138 @@ namespace glasssix
 
 			virtual void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 
+			//winograd
+			bool useWinograd23 = false;
+			int m_ = 2;
+			int m_length_;
+			int kernel_length_;
+			int tile_size_;
+			int tile_length_;
+			int h_tile_num_;
+			int w_tile_num_;
+			int V_num_;//the quantity of V
+			int U_num_;//the quantity of U
+
+			std::shared_ptr<tensor<float>> U_, V_;
+			float *U_data, *V_data;
+
+			std::shared_ptr<tensor<short>> U_int16, V_int16;
+			short *U_int16_data, *V_int16_data;
+
+			//fp32
+			inline void calculate_GgGT(const float *weight_data, float *u_data)
+			{
+				u_data[0] = weight_data[0];
+				u_data[1] = (weight_data[0] + weight_data[1] + weight_data[2]) / 2;
+				u_data[2] = (weight_data[0] - weight_data[1] + weight_data[2]) / 2;
+				u_data[3] = weight_data[2];
+				u_data[4] = (weight_data[0] + weight_data[3] + weight_data[6]) / 2;
+				u_data[5] = (weight_data[0] + weight_data[1] + weight_data[2] +
+					weight_data[3] + weight_data[4] + weight_data[5] +
+					weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+				u_data[6] = (weight_data[0] - weight_data[1] + weight_data[2] +
+					weight_data[3] - weight_data[4] + weight_data[5] +
+					weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+				u_data[7] = (weight_data[2] + weight_data[5] + weight_data[8]) / 2;
+				u_data[8] = (weight_data[0] - weight_data[3] + weight_data[6]) / 2;
+				u_data[9] = (weight_data[0] + weight_data[1] + weight_data[2] -
+					weight_data[3] - weight_data[4] - weight_data[5] +
+					weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+				u_data[10] = (weight_data[0] - weight_data[1] + weight_data[2] -
+					weight_data[3] + weight_data[4] - weight_data[5] +
+					weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+				u_data[11] = (weight_data[2] - weight_data[5] + weight_data[8]) / 2;
+				u_data[12] = weight_data[6];
+				u_data[13] = (weight_data[6] + weight_data[7] + weight_data[8]) / 2;
+				u_data[14] = (weight_data[6] - weight_data[7] + weight_data[8]) / 2;
+				u_data[15] = weight_data[8];
+			}
+
+			inline void calculate_BTdB(const float *tile_data, float *v_data)
+			{
+				v_data[0] = tile_data[0] - tile_data[2] - tile_data[8] + tile_data[10];
+				v_data[1] = tile_data[1] + tile_data[2] - tile_data[9] - tile_data[10];
+				v_data[2] = -tile_data[1] + tile_data[2] + tile_data[9] - tile_data[10];
+				v_data[3] = tile_data[1] - tile_data[3] - tile_data[9] + tile_data[11];
+				v_data[4] = tile_data[4] - tile_data[6] + tile_data[8] - tile_data[10];
+				v_data[5] = tile_data[5] + tile_data[6] + tile_data[9] + tile_data[10];
+				v_data[6] = -tile_data[5] + tile_data[6] - tile_data[9] + tile_data[10];
+				v_data[7] = tile_data[5] - tile_data[7] + tile_data[9] - tile_data[11];
+				v_data[8] = -tile_data[4] + tile_data[6] + tile_data[8] - tile_data[10];
+				v_data[9] = -tile_data[5] - tile_data[6] + tile_data[9] + tile_data[10];
+				v_data[10] = tile_data[5] - tile_data[6] - tile_data[9] + tile_data[10];
+				v_data[11] = -tile_data[5] + tile_data[7] + tile_data[9] - tile_data[11];
+				v_data[12] = tile_data[4] - tile_data[6] - tile_data[12] + tile_data[14];
+				v_data[13] = tile_data[5] + tile_data[6] - tile_data[13] - tile_data[14];
+				v_data[14] = -tile_data[5] + tile_data[6] + tile_data[13] - tile_data[14];
+				v_data[15] = tile_data[5] - tile_data[7] - tile_data[13] + tile_data[15];
+			}
+
+			inline void calculate_ATmA(const float *m_data, float *result)
+			{
+				result[0] = m_data[0] + m_data[1] + m_data[2] + m_data[4] + m_data[5] + m_data[6] + m_data[8] + m_data[9] + m_data[10];
+				result[1] = m_data[1] - m_data[2] - m_data[3] + m_data[5] - m_data[6] - m_data[7] + m_data[9] - m_data[10] - m_data[11];
+				result[2] = m_data[4] + m_data[5] + m_data[6] - m_data[8] - m_data[9] - m_data[10] - m_data[12] - m_data[13] - m_data[14];
+				result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
+			}
+
+			//int8
+			inline void calculate_GgGT(const signed char *weight_data, short *u_data)
+			{
+				//mutiply 4 to avoid accuracy loss
+				u_data[0] = weight_data[0] * 4;
+				u_data[1] = (short(weight_data[0]) + short(weight_data[1]) + short(weight_data[2])) * 2;
+				u_data[2] = (short(weight_data[0]) - short(weight_data[1]) + short(weight_data[2])) * 2;
+				u_data[3] = short(weight_data[2]) * 4;
+				u_data[4] = (short(weight_data[0]) + short(weight_data[3]) + short(weight_data[6])) * 2;
+				u_data[5] = (short(weight_data[0]) + short(weight_data[1]) + short(weight_data[2]) +
+					short(weight_data[3]) + short(weight_data[4]) + short(weight_data[5]) +
+					short(weight_data[6]) + short(weight_data[7]) + short(weight_data[8]));
+				u_data[6] = (short(weight_data[0]) - short(weight_data[1]) + short(weight_data[2]) +
+					short(weight_data[3]) - short(weight_data[4]) + short(weight_data[5]) +
+					short(weight_data[6]) - short(weight_data[7]) + short(weight_data[8]));
+				u_data[7] = (short(weight_data[2]) + short(weight_data[5]) + short(weight_data[8])) * 2;
+				u_data[8] = (short(weight_data[0]) - short(weight_data[3]) + short(weight_data[6])) * 2;
+				u_data[9] = (short(weight_data[0]) + short(weight_data[1]) + short(weight_data[2]) -
+					short(weight_data[3]) - short(weight_data[4]) - short(weight_data[5]) +
+					short(weight_data[6]) + short(weight_data[7]) + short(weight_data[8]));
+				u_data[10] = (short(weight_data[0]) - short(weight_data[1]) + short(weight_data[2]) -
+					short(weight_data[3]) + short(weight_data[4]) - short(weight_data[5]) +
+					short(weight_data[6]) - short(weight_data[7]) + short(weight_data[8]));
+				u_data[11] = (short(weight_data[2]) - short(weight_data[5]) + short(weight_data[8])) * 2;
+				u_data[12] = weight_data[6] * 4;
+				u_data[13] = (short(weight_data[6]) + short(weight_data[7]) + short(weight_data[8])) * 2;
+				u_data[14] = (short(weight_data[6]) - short(weight_data[7]) + short(weight_data[8])) * 2;
+				u_data[15] = weight_data[8] * 4;
+			}
+
+			inline void calculate_BTdB(const signed char *tile_data, short *v_data)
+			{
+				v_data[0] = short(tile_data[0]) - short(tile_data[2]) - short(tile_data[8]) + short(tile_data[10]);
+				v_data[1] = short(tile_data[1]) + short(tile_data[2]) - short(tile_data[9]) - short(tile_data[10]);
+				v_data[2] = -short(tile_data[1]) + short(tile_data[2]) + short(tile_data[9]) - short(tile_data[10]);
+				v_data[3] = short(tile_data[1]) - short(tile_data[3]) - short(tile_data[9]) + short(tile_data[11]);
+				v_data[4] = short(tile_data[4]) - short(tile_data[6]) + short(tile_data[8]) - short(tile_data[10]);
+				v_data[5] = short(tile_data[5]) + short(tile_data[6]) + short(tile_data[9]) + short(tile_data[10]);
+				v_data[6] = -short(tile_data[5]) + short(tile_data[6]) - short(tile_data[9]) + short(tile_data[10]);
+				v_data[7] = short(tile_data[5]) - short(tile_data[7]) + short(tile_data[9]) - short(tile_data[11]);
+				v_data[8] = -short(tile_data[4]) + short(tile_data[6]) + short(tile_data[8]) - short(tile_data[10]);
+				v_data[9] = -short(tile_data[5]) - short(tile_data[6]) + short(tile_data[9]) + short(tile_data[10]);
+				v_data[10] = short(tile_data[5]) - short(tile_data[6]) - short(tile_data[9]) + short(tile_data[10]);
+				v_data[11] = -short(tile_data[5]) + short(tile_data[7]) + short(tile_data[9]) - short(tile_data[11]);
+				v_data[12] = short(tile_data[4]) - short(tile_data[6]) - short(tile_data[12]) + short(tile_data[14]);
+				v_data[13] = short(tile_data[5]) + short(tile_data[6]) - short(tile_data[13]) - short(tile_data[14]);
+				v_data[14] = -short(tile_data[5]) + short(tile_data[6]) + short(tile_data[13]) - short(tile_data[14]);
+				v_data[15] = short(tile_data[5]) - short(tile_data[7]) - short(tile_data[13]) + short(tile_data[15]);
+			}
+
+			inline void calculate_ATmA(const int *m_data, int *result)
+			{
+				result[0] = m_data[0] + m_data[1] + m_data[2] + m_data[4] + m_data[5] + m_data[6] + m_data[8] + m_data[9] + m_data[10];
+				result[1] = m_data[1] - m_data[2] - m_data[3] + m_data[5] - m_data[6] - m_data[7] + m_data[9] - m_data[10] - m_data[11];
+				result[2] = m_data[4] + m_data[5] + m_data[6] - m_data[8] - m_data[9] - m_data[10] - m_data[12] - m_data[13] - m_data[14];
+				result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
+			}
 
 		protected:
 

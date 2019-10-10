@@ -59,6 +59,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\csharp\Athenel\Athenel.vcxproj">
+      <Project>{b8b72223-57c8-4771-8bbf-d42e597a4a5b}</Project>
+      <Name>Athenel</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\csharp\Cassiunia\Cassiunia.vcxproj">
       <Project>{54383cc0-5f2c-4f59-bcad-d8613fe83af8}</Project>
       <Name>Cassiunia</Name>
