@@ -1,24 +1,20 @@
-#ifndef _CONV_WINOGRAD_CPU_HPP_
-#define _CONV_WINOGRAD_CPU_HPP_
+#ifndef _CONV_1X1S1_CPU_HPP_
+#define _CONV_1X1S1_CPU_HPP_
 #include "base_conv.hpp"
 
 namespace glasssix
 {
 	namespace excalibur
 	{
-		class conv_winograd_cpu : public baseconv
+		class conv_1x1s1_cpu : public baseconv
 		{
 		public:
 
-			conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = -1, bool int8_quantization = false);
+			conv_1x1s1_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device = -1, bool int8_quantization = false);
 
-			virtual ~conv_winograd_cpu() {};
+			virtual ~conv_1x1s1_cpu() {};
 
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
-
-			void Forward_F23(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
-
-			void Forward_F43(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 
 		private:
 
@@ -28,9 +24,31 @@ namespace glasssix
 
 			void forward_bias(float* output, const float* bias) override;
 			
-			inline bool is_a_ge_zero_and_a_lt_b(int a, int b)
+			static inline void fill(float *ptr, int size, float _v)
 			{
-				return static_cast<unsigned>(a) < static_cast<unsigned>(b);
+				int remain = size;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				mm_type fill_value = mm_set1_ps(_v);
+				int circle_num = remain / mm_align_size;
+				int index = 0;
+				for (; index < circle_num; index++)
+				{
+					int index_offset = index * mm_align_size;
+					mm_store_ps(ptr + index_offset, fill_value);
+				}
+
+				remain -= mm_align_size * index;
+				for (; remain > 0; remain--)
+				{
+					ptr[size - remain] = _v;
+				}
+#else
+				for (; remain > 0; remain--)
+				{
+					*ptr++ = _v;
+				}
+#endif
 			}
 
 #ifdef USE_CUDA
@@ -47,4 +65,4 @@ namespace glasssix
 }
 
 
-#endif // !_CONV_WINOGRAD_CPU_HPP_
+#endif // !_CONV_1X1S1_CPU_HPP_

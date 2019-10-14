@@ -22,9 +22,9 @@ namespace glasssix
 
 				virtual ~Search();
 
-				void loadGraph(const char* graphPath);
+				bool loadGraph(const char* graphPath);
 
-				void loadGraph(const char* graphPath, const char *basedataPath);
+				bool loadGraph(const char* graphPath, const char *basedataPath);
 
 				const std::vector<const float*>* getBasedata();
 
