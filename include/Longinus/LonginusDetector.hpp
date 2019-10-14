@@ -135,9 +135,9 @@ namespace glasssix
 			std::vector<FaceRectwithFaceInfo> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
 
-			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency) const;
+			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
-			std::vector<Match_Retval> match(std::vector<FaceRectwithFaceInfo> &faceRect, const int frame_extract_frequency) const;
+			std::vector<Match_Retval> match(std::vector<FaceRectwithFaceInfo> &faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
 				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;

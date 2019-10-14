@@ -186,26 +186,35 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 #endif
 	}
 
+	float threshold = 0.8;
 	std::vector<FaceRectwithFaceInfo> rectsWithLandmark;
-	rectsWithLandmark.resize(rects.size());
+	rectsWithLandmark.clear();
 	for (size_t i = 0; i < rects.size(); i++)
 	{
-		rectsWithLandmark[i].x = rects[i].x;
-		rectsWithLandmark[i].y = rects[i].y;
-		rectsWithLandmark[i].height = rects[i].height;
-		rectsWithLandmark[i].width = rects[i].width;
+		if (infoParam[i][0] < threshold)
+		{
+			continue;
+		}
 
-		rectsWithLandmark[i].confidence = infoParam[i][0];
+		FaceRectwithFaceInfo temp;
+		temp.x = rects[i].x;
+		temp.y = rects[i].y;
+		temp.height = rects[i].height;
+		temp.width = rects[i].width;
+		
+		temp.confidence = infoParam[i][0];
 
-		rectsWithLandmark[i].yaw = infoParam[i][1] * 90;
-		rectsWithLandmark[i].pitch = infoParam[i][2] * 90;
-		rectsWithLandmark[i].roll = infoParam[i][3] * 90;
+		temp.yaw = infoParam[i][1] * 90;
+		temp.pitch = infoParam[i][2] * 90;
+		temp.roll = infoParam[i][3] * 90;
 
 		for (size_t j = 0; j < 5; j++)
 		{
-			rectsWithLandmark[i].pts[j].x = infoParam[i][4 + 2 * j] * rectsWithLandmark[i].width + rectsWithLandmark[i].x;
-			rectsWithLandmark[i].pts[j].y = infoParam[i][4 + 2 * j + 1] * rectsWithLandmark[i].height + rectsWithLandmark[i].y;
+			temp.pts[j].x = infoParam[i][4 + 2 * j] * temp.width + temp.x;
+			temp.pts[j].y = infoParam[i][4 + 2 * j + 1] * temp.height + temp.y;
 		}
+
+		rectsWithLandmark.push_back(temp);
 	}
 	return rectsWithLandmark;
 }
@@ -303,21 +312,20 @@ void LonginusDetector::set(DetectionType detectionType, int device)
 	}
 }
 
-
-std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency) const
+std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency, float distance_fractor) const
 {
-	return matcher_->match(faceRect, frame_extract_frequency);
+	return matcher_->match(faceRect, frame_extract_frequency, distance_fractor);
 }
 
-std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRectwithFaceInfo> &faceRectInfo, const int frame_extract_frequency) const
+std::vector<Match_Retval> LonginusDetector::match(std::vector<FaceRectwithFaceInfo> &faceRectInfo, const int frame_extract_frequency, float distance_fractor) const
 {
 	std::vector<FaceRect> faceRect;
 	for (auto i = 0; i < faceRectInfo.size(); i++)
 	{
-		faceRect.push_back(FaceRect(faceRectInfo[i].x, faceRectInfo[i].y, faceRectInfo[i].width, faceRectInfo[i].height, 
+		faceRect.push_back(FaceRect(faceRectInfo[i].x, faceRectInfo[i].y, faceRectInfo[i].width, faceRectInfo[i].height,
 			faceRectInfo[i].neighbors, faceRectInfo[i].confidence));
 	}
-	return matcher_->match(faceRect, frame_extract_frequency);
+	return matcher_->match(faceRect, frame_extract_frequency, distance_fractor);
 }
 
 std::vector<unsigned char> LonginusDetector::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width,

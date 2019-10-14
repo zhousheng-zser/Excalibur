@@ -6,9 +6,9 @@ namespace glasssix
 {
 	namespace athene
 	{
-		Athenel::Athenel(System::String^ deploy, System::String^ caffemodel, int base_height, int base_width, int device)
+		Athenel::Athenel(System::String^ stream, System::String^ deploy, System::String^ caffemodel, int base_height, int base_width, int device)
 		{
-			pose_profiler = new Athene(msclr::interop::marshal_as<std::string>(deploy).c_str() , msclr::interop::marshal_as<std::string>(caffemodel).c_str(), base_height, base_width, device);
+			pose_profiler = new Athene(msclr::interop::marshal_as<std::string>(stream).c_str(), msclr::interop::marshal_as<std::string>(deploy).c_str(), msclr::interop::marshal_as<std::string>(caffemodel).c_str(), base_height, base_width, device);
 		}
 
 		Athenel::~Athenel()
@@ -62,6 +62,11 @@ namespace glasssix
 			cv::Mat image = Bitmap2Mat(imgData);
 			pose_profiler->Forward(image);
 			return Mat2Bitmap(image);
+		}
+
+		void Athenel::Forward()
+		{
+			pose_profiler->Forward();
 		}
 	}
 }

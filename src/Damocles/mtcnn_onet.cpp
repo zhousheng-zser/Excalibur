@@ -175,7 +175,7 @@ namespace glasssix
 			conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
+			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);			
 		}
 
 #ifdef USE_CUDA

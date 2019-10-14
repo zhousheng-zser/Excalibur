@@ -91,12 +91,14 @@ namespace glasssix
 				return gcnew array<float>(0);
 			}
 			auto res = gaius_wrapper->Forward(data, imgDatas->Length);
-			auto m_array = gcnew array<float>(512 * imgDatas->Length);
+			auto m_array = gcnew array<float>(128 * imgDatas->Length);
 			pin_ptr<float> pma = &m_array[0];
 			for (size_t i = 0; i < imgDatas->Length; i++)
 			{
-				memcpy(pma + i * 512, res[i].data(), 512 * sizeof(float));
-			}			
+				memcpy(pma + i * 128, res[i].data(), 128 * sizeof(float));
+			}		
+
+			delete[] data;
 			return m_array;
 		}
 	}
