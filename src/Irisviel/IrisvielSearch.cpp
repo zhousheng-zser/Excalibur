@@ -1,6 +1,7 @@
 #include "index.hpp"
 #include "search.hpp"
 #include "IrisvielSearch.hpp"
+
 #include <glasssix/mutex_wrapper.hpp>
 
 namespace glasssix
@@ -11,15 +12,16 @@ namespace glasssix
 		{
 			index_.reset(new Index(baseData, dimension));
 			search_.reset(new Search(baseData, dimension));
-			mutex_wrapper_.reset(new mutex_wrapper());
+			mutex_wrapper_.reset(new mutex_wrapper());			
 		}
 
 		IrisvielSearch::IrisvielSearch(int dimension)
 		{
 			index_.reset(new Index(dimension));
 			search_.reset(new Search(dimension));
-			mutex_wrapper_.reset(new mutex_wrapper());
+			mutex_wrapper_.reset(new mutex_wrapper());			
 		}
+
 
 		IrisvielSearch::IrisvielSearch(const std::vector<const float*> *baseData, int dimension, const std::shared_ptr<mutex_wrapper> &lock)
 			:IrisvielSearch(baseData, dimension)
@@ -30,7 +32,7 @@ namespace glasssix
 		IrisvielSearch::IrisvielSearch(int dimension, const std::shared_ptr<mutex_wrapper> &lock)
 			: IrisvielSearch(dimension)
 		{
-			mutex_wrapper_ = lock;
+			mutex_wrapper_ = lock;			
 		}
 
 		IrisvielSearch::~IrisvielSearch()
@@ -40,6 +42,7 @@ namespace glasssix
 		int IrisvielSearch::buildGraph() const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			int maxMemoryUsage = index_->buildGraph();
 			search_->navigateNode = index_->navigateNode;
 			search_->width = index_->width;
@@ -63,6 +66,7 @@ namespace glasssix
 		int IrisvielSearch::buildGraph(const std::vector<const float*> *baseData) const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			int maxMemoryUsage = index_->buildGraph(baseData);
 			search_->navigateNode = index_->navigateNode;
 			search_->width = index_->width;
@@ -88,6 +92,7 @@ namespace glasssix
 		void IrisvielSearch::saveGraph(const char *graphPath) const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			index_->saveGraph(graphPath);
 		}
 
@@ -100,6 +105,7 @@ namespace glasssix
 		void IrisvielSearch::saveGraph(const char *graphPath, const char *basedataPath) const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			index_->saveGraph(graphPath, basedataPath);
 		}
 
@@ -109,40 +115,44 @@ namespace glasssix
 		}
 
 
-		void IrisvielSearch::loadGraph(const char* graphPath) const
+		bool IrisvielSearch::loadGraph(const char* graphPath) const
 		{
 			auto lock = mutex_wrapper_->guard();
-			search_->loadGraph(graphPath);
+			
+			return search_->loadGraph(graphPath);
 		}
 
 		// For C++/CLI, implementations shuold not be done in header files.
 		// Or it will report C2001 bugs for the un-support functions.
 
-		void IrisvielSearch::loadGraph(std::string graphPath) const
+		bool IrisvielSearch::loadGraph(std::string graphPath) const
 		{
-			loadGraph(graphPath.c_str());
+			return loadGraph(graphPath.c_str());
 		}
 
-		void IrisvielSearch::loadGraph(const char* graphPath, const char *basedataPath) const
+		bool IrisvielSearch::loadGraph(const char* graphPath, const char *basedataPath) const
 		{
 			auto lock = mutex_wrapper_->guard();
-			search_->loadGraph(graphPath, basedataPath);
+			
+			return search_->loadGraph(graphPath, basedataPath);
 		}
 
-		void IrisvielSearch::loadGraph(std::string graphPath, std::string basedataPath) const
+		bool IrisvielSearch::loadGraph(std::string graphPath, std::string basedataPath) const
 		{
-			loadGraph(graphPath.c_str(), basedataPath.c_str());
+			return loadGraph(graphPath.c_str(), basedataPath.c_str());
 		}
 
 		const std::vector<const float*>* IrisvielSearch::getBasedata() const 
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			return search_->getBasedata();
 		}
 
 		void IrisvielSearch::optimizeGraph() const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			search_->optimizeGraph();
 		}
 
@@ -150,12 +160,14 @@ namespace glasssix
 			std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			search_->searchVector(queryData, topK, returnIDs, returnSimilarities);
 		}
 
 		void IrisvielSearch::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) const
 		{
 			auto lock = mutex_wrapper_->guard();
+			
 			search_->saveResult(resultPath, returnIDs);
 		}
 

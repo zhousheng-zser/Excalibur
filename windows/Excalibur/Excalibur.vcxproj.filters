@@ -156,6 +156,9 @@
     <ClInclude Include="..\..\include\Excalibur\prune.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -244,6 +247,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp">
       <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

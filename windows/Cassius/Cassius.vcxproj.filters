@@ -29,8 +29,5 @@
     <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DllMain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

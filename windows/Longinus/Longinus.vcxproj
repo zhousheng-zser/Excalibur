@@ -163,7 +163,6 @@
     <ClCompile Include="..\..\src\Longinus\LonginusDetector.cpp" />
     <ClCompile Include="..\..\src\Longinus\matcher.cpp" />
     <ClCompile Include="..\..\src\Longinus\tinyxml2.cpp" />
-    <ClCompile Include="DllMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Damocles\Damocles.vcxproj">
