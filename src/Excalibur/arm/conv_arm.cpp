@@ -4,10 +4,11 @@
 #ifdef __ARM_NEON
 #include "arm_neon.h"
 #endif
+#include <iostream>
 
 //#define __ARM_NEON
 
-#define F43
+//#define F43
 
 glasssix::excalibur::conv_arm::conv_arm(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device, bool int8_quantization)
 	: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, -1, false)
@@ -20,7 +21,7 @@ glasssix::excalibur::conv_arm::conv_arm(int input_Channel, int output_Channel, i
 	{
 		if (kernelSize_ == 1 && stride_ == 1)
 		{
-			if (input_Channel_ >= 64 && output_Channel_ >= 64)
+			//if (input_Channel_ >= 64 && output_Channel_ >= 64)
 				use_sgemm1x1 = true;
 		}
 		else if (kernelSize_ == 3 && stride_ == 2)
@@ -96,9 +97,9 @@ void glasssix::excalibur::conv_arm::Forward(const std::shared_ptr<tensor<float>>
 
 		if (group_ == 1)
 		{
-			if (use_winograd3x3 && w <= 120 && h <= 120)
+			//if (use_winograd3x3 && w <= 120 && h <= 120)
+			if (use_winograd3x3)
 			{
-
 #ifdef __ARM_NEON
 				conv3x3s1_winograd64_neon5(bottom_bordered, top, weights_transformed_, bias_, bias_term_);
 #else
@@ -107,8 +108,7 @@ void glasssix::excalibur::conv_arm::Forward(const std::shared_ptr<tensor<float>>
 #else
 				conv3x3s1_winograd23_sse(bottom_bordered, top, weights_transformed_, bias_, bias_term_);
 #endif // F43
-#endif // __ARM_NEON
-								
+#endif // __ARM_NEON			
 			}
 			else if (use_sgemm1x1)
 			{

@@ -20,14 +20,18 @@ namespace glasssix
 		public ref class Athenel
 		{
 		public:
-			Athenel(System::String^ deploy, System::String^ caffemodel, int base_height, int base_width, int device);
+			Athenel(System::String^ stream, System::String^ deploy, System::String^ caffemodel, int base_height, int base_width, int device);
 			~Athenel();
 			!Athenel();
 
-			Bitmap^ Forward(Bitmap^ imgData);
+			//using video stream
+			void Forward();
 
 		private:
 			Athene* pose_profiler;
+
+			//using single image
+			Bitmap^ Forward(Bitmap^ imgData);
 
 			cv::Mat Bitmap2Mat(Bitmap^ bmp);
 

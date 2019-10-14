@@ -12,6 +12,8 @@
 #include <vector>
 #include <functional>
 #include <urlmon.h>
+#include <queue>
+#include <mutex>
 
 #include "caffe/layers/input_layer.hpp"
 #include "caffe/layers/inner_product_layer.hpp"
@@ -30,11 +32,32 @@
 #include "caffe/layers/axpy_layer.hpp"
 #include "caffe/layers/concat_layer.hpp"
 
+#include "simple_window.hpp"
+#include "video_array_renderer.hpp"
+#include "sampling_data_info.hpp"
+#include "net_camera.hpp"
+#include <string>
+#include <thread>
+#include <Windows.h>
+#include "apc.hpp"
+#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+
 using namespace cv;
 using namespace std;
+using namespace glasssix::hippogriff;
+using namespace glasssix::excalibur;
+using namespace glasssix::ozymandias;
 
 using namespace caffe;  // NOLINT(build/namespaces)
 using std::string;
+
+HANDLE main_thread = OpenThread(THREAD_ALL_ACCESS, FALSE, GetCurrentThreadId());
+
+struct thread_data
+{
+	void* any;
+	const sampling_data_info& info;
+};
 
 namespace caffe
 {
@@ -121,7 +144,28 @@ struct BlobData {
 	255.f, 0.f, 255.f, \
 	85.f, 0.f, 255.f
 
+#define POSE_COCO_COLORS_RENDER_GPU2 \
+	255.f / 255, 0.f / 255, 85.f / 255, \
+	255.f / 255, 0.f / 255, 0.f / 255, \
+	255.f / 255, 85.f / 255, 0.f / 255, \
+	255.f / 255, 170.f / 255, 0.f / 255, \
+	255.f / 255, 255.f / 255, 0.f / 255, \
+	170.f / 255, 255.f / 255, 0.f / 255, \
+	85.f / 255, 255.f / 255, 0.f / 255, \
+	0.f / 255, 255.f / 255, 0.f / 255, \
+	0.f / 255, 255.f / 255, 85.f / 255, \
+	0.f / 255, 255.f / 255, 170.f / 255, \
+	0.f / 255, 255.f / 255, 255.f / 255, \
+	0.f / 255, 170.f / 255, 255.f / 255, \
+	0.f / 255, 85.f / 255, 255.f / 255, \
+	0.f / 255, 0.f / 255, 255.f / 255, \
+	255.f / 255, 0.f / 255, 170.f / 255, \
+	170.f / 255, 0.f / 255, 255.f / 255, \
+	255.f / 255, 0.f / 255, 255.f / 255, \
+	85.f / 255, 0.f / 255, 255.f / 255
+
 const std::vector<float> POSE_COCO_COLORS_RENDER{ POSE_COCO_COLORS_RENDER_GPU };
+const std::vector<float> POSE_COCO_COLORS_RENDER2{ POSE_COCO_COLORS_RENDER_GPU2 };
 const std::vector<unsigned int> POSE_COCO_PAIRS_RENDER{ 1, 2, 1, 5, 2, 3, 3, 4, 5, 6, 6, 7, 1, 8, 8, 9, 9, 10, 1, 11, 11, 12, 12, 13, 1, 0, 0, 14, 14, 16, 0, 15, 15, 17 };
 const unsigned int POSE_MAX_PEOPLE = 96;
 
@@ -171,8 +215,8 @@ void connectBodyPartsCpu(vector<float>& poseKeypoints, const float* const heatMa
 	{
 		const auto bodyPartA = bodyPartPairs[2 * pairIndex];
 		const auto bodyPartB = bodyPartPairs[2 * pairIndex + 1];
-		const auto* candidateA = peaksPtr + bodyPartA*peaksOffset;
-		const auto* candidateB = peaksPtr + bodyPartB*peaksOffset;
+		const auto* candidateA = peaksPtr + bodyPartA * peaksOffset;
+		const auto* candidateB = peaksPtr + bodyPartB * peaksOffset;
 		const auto nA = intRound(candidateA[0]);
 		const auto nB = intRound(candidateB[0]);
 
@@ -198,7 +242,7 @@ void connectBodyPartsCpu(vector<float>& poseKeypoints, const float* const heatMa
 					if (!num)
 					{
 						std::vector<int> rowVector(subsetSize, 0);
-						rowVector[bodyPartB] = bodyPartB*peaksOffset + i * 3 + 2; //store the index
+						rowVector[bodyPartB] = bodyPartB * peaksOffset + i * 3 + 2; //store the index
 						rowVector[subsetCounterIndex] = 1; //last number in each row is the parts number of that person
 						const auto subsetScore = candidateB[i * 3 + 2]; //second last number in each row is the total score
 						subset.emplace_back(std::make_pair(rowVector, subsetScore));
@@ -223,7 +267,7 @@ void connectBodyPartsCpu(vector<float>& poseKeypoints, const float* const heatMa
 					if (!num)
 					{
 						std::vector<int> rowVector(subsetSize, 0);
-						rowVector[bodyPartA] = bodyPartA*peaksOffset + i * 3 + 2; //store the index
+						rowVector[bodyPartA] = bodyPartA * peaksOffset + i * 3 + 2; //store the index
 						rowVector[subsetCounterIndex] = 1; //last number in each row is the parts number of that person
 						const auto subsetScore = candidateA[i * 3 + 2]; //second last number in each row is the total score
 						subset.emplace_back(std::make_pair(rowVector, subsetScore));
@@ -243,7 +287,7 @@ void connectBodyPartsCpu(vector<float>& poseKeypoints, const float* const heatMa
 				{
 					const auto dX = candidateB[j * 3] - candidateA[i * 3];
 					const auto dY = candidateB[j * 3 + 1] - candidateA[i * 3 + 1];
-					const auto normVec = float(std::sqrt(dX*dX + dY*dY));
+					const auto normVec = float(std::sqrt(dX*dX + dY * dY));
 					// If the peaksPtr are coincident. Don't connect them.
 					if (normVec > 1e-6)
 					{
@@ -256,12 +300,12 @@ void connectBodyPartsCpu(vector<float>& poseKeypoints, const float* const heatMa
 						auto count = 0;
 						for (auto lm = 0; lm < numInter; lm++)
 						{
-							const auto mX = fastMin(heatMapSize.width - 1, intRound(sX + lm*dX / numInter));
-							const auto mY = fastMin(heatMapSize.height - 1, intRound(sY + lm*dY / numInter));
+							const auto mX = fastMin(heatMapSize.width - 1, intRound(sX + lm * dX / numInter));
+							const auto mY = fastMin(heatMapSize.height - 1, intRound(sY + lm * dY / numInter));
 							//checkGE(mX, 0, "", __LINE__, __FUNCTION__, __FILE__);
 							//checkGE(mY, 0, "", __LINE__, __FUNCTION__, __FILE__);
 							const auto idx = mY * heatMapSize.width + mX;
-							const auto score = (vecX*mapX[idx] + vecY*mapY[idx]);
+							const auto score = (vecX*mapX[idx] + vecY * mapY[idx]);
 							if (score > interThreshold)
 							{
 								sum += score;
@@ -584,6 +628,48 @@ void renderPoseKeypointsCpu(Mat& frame, const vector<float>& poseKeypoints, vect
 		thicknessLineRatioWRTCircle, renderThreshold, scale);
 }
 
+void getPoseKeypoints(std::vector<int> &lines, std::vector<int> &circles, const vector<float>& keypoints, vector<int> keyshape,
+	const float threshold, float scale)
+{
+	lines.clear();
+	circles.clear();
+
+	// Parameters
+	const auto& pairs = POSE_COCO_PAIRS_RENDER;
+	const auto numberKeypoints = keyshape[1];
+
+	// Keypoints
+	for (auto person = 0; person < keyshape[0]; person++)
+	{
+		{
+			// Draw lines
+			for (auto pair = 0u; pair < pairs.size(); pair += 2)
+			{
+				const auto index1 = (person * numberKeypoints + pairs[pair]) * keyshape[2];
+				const auto index2 = (person * numberKeypoints + pairs[pair + 1]) * keyshape[2];
+				if (keypoints[index1 + 2] > threshold && keypoints[index2 + 2] > threshold)
+				{
+					lines.push_back(intRound(keypoints[index1] * scale));
+					lines.push_back(intRound(keypoints[index1 + 1] * scale));
+					lines.push_back(intRound(keypoints[index2] * scale));
+					lines.push_back(intRound(keypoints[index2 + 1] * scale));
+				}
+			}
+
+			// Draw circles
+			for (auto part = 0; part < numberKeypoints; part++)
+			{
+				const auto faceIndex = (person * numberKeypoints + part) * keyshape[2];
+				if (keypoints[faceIndex + 2] > threshold)
+				{
+					circles.push_back(intRound(keypoints[faceIndex] * scale));
+					circles.push_back(intRound(keypoints[faceIndex + 1] * scale));
+				}
+			}
+		}
+	}
+}
+
 void setGPU(int gpu_id) {
 #ifdef CPU_ONLY
 	Caffe::set_mode(Caffe::CPU);
@@ -604,7 +690,7 @@ BlobData* createBlob_local(int num, int channels, int height, int width) {
 	blob->width = width;
 	blob->channels = channels;
 	blob->height = height;
-	blob->count = num*width*channels*height;
+	blob->count = num * width*channels*height;
 	blob->list = new float[blob->count];
 	blob->capacity_count = blob->count;
 	return blob;
@@ -625,16 +711,25 @@ void releaseBlob_local(BlobData** blob) {
 
 static Net<float>* net_;
 static Blob<float>* input_layer_;
+std::mutex mutex_;
+std::queue<std::function<void()>> forward_handlers_;
+static constexpr int forward_message_ = 106666;
 
 namespace glasssix
 {
 	namespace athene
 	{
-		Athene::Athene(const char *deploy, const char *caffemodel, int base_height, int base_width, int device)
-			:deploy_(deploy), caffemodel_(caffemodel), base_height_(base_height), base_width_(base_width), device_(device)
+		Athene::Athene(const char *stream, const char *deploy, const char *caffemodel, int base_height, int base_width, int device)
+			:stream_(stream), deploy_(deploy), caffemodel_(caffemodel), base_height_(base_height), base_width_(base_width), device_(device)
 		{
 			//disable gflags output
 			google::InitGoogleLogging("aa");
+
+			// create renderer.
+			window_ = new simple_window{ 1280, 720 };
+			renderer_ = new glasssix::ozymandias::video_array_renderer{ window_->handle() };
+			renderer_->set_array(1, 1);
+			//renderer_->switch_to_single_view(0, 0);
 
 			//small size to speed up			
 			setGPU(device_);
@@ -649,14 +744,70 @@ namespace glasssix
 			input_ = createBlob_local(1, 57, base_height, base_width);
 		}
 
+		void Athene::Forward_cv()
+		{
+			glasssix::hippogriff::net_camera camera{ "Pose Detect", stream_, 25, 25 };
+			camera.sampling_handler([](void* any, const sampling_data_info& info)
+			{
+				double time_begin1 = getTickCount();
+
+				auto profiler = (Athene*)any;
+				int frame_height = info.height();
+				int frame_width = info.width();
+				auto frame_data = info.data();
+				unsigned char *input_data = new unsigned char[frame_height * frame_width * 3];
+
+				for (int row = 0; row < frame_height; row++)
+				{
+					for (int col = 0; col < frame_width; col++)
+					{
+						for (int ch = 0; ch < 3; ch++)
+						{
+							input_data[row * frame_width * 3 + col * 3 + (2 - ch)] = frame_data[row * frame_width * 4 + col * 4 + ch];
+						}
+					}
+				}
+
+				double fee_time1 = (getTickCount() - time_begin1) / getTickFrequency() * 1000;
+				printf("total preprocess fee: %.3f ms\n", fee_time1);
+
+				glasssix::apc::queue(main_thread, [=]
+				{
+					double fee_time3 = (getTickCount() - time_begin1) / getTickFrequency() * 1000;
+					printf("interval fee: %.3f, %.3f ms\n", time_begin1 / getTickFrequency() * 1000, fee_time3);
+
+					double time_begin2 = getTickCount();
+
+					cv::Mat input_frame(frame_height, frame_width, CV_8UC3, input_data);
+					profiler->Forward(input_frame);
+					imshow("Pose Detect", input_frame);
+					if ((char(waitKey(1)) == 'q') || (char(waitKey(1)) == 'Q') || (waitKey(1) == 27))
+					{
+						exit(-1);
+					}
+					delete input_data;
+
+					double fee_time2 = (getTickCount() - time_begin2) / getTickFrequency() * 1000;
+					printf("total post process fee: %.3f ms\n", fee_time2);
+				});
+
+			}, this);
+			camera.connect();
+
+			while (true)
+			{
+				SleepEx(INFINITE, TRUE);
+			}
+		}
+
 		void Athene::Forward(cv::Mat &image)
 		{
 			float scale = 0;
 			vector<float> keypoints;
 			vector<int> shape;
 			vector<Mat> input_channels;
-			if (image.empty()) 
-			{				
+			if (image.empty())
+			{
 				return;
 			}
 			Mat im = getImage(image, baseSize_, &scale);
@@ -688,7 +839,7 @@ namespace glasssix
 			Blob<float>* net_output_blob = net_->blob_by_name("net_output").get();
 			const float* net_output_data_begin = net_output_blob->cpu_data();
 			//double fee_time = (getTickCount() - time_begin) / getTickFrequency() * 1000;
-			//printf("forward fee: %.3f ms\n", fee_time);
+			//printf("net forward fee: %.3f ms\n", fee_time);
 
 			BlobData* net_output = createBlob_local(net_output_blob->num(), net_output_blob->channels(), net_output_blob->height(), net_output_blob->width());
 
@@ -715,18 +866,222 @@ namespace glasssix
 			releaseBlob_local(&net_output);
 		}
 
+		void Athene::Forward()
+		{
+			glasssix::hippogriff::net_camera camera{ "Pose Detect", stream_, 25, 5 };
+
+			camera.sampling_handler([](void* any, const sampling_data_info& info)
+			{
+				auto profiler = (Athene*)any;
+				int frame_height = info.height();
+				int frame_width = info.width();
+				auto frame_data = info.data();
+				unsigned char *input_data = new unsigned char[frame_height * frame_width * 3];
+
+				for (int row = 0; row < frame_height; row++)
+				{
+					for (int col = 0; col < frame_width; col++)
+					{
+						for (int ch = 0; ch < 3; ch++)
+						{
+							input_data[row * frame_width * 3 + col * 3 + (2 - ch)] = frame_data[row * frame_width * 4 + col * 4 + ch];
+						}
+					}
+				}
+
+				auto forward_handler = [=]
+				{
+					struct
+					{
+						std::vector<int> lines;
+						std::vector<int> circles;
+					} tmp;
+
+					using tmp_ptr_type = decltype(tmp)*;
+
+					profiler->Forward(input_data, frame_height, frame_width, tmp.lines, tmp.circles);
+
+					auto decorator = profiler->renderer_->get_view_decorator(0, 0);
+					decorator.begin_init([](void* any, video_view_decorator& context)
+					{
+						auto info = static_cast<tmp_ptr_type>(any);
+
+						context.clear();
+
+						int numberColors = POSE_COCO_COLORS_RENDER2.size();
+						for (int n = 0; n < info->lines.size() / 4; n++)
+						{
+							//const auto colorIndex = POSE_COCO_PAIRS_RENDER[2 * n + 4] * 3;
+							const auto colorIndex = rand() % 18;
+							rgba_color line_color(POSE_COCO_COLORS_RENDER2[(colorIndex + 2) % numberColors],
+								                  POSE_COCO_COLORS_RENDER2[(colorIndex + 1) % numberColors],
+								                  POSE_COCO_COLORS_RENDER2[(colorIndex + 0) % numberColors]);
+							context.add_line(glasssix::ozymandias::line{ float(info->lines[4 * n + 0]),float(info->lines[4 * n + 1]), float(info->lines[4 * n + 2]), float(info->lines[4 * n + 3]), 2, line_color });
+						}
+
+						for (int n = 0; n < info->circles.size() / 2; n++)
+						{
+							const auto colorIndex = rand() % 18;
+							//const auto colorIndex = POSE_COCO_PAIRS_RENDER[2 * n + 5] * 3;
+							rgba_color circle_color(POSE_COCO_COLORS_RENDER2[(colorIndex + 2) % numberColors],
+								                    POSE_COCO_COLORS_RENDER2[(colorIndex + 1) % numberColors],
+								                    POSE_COCO_COLORS_RENDER2[(colorIndex + 0) % numberColors]);
+							context.add_ellipse(glasssix::ozymandias::ellipse{ float(info->circles[2 * n + 0]),float(info->circles[2 * n + 1]), 10,10,1,circle_color,circle_color });
+						}
+
+					}, &tmp);
+
+					delete input_data;
+				};
+
+				{
+					//std::lock_guard<std::mutex> lock{ profiler->mutex_ };
+					//profiler->forward_handlers_.push(forward_handler);
+
+					std::lock_guard<std::mutex> lock{ mutex_ };
+					forward_handlers_.push(forward_handler);
+				}
+
+
+				PostThreadMessage(GetThreadId(main_thread), forward_message_, 0, 0);
+
+			}, this);
+			camera.connect();
+
+			renderer_->set_data_provider(camera, 0, 0);
+
+			// Message loop
+			MSG msg;
+			while (GetMessage(&msg, nullptr, 0, 0))
+			{
+				if (msg.message == forward_message_)
+				{
+						std::lock_guard<std::mutex> lock{ mutex_ };
+						while (!forward_handlers_.empty())
+						{
+							forward_handlers_.front()();
+							forward_handlers_.pop();
+						}
+				}
+				else
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
+			}
+			/*
+						while (true)
+						{
+							SleepEx(INFINITE, TRUE);
+						}*/
+		}
+
+		void Athene::Forward(unsigned char* image_data, int height, int width, std::vector<int> &lines, std::vector<int> &circles)
+		{
+			if (image_data == nullptr)
+			{
+				return;
+			}
+
+			std::shared_ptr<tensor<unsigned char>> image_tensor, image_nchw_tensor, image_resize_tensor;
+			image_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, 3}, -1, NHWC));
+			unsigned char *image_tensor_data = image_tensor->mutable_cpu_data();
+			memcpy(image_tensor_data, image_data, height * width * 3 * sizeof(unsigned char));
+			tensor_operation_cpu::nhwc2nchw_cpu(image_tensor, image_nchw_tensor);
+
+			float scale = 0;
+			vector<float> keypoints;
+			vector<int> shape;
+
+			int w = baseSize_.width;
+			int h = baseSize_.height;
+			int new_h = h;
+			float s = h / (float)height;
+			int new_w = width * s;
+
+			if (new_w > w) {
+				new_w = w;
+				s = w / (float)width;
+				new_h = height * s;
+			}
+			scale = 1 / s;
+
+			tensor_operation_cpu::resize_cpu(image_nchw_tensor, image_resize_tensor, new_h, new_w);
+			unsigned char *image_resize_tensor_data = image_resize_tensor->mutable_cpu_data();
+
+			//printf("reshape size: %d, %d, %d\n", input_layer->channels(), im.rows, im.cols);
+			input_layer_->Reshape(1, input_layer_->channels(), new_h, new_w);
+			net_->Reshape();
+
+			float* input_data = input_layer_->mutable_cpu_data();
+			for (int i = 0; i < new_h * new_w * 3; i++)
+			{
+				input_data[i] = float(image_resize_tensor_data[i]) / 256.f - 0.5;
+			}
+
+			//double time_begin = getTickCount();
+			net_->Forward();
+
+			Blob<float>* net_output_blob = net_->blob_by_name("net_output").get();
+			const float* net_output_data_begin = net_output_blob->cpu_data();
+			//double fee_time = (getTickCount() - time_begin) / getTickFrequency() * 1000;
+			//printf("net forward fee: %.3f ms\n", fee_time);
+
+			BlobData* net_output = createBlob_local(net_output_blob->num(), net_output_blob->channels(), net_output_blob->height(), net_output_blob->width());
+
+			//获取网络输出，inplace
+			memcpy(net_output->list, net_output_data_begin, net_output_blob->count() * sizeof(float));
+
+			//把heatmap给resize到约定大小
+			for (int i = 0; i < net_output->channels; ++i) {
+				Mat um(baseSize_.height, baseSize_.width, CV_32F, input_->list + baseSize_.height*baseSize_.width*i);
+
+				//featuremap的resize插值方法很有关系
+				resize(Mat(net_output->height, net_output->width, CV_32F, net_output->list + net_output->width*net_output->height*i), um, baseSize_, 0, 0, CV_INTER_CUBIC);
+			}
+
+			//std::shared_ptr<tensor<float>> input_tensor, output_tensor;
+			//output_tensor.reset(new tensor<float>(std::vector<int>{1, net_output->channels, net_output->height, net_output->width}));
+			//memcpy(output_tensor->mutable_cpu_data(), net_output->list, net_output->channels * net_output->width * net_output->height * sizeof(float));
+			//tensor_operation_cpu::resize_cpu(output_tensor, input_tensor, baseSize_.height, baseSize_.width);
+			//memcpy(input_->list, input_tensor->cpu_data(), net_output->channels * baseSize_.width * baseSize_.height * sizeof(float));
+
+			//获取每个feature map的局部极大值
+			nms(input_, nms_out_, 0.05);
+
+			//得到局部极大值后，根据PAFs、points做部件连接
+			connectBodyPartsCpu(keypoints, input_->list, nms_out_->list, baseSize_, POSE_MAX_PEOPLE, 9, 0.05, 3, 0.4, 1, shape);
+
+			//printf("render to image.\n");
+			//绘图，显示
+			getPoseKeypoints(lines, circles, keypoints, shape, 0.05, scale);
+
+			releaseBlob_local(&net_output);
+		}
+
+
 		Athene::~Athene()
 		{
 			if (input_)
 			{
 				releaseBlob_local(&input_);
 			}
-			
+
 			if (nms_out_)
 			{
 				releaseBlob_local(&nms_out_);
 			}
-			
+
+			if (renderer_ != nullptr)
+			{
+				delete renderer_;
+			}
+
+			if (window_ != nullptr)
+			{
+				delete window_;
+			}
+
 			delete net_;
 		}
 	}

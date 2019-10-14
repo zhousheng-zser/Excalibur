@@ -154,6 +154,7 @@
     <ClInclude Include="..\..\include\Excalibur\axpy.hpp" />
     <ClInclude Include="..\..\include\Excalibur\base_conv.hpp" />
     <ClInclude Include="..\..\include\Excalibur\concat.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp" />
@@ -199,6 +200,7 @@
     <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\axpy.cpp" />
     <ClCompile Include="..\..\src\Excalibur\concat.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\cudnn.cpp" />
