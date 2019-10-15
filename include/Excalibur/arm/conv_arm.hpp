@@ -18,6 +18,7 @@ namespace glasssix
 
 			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
 		private:
+			std::vector<std::shared_ptr<tensor<float>>> weights_transformed_vec_;
 			std::shared_ptr<tensor<float>> weights_transformed_;
 			std::shared_ptr<tensor<float>> weights_sgemm_;
 

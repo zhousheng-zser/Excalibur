@@ -100,7 +100,7 @@
       <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;INT8_DATA;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>true</OpenMPSupport>
+      <OpenMPSupport>false</OpenMPSupport>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -127,10 +127,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;INT8_DATA;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>true</OpenMPSupport>
+      <OpenMPSupport>false</OpenMPSupport>
       <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
@@ -154,12 +154,14 @@
     <ClInclude Include="..\..\include\Excalibur\axpy.hpp" />
     <ClInclude Include="..\..\include\Excalibur\base_conv.hpp" />
     <ClInclude Include="..\..\include\Excalibur\concat.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
     <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
     <ClInclude Include="tensor_io.hpp" />
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -198,6 +200,7 @@
     <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\axpy.cpp" />
     <ClCompile Include="..\..\src\Excalibur\concat.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\cudnn.cpp" />

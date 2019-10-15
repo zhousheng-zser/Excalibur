@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include <glasssix/accelerator.hpp>
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
@@ -24,13 +24,31 @@ namespace glasssix
 
 		Search::~Search(){}
 
-		void Search::loadGraph(const char *graphPath)
+		bool Search::loadGraph(const char *graphPath)
 		{
 			ngraph.clear();
 			std::ifstream in(graphPath, std::ios::binary);
-			in.read((char *)&isNormalized, sizeof(bool));
-			in.read((char *)&width, sizeof(unsigned));
-			in.read((char *)&navigateNode, sizeof(unsigned));
+			if (!in.is_open())
+			{
+				std::cout << "open file error" << std::endl; exit(-1);
+			}
+
+			index_header header;
+			in.read((char *)&header, sizeof(index_header));
+
+			isNormalized = header.normalized;
+			width = header.graph_width;
+			navigateNode = header.navigate_node;
+			uint64_t file_size = header.file_size;
+			
+			in.seekg(0, std::ios::end);
+			auto pos = in.tellg();
+			if (pos != file_size)
+			{
+				return false;
+			}
+
+			in.seekg(sizeof(index_header), std::ios::beg);
 			while (!in.eof()) {
 				unsigned k;
 				in.read((char *)&k, sizeof(unsigned));
@@ -39,28 +57,46 @@ namespace glasssix
 				in.read((char *)tmp.data(), k * sizeof(unsigned));
 				ngraph.push_back(tmp);
 			}
+
+			return true;
 		}
 
-		void Search::loadGraph(const char *graphPath, const char *basedataPath)
+		bool Search::loadGraph(const char *graphPath, const char *basedataPath)
 		{
 			//load graph
 			ngraph.clear();
-			std::ifstream inGraph(graphPath, std::ios::binary);
-			if (!inGraph.is_open())
+			std::ifstream in(graphPath, std::ios::binary);
+			if (!in.is_open())
 			{
 				std::cout << "open file error" << std::endl; exit(-1);
 			}
 
-			inGraph.read((char *)&isNormalized, sizeof(bool));
-			inGraph.read((char *)&width, sizeof(unsigned));
-			inGraph.read((char *)&navigateNode, sizeof(unsigned));
-			while (!inGraph.eof()) 
+			index_header header;
+			in.read((char *)&header, sizeof(index_header));
+
+			isNormalized = header.normalized;
+			width = header.graph_width;
+			navigateNode = header.navigate_node;
+			uint64_t file_size = header.file_size;
+
+			in.seekg(0, std::ios::end);
+			auto pos = in.tellg();
+			if (pos != file_size)
+			{
+				return false;
+			}
+
+			//in.read((char *)&isNormalized, sizeof(bool));
+			//in.read((char *)&width, sizeof(unsigned));
+			//in.read((char *)&navigateNode, sizeof(unsigned));
+			in.seekg(sizeof(index_header), std::ios::beg);
+			while (!in.eof())
 			{
 				unsigned k;
-				inGraph.read((char *)&k, sizeof(unsigned));
-				if (inGraph.eof())break;
+				in.read((char *)&k, sizeof(unsigned));
+				if (in.eof())break;
 				std::vector<unsigned> tmp(k);
-				inGraph.read((char *)tmp.data(), k * sizeof(unsigned));
+				in.read((char *)tmp.data(), k * sizeof(unsigned));
 				ngraph.push_back(tmp);
 			}
 
@@ -81,6 +117,8 @@ namespace glasssix
 			
 			baseData_ = &baseDataPtr;
 			baseNum_ = baseDataPtr.size() - 1;
+
+			return true;
 		}
 
 		const std::vector<const float*>* Search::getBasedata()
@@ -158,7 +196,7 @@ namespace glasssix
 
 			if (baseNum_ != 1)
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < queryNum_; ++i)

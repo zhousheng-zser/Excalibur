@@ -18,7 +18,11 @@ void glasssix::excalibur::inner_product_arm::Forward_cpu(const std::shared_ptr<t
 		top.reset(new tensor<float>(std::vector<int>{num, num_output_, 1, 1}, -1, NCHW));
 
 		const float* weight_data_ptr = weights_->cpu_data();
-		const float *bias_data = bias_->cpu_data();
+		const float *bias_data = nullptr;
+		if (bias_)
+		{
+			bias_data = bias_->cpu_data();
+		}
 
 		for (int num_i = 0; num_i < num; num_i++)
 		{

@@ -6,6 +6,7 @@
 #include "conv_cudnn_gpu.hpp"
 #include "conv_native_cpu.hpp"
 #include "conv_native_gpu.hpp"
+#include "conv_1x1s1_cpu.hpp"
 #include "conv_winograd_cpu.hpp"
 #include "prelu.hpp"
 #include "pooling.hpp"
@@ -133,8 +134,10 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 if(device_ < 0){\
     bool int8_quantization = int8_quantization_;\
     if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
-    if(kernel_size == 3 && stride == 1){\
-        conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	if((stride == 1) && (kernel_size == 1)){\
+		conv_name = new conv_1x1s1_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	else if((stride == 1) && (kernel_size == 3)){\
+		conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     else{\
         conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     conv_name->set_bias(conv_name##_##bias);\

@@ -28,6 +28,7 @@
 
 namespace glasssix
 {
+
 	class mutex_wrapper;
 
 	namespace irisviel
@@ -71,16 +72,16 @@ namespace glasssix
 			void saveGraph(std::string graphPath, std::string basedataPath) const;
 
 
-			void loadGraph(const char* graphPath) const;
+			bool loadGraph(const char* graphPath) const;
 
 
-			void loadGraph(std::string graphPath) const;
+			bool loadGraph(std::string graphPath) const;
 
 			const std::vector<const float*>* getBasedata() const;
 
-			void loadGraph(const char* graphPath, const char *basedataPath) const;
+			bool loadGraph(const char* graphPath, const char *basedataPath) const;
 
-			void loadGraph(std::string graphPath, std::string basedataPath) const;
+			bool loadGraph(std::string graphPath, std::string basedataPath) const;
 
 			void optimizeGraph() const;
 
@@ -96,7 +97,9 @@ namespace glasssix
 		private:
 			std::shared_ptr<Index> index_;
 			std::shared_ptr<Search> search_;
+
 			std::shared_ptr<mutex_wrapper> mutex_wrapper_;
+			
 		};
 	}
 }

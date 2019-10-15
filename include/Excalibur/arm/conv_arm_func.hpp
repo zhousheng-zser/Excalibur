@@ -3,6 +3,12 @@
 #include <glasssix/tensor.hpp>
 
 #include "tensor_operation_cpu.hpp"
+#include "../../Julius/simd_helper.hpp"
+#include <iostream>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #ifdef __ARM_NEON
 #include <arm_neon.h>
@@ -19,6 +25,25 @@ namespace glasssix
 			int remain = size - (nn << 2);
 #else
 			int remain = size;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+			mm_type fill_value = mm_set1_ps(_v);
+			int circle_num = remain / mm_align_size;
+			int index = 0;
+			for (; index < circle_num; index++)
+			{
+				int index_offset = index * mm_align_size;
+				mm_store_ps(ptr + index_offset, fill_value);
+			}
+
+			remain -= mm_align_size * index;
+			for (; remain > 0; remain--)
+			{
+				ptr[size - remain] = _v;
+			}
+
+			return;
+#endif //SIMD_TYPE >= SIMDTYPE_SSE
 #endif // __ARM_NEON
 
 #if __ARM_NEON
@@ -62,7 +87,6 @@ namespace glasssix
 				*ptr++ = _v;
 			}
 		}
-
 
 		static void conv1x1s1_sgemm_transform_kernel_neon(std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
 		{
@@ -192,7 +216,9 @@ namespace glasssix
 					int nn_size = size >> 3;
 					int remain_size_start = nn_size << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int ii = 0; ii<nn_size; ii++)
 					{
 						int i = ii * 8;
@@ -226,6 +252,16 @@ namespace glasssix
 							img0 += bottom_cstep;
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type img_data = mm_load_ps(img0);
+							mm_store_ps(tmpptr, img_data);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type img_data = mm_load_ps(img0);
+							mm_store_ps(tmpptr, img_data);
+							img_data = mm_load_ps(img0 + mm_align_size);
+							mm_store_ps(tmpptr + mm_align_size, img_data);
+#else
 							tmpptr[0] = img0[0];
 							tmpptr[1] = img0[1];
 							tmpptr[2] = img0[2];
@@ -234,16 +270,19 @@ namespace glasssix
 							tmpptr[5] = img0[5];
 							tmpptr[6] = img0[6];
 							tmpptr[7] = img0[7];
-
+#endif
 							tmpptr += 8;
 							img0 += bottom_cstep;
+
 #endif // __ARM_NEON
 					}
 				}
 
 					nn_size = (size - remain_size_start) >> 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int ii = 0; ii<nn_size; ii++)
 					{
 						int i = remain_size_start + ii * 4;
@@ -276,20 +315,28 @@ namespace glasssix
 							img0 += bottom_cstep;
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							__m128 img_data = _mm_loadu_ps(img0);
+							_mm_storeu_ps(tmpptr, img_data);
+#else
 							tmpptr[0] = img0[0];
 							tmpptr[1] = img0[1];
 							tmpptr[2] = img0[2];
 							tmpptr[3] = img0[3];
-
+#endif
 							tmpptr += 4;
 							img0 += bottom_cstep;
+
 #endif // __ARM_NEON
+						}
 					}
-			}
 
 					remain_size_start += nn_size << 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int i = remain_size_start; i<size; i++)
 					{
 						const float* img0 = bottom_data;
@@ -304,7 +351,7 @@ namespace glasssix
 							img0 += bottom_cstep;
 						}
 					}
-		}
+				}
 
 				int nn_outch = 0;
 				int remain_outch_start = 0;
@@ -313,7 +360,9 @@ namespace glasssix
 				nn_outch = outch >> 3;
 				remain_outch_start = nn_outch << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = pp * 8;
@@ -792,7 +841,9 @@ namespace glasssix
 
 				nn_outch = (outch - remain_outch_start) >> 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = remain_outch_start + pp * 4;
@@ -1073,6 +1124,87 @@ namespace glasssix
 							);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+						mm_type sum0 = mm_set1_ps(biasptr[0]);
+						mm_type sum1 = mm_set1_ps(biasptr[1]);
+						mm_type sum2 = mm_set1_ps(biasptr[2]);
+						mm_type sum3 = mm_set1_ps(biasptr[3]);
+
+						for (int q = 0; q < inch; q++)
+						{
+							mm_type kptr0 = mm_set1_ps(kptr[0]);
+							mm_type kptr1 = mm_set1_ps(kptr[1]);
+							mm_type kptr2 = mm_set1_ps(kptr[2]);
+							mm_type kptr3 = mm_set1_ps(kptr[3]);
+
+							mm_type tmpptr0 = mm_load_ps(tmpptr);
+
+							sum0 = mm_fmadd_ps(kptr0, tmpptr0, sum0);
+							sum1 = mm_fmadd_ps(kptr1, tmpptr0, sum1);
+							sum2 = mm_fmadd_ps(kptr2, tmpptr0, sum2);
+							sum3 = mm_fmadd_ps(kptr3, tmpptr0, sum3);
+
+							tmpptr += 8;
+							kptr += 4;
+						}
+
+						mm_store_ps(outptr0, sum0);
+						mm_store_ps(outptr1, sum1);
+						mm_store_ps(outptr2, sum2);
+						mm_store_ps(outptr3, sum3);
+
+						outptr0 += 8;
+						outptr1 += 8;
+						outptr2 += 8;
+						outptr3 += 8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type sum0_0 = mm_set1_ps(biasptr[0]);
+						mm_type sum0_4 = mm_set1_ps(biasptr[0]);
+						mm_type sum1_0 = mm_set1_ps(biasptr[1]);
+						mm_type sum1_4 = mm_set1_ps(biasptr[1]);
+						mm_type sum2_0 = mm_set1_ps(biasptr[2]);
+						mm_type sum2_4 = mm_set1_ps(biasptr[2]);
+						mm_type sum3_0 = mm_set1_ps(biasptr[3]);
+						mm_type sum3_4 = mm_set1_ps(biasptr[3]);
+
+						for (int q = 0; q < inch; q++)
+						{
+							mm_type kptr0 = mm_set1_ps(kptr[0]);
+							mm_type kptr1 = mm_set1_ps(kptr[1]);
+							mm_type kptr2 = mm_set1_ps(kptr[2]);
+							mm_type kptr3 = mm_set1_ps(kptr[3]);
+
+							mm_type tmpptr0_0 = mm_load_ps(tmpptr);
+							mm_type tmpptr0_4 = mm_load_ps(tmpptr + 4);
+
+							sum0_0 = mm_fmadd_ps(kptr0, tmpptr0_0, sum0_0);
+							sum0_4 = mm_fmadd_ps(kptr0, tmpptr0_4, sum0_4);
+							sum1_0 = mm_fmadd_ps(kptr1, tmpptr0_0, sum1_0);
+							sum1_4 = mm_fmadd_ps(kptr1, tmpptr0_4, sum1_4);
+							sum2_0 = mm_fmadd_ps(kptr2, tmpptr0_0, sum2_0);
+							sum2_4 = mm_fmadd_ps(kptr2, tmpptr0_4, sum2_4);
+							sum3_0 = mm_fmadd_ps(kptr3, tmpptr0_0, sum3_0);
+							sum3_4 = mm_fmadd_ps(kptr3, tmpptr0_4, sum3_4);
+
+							tmpptr += 8;
+							kptr += 4;
+						}
+
+						mm_store_ps(outptr0, sum0_0);
+						mm_store_ps(outptr0 + 4, sum0_4);
+						mm_store_ps(outptr1, sum1_0);
+						mm_store_ps(outptr1 + 4, sum1_4);
+						mm_store_ps(outptr2, sum2_0);
+						mm_store_ps(outptr2 + 4, sum2_4);
+						mm_store_ps(outptr3, sum3_0);
+						mm_store_ps(outptr3 + 4, sum3_4);
+
+						outptr0 += 8;
+						outptr1 += 8;
+						outptr2 += 8;
+						outptr3 += 8;
+#else
 						float sum0_0 = biasptr[0];
 						float sum0_1 = biasptr[0];
 						float sum0_2 = biasptr[0];
@@ -1109,7 +1241,7 @@ namespace glasssix
 						float sum3_6 = biasptr[3];
 						float sum3_7 = biasptr[3];
 
-						for (int q = 0; q<inch; q++)
+						for (int q = 0; q < inch; q++)
 						{
 							sum0_0 += tmpptr[0] * kptr[0];
 							sum0_1 += tmpptr[1] * kptr[0];
@@ -1191,6 +1323,8 @@ namespace glasssix
 						outptr1 += 8;
 						outptr2 += 8;
 						outptr3 += 8;
+#endif
+
 #endif // __ARM_NEON
 				}
 
@@ -1394,6 +1528,47 @@ namespace glasssix
 							);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 sum0 = _mm_set1_ps(biasptr[0]);
+						__m128 sum1 = _mm_set1_ps(biasptr[1]);
+						__m128 sum2 = _mm_set1_ps(biasptr[2]);
+						__m128 sum3 = _mm_set1_ps(biasptr[3]);
+
+						for (int q = 0; q < inch; q++)
+						{
+							__m128 kptr0 = _mm_set1_ps(kptr[0]);
+							__m128 kptr1 = _mm_set1_ps(kptr[1]);
+							__m128 kptr2 = _mm_set1_ps(kptr[2]);
+							__m128 kptr3 = _mm_set1_ps(kptr[3]);
+							__m128 tmpptr0 = _mm_loadu_ps(tmpptr);
+
+#if USE_FMADD128
+							sum0 = _mm_fmadd_ps(tmpptr0, kptr0, sum0);
+							sum1 = _mm_fmadd_ps(tmpptr0, kptr1, sum1);
+							sum2 = _mm_fmadd_ps(tmpptr0, kptr2, sum2);
+							sum3 = _mm_fmadd_ps(tmpptr0, kptr3, sum3);
+#else
+							sum0 = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr0), sum0);
+							sum1 = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr1), sum1);
+							sum2 = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr2), sum2);
+							sum3 = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr3), sum3);
+#endif
+							tmpptr += 4;
+							kptr += 4;
+						}
+
+						_mm_storeu_ps(outptr0, sum0);
+						_mm_storeu_ps(outptr1, sum1);
+						_mm_storeu_ps(outptr2, sum2);
+						_mm_storeu_ps(outptr3, sum3);
+
+						outptr0 += 4;
+						outptr1 += 4;
+						outptr2 += 4;
+						outptr3 += 4;
+
+#else
 						float sum0_0 = biasptr[0];
 						float sum0_1 = biasptr[0];
 						float sum0_2 = biasptr[0];
@@ -1414,7 +1589,7 @@ namespace glasssix
 						float sum3_2 = biasptr[3];
 						float sum3_3 = biasptr[3];
 
-						for (int q = 0; q<inch; q++)
+						for (int q = 0; q < inch; q++)
 						{
 							sum0_0 += tmpptr[0] * kptr[0];
 							sum0_1 += tmpptr[1] * kptr[0];
@@ -1464,6 +1639,8 @@ namespace glasssix
 						outptr1 += 4;
 						outptr2 += 4;
 						outptr3 += 4;
+#endif
+
 #endif // __ARM_NEON
 				}
 
@@ -1641,6 +1818,39 @@ namespace glasssix
 							);
 #endif // __aarch64__
 #else
+						
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 sum = _mm_loadu_ps(biasptr);
+
+						for (int q = 0; q < inch; q++)
+						{
+							__m128 kptr0 = _mm_loadu_ps(kptr);
+							__m128 tmpptr0 = _mm_set1_ps(tmpptr[0]);
+
+						#if USE_FMADD128
+							sum = _mm_fmadd_ps(tmpptr0, kptr0, sum);
+						#else
+							sum = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr0), sum);
+						#endif
+							tmpptr++;
+							kptr += 4;
+						}
+
+						std::shared_ptr<tensor<float>> out;
+						out.reset(new tensor<float>(std::vector<int>{4}));
+						float *out_data = out->mutable_cpu_data();
+						_mm_storeu_ps(out_data, sum);
+
+						outptr0[0] = out_data[0];
+						outptr1[0] = out_data[1];
+						outptr2[0] = out_data[2];
+						outptr3[0] = out_data[3];
+
+						outptr0++;
+						outptr1++;
+						outptr2++;
+						outptr3++;
+#else
 						float sum0 = biasptr[0];
 						float sum1 = biasptr[1];
 						float sum2 = biasptr[2];
@@ -1666,13 +1876,17 @@ namespace glasssix
 						outptr1++;
 						outptr2++;
 						outptr3++;
+#endif
+
 #endif // __ARM_NEON
 				}
 			}
 
 				remain_outch_start += nn_outch << 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int p = remain_outch_start; p<outch; p++)
 				{
 					float* outptr0 = top_data + (p)* top_cstep;
@@ -1843,6 +2057,38 @@ namespace glasssix
 							);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+						mm_type sum = mm_set1_ps(bias0);
+						for (int q = 0; q < inch; q++)
+						{
+							mm_type tmpptr0 = mm_load_ps(tmpptr);
+							mm_type kptr0 = mm_set1_ps(kptr[0]);
+							sum = mm_fmadd_ps(tmpptr0, kptr0, sum);
+							tmpptr += 8;
+							kptr++;
+						}
+
+						mm_store_ps(outptr0, sum);
+						outptr0 += 8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+						mm_type sum0 = mm_set1_ps(bias0);
+						mm_type sum1 = mm_set1_ps(bias0);
+						for (int q = 0; q < inch; q++)
+						{
+							mm_type tmpptr0 = mm_load_ps(tmpptr);
+							mm_type tmpptr1 = mm_load_ps(tmpptr + 4);
+							mm_type kptr0 = mm_set1_ps(kptr[0]);
+							sum0 = mm_fmadd_ps(tmpptr0, kptr0, sum0);
+							sum1 = mm_fmadd_ps(tmpptr1, kptr0, sum1);
+							tmpptr += 8;
+							kptr++;
+						}
+
+						mm_store_ps(outptr0, sum0);
+						mm_store_ps(outptr0 + 4, sum1);
+						outptr0 += 8;
+#else
 						float sum0 = bias0;
 						float sum1 = bias0;
 						float sum2 = bias0;
@@ -1877,6 +2123,8 @@ namespace glasssix
 						outptr0[7] = sum7;
 
 						outptr0 += 8;
+#endif
+
 #endif // __ARM_NEON
 				}
 
@@ -2016,6 +2264,28 @@ namespace glasssix
 							);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 sum = _mm_set1_ps(bias0);
+
+						for (int q = 0; q < inch; q++)
+						{
+							__m128 kptr0 = _mm_set1_ps(kptr[0]);
+							__m128 tmpptr0 = _mm_loadu_ps(tmpptr);
+
+#if USE_FMADD128
+							sum = _mm_fmadd_ps(tmpptr0, kptr0, sum);
+#else
+							sum = _mm_add_ps(_mm_mul_ps(tmpptr0, kptr0), sum);
+#endif
+
+							tmpptr += 4;
+							kptr++;
+						}
+
+						_mm_storeu_ps(outptr0, sum);
+						outptr0 += 4;
+#else
 						float sum0 = bias0;
 						float sum1 = bias0;
 						float sum2 = bias0;
@@ -2038,6 +2308,8 @@ namespace glasssix
 						outptr0[3] = sum3;
 
 						outptr0 += 4;
+#endif
+
 #endif // __ARM_NEON
 				}
 
@@ -2152,7 +2424,9 @@ namespace glasssix
 				nn_outch = outch >> 3;
 				remain_outch_start = nn_outch << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = pp * 8;
@@ -2779,7 +3053,9 @@ namespace glasssix
 				nn_outch = outch / 6;
 				remain_outch_start = nn_outch * 6;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = pp * 6;
@@ -2983,12 +3259,38 @@ namespace glasssix
 						for (; remain>0; remain--)
 						{
 							// TODO neon optimize
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							float sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0, sum5 = 0;
+							float r_array[4] = { *r0, *r1, *r2, *r3 };
+							__m128 r_data = _mm_loadu_ps(r_array);
+							__m128 kernel0_data = _mm_loadu_ps(kernel0);
+							__m128 kernel1_data = _mm_loadu_ps(kernel1);
+							__m128 kernel2_data = _mm_loadu_ps(kernel2);
+							__m128 kernel3_data = _mm_loadu_ps(kernel3);
+							__m128 kernel4_data = _mm_loadu_ps(kernel4);
+							__m128 kernel5_data = _mm_loadu_ps(kernel5);
+							__m128 sum0_data = _mm_mul_ps(kernel0_data, r_data);
+							__m128 sum1_data = _mm_mul_ps(kernel1_data, r_data);
+							__m128 sum2_data = _mm_mul_ps(kernel2_data, r_data);
+							__m128 sum3_data = _mm_mul_ps(kernel3_data, r_data);
+							__m128 sum4_data = _mm_mul_ps(kernel4_data, r_data);
+							__m128 sum5_data = _mm_mul_ps(kernel5_data, r_data);
+
+							sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
+							sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
+							sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
+							sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
+							sum4 += sum4_data.m128_f32[0] + sum4_data.m128_f32[1] + sum4_data.m128_f32[2] + sum4_data.m128_f32[3];
+							sum5 += sum5_data.m128_f32[0] + sum5_data.m128_f32[1] + sum5_data.m128_f32[2] + sum5_data.m128_f32[3];
+#else
 							float sum0 = *r0 * kernel0[0] + *r1 * kernel0[1] + *r2 * kernel0[2] + *r3 * kernel0[3];
 							float sum1 = *r0 * kernel1[0] + *r1 * kernel1[1] + *r2 * kernel1[2] + *r3 * kernel1[3];
 							float sum2 = *r0 * kernel2[0] + *r1 * kernel2[1] + *r2 * kernel2[2] + *r3 * kernel2[3];
 							float sum3 = *r0 * kernel3[0] + *r1 * kernel3[1] + *r2 * kernel3[2] + *r3 * kernel3[3];
 							float sum4 = *r0 * kernel4[0] + *r1 * kernel4[1] + *r2 * kernel4[2] + *r3 * kernel4[3];
 							float sum5 = *r0 * kernel5[0] + *r1 * kernel5[1] + *r2 * kernel5[2] + *r3 * kernel5[3];
+#endif
 
 							*outptr0 += sum0;
 							*outptr1 += sum1;
@@ -3139,7 +3441,58 @@ namespace glasssix
 					}
 #endif // __ARM_NEON
 
-						for (; remain>0; remain--)
+#if SIMD_TYPE >= SIMDTYPE_AVX
+						float k_array[8] = { k0, k1, k2, k3, k4, k5, 0.0f, 0.0f };
+						mm_type k_data = mm_load_ps(k_array);
+
+						for (; remain > 0; remain--)
+						{
+							mm_type r_data = mm_set1_ps(*r0);
+							mm_type result = mm_mul_ps(r_data, k_data);
+
+							*outptr0 += result.m256_f32[0];
+							*outptr1 += result.m256_f32[1];
+							*outptr2 += result.m256_f32[2];
+							*outptr3 += result.m256_f32[3];
+							*outptr4 += result.m256_f32[4];
+							*outptr5 += result.m256_f32[5];
+
+							r0++;
+							outptr0++;
+							outptr1++;
+							outptr2++;
+							outptr3++;
+							outptr4++;
+							outptr5++;
+						}
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+					float k_array[8] = { k0, k1, k2, k3, k4, k5, 0.0f, 0.0f };
+					mm_type k_data0 = mm_load_ps(k_array);
+					mm_type k_data4 = mm_load_ps(k_array + 4);
+
+					for (; remain > 0; remain--)
+					{
+						mm_type r_data = mm_set1_ps(*r0);
+						mm_type result0 = mm_mul_ps(r_data, k_data0);
+						mm_type result4 = mm_mul_ps(r_data, k_data4);
+
+						*outptr0 += result0.m128_f32[0];
+						*outptr1 += result0.m128_f32[1];
+						*outptr2 += result0.m128_f32[2];
+						*outptr3 += result0.m128_f32[3];
+						*outptr4 += result4.m128_f32[0];
+						*outptr5 += result4.m128_f32[1];
+
+						r0++;
+						outptr0++;
+						outptr1++;
+						outptr2++;
+						outptr3++;
+						outptr4++;
+						outptr5++;
+					}
+#else
+						for (; remain > 0; remain--)
 						{
 							// TODO neon optimize
 							float sum0 = *r0 * k0;
@@ -3164,13 +3517,17 @@ namespace glasssix
 							outptr4++;
 							outptr5++;
 						}
+#endif
+
 					}
 				}
 #endif // __ARM_NEON && __aarch64__
 
 				nn_outch = (outch - remain_outch_start) >> 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = remain_outch_start + pp * 4;
@@ -3475,11 +3832,30 @@ namespace glasssix
 #endif // __ARM_NEON
 						for (; remain>0; remain--)
 						{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							float sum0 = 0, sum1 = 0, sum2 = 0, sum3 = 0;
+							float r_array[4] = { *r0, *r1, *r2, *r3 };
+							__m128 r_data = _mm_loadu_ps(r_array);
+							__m128 kernel0_data = _mm_loadu_ps(kernel0);
+							__m128 kernel1_data = _mm_loadu_ps(kernel1);
+							__m128 kernel2_data = _mm_loadu_ps(kernel2);
+							__m128 kernel3_data = _mm_loadu_ps(kernel3);
+							__m128 sum0_data = _mm_mul_ps(kernel0_data, r_data);
+							__m128 sum1_data = _mm_mul_ps(kernel1_data, r_data);
+							__m128 sum2_data = _mm_mul_ps(kernel2_data, r_data);
+							__m128 sum3_data = _mm_mul_ps(kernel3_data, r_data);
+
+							sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
+							sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
+							sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
+							sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
+#else
 							// TODO neon optimize
 							float sum0 = *r0 * kernel0[0] + *r1 * kernel0[1] + *r2 * kernel0[2] + *r3 * kernel0[3];
 							float sum1 = *r0 * kernel1[0] + *r1 * kernel1[1] + *r2 * kernel1[2] + *r3 * kernel1[3];
 							float sum2 = *r0 * kernel2[0] + *r1 * kernel2[1] + *r2 * kernel2[2] + *r3 * kernel2[3];
 							float sum3 = *r0 * kernel3[0] + *r1 * kernel3[1] + *r2 * kernel3[2] + *r3 * kernel3[3];
+#endif
 
 							*outptr0 += sum0;
 							*outptr1 += sum1;
@@ -3650,9 +4026,30 @@ namespace glasssix
 					}
 #endif // __aarch64__
 #endif // __ARM_NEON
-						for (; remain>0; remain--)
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						float k_array[4] = { k0, k1, k2, k3 };
+						__m128 k_data = _mm_loadu_ps(k_array);
+
+						for (; remain > 0; remain--)
 						{
-							// TODO neon optimize
+							__m128 r_data = _mm_set1_ps(*r0);
+							__m128 result = _mm_mul_ps(r_data, k_data);
+
+							*outptr0 += result.m128_f32[0];
+							*outptr1 += result.m128_f32[1];
+							*outptr2 += result.m128_f32[2];
+							*outptr3 += result.m128_f32[3];
+
+							r0++;
+							outptr0++;
+							outptr1++;
+							outptr2++;
+							outptr3++;
+						}
+#else
+						for (; remain > 0; remain--)
+						{
 							float sum0 = *r0 * k0;
 							float sum1 = *r0 * k1;
 							float sum2 = *r0 * k2;
@@ -3669,12 +4066,16 @@ namespace glasssix
 							outptr2++;
 							outptr3++;
 						}
+#endif
+
 					}
 				}
 
 				remain_outch_start += nn_outch << 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int p = remain_outch_start; p<outch; p++)
 				{
 					float *out = top_data + (p)* top_cstep;
@@ -3821,6 +4222,26 @@ namespace glasssix
 						}
 #endif // __aarch64__
 #endif // __ARM_NEON
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						float k_array[4] = { k0, k1, k2, k3 };
+						__m128 k_data = _mm_loadu_ps(k_array);
+
+						for (; remain > 0; remain--)
+						{
+							float r_array[4] = { *r0, *r1, *r2, *r3 };
+							__m128 r_data = _mm_loadu_ps(r_array);
+							__m128 result = _mm_mul_ps(r_data, k_data);
+
+							*outptr += result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2] + result.m128_f32[3];
+
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+						}
+#else
 						for (; remain>0; remain--)
 						{
 							float sum = *r0 * k0;
@@ -3836,6 +4257,7 @@ namespace glasssix
 							r3++;
 							outptr++;
 						}
+#endif
 
 					}
 
@@ -3917,6 +4339,27 @@ namespace glasssix
 						}
 #endif // __aarch64__
 #endif // __ARM_NEON
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						int circle_num = remain / mm_align_size;
+						mm_type k_data = mm_set1_ps(k0);
+						int index = 0;
+
+						for (; index < circle_num; index++)
+						{
+							int index_offset = index * mm_align_size;
+							mm_type out_data = mm_load_ps(outptr + index_offset);
+							mm_type r_data = mm_load_ps(r0 + index_offset);
+							out_data = mm_fmadd_ps(r_data, k_data, out_data);
+							mm_store_ps(outptr + index_offset, out_data);
+						}
+
+						for (index = mm_align_size * index; index < remain; index++)
+						{
+							float sum = *(r0 + index) * k0;
+							*(outptr + index) += sum;
+						}
+#else
 						for (; remain>0; remain--)
 						{
 							float sum = *r0 * k0;
@@ -3926,6 +4369,7 @@ namespace glasssix
 							r0++;
 							outptr++;
 						}
+#endif
 
 					}
 				}
@@ -4026,7 +4470,9 @@ namespace glasssix
 				int nn_outch = outch >> 3;
 				int remain_outch_start = nn_outch << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int pp = 0; pp<nn_outch; pp++)
 				{
 					int p = pp * 8;
@@ -4728,6 +5174,137 @@ namespace glasssix
 									);
 #endif // __aarch64__
 #else // __ARM_NEON
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_type sum = mm_setzero_ps();
+								mm_type r00 = mm_set1_ps(r0[0]);
+								mm_type r01 = mm_set1_ps(r0[1]);
+								mm_type r02 = mm_set1_ps(r0[2]);
+								mm_type r10 = mm_set1_ps(r1[0]);
+								mm_type r11 = mm_set1_ps(r1[1]);
+								mm_type r12 = mm_set1_ps(r1[2]);
+								mm_type r20 = mm_set1_ps(r2[0]);
+								mm_type r21 = mm_set1_ps(r2[1]);
+								mm_type r22 = mm_set1_ps(r2[2]);
+								mm_type ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r00, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r01, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r02, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r10, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r11, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r12, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r20, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r21, ktmp0, sum);
+								ktmp += 8;
+
+								ktmp0 = mm_load_ps(ktmp);
+								sum = mm_fmadd_ps(r22, ktmp0, sum);
+								ktmp += 8;
+
+								*outptr0 += sum.m256_f32[0];
+								*outptr1 += sum.m256_f32[1];
+								*outptr2 += sum.m256_f32[2];
+								*outptr3 += sum.m256_f32[3];
+								*outptr4 += sum.m256_f32[4];
+								*outptr5 += sum.m256_f32[5];
+								*outptr6 += sum.m256_f32[6];
+								*outptr7 += sum.m256_f32[7];
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								mm_type sum_0 = mm_setzero_ps();
+								mm_type sum_4 = mm_setzero_ps();
+								mm_type r00 = mm_set1_ps(r0[0]);
+								mm_type r01 = mm_set1_ps(r0[1]);
+								mm_type r02 = mm_set1_ps(r0[2]);
+								mm_type r10 = mm_set1_ps(r1[0]);
+								mm_type r11 = mm_set1_ps(r1[1]);
+								mm_type r12 = mm_set1_ps(r1[2]);
+								mm_type r20 = mm_set1_ps(r2[0]);
+								mm_type r21 = mm_set1_ps(r2[1]);
+								mm_type r22 = mm_set1_ps(r2[2]);
+								mm_type ktmp0_0 = mm_load_ps(ktmp);
+								mm_type ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r00, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r00, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r01, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r01, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r02, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r02, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r10, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r10, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r11, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r11, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r12, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r12, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r20, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r20, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r21, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r21, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								ktmp0_0 = mm_load_ps(ktmp);
+								ktmp0_4 = mm_load_ps(ktmp + 4);
+								sum_0 = mm_fmadd_ps(r22, ktmp0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r22, ktmp0_4, sum_4);
+								ktmp += 8;
+
+								*outptr0 += sum_0.m128_f32[0];
+								*outptr1 += sum_0.m128_f32[1];
+								*outptr2 += sum_0.m128_f32[2];
+								*outptr3 += sum_0.m128_f32[3];
+								*outptr4 += sum_4.m128_f32[0];
+								*outptr5 += sum_4.m128_f32[1];
+								*outptr6 += sum_4.m128_f32[2];
+								*outptr7 += sum_4.m128_f32[3];
+#else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
 								float sum2 = 0.f;
@@ -4835,6 +5412,7 @@ namespace glasssix
 								*outptr5 += sum5;
 								*outptr6 += sum6;
 								*outptr7 += sum7;
+#endif
 
 								ktmp -= 8 * 9;
 
@@ -4861,7 +5439,9 @@ namespace glasssix
 					}
 				}
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int p = remain_outch_start; p<outch; p++)
 				{
 					float *out = top_data + (p)* top_cstep;
@@ -4893,6 +5473,12 @@ namespace glasssix
 #endif // __ARM_NEON
 
 						int i = 0;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 ktmp0 = _mm_loadu_ps(ktmp);
+						__m128 ktmp3 = _mm_loadu_ps(ktmp + 3);
+						__m128 ktmp6 = _mm_loadu_ps(ktmp + 6);
+#endif
 
 						for (; i < outh; i++)
 						{
@@ -5068,6 +5654,18 @@ namespace glasssix
 								*outptr = vget_lane_f32(_ss, 0);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum = _mm_setzero_ps();
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+								sum = _mm_add_ps(_mm_mul_ps(r0_data, ktmp0), sum);
+								sum = _mm_add_ps(_mm_mul_ps(r1_data, ktmp3), sum);
+								sum = _mm_add_ps(_mm_mul_ps(r2_data, ktmp6), sum);
+
+								*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+#else
 								float sum = 0;
 
 								sum += r0[0] * ktmp[0];
@@ -5081,6 +5679,8 @@ namespace glasssix
 								sum += r2[2] * ktmp[8];
 
 								*outptr += sum;
+#endif
+
 #endif // __ARM_NEON
 
 								r0 += 2;
@@ -5255,7 +5855,9 @@ namespace glasssix
 				{
 					const int stride = kernel_h * kernel_w*outw*outh;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int p = 0; p<inch; p++)
 					{
 						const float* input = bottom_data + (p)* bottom_cstep;
@@ -5285,7 +5887,9 @@ namespace glasssix
 					int nn_size = out_size >> 3;
 					int remain_size_start = nn_size << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int ii = 0; ii<nn_size; ii++)
 					{
 						int i = ii * 8;
@@ -5322,6 +5926,15 @@ namespace glasssix
 								);
 #endif // __aarch64__
 #else                
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type img_data = mm_load_ps(img0);
+							mm_store_ps(tmpptr, img_data);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type img_data = mm_load_ps(img0);
+							mm_store_ps(tmpptr, img_data);
+							img_data = mm_load_ps(img0 + 4);
+							mm_store_ps(tmpptr + 4, img_data);
+#else
 							tmpptr[0] = img0[0];
 							tmpptr[1] = img0[1];
 							tmpptr[2] = img0[2];
@@ -5330,13 +5943,17 @@ namespace glasssix
 							tmpptr[5] = img0[5];
 							tmpptr[6] = img0[6];
 							tmpptr[7] = img0[7];
+#endif
+
 #endif // __ARM_NEON              
 							tmpptr += 8;
 							img0 += out_size;
 						}
 					}
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int i = remain_size_start; i<out_size; i++)
 					{
 						const float* img0 = bottom_im2col_data;
@@ -5369,7 +5986,9 @@ namespace glasssix
 					nn_outch = outch >> 3;
 					remain_outch_start = nn_outch << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int pp = 0; pp<nn_outch; pp++)
 					{
 						int i = pp * 8;
@@ -5865,7 +6484,9 @@ namespace glasssix
 
 					nn_outch = (outch - remain_outch_start) >> 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int pp = 0; pp<nn_outch; pp++)
 					{
 						int i = remain_outch_start + pp * 4;
@@ -6117,6 +6738,340 @@ namespace glasssix
 								);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum0 = mm_setzero_ps();
+							mm_type sum1 = mm_setzero_ps();
+							mm_type sum2 = mm_setzero_ps();
+							mm_type sum3 = mm_setzero_ps();
+
+							int k = 0;
+							for (; k + 7 < L; k = k + 8)
+							{
+								mm_type vb0 = mm_load_ps(vb);
+								mm_type vb8 = mm_load_ps(vb + 8);
+								mm_type vb16 = mm_load_ps(vb + 16);
+								mm_type vb24 = mm_load_ps(vb + 24);
+								mm_type vb32 = mm_load_ps(vb + 32);
+								mm_type vb40 = mm_load_ps(vb + 40);
+								mm_type vb48 = mm_load_ps(vb + 48);
+								mm_type vb56 = mm_load_ps(vb + 56);
+
+								//
+								mm_type va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb0, sum0);
+								mm_type va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb0, sum1);
+								mm_type va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb0, sum2);
+								mm_type va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb0, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb8, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb8, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb8, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb8, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb16, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb16, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb16, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb16, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb24, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb24, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb24, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb24, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb32, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb32, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb32, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb32, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb40, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb40, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb40, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb40, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb48, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb48, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb48, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb48, sum3);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb56, sum0);
+								va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb56, sum1);
+								va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb56, sum2);
+								va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb56, sum3);
+								va += 4;
+
+								vb += 64;
+							}
+
+							for (; k < L; k++)
+							{
+								mm_type vb0 = mm_load_ps(vb);
+								mm_type va0 = mm_set1_ps(va[0]);
+								sum0 = mm_fmadd_ps(va0, vb0, sum0);
+								mm_type va1 = mm_set1_ps(va[1]);
+								sum1 = mm_fmadd_ps(va1, vb0, sum1);
+								mm_type va2 = mm_set1_ps(va[2]);
+								sum2 = mm_fmadd_ps(va2, vb0, sum2);
+								mm_type va3 = mm_set1_ps(va[3]);
+								sum3 = mm_fmadd_ps(va3, vb0, sum3);
+
+								va += 4;
+								vb += 8;
+							}
+
+							mm_type biasptr0 = mm_set1_ps(biasptr[0]);
+							mm_type biasptr1 = mm_set1_ps(biasptr[1]);
+							mm_type biasptr2 = mm_set1_ps(biasptr[2]);
+							mm_type biasptr3 = mm_set1_ps(biasptr[3]);
+							sum0 = mm_add_ps(sum0, biasptr0);
+							sum1 = mm_add_ps(sum1, biasptr1);
+							sum2 = mm_add_ps(sum2, biasptr2);
+							sum3 = mm_add_ps(sum3, biasptr3);
+							mm_store_ps(output0, sum0);
+							mm_store_ps(output1, sum1);
+							mm_store_ps(output2, sum2);
+							mm_store_ps(output3, sum3);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum0_0 = mm_setzero_ps();
+							mm_type sum0_4 = mm_setzero_ps();
+							mm_type sum1_0 = mm_setzero_ps();
+							mm_type sum1_4 = mm_setzero_ps();
+							mm_type sum2_0 = mm_setzero_ps();
+							mm_type sum2_4 = mm_setzero_ps();
+							mm_type sum3_0 = mm_setzero_ps();
+							mm_type sum3_4 = mm_setzero_ps();
+
+							int k = 0;
+							for (; k + 7 < L; k = k + 8)
+							{
+								mm_type vb0_0 = mm_load_ps(vb);
+								mm_type vb0_4 = mm_load_ps(vb + 4);
+								mm_type vb8_0 = mm_load_ps(vb + 8);
+								mm_type vb8_4 = mm_load_ps(vb + 12);
+								mm_type vb16_0 = mm_load_ps(vb + 16);
+								mm_type vb16_4 = mm_load_ps(vb + 20);
+								mm_type vb24_0 = mm_load_ps(vb + 24);
+								mm_type vb24_4 = mm_load_ps(vb + 28);
+								mm_type vb32_0 = mm_load_ps(vb + 32);
+								mm_type vb32_4 = mm_load_ps(vb + 36);
+								mm_type vb40_0 = mm_load_ps(vb + 40);
+								mm_type vb40_4 = mm_load_ps(vb + 44);
+								mm_type vb48_0 = mm_load_ps(vb + 48);
+								mm_type vb48_4 = mm_load_ps(vb + 52);
+								mm_type vb56_0 = mm_load_ps(vb + 56);
+								mm_type vb56_4 = mm_load_ps(vb + 60);
+
+								//
+								mm_type va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb0_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb0_4, sum0_4);
+								mm_type va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb0_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb0_4, sum1_4);
+								mm_type va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb0_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb0_4, sum2_4);
+								mm_type va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb0_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb0_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb8_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb8_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb8_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb8_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb8_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb8_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb8_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb8_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb16_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb16_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb16_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb16_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb16_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb16_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb16_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb16_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb24_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb24_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb24_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb24_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb24_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb24_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb24_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb24_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb32_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb32_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb32_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb32_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb32_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb32_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb32_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb32_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb40_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb40_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb40_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb40_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb40_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb40_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb40_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb40_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb48_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb48_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb48_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb48_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb48_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb48_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb48_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb48_4, sum3_4);
+								va += 4;
+
+								//
+								va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb56_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb56_4, sum0_4);
+								va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb56_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb56_4, sum1_4);
+								va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb56_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb56_4, sum2_4);
+								va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb56_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb56_4, sum3_4);
+								va += 4;
+
+								vb += 64;
+							}
+
+							for (; k < L; k++)
+							{
+								mm_type vb0_0 = mm_load_ps(vb);
+								mm_type vb0_4 = mm_load_ps(vb + 4);
+								mm_type va0 = mm_set1_ps(va[0]);
+								sum0_0 = mm_fmadd_ps(va0, vb0_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(va0, vb0_4, sum0_4);
+								mm_type va1 = mm_set1_ps(va[1]);
+								sum1_0 = mm_fmadd_ps(va1, vb0_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(va1, vb0_4, sum1_4);
+								mm_type va2 = mm_set1_ps(va[2]);
+								sum2_0 = mm_fmadd_ps(va2, vb0_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(va2, vb0_4, sum2_4);
+								mm_type va3 = mm_set1_ps(va[3]);
+								sum3_0 = mm_fmadd_ps(va3, vb0_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(va3, vb0_4, sum3_4);
+
+								va += 4;
+								vb += 8;
+							}
+
+							mm_type biasptr0 = mm_set1_ps(biasptr[0]);
+							mm_type biasptr1 = mm_set1_ps(biasptr[1]);
+							mm_type biasptr2 = mm_set1_ps(biasptr[2]);
+							mm_type biasptr3 = mm_set1_ps(biasptr[3]);
+							sum0_0 = mm_add_ps(sum0_0, biasptr0);
+							sum1_0 = mm_add_ps(sum1_0, biasptr1);
+							sum2_0 = mm_add_ps(sum2_0, biasptr2);
+							sum3_0 = mm_add_ps(sum3_0, biasptr3);
+							sum0_4 = mm_add_ps(sum0_4, biasptr0);
+							sum1_4 = mm_add_ps(sum1_4, biasptr1);
+							sum2_4 = mm_add_ps(sum2_4, biasptr2);
+							sum3_4 = mm_add_ps(sum3_4, biasptr3);
+							mm_store_ps(output0, sum0_0);
+							mm_store_ps(output1, sum1_0);
+							mm_store_ps(output2, sum2_0);
+							mm_store_ps(output3, sum3_0);
+							mm_store_ps(output0 + 4, sum0_4);
+							mm_store_ps(output1 + 4, sum1_4);
+							mm_store_ps(output2 + 4, sum2_4);
+							mm_store_ps(output3 + 4, sum3_4);
+#else
 							float sum0[8] = { 0 };
 							float sum1[8] = { 0 };
 							float sum2[8] = { 0 };
@@ -6201,6 +7156,8 @@ namespace glasssix
 								output2[n] = sum2[n] + biasptr[2];
 								output3[n] = sum3[n] + biasptr[3];
 							}
+#endif
+
 #endif // __ARM_NEON
 							output0 += 8;
 							output1 += 8;
@@ -6367,6 +7324,31 @@ namespace glasssix
 								);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							float sum_array[4] = { biasptr[0], biasptr[1], biasptr[2], biasptr[3] };
+							__m128 sum = _mm_loadu_ps(sum_array);
+
+							for (int k = 0; k < L; k++)
+							{
+								__m128 vb0 = _mm_set1_ps(vb[0]);
+								__m128 va0 = _mm_loadu_ps(va);
+
+#if USE_FMADD128
+								sum = _mm_fmadd_ps(va0, vb0, sum);
+#else
+								sum = _mm_add_ps(_mm_mul_ps(va0, vb0), sum);
+#endif
+								va += 4;
+								vb += 1;
+							}
+
+							_mm_storeu_ps(sum_array, sum);
+							output0[0] = sum_array[0];
+							output1[0] = sum_array[1];
+							output2[0] = sum_array[2];
+							output3[0] = sum_array[3];
+#else
 							float sum0 = biasptr[0];
 							float sum1 = biasptr[1];
 							float sum2 = biasptr[2];
@@ -6387,6 +7369,8 @@ namespace glasssix
 							output1[0] = sum1;
 							output2[0] = sum2;
 							output3[0] = sum3;
+#endif
+
 #endif // __ARM_NEON
 							output0++;
 							output1++;
@@ -6397,7 +7381,9 @@ namespace glasssix
 
 					remain_outch_start += nn_outch << 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int i = remain_outch_start; i<outch; i++)
 					{
 						float* output = top_data + (i)* top_cstep;
@@ -6549,6 +7535,112 @@ namespace glasssix
 								);
 #endif // __aarch64__
 #else                
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum = mm_setzero_ps();
+							int k = 0;
+							for (; k + 7 < L; k = k + 8)
+							{
+								mm_type va0 = mm_load_ps(va);
+								mm_type vb0 = mm_load_ps(vb);
+								mm_type vb8 = mm_load_ps(vb + 8);
+								mm_type vb16 = mm_load_ps(vb + 16);
+								mm_type vb24 = mm_load_ps(vb + 24);
+								mm_type vb32 = mm_load_ps(vb + 32);
+								mm_type vb40 = mm_load_ps(vb + 40);
+								mm_type vb48 = mm_load_ps(vb + 48);
+								mm_type vb56 = mm_load_ps(vb + 56);
+
+								sum = mm_fmadd_ps(va0, vb0, sum);
+								sum = mm_fmadd_ps(va0, vb8, sum);
+								sum = mm_fmadd_ps(va0, vb16, sum);
+								sum = mm_fmadd_ps(va0, vb24, sum);
+								sum = mm_fmadd_ps(va0, vb32, sum);
+								sum = mm_fmadd_ps(va0, vb40, sum);
+								sum = mm_fmadd_ps(va0, vb48, sum);
+								sum = mm_fmadd_ps(va0, vb56, sum);
+
+								va += 8;
+								vb += 64;
+							}
+
+							for (; k < L; k++)
+							{
+								mm_type va0 = mm_set1_ps(va[0]);
+								mm_type vb0 = mm_load_ps(vb);
+								sum = mm_fmadd_ps(va0, vb0, sum);
+
+								va += 1;
+								vb += 8;
+							}
+
+							mm_type bias00 = mm_set1_ps(bias0);
+							sum = mm_add_ps(sum, bias00);
+							mm_store_ps(output, sum);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum_0 = mm_setzero_ps();
+							mm_type sum_4 = mm_setzero_ps();
+							int k = 0;
+							for (; k + 7 < L; k = k + 8)
+							{
+								mm_type va0_0 = mm_load_ps(va);
+								mm_type va0_4 = mm_load_ps(va + 4);
+								mm_type vb0_0 = mm_load_ps(vb);
+								mm_type vb0_4 = mm_load_ps(vb + 4);
+								mm_type vb8_0 = mm_load_ps(vb + 8);
+								mm_type vb8_4 = mm_load_ps(vb + 12);
+								mm_type vb16_0 = mm_load_ps(vb + 16);
+								mm_type vb16_4 = mm_load_ps(vb + 20);
+								mm_type vb24_0 = mm_load_ps(vb + 24);
+								mm_type vb24_4 = mm_load_ps(vb + 28);
+								mm_type vb32_0 = mm_load_ps(vb + 32);
+								mm_type vb32_4 = mm_load_ps(vb + 36);
+								mm_type vb40_0 = mm_load_ps(vb + 40);
+								mm_type vb40_4 = mm_load_ps(vb + 44);
+								mm_type vb48_0 = mm_load_ps(vb + 48);
+								mm_type vb48_4 = mm_load_ps(vb + 52);
+								mm_type vb56_0 = mm_load_ps(vb + 56);
+								mm_type vb56_4 = mm_load_ps(vb + 60);
+
+								sum_0 = mm_fmadd_ps(va0_0, vb0_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb0_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb8_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb8_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb16_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb16_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb24_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb24_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb32_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb32_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb40_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb40_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb48_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb48_4, sum_4);
+								sum_0 = mm_fmadd_ps(va0_0, vb56_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0_4, vb56_4, sum_4);
+
+								va += 8;
+								vb += 64;
+							}
+
+							for (; k < L; k++)
+							{
+								mm_type va0 = mm_set1_ps(va[0]);
+								mm_type vb0_0 = mm_load_ps(vb);
+								mm_type vb0_4 = mm_load_ps(vb + 4);
+								sum_0 = mm_fmadd_ps(va0, vb0_0, sum_0);
+								sum_4 = mm_fmadd_ps(va0, vb0_4, sum_4);
+
+								va += 1;
+								vb += 8;
+							}
+
+							mm_type bias00 = mm_set1_ps(bias0);
+							sum_0 = mm_add_ps(sum_0, bias00);
+							sum_4 = mm_add_ps(sum_4, bias00);
+							mm_store_ps(output, sum_0);
+							mm_store_ps(output + 4, sum_4);
+#else
 							float sum[8] = { 0 };
 
 							int k = 0;
@@ -6585,9 +7677,11 @@ namespace glasssix
 							{
 								output[n] = sum[n] + bias0;
 							}
+#endif
+
 #endif // __ARM_NEON
 							output += 8;
-							}
+						}
 
 						for (; j<N; j++)
 						{
@@ -6663,7 +7757,9 @@ namespace glasssix
 				{ 0.0f,     0.0f,     1.0f }
 			};
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 			for (int p = 0; p<outch; p++)
 			{
 				for (int q = 0; q<inch; q++)
@@ -6678,7 +7774,7 @@ namespace glasssix
 
 					// h
 					float tmp[8][3];
-					for (int i = 0; i<8; i++)
+					for (int i = 0; i < 8; i++)
 					{
 						tmp[i][0] = k0[0] * ktm[i][0] + k0[1] * ktm[i][1] + k0[2] * ktm[i][2];
 						tmp[i][1] = k1[0] * ktm[i][0] + k1[1] * ktm[i][1] + k1[2] * ktm[i][2];
@@ -6923,7 +8019,9 @@ namespace glasssix
 					float32x4_t _coeff1 = vld1q_f32(coeff + 4);
 #endif // __ARM_NEON
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int q = 0; q<inch; q++)
 					{
 						const float *img0 = bottom_bordered_data + (q)* bottom_bordered_cstep;
@@ -7741,7 +8839,9 @@ namespace glasssix
 
 				{
 					// permute
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int r = 0; r<64; r++)
 					{
 						float *tm2 = bottom_tm2_data + (r)* bottom_tm2_cstep;
@@ -7764,6 +8864,17 @@ namespace glasssix
 								vst1q_f32(tm2p, _r0);
 								vst1q_f32(tm2p + 4, _r0n);
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_type r0_data = mm_load_ps(r0);
+								mm_store_ps(tm2p, r0_data);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+
+								mm_type r0_data_0 = mm_load_ps(r0);
+								mm_store_ps(tm2p, r0_data_0);
+								mm_type r0_data_4 = mm_load_ps(r0 + 4);								
+								mm_store_ps(tm2p + 4, r0_data_4);
+#else
 								tm2p[0] = r0[0];
 								tm2p[1] = r0[1];
 								tm2p[2] = r0[2];
@@ -7772,6 +8883,8 @@ namespace glasssix
 								tm2p[5] = r0[5];
 								tm2p[6] = r0[6];
 								tm2p[7] = r0[7];
+#endif
+
 #endif // __ARM_NEON
 
 								r0 += bottom_tm_cstep;
@@ -7792,10 +8905,15 @@ namespace glasssix
 								float32x4_t _r0 = vld1q_f32(r0);
 								vst1q_f32(tm2p, _r0);
 #else
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 r0_data = _mm_loadu_ps(r0);
+								_mm_storeu_ps(tm2p, r0_data);
+#else
 								tm2p[0] = r0[0];
 								tm2p[1] = r0[1];
 								tm2p[2] = r0[2];
 								tm2p[3] = r0[3];
+#endif
 #endif // __ARM_NEON
 
 								r0 += bottom_tm_cstep;
@@ -7828,7 +8946,9 @@ namespace glasssix
 					nn_outch = outch >> 3;
 					remain_outch_start = nn_outch << 3;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int pp = 0; pp<nn_outch; pp++)
 					{
 						int p = pp * 8;
@@ -8273,7 +9393,9 @@ namespace glasssix
 
 					nn_outch = (outch - remain_outch_start) >> 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int pp = 0; pp<nn_outch; pp++)
 					{
 						int p = remain_outch_start + pp * 4;
@@ -8547,6 +9669,81 @@ namespace glasssix
 									);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_type sum0 = mm_setzero_ps();
+								mm_type sum1 = mm_setzero_ps();
+								mm_type sum2 = mm_setzero_ps();
+								mm_type sum3 = mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									mm_type bb2p0_data = mm_load_ps(bb2p0);
+
+									mm_type ktm0_0 = mm_set1_ps(ktm0[0]);
+									sum0 = mm_fmadd_ps(bb2p0_data, ktm0_0, sum0);
+
+									mm_type ktm0_1 = mm_set1_ps(ktm0[1]);
+									sum1 = mm_fmadd_ps(bb2p0_data, ktm0_1, sum1);
+
+									mm_type ktm0_2 = mm_set1_ps(ktm0[2]);
+									sum2 = mm_fmadd_ps(bb2p0_data, ktm0_2, sum2);
+
+									mm_type ktm0_3 = mm_set1_ps(ktm0[3]);
+									sum3 = mm_fmadd_ps(bb2p0_data, ktm0_3, sum3);
+
+									bb2p0 += 8;
+									ktm0 += 4;
+								}
+
+								mm_store_ps(output0_tm, sum0);
+								mm_store_ps(output1_tm, sum1);
+								mm_store_ps(output2_tm, sum2);
+								mm_store_ps(output3_tm, sum3);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								mm_type sum0_0 = mm_setzero_ps();
+								mm_type sum0_4 = mm_setzero_ps();
+								mm_type sum1_0 = mm_setzero_ps();
+								mm_type sum1_4 = mm_setzero_ps();
+								mm_type sum2_0 = mm_setzero_ps();
+								mm_type sum2_4 = mm_setzero_ps();
+								mm_type sum3_0 = mm_setzero_ps();
+								mm_type sum3_4 = mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									mm_type bb2p0_data_0 = mm_load_ps(bb2p0);
+									mm_type bb2p0_data_4 = mm_load_ps(bb2p0 + 4);
+
+									mm_type ktm0_0 = mm_set1_ps(ktm0[0]);
+									sum0_0 = mm_fmadd_ps(bb2p0_data_0, ktm0_0, sum0_0);
+									sum0_4 = mm_fmadd_ps(bb2p0_data_4, ktm0_0, sum0_4);
+
+									mm_type ktm0_1 = mm_set1_ps(ktm0[1]);
+									sum1_0 = mm_fmadd_ps(bb2p0_data_0, ktm0_1, sum1_0);
+									sum1_4 = mm_fmadd_ps(bb2p0_data_4, ktm0_1, sum1_4);
+
+									mm_type ktm0_2 = mm_set1_ps(ktm0[2]);
+									sum2_0 = mm_fmadd_ps(bb2p0_data_0, ktm0_2, sum2_0);
+									sum2_4 = mm_fmadd_ps(bb2p0_data_4, ktm0_2, sum2_4);
+
+									mm_type ktm0_3 = mm_set1_ps(ktm0[3]);
+									sum3_0 = mm_fmadd_ps(bb2p0_data_0, ktm0_3, sum3_0);
+									sum3_4 = mm_fmadd_ps(bb2p0_data_4, ktm0_3, sum3_4);
+
+									bb2p0 += 8;
+									ktm0 += 4;
+								}
+
+								mm_store_ps(output0_tm, sum0_0);
+								mm_store_ps(output0_tm + 4, sum0_4);
+								mm_store_ps(output1_tm, sum1_0);
+								mm_store_ps(output1_tm + 4, sum1_4);
+								mm_store_ps(output2_tm, sum2_0);
+								mm_store_ps(output2_tm + 4, sum2_4);
+								mm_store_ps(output3_tm, sum3_0);
+								mm_store_ps(output3_tm + 4, sum3_4);
+#else
 								float sum0_0 = 0.f;
 								float sum0_1 = 0.f;
 								float sum0_2 = 0.f;
@@ -8660,6 +9857,7 @@ namespace glasssix
 								output3_tm[5] = sum3_5;
 								output3_tm[6] = sum3_6;
 								output3_tm[7] = sum3_7;
+#endif
 
 								output0_tm += 8;
 								output1_tm += 8;
@@ -8857,6 +10055,43 @@ namespace glasssix
 									);
 #endif // __aarch64__
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum0 = _mm_setzero_ps();
+								__m128 sum1 = _mm_setzero_ps();
+								__m128 sum2 = _mm_setzero_ps();
+								__m128 sum3 = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 bb2p0_data = _mm_loadu_ps(bb2p0);
+
+									__m128 ktm0_0 = _mm_set1_ps(ktm0[0]);
+									__m128 ktm0_1 = _mm_set1_ps(ktm0[1]);
+									__m128 ktm0_2 = _mm_set1_ps(ktm0[2]);
+									__m128 ktm0_3 = _mm_set1_ps(ktm0[3]);
+
+#if USE_FMADD128
+									sum0 = _mm_fmadd_ps(bb2p0_data, ktm0_0, sum0);
+									sum1 = _mm_fmadd_ps(bb2p0_data, ktm0_1, sum1);
+									sum2 = _mm_fmadd_ps(bb2p0_data, ktm0_2, sum2);
+									sum3 = _mm_fmadd_ps(bb2p0_data, ktm0_3, sum3);
+#else
+									sum0 = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_0), sum0);
+									sum1 = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_1), sum1);
+									sum2 = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_2), sum2);
+									sum3 = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_3), sum3);
+#endif
+
+									bb2p0 += 4;
+									ktm0 += 4;
+								}
+
+								_mm_storeu_ps(output0_tm, sum0);
+								_mm_storeu_ps(output1_tm, sum1);
+								_mm_storeu_ps(output2_tm, sum2);
+								_mm_storeu_ps(output3_tm, sum3);
+#else
 								float sum0_0 = 0.f;
 								float sum0_1 = 0.f;
 								float sum0_2 = 0.f;
@@ -8877,7 +10112,7 @@ namespace glasssix
 								float sum3_2 = 0.f;
 								float sum3_3 = 0.f;
 
-								for (int q = 0; q<inch; q++)
+								for (int q = 0; q < inch; q++)
 								{
 									sum0_0 += bb2p0[0] * ktm0[0];
 									sum0_1 += bb2p0[1] * ktm0[0];
@@ -8922,6 +10157,8 @@ namespace glasssix
 								output3_tm[1] = sum3_1;
 								output3_tm[2] = sum3_2;
 								output3_tm[3] = sum3_3;
+#endif
+								
 
 								output0_tm += 4;
 								output1_tm += 4;
@@ -8981,6 +10218,30 @@ namespace glasssix
 								float sum2 = vgetq_lane_f32(_sum0123, 2);
 								float sum3 = vgetq_lane_f32(_sum0123, 3);
 #else
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 bb2p0_data = _mm_set1_ps(bb2p0[0]);
+									__m128 ktm0_data = _mm_loadu_ps(ktm0);
+
+#if USE_FMADD128
+									sum = _mm_fmadd_ps(bb2p0_data, ktm0_data, sum);
+#else
+									sum = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_data), sum);
+#endif
+
+									bb2p0 += 1;
+									ktm0 += 4;
+								}
+
+								output0_tm[0] = sum.m128_f32[0];
+								output1_tm[0] = sum.m128_f32[1];
+								output2_tm[0] = sum.m128_f32[2];
+								output3_tm[0] = sum.m128_f32[3];
+#else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
 								float sum2 = 0.f;
@@ -8996,12 +10257,13 @@ namespace glasssix
 									bb2p0 += 1;
 									ktm0 += 4;
 								}
-#endif // __ARM_NEON
 
 								output0_tm[0] = sum0;
 								output1_tm[0] = sum1;
 								output2_tm[0] = sum2;
 								output3_tm[0] = sum3;
+#endif
+#endif // __ARM_NEON
 
 								output0_tm += 1;
 								output1_tm += 1;
@@ -9013,7 +10275,9 @@ namespace glasssix
 
 					remain_outch_start += nn_outch << 2;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int p = remain_outch_start; p<outch; p++)
 					{
 #if __ARM_NEON && __aarch64__
@@ -9182,6 +10446,40 @@ namespace glasssix
 									);
 #endif // __aarch64__
 #else
+								
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_type sum = mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									mm_type bb2p0_data = mm_load_ps(bb2p0);
+									mm_type ktm0_data = mm_set1_ps(ktm0[0]);
+									sum = mm_fmadd_ps(bb2p0_data, ktm0_data, sum);
+
+									bb2p0 += 8;
+									ktm0 += 1;
+								}
+
+								mm_store_ps(output0_tm, sum);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								mm_type sum_0 = mm_setzero_ps();
+								mm_type sum_4 = mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									mm_type bb2p0_data_0 = mm_load_ps(bb2p0);
+									mm_type bb2p0_data_4 = mm_load_ps(bb2p0 + 4);
+									mm_type ktm0_data = mm_set1_ps(ktm0[0]);
+									sum_0 = mm_fmadd_ps(bb2p0_data_0, ktm0_data, sum_0);
+									sum_4 = mm_fmadd_ps(bb2p0_data_4, ktm0_data, sum_4);
+
+									bb2p0 += 8;
+									ktm0 += 1;
+								}
+
+								mm_store_ps(output0_tm, sum_0);
+								mm_store_ps(output0_tm + 4, sum_4);
+#else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
 								float sum2 = 0.f;
@@ -9214,6 +10512,7 @@ namespace glasssix
 								output0_tm[5] = sum5;
 								output0_tm[6] = sum6;
 								output0_tm[7] = sum7;
+#endif
 
 								output0_tm += 8;
 #endif // __ARM_NEON
@@ -9346,6 +10645,27 @@ namespace glasssix
 									);
 #endif // __aarch64__
 #else
+								
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 bb2p0_data = _mm_loadu_ps(bb2p0);
+									__m128 ktm0_data = _mm_set1_ps(ktm0[0]);
+
+								#if USE_FMADD128
+									sum = _mm_fmadd_ps(bb2p0_data, ktm0_data, sum);
+								#else
+									sum = _mm_add_ps(_mm_mul_ps(bb2p0_data, ktm0_data), sum);
+								#endif
+
+									bb2p0 += 4;
+									ktm0 += 1;
+								}
+
+								_mm_storeu_ps(output0_tm, sum);
+#else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
 								float sum2 = 0.f;
@@ -9366,6 +10686,7 @@ namespace glasssix
 								output0_tm[1] = sum1;
 								output0_tm[2] = sum2;
 								output0_tm[3] = sum3;
+#endif
 
 								output0_tm += 4;
 #endif // __ARM_NEON
@@ -9442,7 +10763,9 @@ namespace glasssix
 
 					float *top_bordered_data = top_blob_bordered.mutable_cpu_data() + num_i * outch * top_borderd_cstep;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 					for (int p = 0; p<outch; p++)
 					{
 						const float *out0_tm = top_tm_data + (p)* top_tm_cstep;
@@ -10222,8 +11545,10 @@ namespace glasssix
 				int nn_outch = outch >> 1;
 				int remain_outch_start = nn_outch << 1;
 
+#ifdef _OPENMP
 #pragma omp parallel for
-				for (int pp = 0; pp<nn_outch; pp++)
+#endif
+				for (int pp = 0; pp < nn_outch; pp++)
 				{
 					int p = pp * 2;
 
@@ -10241,6 +11566,16 @@ namespace glasssix
 
 					for (int q = 0; q<inch; q++)
 					{
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 k00_data = _mm_loadu_ps(k0);
+						__m128 k03_data = _mm_loadu_ps(k0 + 3);
+						__m128 k06_data = _mm_loadu_ps(k0 + 6);
+						__m128 k10_data = _mm_loadu_ps(k1);
+						__m128 k13_data = _mm_loadu_ps(k1 + 3);
+						__m128 k16_data = _mm_loadu_ps(k1 + 6);
+#endif
+
 						float* outptr0 = out0;
 						float* outptr1 = out1;
 						float* outptr0n = outptr0 + outw;
@@ -10612,55 +11947,24 @@ namespace glasssix
 								*outptr1n = vget_lane_f32(_ss01n, 1);
 #endif // __aarch64__
 #else
-								float sum0 = 0.f;
-								float sum0n = 0.f;
-								float sum1 = 0.f;
-								float sum1n = 0.f;
+								
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+								__m128 r3_data = _mm_loadu_ps(r3);
 
-								sum0 += r0[0] * k0[0];
-								sum0 += r0[1] * k0[1];
-								sum0 += r0[2] * k0[2];
-								sum0 += r1[0] * k0[3];
-								sum0 += r1[1] * k0[4];
-								sum0 += r1[2] * k0[5];
-								sum0 += r2[0] * k0[6];
-								sum0 += r2[1] * k0[7];
-								sum0 += r2[2] * k0[8];
+								*outptr0 += mul_add_3x3_simd(r0_data, r1_data, r2_data, k00_data, k03_data, k06_data, 0);
+								*outptr1 += mul_add_3x3_simd(r0_data, r1_data, r2_data, k10_data, k13_data, k16_data, 0);
+								*outptr0n += mul_add_3x3_simd(r1_data, r2_data, r3_data, k00_data, k03_data, k06_data, 0);
+								*outptr1n += mul_add_3x3_simd(r1_data, r2_data, r3_data, k10_data, k13_data, k16_data, 0);
+#else
+								*outptr0 += mul_add_3x3_native(r0, r1, r2, k0, k0 + 3, k0 + 6, 0);
+								*outptr1 += mul_add_3x3_native(r0, r1, r2, k1, k1 + 3, k1 + 6, 0);
+								*outptr0n += mul_add_3x3_native(r1, r2, r3, k0, k0 + 3, k0 + 6, 0);
+								*outptr1n += mul_add_3x3_native(r1, r2, r3, k1, k1 + 3, k1 + 6, 0);
+#endif
 
-								sum1 += r0[0] * k1[0];
-								sum1 += r0[1] * k1[1];
-								sum1 += r0[2] * k1[2];
-								sum1 += r1[0] * k1[3];
-								sum1 += r1[1] * k1[4];
-								sum1 += r1[2] * k1[5];
-								sum1 += r2[0] * k1[6];
-								sum1 += r2[1] * k1[7];
-								sum1 += r2[2] * k1[8];
-
-								sum0n += r1[0] * k0[0];
-								sum0n += r1[1] * k0[1];
-								sum0n += r1[2] * k0[2];
-								sum0n += r2[0] * k0[3];
-								sum0n += r2[1] * k0[4];
-								sum0n += r2[2] * k0[5];
-								sum0n += r3[0] * k0[6];
-								sum0n += r3[1] * k0[7];
-								sum0n += r3[2] * k0[8];
-
-								sum1n += r1[0] * k1[0];
-								sum1n += r1[1] * k1[1];
-								sum1n += r1[2] * k1[2];
-								sum1n += r2[0] * k1[3];
-								sum1n += r2[1] * k1[4];
-								sum1n += r2[2] * k1[5];
-								sum1n += r3[0] * k1[6];
-								sum1n += r3[1] * k1[7];
-								sum1n += r3[2] * k1[8];
-
-								*outptr0 += sum0;
-								*outptr1 += sum1;
-								*outptr0n += sum0n;
-								*outptr1n += sum1n;
 #endif // __ARM_NEON
 								r0++;
 								r1++;
@@ -10904,31 +12208,19 @@ namespace glasssix
 								*outptr1 = vget_lane_f32(_ss01, 1);
 #endif // __aarch64__
 #else
-								float sum0 = 0.f;
-								float sum1 = 0.f;
 
-								sum0 += r0[0] * k0[0];
-								sum0 += r0[1] * k0[1];
-								sum0 += r0[2] * k0[2];
-								sum0 += r1[0] * k0[3];
-								sum0 += r1[1] * k0[4];
-								sum0 += r1[2] * k0[5];
-								sum0 += r2[0] * k0[6];
-								sum0 += r2[1] * k0[7];
-								sum0 += r2[2] * k0[8];
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
 
-								sum1 += r0[0] * k1[0];
-								sum1 += r0[1] * k1[1];
-								sum1 += r0[2] * k1[2];
-								sum1 += r1[0] * k1[3];
-								sum1 += r1[1] * k1[4];
-								sum1 += r1[2] * k1[5];
-								sum1 += r2[0] * k1[6];
-								sum1 += r2[1] * k1[7];
-								sum1 += r2[2] * k1[8];
+								*outptr0 += mul_add_3x3_simd(r0_data, r1_data, r2_data, k00_data, k03_data, k06_data, 0);
+								*outptr1 += mul_add_3x3_simd(r0_data, r1_data, r2_data, k10_data, k13_data, k16_data, 0);
+#else
+								*outptr0 += mul_add_3x3_native(r0, r1, r2, k0, k0 + 3, k0 + 6, 0);
+								*outptr1 += mul_add_3x3_native(r0, r1, r2, k1, k1 + 3, k1 + 6, 0);
+#endif
 
-								*outptr0 += sum0;
-								*outptr1 += sum1;
 #endif // __ARM_NEON
 								r0++;
 								r1++;
@@ -10947,7 +12239,9 @@ namespace glasssix
 					}
 				}
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int p = remain_outch_start; p<outch; p++)
 				{
 					float *out = top_data + (p)* top_cstep;
@@ -10978,6 +12272,13 @@ namespace glasssix
 						const float* k0 = kernel0;
 						const float* k1 = kernel0 + 3;
 						const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 k0_data = _mm_loadu_ps(k0);
+						__m128 k1_data = _mm_loadu_ps(k1);
+						__m128 k2_data = _mm_loadu_ps(k2);
+#endif
+
 #endif // __ARM_NEON
 
 						int i = 0;
@@ -11243,31 +12544,20 @@ namespace glasssix
 								*outptr2 = vget_lane_f32(_sss2, 1);
 #endif // __aarch64__
 #else
-								float sum = 0;
-								float sum2 = 0;
+								
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+								__m128 r3_data = _mm_loadu_ps(r3);
 
-								sum += r0[0] * k0[0];
-								sum += r0[1] * k0[1];
-								sum += r0[2] * k0[2];
-								sum += r1[0] * k1[0];
-								sum += r1[1] * k1[1];
-								sum += r1[2] * k1[2];
-								sum += r2[0] * k2[0];
-								sum += r2[1] * k2[1];
-								sum += r2[2] * k2[2];
+								*outptr += mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, 0);
+								*outptr2 += mul_add_3x3_simd(r1_data, r2_data, r3_data, k0_data, k1_data, k2_data, 0);
+#else
+								*outptr += mul_add_3x3_native(r0, r1, r2, k0, k1, k2, 0);
+								*outptr2 += mul_add_3x3_native(r1, r2, r3, k0, k1, k2, 0);
+#endif
 
-								sum2 += r1[0] * k0[0];
-								sum2 += r1[1] * k0[1];
-								sum2 += r1[2] * k0[2];
-								sum2 += r2[0] * k1[0];
-								sum2 += r2[1] * k1[1];
-								sum2 += r2[2] * k1[2];
-								sum2 += r3[0] * k2[0];
-								sum2 += r3[1] * k2[1];
-								sum2 += r3[2] * k2[2];
-
-								*outptr += sum;
-								*outptr2 += sum2;
 #endif
 								r0++;
 								r1++;
@@ -11473,19 +12763,17 @@ namespace glasssix
 								*outptr = vget_lane_f32(_ss, 0);
 #endif // __aarch64__
 #else
-								float sum = 0;
+								
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
 
-								sum += r0[0] * k0[0];
-								sum += r0[1] * k0[1];
-								sum += r0[2] * k0[2];
-								sum += r1[0] * k1[0];
-								sum += r1[1] * k1[1];
-								sum += r1[2] * k1[2];
-								sum += r2[0] * k2[0];
-								sum += r2[1] * k2[1];
-								sum += r2[2] * k2[2];
+								*outptr += mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, 0);
+#else
+								*outptr += mul_add_3x3_native(r0, r1, r2, k0, k1, k2, 0);
+#endif
 
-								*outptr += sum;
 #endif
 								r0++;
 								r1++;
@@ -11527,7 +12815,9 @@ namespace glasssix
 				const float *bottom_data = bottom_blob->cpu_data() + num_i * group * bottom_cstep;
 				float *top_data = top_blob->mutable_cpu_data() + num_i * group * top_cstep;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int g = 0; g<group; g++)
 				{
 					float *out = top_data + (g)* top_cstep;
@@ -11560,6 +12850,13 @@ namespace glasssix
 					const float* k0 = kernel0;
 					const float* k1 = kernel0 + 3;
 					const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+#endif
+
 #endif // __ARM_NEON
 
 					int i = 0;
@@ -11966,30 +13263,20 @@ namespace glasssix
 							*outptr2 = vget_lane_f32(_sss2, 1);
 #endif // __aarch64__
 #else
-							float sum = bias0;
-							sum += r0[0] * k0[0];
-							sum += r0[1] * k0[1];
-							sum += r0[2] * k0[2];
-							sum += r1[0] * k1[0];
-							sum += r1[1] * k1[1];
-							sum += r1[2] * k1[2];
-							sum += r2[0] * k2[0];
-							sum += r2[1] * k2[1];
-							sum += r2[2] * k2[2];
+							
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+							__m128 r3_data = _mm_loadu_ps(r3);
 
-							float sum2 = bias0;
-							sum2 += r1[0] * k0[0];
-							sum2 += r1[1] * k0[1];
-							sum2 += r1[2] * k0[2];
-							sum2 += r2[0] * k1[0];
-							sum2 += r2[1] * k1[1];
-							sum2 += r2[2] * k1[2];
-							sum2 += r3[0] * k2[0];
-							sum2 += r3[1] * k2[1];
-							sum2 += r3[2] * k2[2];
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+							*outptr2 = mul_add_3x3_simd(r1_data, r2_data, r3_data, k0_data, k1_data, k2_data, bias0);
+#else
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+							*outptr2 = mul_add_3x3_native(r1, r2, r3, k0, k1, k2, bias0);
+#endif
 
-							*outptr = sum;
-							*outptr2 = sum2;
 #endif
 							r0++;
 							r1++;
@@ -12309,18 +13596,17 @@ namespace glasssix
 							*outptr = vget_lane_f32(_ss, 0);
 #endif // __aarch64__
 #else
-							float sum = bias0;
-							sum += r0[0] * k0[0];
-							sum += r0[1] * k0[1];
-							sum += r0[2] * k0[2];
-							sum += r1[0] * k1[0];
-							sum += r1[1] * k1[1];
-							sum += r1[2] * k1[2];
-							sum += r2[0] * k2[0];
-							sum += r2[1] * k2[1];
-							sum += r2[2] * k2[2];
 
-							*outptr = sum;
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+#else
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+#endif
+
 #endif
 							r0++;
 							r1++;
@@ -12362,7 +13648,9 @@ namespace glasssix
 				const float *bottom_data = bottom_blob->cpu_data() + num_i * group * bottom_cstep;
 				float *top_data = top_blob->mutable_cpu_data() + num_i * group * top_cstep;
 
+#ifdef _OPENMP
 #pragma omp parallel for
+#endif
 				for (int g = 0; g<group; g++)
 				{
 					float *out = top_data + (g)* top_cstep;
@@ -12393,6 +13681,13 @@ namespace glasssix
 					const float* k0 = kernel0;
 					const float* k1 = kernel0 + 3;
 					const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+#endif
+
 #endif // __ARM_NEON
 
 					int i = 0;
@@ -12574,18 +13869,17 @@ namespace glasssix
 							*outptr = vget_lane_f32(_ss, 0);
 #endif // __aarch64__
 #else
-							float sum = bias0;
-							sum += r0[0] * k0[0];
-							sum += r0[1] * k0[1];
-							sum += r0[2] * k0[2];
-							sum += r1[0] * k1[0];
-							sum += r1[1] * k1[1];
-							sum += r1[2] * k1[2];
-							sum += r2[0] * k2[0];
-							sum += r2[1] * k2[1];
-							sum += r2[2] * k2[2];
+							
+#if SIMD_TYPE >= SIMDTYPE_SSE
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
 
-							*outptr = sum;
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+#else
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+#endif
+
 #endif // __ARM_NEON
 
 							r0 += 2;
@@ -12602,6 +13896,4463 @@ namespace glasssix
 				}
 			}
 		}
+
+
+		//ncnn sse
+		static void conv1x1s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int p = 0; p < outch; p++)
+				{
+					float *out = top_data + p * top_cstep;
+
+					const float bias0 = bias ? bias[p] : 0.f;
+
+					fill(out, top_cstep, bias0);
+
+					int q = 0;
+
+					for (; q + 3 < inch; q += 4)
+					{
+						float* outptr = out;
+
+						const float* img0 = bottom_data + q * bottom_cstep;
+						const float* img1 = bottom_data + (q + 1) * bottom_cstep;
+						const float* img2 = bottom_data + (q + 2) * bottom_cstep;
+						const float* img3 = bottom_data + (q + 3) * bottom_cstep;
+
+						const float* kernel0 = kernel + p * inch + q;
+						const float k0 = kernel0[0];
+						const float k1 = kernel0[1];
+						const float k2 = kernel0[2];
+						const float k3 = kernel0[3];
+
+						const float* r0 = img0;
+						const float* r1 = img1;
+						const float* r2 = img2;
+						const float* r3 = img3;
+
+						int size = outw * outh;
+
+						int remain = size;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 k_data = _mm_loadu_ps(kernel0);
+
+						for (; remain > 0; remain--)
+						{
+							float r_array[4] = { *r0, *r1, *r2, *r3 };
+							__m128 r_data = _mm_loadu_ps(r_array);
+							__m128 sum = _mm_mul_ps(k_data, r_data);
+							*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+						}
+#else
+						for (; remain > 0; remain--)
+						{
+							float sum = *r0 * k0;
+							float sum1 = *r1 * k1;
+							float sum2 = *r2 * k2;
+							float sum3 = *r3 * k3;
+
+							*outptr += sum + sum1 + sum2 + sum3;
+
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+						}
+#endif
+					}
+
+					for (; q < inch; q++)
+					{
+						float* outptr = out;
+
+						const float* img0 = bottom_data + q * bottom_cstep;
+
+						const float* kernel0 = kernel + p * inch + q;
+						const float k0 = kernel0[0];
+
+						const float* r0 = img0;
+
+						int size = outw * outh;
+
+						int remain = size;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						int circle_num = size / mm_align_size;
+						mm_type k_data = mm_set1_ps(k0);
+						int index = 0;
+						for (; index < circle_num; index++)
+						{
+							int index_offset = index * mm_align_size;
+							mm_type out_data = mm_load_ps(outptr + index_offset);
+							mm_type r_data = mm_load_ps(r0 + index_offset);
+							out_data = mm_fmadd_ps(r_data, k_data, out_data);
+							mm_store_ps(outptr + index_offset, out_data);
+						}
+
+						for (index = mm_align_size * index; index < size; index++)
+						{
+							outptr[index] += r0[index] * k0;
+						}
+#else
+						for (; remain > 0; remain--)
+						{
+							float sum = *r0 * k0;
+
+							*outptr += sum;
+
+							r0++;
+							outptr++;
+						}
+#endif
+
+					}
+				}
+
+			}
+		}
+
+		static void conv1x1s2_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const int tailstep = inw - 2 * outw + inw;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int p = 0; p < outch; p++)
+				{
+					float *out = top_data + p * top_cstep;
+
+					const float bias0 = bias ? bias[p] : 0.f;
+
+					fill(out, top_cstep, bias0);
+
+					int q = 0;
+
+					for (; q + 3 < inch; q += 4)
+					{
+						float* outptr = out;
+
+						const float* img0 = bottom_data + q * bottom_cstep;
+						const float* img1 = bottom_data + (q + 1) * bottom_cstep;
+						const float* img2 = bottom_data + (q + 2) * bottom_cstep;
+						const float* img3 = bottom_data + (q + 3) * bottom_cstep;
+
+						const float* kernel0 = kernel + p * inch + q;
+						const float k0 = kernel0[0];
+						const float k1 = kernel0[1];
+						const float k2 = kernel0[2];
+						const float k3 = kernel0[3];
+
+						const float* r0 = img0;
+						const float* r1 = img1;
+						const float* r2 = img2;
+						const float* r3 = img3;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						float k_array[4] = { k0, k1, k2, k3 };
+						__m128 k_data = _mm_loadu_ps(k_array);
+
+						for (int i = 0; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								float r_array[4] = { *r0, *r1, *r2, *r3 };
+								__m128 r_data = _mm_loadu_ps(r_array);
+								__m128 sum = _mm_mul_ps(k_data, r_data);
+								*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+
+								r0 += 2;
+								r1 += 2;
+								r2 += 2;
+								r3 += 2;
+								outptr++;
+							}
+
+							r0 += tailstep;
+							r1 += tailstep;
+							r2 += tailstep;
+							r3 += tailstep;
+						}
+#else
+
+						for (int i = 0; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								float sum = *r0 * k0;
+								float sum1 = *r1 * k1;
+								float sum2 = *r2 * k2;
+								float sum3 = *r3 * k3;
+
+								*outptr += sum + sum1 + sum2 + sum3;
+
+								r0 += 2;
+								r1 += 2;
+								r2 += 2;
+								r3 += 2;
+								outptr++;
+							}
+
+							r0 += tailstep;
+							r1 += tailstep;
+							r2 += tailstep;
+							r3 += tailstep;
+						}
+#endif
+					}
+
+					for (; q < inch; q++)
+					{
+						float* outptr = out;
+
+						const float* img0 = bottom_data + q * bottom_cstep;
+
+						const float* kernel0 = kernel + p * inch + q;
+						const float k0 = kernel0[0];
+
+						const float* r0 = img0;
+
+						for (int i = 0; i < outh; i++)
+						{
+							int remain = outw;
+							for (; remain > 0; remain--)
+							{
+								float sum = *r0 * k0;
+
+								*outptr += sum;
+
+								r0 += 2;
+								outptr++;
+							}
+
+							r0 += tailstep;
+						}
+
+					}
+				}
+			}
+		}
+
+		static void convdw3x3s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+			const int group = bottom_blob->channels();
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int g = 0; g < group; g++)
+				{
+					float *out = top_data + g * top_cstep;
+
+					const float bias0 = bias ? bias[g] : 0.f;
+
+					const float* kernel0 = kernel + g * 9;
+
+					float* outptr = out;
+					float* outptr2 = outptr + outw;
+
+					const float* img0 = bottom_data + g * bottom_cstep;
+
+					const float* r0 = img0;
+					const float* r1 = img0 + inw;
+					const float* r2 = img0 + inw * 2;
+					const float* r3 = img0 + inw * 3;
+
+					const float* k0 = kernel0;
+					const float* k1 = kernel0 + 3;
+					const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+
+					int i = 0;
+
+					for (; i + 1 < outh; i += 2)
+					{
+
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+							__m128 r3_data = _mm_loadu_ps(r3);
+
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+							*outptr2 = mul_add_3x3_simd(r1_data, r2_data, r3_data, k0_data, k1_data, k2_data, bias0);
+
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+							outptr2++;
+						}
+
+						r0 += 2 + inw;
+						r1 += 2 + inw;
+						r2 += 2 + inw;
+						r3 += 2 + inw;
+
+						outptr += outw;
+						outptr2 += outw;
+					}
+
+					for (; i < outh; i++)
+					{
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+							r0++;
+							r1++;
+							r2++;
+							outptr++;
+						}
+
+						r0 += 2;
+						r1 += 2;
+						r2 += 2;
+					}
+#else
+					int i = 0;
+
+					for (; i + 1 < outh; i += 2)
+					{
+
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+							*outptr2 = mul_add_3x3_native(r1, r2, r3, k0, k1, k2, bias0);
+
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+							outptr2++;
+						}
+
+						r0 += 2 + inw;
+						r1 += 2 + inw;
+						r2 += 2 + inw;
+						r3 += 2 + inw;
+
+						outptr += outw;
+						outptr2 += outw;
+					}
+
+					for (; i < outh; i++)
+					{
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+
+							r0++;
+							r1++;
+							r2++;
+							outptr++;
+						}
+
+						r0 += 2;
+						r1 += 2;
+						r2 += 2;
+					}
+#endif
+
+				}
+			}
+		}
+
+		static void convdw3x3s2_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+			const int group = bottom_blob->channels();
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const int tailstep = inw - 2 * outw + inw;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int g = 0; g < group; g++)
+				{
+					float *out = top_data + g * top_cstep;
+
+					const float bias0 = bias ? bias[g] : 0.f;
+
+					const float* kernel0 = kernel + g * 9;
+
+					float* outptr = out;
+
+					const float* img0 = bottom_data + g * bottom_cstep;
+
+					const float* r0 = img0;
+					const float* r1 = img0 + inw;
+					const float* r2 = img0 + inw * 2;
+
+					const float* k0 = kernel0;
+					const float* k1 = kernel0 + 3;
+					const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+					
+					int i = 0;
+
+					for (; i < outh; i++)
+					{
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+
+							*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+							outptr++;
+						}
+
+						r0 += tailstep;
+						r1 += tailstep;
+						r2 += tailstep;
+					}
+
+#else
+					int i = 0;
+
+					for (; i < outh; i++)
+					{
+						int remain = outw;
+
+						for (; remain > 0; remain--)
+						{
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+							outptr++;
+						}
+
+						r0 += tailstep;
+						r1 += tailstep;
+						r2 += tailstep;
+					}
+#endif
+
+				}
+
+			}
+		}
+
+		static void conv3x3s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int p = 0; p < outch; p++)
+				{
+					float *out = top_data + p * top_cstep;
+
+					const float bias0 = bias ? bias[p] : 0.f;
+
+					fill(out, top_cstep, bias0);
+
+					for (int q = 0; q < inch; q++)
+					{
+						float* outptr = out;
+						float* outptr2 = outptr + outw;
+
+						const float* img0 = bottom_data + q * bottom_cstep;
+
+						const float* kernel0 = kernel + p * inch * 9 + q * 9;
+
+						const float* r0 = img0;
+						const float* r1 = img0 + inw;
+						const float* r2 = img0 + inw * 2;
+						const float* r3 = img0 + inw * 3;
+
+						const float* k0 = kernel0;
+						const float* k1 = kernel0 + 3;
+						const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 k0_data = _mm_loadu_ps(k0);
+						__m128 k1_data = _mm_loadu_ps(k1);
+						__m128 k2_data = _mm_loadu_ps(k2);
+
+						int i = 0;
+
+						for (; i + 1 < outh; i += 2)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+								__m128 r3_data = _mm_loadu_ps(r3);
+
+								*outptr += mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, 0);
+								*outptr2 += mul_add_3x3_simd(r1_data, r2_data, r3_data, k0_data, k1_data, k2_data, 0);
+
+								r0++;
+								r1++;
+								r2++;
+								r3++;
+								outptr++;
+								outptr2++;
+							}
+
+							r0 += 2 + inw;
+							r1 += 2 + inw;
+							r2 += 2 + inw;
+							r3 += 2 + inw;
+
+							outptr += outw;
+							outptr2 += outw;
+						}
+
+						for (; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+
+								*outptr += mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, 0);
+								r0++;
+								r1++;
+								r2++;
+								outptr++;
+							}
+
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+						}
+#else
+
+						int i = 0;
+
+						for (; i + 1 < outh; i += 2)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								*outptr += mul_add_3x3_native(r0, r1, r2, k0, k1, k2, 0);
+								*outptr2 += mul_add_3x3_native(r1, r2, r3, k0, k1, k2, 0);
+
+								r0++;
+								r1++;
+								r2++;
+								r3++;
+								outptr++;
+								outptr2++;
+							}
+
+							r0 += 2 + inw;
+							r1 += 2 + inw;
+							r2 += 2 + inw;
+							r3 += 2 + inw;
+
+							outptr += outw;
+							outptr2 += outw;
+						}
+
+						for (; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								*outptr += mul_add_3x3_native(r0, r1, r2, k0, k1, k2, 0);
+
+								r0++;
+								r1++;
+								r2++;
+								outptr++;
+							}
+
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+						}
+#endif
+					}
+				}
+			}
+		}
+
+		static void conv3x3s2_sse(const std::shared_ptr<tensor<float> > &bottom_blob, std::shared_ptr<tensor<float> > &top_blob, const std::shared_ptr<tensor<float> > &_kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int inch = bottom_blob->channels();
+			int inh = bottom_blob->height();
+			int inw = bottom_blob->width();
+			int bottom_cstep = inw * inh;
+
+			int outch = top_blob->channels();
+			int outh = top_blob->height();
+			int outw = top_blob->width();
+			int top_cstep = outw * outh;
+
+			const int tailstep = inw - 2 * outw + inw;
+
+			const float* kernel = _kernel->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+				bias = _bias->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				const float* bottom_data = bottom_blob->cpu_data() + n * inch * bottom_cstep;
+				float* top_data = top_blob->mutable_cpu_data() + n * outch * top_cstep;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int p = 0; p < outch; p++)
+				{
+					float *out = top_data + p * top_cstep;
+
+					const float bias0 = bias ? bias[p] : 0.f;
+
+					fill(out, top_cstep, bias0);
+
+					for (int q = 0; q < inch; q++)
+					{
+						float *outptr = out;
+
+						const float *img = bottom_data + q * bottom_cstep;
+						const float* kernel0 = kernel + p * inch * 9 + q * 9;
+
+						const float *r0 = img;
+						const float *r1 = img + inw;
+						const float *r2 = img + inw * 2;
+
+						const float* k0 = kernel0;
+						const float* k1 = kernel0 + 3;
+						const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						__m128 k0_data = _mm_loadu_ps(k0);
+						__m128 k1_data = _mm_loadu_ps(k1);
+						__m128 k2_data = _mm_loadu_ps(k2);
+
+						for (int i = 0; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								__m128 r0_data = _mm_loadu_ps(r0);
+								__m128 r1_data = _mm_loadu_ps(r1);
+								__m128 r2_data = _mm_loadu_ps(r2);
+
+								*outptr += mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, 0);
+								r0 += 2;
+								r1 += 2;
+								r2 += 2;
+								outptr++;
+							}
+
+							r0 += tailstep;
+							r1 += tailstep;
+							r2 += tailstep;
+						}
+#else
+
+						for (int i = 0; i < outh; i++)
+						{
+							int remain = outw;
+
+							for (; remain > 0; remain--)
+							{
+								*outptr += mul_add_3x3_native(r0, r1, r2, k0, k1, k2, 0);
+
+								r0 += 2;
+								r1 += 2;
+								r2 += 2;
+								outptr++;
+							}
+
+							r0 += tailstep;
+							r1 += tailstep;
+							r2 += tailstep;
+						}
+
+#endif
+					}
+				}
+			}
+		}
+
+		static void conv3x3s1_winograd23_transform_kernel_sse(const std::shared_ptr<tensor<float> >& kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
+		{
+			const float *kernel_data = kernel->cpu_data();
+			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch, inch, 4 * 4}));
+			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
+			int kernel_tm_w = kernel_tm->width();
+			int kernel_tm_h = kernel_tm->height();
+			int kernel_tm_cstep = kernel_tm_w * kernel_tm_h;
+
+			// G
+			const float ktm[4][3] = {
+				{   1.0f,     0.0f,     0.0f},
+				{ 1.0f / 2,   1.0f / 2,   1.0f / 2},
+				{ 1.0f / 2,  -1.0f / 2,   1.0f / 2},
+				{   0.0f,     0.0f,     1.0f}
+			};
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int p = 0; p < outch; p++)
+			{
+				for (int q = 0; q < inch; q++)
+				{
+					const float* kernel0 = kernel_data + p * inch * 9 + q * 9;
+					float* kernel_tm0 = kernel_tm_data + p * kernel_tm_cstep + q * kernel_tm_w;
+
+					// transform kernel
+					const float* k0 = kernel0;
+					const float* k1 = kernel0 + 3;
+					const float* k2 = kernel0 + 6;
+
+					// h
+					float tmp[4][3];
+					for (int i = 0; i < 4; i++)
+					{
+						tmp[i][0] = k0[0] * ktm[i][0] + k0[1] * ktm[i][1] + k0[2] * ktm[i][2];
+						tmp[i][1] = k1[0] * ktm[i][0] + k1[1] * ktm[i][1] + k1[2] * ktm[i][2];
+						tmp[i][2] = k2[0] * ktm[i][0] + k2[1] * ktm[i][1] + k2[2] * ktm[i][2];
+					}
+
+					// U
+					for (int j = 0; j < 4; j++)
+					{
+						float* tmpp = &tmp[j][0];
+
+						for (int i = 0; i < 4; i++)
+						{
+							kernel_tm0[j * 4 + i] = tmpp[0] * ktm[i][0] + tmpp[1] * ktm[i][1] + tmpp[2] * ktm[i][2];
+						}
+					}
+				}
+			}
+		}
+
+		static void conv3x3s1_winograd23_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& kernel_tm, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+#ifdef CALC_INDIVIDUAL
+			int loop = 100;
+			glasssix::Timer calcTime;
+			double elapseTime;
+#endif // CALC_INDIVIDUAL
+
+			int num = bottom_blob->num();
+			int w = bottom_blob->width();
+			int h = bottom_blob->height();
+			int inch = bottom_blob->channels();
+
+			int outw = top_blob->width();
+			int outh = top_blob->height();
+			int outch = top_blob->channels();
+
+			// pad to 2n+2, winograd F(2,3)
+			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+
+			outw = (outw + 1) / 2 * 2;
+			outh = (outh + 1) / 2 * 2;
+
+			w = outw + 2;
+			h = outh + 2;
+			tensor_operation_cpu::make_border_cpu(bottom_blob, bottom_blob_bordered, 0, h - bottom_blob->height(), 0, w - bottom_blob->width());
+			int bordered_h = bottom_blob_bordered->height();
+			int bordered_w = bottom_blob_bordered->width();
+			float *bottom_blob_bordered_data = bottom_blob_bordered->mutable_cpu_data();
+			const float* kernel_tm_data = kernel_tm->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+			{
+				bias = _bias->cpu_data();
+			}
+
+			std::shared_ptr<tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				float *bottom_blob_bordered_data_n = bottom_blob_bordered_data + n * inch * bordered_h * bordered_w;
+
+				// BEGIN transform input
+				std::shared_ptr<tensor<float> > bottom_blob_tm;
+#ifdef CALC_INDIVIDUAL
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif
+				{
+					int w_tm = outw / 2 * 4;
+					int h_tm = outh / 2 * 4;
+
+					int nColBlocks = h_tm / 4; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 4;
+
+					const int tiles = nColBlocks * nRowBlocks;
+
+					bottom_blob_tm.reset(new tensor<float>(std::vector<int>{1, inch, tiles, 16}));
+					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
+
+					// BT
+					// const float itm[4][4] = {
+					//     {1.0f,  0.0f, -1.0f,  0.0f},
+					//     {0.0f,  1.0f,  1.00f, 0.0f},
+					//     {0.0f, -1.0f,  1.00f, 0.0f},
+					//     {0.0f, -1.0f,  0.00f, 1.0f}
+					// };        
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int q = 0; q < inch; q++)
+					{
+						const float* img = bottom_blob_bordered_data_n + q * bordered_h * bordered_w;
+						float* out_tm0 = bottom_blob_tm_data + q * 16 * tiles;
+
+						for (int j = 0; j < nColBlocks; j++)
+						{
+							const float* r0 = img + w * j * 2;
+							const float* r1 = r0 + w;
+							const float* r2 = r1 + w;
+							const float* r3 = r2 + w;
+
+							for (int i = 0; i < nRowBlocks; i++)
+							{
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 _d0, _d1, _d2, _d3;
+								__m128 _w0, _w1, _w2, _w3;
+
+								// load
+								_d0 = _mm_loadu_ps(r0);
+								_d1 = _mm_loadu_ps(r1);
+								_d2 = _mm_loadu_ps(r2);
+								_d3 = _mm_loadu_ps(r3);
+
+								// w = B_t * d
+								_w0 = _mm_sub_ps(_d0, _d2);
+								_w1 = _mm_add_ps(_d1, _d2);
+								_w2 = _mm_sub_ps(_d2, _d1);
+								_w3 = _mm_sub_ps(_d3, _d1);
+
+								// transpose d to d_t
+								_MM_TRANSPOSE4_PS(_w0, _w1, _w2, _w3);
+
+								// d = B_t * d_t
+								_d0 = _mm_sub_ps(_w0, _w2);
+								_d1 = _mm_add_ps(_w1, _w2);
+								_d2 = _mm_sub_ps(_w2, _w1);
+								_d3 = _mm_sub_ps(_w3, _w1);
+
+								// save to out_tm
+								_mm_storeu_ps(out_tm0, _d0);
+								_mm_storeu_ps(out_tm0 + 4, _d1);
+								_mm_storeu_ps(out_tm0 + 8, _d2);
+								_mm_storeu_ps(out_tm0 + 12, _d3);
+#else
+								float d0[4], d1[4], d2[4], d3[4];
+								float w0[4], w1[4], w2[4], w3[4];
+								float t0[4], t1[4], t2[4], t3[4];
+								// load
+								for (int n = 0; n < 4; n++)
+								{
+									d0[n] = r0[n];
+									d1[n] = r1[n];
+									d2[n] = r2[n];
+									d3[n] = r3[n];
+								}
+								// w = B_t * d
+								for (int n = 0; n < 4; n++)
+								{
+									w0[n] = d0[n] - d2[n];
+									w1[n] = d1[n] + d2[n];
+									w2[n] = d2[n] - d1[n];
+									w3[n] = d3[n] - d1[n];
+								}
+								// transpose d to d_t
+								{
+									t0[0] = w0[0]; t1[0] = w0[1]; t2[0] = w0[2]; t3[0] = w0[3];
+									t0[1] = w1[0]; t1[1] = w1[1]; t2[1] = w1[2]; t3[1] = w1[3];
+									t0[2] = w2[0]; t1[2] = w2[1]; t2[2] = w2[2]; t3[2] = w2[3];
+									t0[3] = w3[0]; t1[3] = w3[1]; t2[3] = w3[2]; t3[3] = w3[3];
+								}
+								// d = B_t * d_t
+								for (int n = 0; n < 4; n++)
+								{
+									d0[n] = t0[n] - t2[n];
+									d1[n] = t1[n] + t2[n];
+									d2[n] = t2[n] - t1[n];
+									d3[n] = t3[n] - t1[n];
+								}
+								// save to out_tm
+								for (int n = 0; n < 4; n++)
+								{
+									out_tm0[n] = d0[n];
+									out_tm0[n + 4] = d1[n];
+									out_tm0[n + 8] = d2[n];
+									out_tm0[n + 12] = d3[n];
+								}
+#endif
+								r0 += 2;
+								r1 += 2;
+								r2 += 2;
+								r3 += 2;
+
+								out_tm0 += 16;
+							}
+						}
+					}
+				}
+				
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "V:" << std::setw(5) << elapseTime << ",";
+#endif
+
+				// BEGIN dot
+				std::shared_ptr<tensor<float> > top_blob_tm;
+#ifdef CALC_INDIVIDUAL
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif //  CALC_INDIVIDUAL
+
+
+				{
+					int w_tm = outw / 2 * 4;
+					int h_tm = outh / 2 * 4;
+
+					int nColBlocks = h_tm / 4; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 4;
+
+					const int tiles = nColBlocks * nRowBlocks;
+
+					top_blob_tm.reset(new tensor<float>(std::vector<int>{1, outch, tiles, 16}));
+					float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
+					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
+
+					int nn_outch = outch >> 2;
+					int remain_outch_start = nn_outch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int pp = 0; pp < nn_outch; pp++)
+					{
+						int p = pp * 4;
+
+						float *out0_tm = top_blob_tm_data + p * 16 * tiles;
+						float *out1_tm = top_blob_tm_data + (p + 1) * 16 * tiles;
+						float *out2_tm = top_blob_tm_data + (p + 2) * 16 * tiles;
+						float *out3_tm = top_blob_tm_data + (p + 3) * 16 * tiles;
+
+						const float *kernel0_tm = kernel_tm_data + p * inch * 16/* + p * 16*/;
+						const float *kernel1_tm = kernel_tm_data + (p + 1) * inch * 16/* + p * 16*/;
+						const float *kernel2_tm = kernel_tm_data + (p + 2) * inch * 16/* + p * 16*/;
+						const float *kernel3_tm = kernel_tm_data + (p + 3) * inch * 16/* + p * 16*/;
+
+						for (int i = 0; i < tiles; i++)
+						{
+							float* output0_tm = out0_tm + i * 16;
+							float* output1_tm = out1_tm + i * 16;
+							float* output2_tm = out2_tm + i * 16;
+							float* output3_tm = out3_tm + i * 16;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum0_0 = mm_setzero_ps();
+							mm_type sum0_8 = mm_setzero_ps();
+							mm_type sum1_0 = mm_setzero_ps();
+							mm_type sum1_8 = mm_setzero_ps();
+							mm_type sum2_0 = mm_setzero_ps();
+							mm_type sum2_8 = mm_setzero_ps();
+							mm_type sum3_0 = mm_setzero_ps();
+							mm_type sum3_8 = mm_setzero_ps();
+
+							int q = 0;
+
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * tiles * 16 + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * tiles * 16 + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								//r
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r1_0 = mm_load_ps(r1 + 0);
+								mm_type r1_8 = mm_load_ps(r1 + 8);
+								mm_type r2_0 = mm_load_ps(r2 + 0);
+								mm_type r2_8 = mm_load_ps(r2 + 8);
+								mm_type r3_0 = mm_load_ps(r3 + 0);
+								mm_type r3_8 = mm_load_ps(r3 + 8);
+
+								//k0
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k0_16 = mm_load_ps(k0 + 16);
+								mm_type k0_24 = mm_load_ps(k0 + 24);
+								mm_type k0_32 = mm_load_ps(k0 + 32);
+								mm_type k0_40 = mm_load_ps(k0 + 40);
+								mm_type k0_48 = mm_load_ps(k0 + 48);
+								mm_type k0_56 = mm_load_ps(k0 + 56);
+
+								//k1
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k1_16 = mm_load_ps(k1 + 16);
+								mm_type k1_24 = mm_load_ps(k1 + 24);
+								mm_type k1_32 = mm_load_ps(k1 + 32);
+								mm_type k1_40 = mm_load_ps(k1 + 40);
+								mm_type k1_48 = mm_load_ps(k1 + 48);
+								mm_type k1_56 = mm_load_ps(k1 + 56);
+
+								//k2
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k2_16 = mm_load_ps(k2 + 16);
+								mm_type k2_24 = mm_load_ps(k2 + 24);
+								mm_type k2_32 = mm_load_ps(k2 + 32);
+								mm_type k2_40 = mm_load_ps(k2 + 40);
+								mm_type k2_48 = mm_load_ps(k2 + 48);
+								mm_type k2_56 = mm_load_ps(k2 + 56);
+
+								//k3
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+								mm_type k3_16 = mm_load_ps(k3 + 16);
+								mm_type k3_24 = mm_load_ps(k3 + 24);
+								mm_type k3_32 = mm_load_ps(k3 + 32);
+								mm_type k3_40 = mm_load_ps(k3 + 40);
+								mm_type k3_48 = mm_load_ps(k3 + 48);
+								mm_type k3_56 = mm_load_ps(k3 + 56);
+
+								sum0_0 = mm_fmadd_ps(r0_0, k0_0, sum0_0);
+								sum0_8 = mm_fmadd_ps(r0_8, k0_8, sum0_8);
+								sum0_0 = mm_fmadd_ps(r1_0, k0_16, sum0_0);
+								sum0_8 = mm_fmadd_ps(r1_8, k0_24, sum0_8);
+								sum0_0 = mm_fmadd_ps(r2_0, k0_32, sum0_0);
+								sum0_8 = mm_fmadd_ps(r2_8, k0_40, sum0_8);
+								sum0_0 = mm_fmadd_ps(r3_0, k0_48, sum0_0);
+								sum0_8 = mm_fmadd_ps(r3_8, k0_56, sum0_8);
+
+								sum1_0 = mm_fmadd_ps(r0_0, k1_0, sum1_0);
+								sum1_8 = mm_fmadd_ps(r0_8, k1_8, sum1_8);
+								sum1_0 = mm_fmadd_ps(r1_0, k1_16, sum1_0);
+								sum1_8 = mm_fmadd_ps(r1_8, k1_24, sum1_8);
+								sum1_0 = mm_fmadd_ps(r2_0, k1_32, sum1_0);
+								sum1_8 = mm_fmadd_ps(r2_8, k1_40, sum1_8);
+								sum1_0 = mm_fmadd_ps(r3_0, k1_48, sum1_0);
+								sum1_8 = mm_fmadd_ps(r3_8, k1_56, sum1_8);
+
+								sum2_0 = mm_fmadd_ps(r0_0, k2_0, sum2_0);
+								sum2_8 = mm_fmadd_ps(r0_8, k2_8, sum2_8);
+								sum2_0 = mm_fmadd_ps(r1_0, k2_16, sum2_0);
+								sum2_8 = mm_fmadd_ps(r1_8, k2_24, sum2_8);
+								sum2_0 = mm_fmadd_ps(r2_0, k2_32, sum2_0);
+								sum2_8 = mm_fmadd_ps(r2_8, k2_40, sum2_8);
+								sum2_0 = mm_fmadd_ps(r3_0, k2_48, sum2_0);
+								sum2_8 = mm_fmadd_ps(r3_8, k2_56, sum2_8);
+
+								sum3_0 = mm_fmadd_ps(r0_0, k3_0, sum3_0);
+								sum3_8 = mm_fmadd_ps(r0_8, k3_8, sum3_8);
+								sum3_0 = mm_fmadd_ps(r1_0, k3_16, sum3_0);
+								sum3_8 = mm_fmadd_ps(r1_8, k3_24, sum3_8);
+								sum3_0 = mm_fmadd_ps(r2_0, k3_32, sum3_0);
+								sum3_8 = mm_fmadd_ps(r2_8, k3_40, sum3_8);
+								sum3_0 = mm_fmadd_ps(r3_0, k3_48, sum3_0);
+								sum3_8 = mm_fmadd_ps(r3_8, k3_56, sum3_8);
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+
+								sum0_0 = mm_fmadd_ps(r0_0, k0_0, sum0_0);
+								sum0_8 = mm_fmadd_ps(r0_8, k0_8, sum0_8);
+								sum1_0 = mm_fmadd_ps(r0_0, k1_0, sum1_0);
+								sum1_8 = mm_fmadd_ps(r0_8, k1_8, sum1_8);
+								sum2_0 = mm_fmadd_ps(r0_0, k2_0, sum2_0);
+								sum2_8 = mm_fmadd_ps(r0_8, k2_8, sum2_8);
+								sum3_0 = mm_fmadd_ps(r0_0, k3_0, sum3_0);
+								sum3_8 = mm_fmadd_ps(r0_8, k3_8, sum3_8);
+							}
+
+							mm_store_ps(output0_tm, sum0_0);
+							mm_store_ps(output0_tm + mm_align_size, sum0_8);
+							mm_store_ps(output1_tm, sum1_0);
+							mm_store_ps(output1_tm + mm_align_size, sum1_8);
+							mm_store_ps(output2_tm, sum2_0);
+							mm_store_ps(output2_tm + mm_align_size, sum2_8);
+							mm_store_ps(output3_tm, sum3_0);
+							mm_store_ps(output3_tm + mm_align_size, sum3_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum0_0 = mm_setzero_ps();
+							mm_type sum0_4 = mm_setzero_ps();
+							mm_type sum0_8 = mm_setzero_ps();
+							mm_type sum0_12 = mm_setzero_ps();
+							mm_type sum1_0 = mm_setzero_ps();
+							mm_type sum1_4 = mm_setzero_ps();
+							mm_type sum1_8 = mm_setzero_ps();
+							mm_type sum1_12 = mm_setzero_ps();
+							mm_type sum2_0 = mm_setzero_ps();
+							mm_type sum2_4 = mm_setzero_ps();
+							mm_type sum2_8 = mm_setzero_ps();
+							mm_type sum2_12 = mm_setzero_ps();
+							mm_type sum3_0 = mm_setzero_ps();
+							mm_type sum3_4 = mm_setzero_ps();
+							mm_type sum3_8 = mm_setzero_ps();
+							mm_type sum3_12 = mm_setzero_ps();
+
+							int q = 0;
+
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * tiles * 16 + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * tiles * 16 + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								//r
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_4 = mm_load_ps(r0 + 4);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r0_12 = mm_load_ps(r0 + 12);
+								mm_type r1_0 = mm_load_ps(r1 + 0);
+								mm_type r1_4 = mm_load_ps(r1 + 4);
+								mm_type r1_8 = mm_load_ps(r1 + 8);
+								mm_type r1_12 = mm_load_ps(r1 + 12);
+								mm_type r2_0 = mm_load_ps(r2 + 0);
+								mm_type r2_4 = mm_load_ps(r2 + 4);
+								mm_type r2_8 = mm_load_ps(r2 + 8);
+								mm_type r2_12 = mm_load_ps(r2 + 12);
+								mm_type r3_0 = mm_load_ps(r3 + 0);
+								mm_type r3_4 = mm_load_ps(r3 + 4);
+								mm_type r3_8 = mm_load_ps(r3 + 8);
+								mm_type r3_12 = mm_load_ps(r3 + 12);
+
+								//k0
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_4 = mm_load_ps(k0 + 4);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k0_12 = mm_load_ps(k0 + 12);
+								mm_type k0_16 = mm_load_ps(k0 + 16);
+								mm_type k0_20 = mm_load_ps(k0 + 20);
+								mm_type k0_24 = mm_load_ps(k0 + 24);
+								mm_type k0_28 = mm_load_ps(k0 + 28);
+								mm_type k0_32 = mm_load_ps(k0 + 32);
+								mm_type k0_36 = mm_load_ps(k0 + 36);
+								mm_type k0_40 = mm_load_ps(k0 + 40);
+								mm_type k0_44 = mm_load_ps(k0 + 44);
+								mm_type k0_48 = mm_load_ps(k0 + 48);
+								mm_type k0_52 = mm_load_ps(k0 + 52);
+								mm_type k0_56 = mm_load_ps(k0 + 56);
+								mm_type k0_60 = mm_load_ps(k0 + 60);
+
+								//k1
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_4 = mm_load_ps(k1 + 4);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k1_12 = mm_load_ps(k1 + 12);
+								mm_type k1_16 = mm_load_ps(k1 + 16);
+								mm_type k1_20 = mm_load_ps(k1 + 20);
+								mm_type k1_24 = mm_load_ps(k1 + 24);
+								mm_type k1_28 = mm_load_ps(k1 + 28);
+								mm_type k1_32 = mm_load_ps(k1 + 32);
+								mm_type k1_36 = mm_load_ps(k1 + 36);
+								mm_type k1_40 = mm_load_ps(k1 + 40);
+								mm_type k1_44 = mm_load_ps(k1 + 44);
+								mm_type k1_48 = mm_load_ps(k1 + 48);
+								mm_type k1_52 = mm_load_ps(k1 + 52);
+								mm_type k1_56 = mm_load_ps(k1 + 56);
+								mm_type k1_60 = mm_load_ps(k1 + 60);
+
+								//k2
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_4 = mm_load_ps(k2 + 4);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k2_12 = mm_load_ps(k2 + 12);
+								mm_type k2_16 = mm_load_ps(k2 + 16);
+								mm_type k2_20 = mm_load_ps(k2 + 20);
+								mm_type k2_24 = mm_load_ps(k2 + 24);
+								mm_type k2_28 = mm_load_ps(k2 + 28);
+								mm_type k2_32 = mm_load_ps(k2 + 32);
+								mm_type k2_36 = mm_load_ps(k2 + 36);
+								mm_type k2_40 = mm_load_ps(k2 + 40);
+								mm_type k2_44 = mm_load_ps(k2 + 44);
+								mm_type k2_48 = mm_load_ps(k2 + 48);
+								mm_type k2_52 = mm_load_ps(k2 + 52);
+								mm_type k2_56 = mm_load_ps(k2 + 56);
+								mm_type k2_60 = mm_load_ps(k2 + 60);
+
+								//k3
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_4 = mm_load_ps(k3 + 4);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+								mm_type k3_12 = mm_load_ps(k3 + 12);
+								mm_type k3_16 = mm_load_ps(k3 + 16);
+								mm_type k3_20 = mm_load_ps(k3 + 20);
+								mm_type k3_24 = mm_load_ps(k3 + 24);
+								mm_type k3_28 = mm_load_ps(k3 + 28);
+								mm_type k3_32 = mm_load_ps(k3 + 32);
+								mm_type k3_36 = mm_load_ps(k3 + 36);
+								mm_type k3_40 = mm_load_ps(k3 + 40);
+								mm_type k3_44 = mm_load_ps(k3 + 44);
+								mm_type k3_48 = mm_load_ps(k3 + 48);
+								mm_type k3_52 = mm_load_ps(k3 + 52);
+								mm_type k3_56 = mm_load_ps(k3 + 56);
+								mm_type k3_60 = mm_load_ps(k3 + 60);
+
+								sum0_0 = mm_fmadd_ps(r0_0, k0_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(r0_4, k0_4, sum0_4);
+								sum0_8 = mm_fmadd_ps(r0_8, k0_8, sum0_8);
+								sum0_12 = mm_fmadd_ps(r0_12, k0_12, sum0_12);
+								sum0_0 = mm_fmadd_ps(r1_0, k0_16, sum0_0);
+								sum0_4 = mm_fmadd_ps(r1_4, k0_20, sum0_4);
+								sum0_8 = mm_fmadd_ps(r1_8, k0_24, sum0_8);
+								sum0_12 = mm_fmadd_ps(r1_12, k0_28, sum0_12);
+								sum0_0 = mm_fmadd_ps(r2_0, k0_32, sum0_0);
+								sum0_4 = mm_fmadd_ps(r2_4, k0_36, sum0_4);
+								sum0_8 = mm_fmadd_ps(r2_8, k0_40, sum0_8);
+								sum0_12 = mm_fmadd_ps(r2_12, k0_44, sum0_12);
+								sum0_0 = mm_fmadd_ps(r3_0, k0_48, sum0_0);
+								sum0_4 = mm_fmadd_ps(r3_4, k0_52, sum0_4);
+								sum0_8 = mm_fmadd_ps(r3_8, k0_56, sum0_8);
+								sum0_12 = mm_fmadd_ps(r3_12, k0_60, sum0_12);
+
+								sum1_0 = mm_fmadd_ps(r0_0, k1_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(r0_4, k1_4, sum1_4);
+								sum1_8 = mm_fmadd_ps(r0_8, k1_8, sum1_8);
+								sum1_12 = mm_fmadd_ps(r0_12, k1_12, sum1_12);
+								sum1_0 = mm_fmadd_ps(r1_0, k1_16, sum1_0);
+								sum1_4 = mm_fmadd_ps(r1_4, k1_20, sum1_4);
+								sum1_8 = mm_fmadd_ps(r1_8, k1_24, sum1_8);
+								sum1_12 = mm_fmadd_ps(r1_12, k1_28, sum1_12);
+								sum1_0 = mm_fmadd_ps(r2_0, k1_32, sum1_0);
+								sum1_4 = mm_fmadd_ps(r2_4, k1_36, sum1_4);
+								sum1_8 = mm_fmadd_ps(r2_8, k1_40, sum1_8);
+								sum1_12 = mm_fmadd_ps(r2_12, k1_44, sum1_12);
+								sum1_0 = mm_fmadd_ps(r3_0, k1_48, sum1_0);
+								sum1_4 = mm_fmadd_ps(r3_4, k1_52, sum1_4);
+								sum1_8 = mm_fmadd_ps(r3_8, k1_56, sum1_8);
+								sum1_12 = mm_fmadd_ps(r3_12, k1_60, sum1_12);
+
+								sum2_0 = mm_fmadd_ps(r0_0, k2_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(r0_4, k2_4, sum2_4);
+								sum2_8 = mm_fmadd_ps(r0_8, k2_8, sum2_8);
+								sum2_12 = mm_fmadd_ps(r0_12, k2_12, sum2_12);
+								sum2_0 = mm_fmadd_ps(r1_0, k2_16, sum2_0);
+								sum2_4 = mm_fmadd_ps(r1_4, k2_20, sum2_4);
+								sum2_8 = mm_fmadd_ps(r1_8, k2_24, sum2_8);
+								sum2_12 = mm_fmadd_ps(r1_12, k2_28, sum2_12);
+								sum2_0 = mm_fmadd_ps(r2_0, k2_32, sum2_0);
+								sum2_4 = mm_fmadd_ps(r2_4, k2_36, sum2_4);
+								sum2_8 = mm_fmadd_ps(r2_8, k2_40, sum2_8);
+								sum2_12 = mm_fmadd_ps(r2_12, k2_44, sum2_12);
+								sum2_0 = mm_fmadd_ps(r3_0, k2_48, sum2_0);
+								sum2_4 = mm_fmadd_ps(r3_4, k2_52, sum2_4);
+								sum2_8 = mm_fmadd_ps(r3_8, k2_56, sum2_8);
+								sum2_12 = mm_fmadd_ps(r3_12, k2_60, sum2_12);
+
+								sum3_0 = mm_fmadd_ps(r0_0, k3_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(r0_4, k3_4, sum3_4);
+								sum3_8 = mm_fmadd_ps(r0_8, k3_8, sum3_8);
+								sum3_12 = mm_fmadd_ps(r0_12, k3_12, sum3_12);
+								sum3_0 = mm_fmadd_ps(r1_0, k3_16, sum3_0);
+								sum3_4 = mm_fmadd_ps(r1_4, k3_20, sum3_4);
+								sum3_8 = mm_fmadd_ps(r1_8, k3_24, sum3_8);
+								sum3_12 = mm_fmadd_ps(r1_12, k3_28, sum3_12);
+								sum3_0 = mm_fmadd_ps(r2_0, k3_32, sum3_0);
+								sum3_4 = mm_fmadd_ps(r2_4, k3_36, sum3_4);
+								sum3_8 = mm_fmadd_ps(r2_8, k3_40, sum3_8);
+								sum3_12 = mm_fmadd_ps(r2_12, k3_44, sum3_12);
+								sum3_0 = mm_fmadd_ps(r3_0, k3_48, sum3_0);
+								sum3_4 = mm_fmadd_ps(r3_4, k3_52, sum3_4);
+								sum3_8 = mm_fmadd_ps(r3_8, k3_56, sum3_8);
+								sum3_12 = mm_fmadd_ps(r3_12, k3_60, sum3_12);
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_4 = mm_load_ps(r0 + 4);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r0_12 = mm_load_ps(r0 + 12);
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_4 = mm_load_ps(k0 + 4);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k0_12 = mm_load_ps(k0 + 12);
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_4 = mm_load_ps(k1 + 4);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k1_12 = mm_load_ps(k1 + 12);
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_4 = mm_load_ps(k2 + 4);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k2_12 = mm_load_ps(k2 + 12);
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_4 = mm_load_ps(k3 + 4);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+								mm_type k3_12 = mm_load_ps(k3 + 12);
+
+								sum0_0 = mm_fmadd_ps(r0_0, k0_0, sum0_0);
+								sum0_4 = mm_fmadd_ps(r0_4, k0_4, sum0_4);
+								sum0_8 = mm_fmadd_ps(r0_8, k0_8, sum0_8);
+								sum0_12 = mm_fmadd_ps(r0_12, k0_12, sum0_12);
+								sum1_0 = mm_fmadd_ps(r0_0, k1_0, sum1_0);
+								sum1_4 = mm_fmadd_ps(r0_4, k1_4, sum1_4);
+								sum1_8 = mm_fmadd_ps(r0_8, k1_8, sum1_8);
+								sum1_12 = mm_fmadd_ps(r0_12, k1_12, sum1_12);
+								sum2_0 = mm_fmadd_ps(r0_0, k2_0, sum2_0);
+								sum2_4 = mm_fmadd_ps(r0_4, k2_4, sum2_4);
+								sum2_8 = mm_fmadd_ps(r0_8, k2_8, sum2_8);
+								sum2_12 = mm_fmadd_ps(r0_12, k2_12, sum2_12);
+								sum3_0 = mm_fmadd_ps(r0_0, k3_0, sum3_0);
+								sum3_4 = mm_fmadd_ps(r0_4, k3_4, sum3_4);
+								sum3_8 = mm_fmadd_ps(r0_8, k3_8, sum3_8);
+								sum3_12 = mm_fmadd_ps(r0_12, k3_12, sum3_12);
+							}
+
+							mm_store_ps(output0_tm, sum0_0);
+							mm_store_ps(output0_tm + 4, sum0_4);
+							mm_store_ps(output0_tm + 8, sum0_8);
+							mm_store_ps(output0_tm + 12, sum0_12);
+							mm_store_ps(output1_tm, sum1_0);
+							mm_store_ps(output1_tm + 4, sum1_4);
+							mm_store_ps(output1_tm + 8, sum1_8);
+							mm_store_ps(output1_tm + 12, sum1_12);
+							mm_store_ps(output2_tm, sum2_0);
+							mm_store_ps(output2_tm + 4, sum2_4);
+							mm_store_ps(output2_tm + 8, sum2_8);
+							mm_store_ps(output2_tm + 12, sum2_12);
+							mm_store_ps(output3_tm, sum3_0);
+							mm_store_ps(output3_tm + 4, sum3_4);
+							mm_store_ps(output3_tm + 8, sum3_8);
+							mm_store_ps(output3_tm + 12, sum3_12);
+#else
+							float sum0[16] = { 0.0f };
+							float sum1[16] = { 0.0f };
+							float sum2[16] = { 0.0f };
+							float sum3[16] = { 0.0f };
+
+							int q = 0;
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * tiles * 16 + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * tiles * 16 + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								for (int n = 0; n < 16; n++)
+								{
+									sum0[n] += r0[n] * k0[n];
+									k0 += 16;
+									sum0[n] += r1[n] * k0[n];
+									k0 += 16;
+									sum0[n] += r2[n] * k0[n];
+									k0 += 16;
+									sum0[n] += r3[n] * k0[n];
+									k0 -= 16 * 3;
+
+									sum1[n] += r0[n] * k1[n];
+									k1 += 16;
+									sum1[n] += r1[n] * k1[n];
+									k1 += 16;
+									sum1[n] += r2[n] * k1[n];
+									k1 += 16;
+									sum1[n] += r3[n] * k1[n];
+									k1 -= 16 * 3;
+
+									sum2[n] += r0[n] * k2[n];
+									k2 += 16;
+									sum2[n] += r1[n] * k2[n];
+									k2 += 16;
+									sum2[n] += r2[n] * k2[n];
+									k2 += 16;
+									sum2[n] += r3[n] * k2[n];
+									k2 -= 16 * 3;
+
+									sum3[n] += r0[n] * k3[n];
+									k3 += 16;
+									sum3[n] += r1[n] * k3[n];
+									k3 += 16;
+									sum3[n] += r2[n] * k3[n];
+									k3 += 16;
+									sum3[n] += r3[n] * k3[n];
+									k3 -= 16 * 3;
+								}
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * tiles * 16 + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel1_tm + q * 16;
+								const float* k2 = kernel2_tm + q * 16;
+								const float* k3 = kernel3_tm + q * 16;
+
+								for (int n = 0; n < 16; n++)
+								{
+									sum0[n] += r0[n] * k0[n];
+									sum1[n] += r0[n] * k1[n];
+									sum2[n] += r0[n] * k2[n];
+									sum3[n] += r0[n] * k3[n];
+								}
+							}
+
+							for (int n = 0; n < 16; n++)
+							{
+								output0_tm[n] = sum0[n];
+								output1_tm[n] = sum1[n];
+								output2_tm[n] = sum2[n];
+								output3_tm[n] = sum3[n];
+							}
+#endif                
+						}
+					}
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int p = remain_outch_start; p < outch; p++)
+					{
+						float *out0_tm = top_blob_tm_data + p * 16 * tiles;
+						const float *kernel0_tm = kernel_tm_data + p * 16 * inch;
+
+						for (int i = 0; i < tiles; i++)
+						{
+							float* output0_tm = out0_tm + i * 16;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum_0 = mm_setzero_ps();
+							mm_type sum_8 = mm_setzero_ps();
+
+							int q = 0;
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * 16 * tiles + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * 16 * tiles + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * 16 * tiles + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel0_tm + (q + 1) * 16;
+								const float* k2 = kernel0_tm + (q + 2) * 16;
+								const float* k3 = kernel0_tm + (q + 3) * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r1_0 = mm_load_ps(r1 + 0);
+								mm_type r1_8 = mm_load_ps(r1 + 8);
+								mm_type r2_0 = mm_load_ps(r2 + 0);
+								mm_type r2_8 = mm_load_ps(r2 + 8);
+								mm_type r3_0 = mm_load_ps(r3 + 0);
+								mm_type r3_8 = mm_load_ps(r3 + 8);
+
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+
+								sum_0 = mm_fmadd_ps(r0_0, k0_0, sum_0);
+								sum_8 = mm_fmadd_ps(r0_8, k0_8, sum_8);
+								sum_0 = mm_fmadd_ps(r1_0, k1_0, sum_0);
+								sum_8 = mm_fmadd_ps(r1_8, k1_8, sum_8);
+								sum_0 = mm_fmadd_ps(r2_0, k2_0, sum_0);
+								sum_8 = mm_fmadd_ps(r2_8, k2_8, sum_8);
+								sum_0 = mm_fmadd_ps(r3_0, k3_0, sum_0);
+								sum_8 = mm_fmadd_ps(r3_8, k3_8, sum_8);
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* k0 = kernel0_tm + q * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+
+								sum_0 = mm_fmadd_ps(r0_0, k0_0, sum_0);
+								sum_8 = mm_fmadd_ps(r0_8, k0_8, sum_8);
+
+							}
+
+							mm_store_ps(output0_tm, sum_0);
+							mm_store_ps(output0_tm + 8, sum_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum_0 = mm_setzero_ps();
+							mm_type sum_4 = mm_setzero_ps();
+							mm_type sum_8 = mm_setzero_ps();
+							mm_type sum_12 = mm_setzero_ps();
+
+							int q = 0;
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * 16 * tiles + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * 16 * tiles + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * 16 * tiles + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel0_tm + (q + 1) * 16;
+								const float* k2 = kernel0_tm + (q + 2) * 16;
+								const float* k3 = kernel0_tm + (q + 3) * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_4 = mm_load_ps(r0 + 4);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r0_12 = mm_load_ps(r0 + 12);
+								mm_type r1_0 = mm_load_ps(r1 + 0);
+								mm_type r1_4 = mm_load_ps(r1 + 4);
+								mm_type r1_8 = mm_load_ps(r1 + 8);
+								mm_type r1_12 = mm_load_ps(r1 + 12);
+								mm_type r2_0 = mm_load_ps(r2 + 0);
+								mm_type r2_4 = mm_load_ps(r2 + 4);
+								mm_type r2_8 = mm_load_ps(r2 + 8);
+								mm_type r2_12 = mm_load_ps(r2 + 12);
+								mm_type r3_0 = mm_load_ps(r3 + 0);
+								mm_type r3_4 = mm_load_ps(r3 + 4);
+								mm_type r3_8 = mm_load_ps(r3 + 8);
+								mm_type r3_12 = mm_load_ps(r3 + 12);
+
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_4 = mm_load_ps(k0 + 4);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k0_12 = mm_load_ps(k0 + 12);
+								mm_type k1_0 = mm_load_ps(k1 + 0);
+								mm_type k1_4 = mm_load_ps(k1 + 4);
+								mm_type k1_8 = mm_load_ps(k1 + 8);
+								mm_type k1_12 = mm_load_ps(k1 + 12);
+								mm_type k2_0 = mm_load_ps(k2 + 0);
+								mm_type k2_4 = mm_load_ps(k2 + 4);
+								mm_type k2_8 = mm_load_ps(k2 + 8);
+								mm_type k2_12 = mm_load_ps(k2 + 12);
+								mm_type k3_0 = mm_load_ps(k3 + 0);
+								mm_type k3_4 = mm_load_ps(k3 + 4);
+								mm_type k3_8 = mm_load_ps(k3 + 8);
+								mm_type k3_12 = mm_load_ps(k3 + 12);
+
+								sum_0 = mm_fmadd_ps(r0_0, k0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r0_4, k0_4, sum_4);
+								sum_8 = mm_fmadd_ps(r0_8, k0_8, sum_8);
+								sum_12 = mm_fmadd_ps(r0_12, k0_12, sum_12);
+								sum_0 = mm_fmadd_ps(r1_0, k1_0, sum_0);
+								sum_4 = mm_fmadd_ps(r1_4, k1_4, sum_4);
+								sum_8 = mm_fmadd_ps(r1_8, k1_8, sum_8);
+								sum_12 = mm_fmadd_ps(r1_12, k1_12, sum_12);
+								sum_0 = mm_fmadd_ps(r2_0, k2_0, sum_0);
+								sum_4 = mm_fmadd_ps(r2_4, k2_4, sum_4);
+								sum_8 = mm_fmadd_ps(r2_8, k2_8, sum_8);
+								sum_12 = mm_fmadd_ps(r2_12, k2_12, sum_12);
+								sum_0 = mm_fmadd_ps(r3_0, k3_0, sum_0);
+								sum_4 = mm_fmadd_ps(r3_4, k3_4, sum_4);
+								sum_8 = mm_fmadd_ps(r3_8, k3_8, sum_8);
+								sum_12 = mm_fmadd_ps(r3_12, k3_12, sum_12);
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* k0 = kernel0_tm + q * 16;
+
+								mm_type r0_0 = mm_load_ps(r0 + 0);
+								mm_type r0_4 = mm_load_ps(r0 + 4);
+								mm_type r0_8 = mm_load_ps(r0 + 8);
+								mm_type r0_12 = mm_load_ps(r0 + 12);
+
+								mm_type k0_0 = mm_load_ps(k0 + 0);
+								mm_type k0_4 = mm_load_ps(k0 + 4);
+								mm_type k0_8 = mm_load_ps(k0 + 8);
+								mm_type k0_12 = mm_load_ps(k0 + 12);
+
+								sum_0 = mm_fmadd_ps(r0_0, k0_0, sum_0);
+								sum_4 = mm_fmadd_ps(r0_4, k0_4, sum_4);
+								sum_8 = mm_fmadd_ps(r0_8, k0_8, sum_8);
+								sum_12 = mm_fmadd_ps(r0_12, k0_12, sum_12);
+
+							}
+
+							mm_store_ps(output0_tm, sum_0);
+							mm_store_ps(output0_tm + 4, sum_4);
+							mm_store_ps(output0_tm + 8, sum_8);
+							mm_store_ps(output0_tm + 12, sum_12);
+#else
+							float sum0[16] = { 0.0f };
+
+							int q = 0;
+							for (; q + 3 < inch; q += 4)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* r1 = bottom_blob_tm_data + (q + 1) * 16 * tiles + i * 16;
+								const float* r2 = bottom_blob_tm_data + (q + 2) * 16 * tiles + i * 16;
+								const float* r3 = bottom_blob_tm_data + (q + 3) * 16 * tiles + i * 16;
+
+								const float* k0 = kernel0_tm + q * 16;
+								const float* k1 = kernel0_tm + (q + 1) * 16;
+								const float* k2 = kernel0_tm + (q + 2) * 16;
+								const float* k3 = kernel0_tm + (q + 3) * 16;
+
+								for (int n = 0; n < 16; n++)
+								{
+									sum0[n] += r0[n] * k0[n];
+									sum0[n] += r1[n] * k1[n];
+									sum0[n] += r2[n] * k2[n];
+									sum0[n] += r3[n] * k3[n];
+								}
+							}
+
+							for (; q < inch; q++)
+							{
+								const float* r0 = bottom_blob_tm_data + q * 16 * tiles + i * 16;
+								const float* k0 = kernel0_tm + q * 16;
+
+								for (int n = 0; n < 16; n++)
+								{
+									sum0[n] += r0[n] * k0[n];
+								}
+							}
+
+							for (int n = 0; n < 16; n++)
+							{
+								output0_tm[n] = sum0[n];
+							}
+#endif
+						}
+					}
+				}
+				// END dot
+				
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "multiply:" << std::setw(5) << elapseTime << ",";
+
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif
+				// BEGIN transform output
+				int w_tm = outw / 2 * 4;
+				int h_tm = outh / 2 * 4;
+
+				int nColBlocks = h_tm / 4; // may be the block num in Feathercnn
+				int nRowBlocks = w_tm / 4;
+
+				float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
+				const int tiles = nColBlocks * nRowBlocks;
+
+				{
+					// AT
+					// const float itm[2][4] = {
+					//     {1.0f,  1.0f,  1.0f,  0.0f},
+					//     {0.0f,  1.0f, -1.0f,  1.0f}
+					// }; 
+
+					int w_tm = outw / 2 * 4;
+					int h_tm = outh / 2 * 4;
+
+					int nColBlocks = h_tm / 4; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 4;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int p = 0; p < outch; p++)
+					{
+						float *out_tm = top_blob_tm_data + p * 16 * tiles;
+						float *out = top_blob_bordered_data + n * outch * outh * outw + p * outh * outw;
+
+						const float bias0 = bias ? bias[p] : 0.f;
+
+						for (int j = 0; j < nColBlocks; j++)
+						{
+							float* outRow0 = out + 2 * j * outw;
+							float* outRow1 = out + (2 * j + 1) * outw;
+
+							for (int i = 0; i < nRowBlocks; i++)
+							{
+								float* out_tile = out_tm + (j * nRowBlocks + i) * 16;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 s_0 = _mm_loadu_ps(out_tile);
+								__m128 s_4 = _mm_loadu_ps(out_tile + 4);
+								__m128 s_8 = _mm_loadu_ps(out_tile + 8);
+								__m128 s_12 = _mm_loadu_ps(out_tile + 12);
+
+								__m128 w0 = _mm_add_ps(s_0, s_4);
+								w0 = _mm_add_ps(w0, s_8);
+								__m128 w1 = _mm_sub_ps(s_4, s_8);
+								w1 = _mm_add_ps(w1, s_12);
+
+								float w0_array[4], w1_array[4];
+								_mm_storeu_ps(w0_array, w0);
+								_mm_storeu_ps(w1_array, w1);
+
+								// save to top blob tm
+								outRow0[0] = w0_array[0] + w0_array[1] + w0_array[2] + bias0;
+								outRow0[1] = w1_array[0] + w1_array[1] + w1_array[2] + bias0;
+								outRow1[0] = w0_array[1] - w0_array[2] + w0_array[3] + bias0;
+								outRow1[1] = w1_array[1] - w1_array[2] + w1_array[3] + bias0;
+#else
+								float s0[4], s1[4], s2[4], s3[4];
+								float w0[4], w1[4];
+								float d0[2], d1[2], d2[2], d3[2];
+								float o0[2], o1[2];
+								// load
+								for (int n = 0; n < 4; n++)
+								{
+									s0[n] = out_tile[n];
+									s1[n] = out_tile[n + 4];
+									s2[n] = out_tile[n + 8];
+									s3[n] = out_tile[n + 12];
+								}
+								// w = A_T * W
+								for (int n = 0; n < 4; n++)
+								{
+									w0[n] = s0[n] + s1[n] + s2[n];
+									w1[n] = s1[n] - s2[n] + s3[n];
+								}
+
+								// save to top blob tm
+								outRow0[0] = w0[0] + w0[1] + w0[2] + bias0;
+								outRow0[1] = w1[0] + w1[1] + w1[2] + bias0;
+								outRow1[0] = w0[1] - w0[2] + w0[3] + bias0;
+								outRow1[1] = w1[1] - w1[2] + w1[3] + bias0;
+#endif
+
+								outRow0 += 2;
+								outRow1 += 2;
+							}
+						}
+					}
+				}
+
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "result:" << std::setw(5) << elapseTime << std::endl;
+#endif
+			}
+			// cut result pad
+			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, top_blob, 0, top_blob_bordered->height() - top_blob->height(), 0, top_blob_bordered->width() - top_blob->width());
+		}
+
+		//fp32
+		static void calculate_GgGT2(const std::shared_ptr<tensor<float> >& kernel, std::shared_ptr<tensor<float> >& kernel_tm, int output_channel, int input_channel)
+		{
+			kernel_tm.reset(new tensor<float>(std::vector<int>{1, output_channel, input_channel, 16}));
+			float *u_data_ori = kernel_tm->mutable_cpu_data();
+			const float *weight_data_ori = kernel->cpu_data();
+
+			const float *weight_data;
+			float *u_data;
+			
+			for (int och = 0; och < output_channel; och++)
+			{
+				for (int ich = 0; ich < input_channel; ich++)
+				{
+					int offset_weight = och * input_channel * 9 + ich * 9;
+					int offset_u = och * input_channel * 16 + ich * 16;
+					weight_data = weight_data_ori + offset_weight;
+					u_data = u_data_ori + offset_u;
+
+					u_data[0] = weight_data[0];
+					u_data[1] = (weight_data[0] + weight_data[1] + weight_data[2]) / 2;
+					u_data[2] = (weight_data[0] - weight_data[1] + weight_data[2]) / 2;
+					u_data[3] = weight_data[2];
+					u_data[4] = (weight_data[0] + weight_data[3] + weight_data[6]) / 2;
+					u_data[5] = (weight_data[0] + weight_data[1] + weight_data[2] +
+						weight_data[3] + weight_data[4] + weight_data[5] +
+						weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+					u_data[6] = (weight_data[0] - weight_data[1] + weight_data[2] +
+						weight_data[3] - weight_data[4] + weight_data[5] +
+						weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+					u_data[7] = (weight_data[2] + weight_data[5] + weight_data[8]) / 2;
+					u_data[8] = (weight_data[0] - weight_data[3] + weight_data[6]) / 2;
+					u_data[9] = (weight_data[0] + weight_data[1] + weight_data[2] -
+						weight_data[3] - weight_data[4] - weight_data[5] +
+						weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+					u_data[10] = (weight_data[0] - weight_data[1] + weight_data[2] -
+						weight_data[3] + weight_data[4] - weight_data[5] +
+						weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+					u_data[11] = (weight_data[2] - weight_data[5] + weight_data[8]) / 2;
+					u_data[12] = weight_data[6];
+					u_data[13] = (weight_data[6] + weight_data[7] + weight_data[8]) / 2;
+					u_data[14] = (weight_data[6] - weight_data[7] + weight_data[8]) / 2;
+					u_data[15] = weight_data[8];
+				}
+			}
+			
+		}
+
+		static void calculate_BTdB2(const float *tile_data, float *v_data)
+		{
+			v_data[0] = tile_data[0] - tile_data[2] - tile_data[8] + tile_data[10];
+			v_data[1] = tile_data[1] + tile_data[2] - tile_data[9] - tile_data[10];
+			v_data[2] = -tile_data[1] + tile_data[2] + tile_data[9] - tile_data[10];
+			v_data[3] = tile_data[1] - tile_data[3] - tile_data[9] + tile_data[11];
+			v_data[4] = tile_data[4] - tile_data[6] + tile_data[8] - tile_data[10];
+			v_data[5] = tile_data[5] + tile_data[6] + tile_data[9] + tile_data[10];
+			v_data[6] = -tile_data[5] + tile_data[6] - tile_data[9] + tile_data[10];
+			v_data[7] = tile_data[5] - tile_data[7] + tile_data[9] - tile_data[11];
+			v_data[8] = -tile_data[4] + tile_data[6] + tile_data[8] - tile_data[10];
+			v_data[9] = -tile_data[5] - tile_data[6] + tile_data[9] + tile_data[10];
+			v_data[10] = tile_data[5] - tile_data[6] - tile_data[9] + tile_data[10];
+			v_data[11] = -tile_data[5] + tile_data[7] + tile_data[9] - tile_data[11];
+			v_data[12] = tile_data[4] - tile_data[6] - tile_data[12] + tile_data[14];
+			v_data[13] = tile_data[5] + tile_data[6] - tile_data[13] - tile_data[14];
+			v_data[14] = -tile_data[5] + tile_data[6] + tile_data[13] - tile_data[14];
+			v_data[15] = tile_data[5] - tile_data[7] - tile_data[13] + tile_data[15];
+		}
+
+		static void calculate_ATmA2(const float *m_data, float *result)
+		{
+			result[0] = m_data[0] + m_data[1] + m_data[2] + m_data[4] + m_data[5] + m_data[6] + m_data[8] + m_data[9] + m_data[10];
+			result[1] = m_data[1] - m_data[2] - m_data[3] + m_data[5] - m_data[6] - m_data[7] + m_data[9] - m_data[10] - m_data[11];
+			result[2] = m_data[4] + m_data[5] + m_data[6] - m_data[8] - m_data[9] - m_data[10] - m_data[12] - m_data[13] - m_data[14];
+			result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
+		}
+
+		static void conv3x3s1_winograd23_sse2(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& kernel_tm, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+#ifdef CALC_INDIVIDUAL
+			int loop = 100;
+			glasssix::Timer calcTime;
+			double elapseTime;
+#endif // CALC_INDIVIDUAL
+
+			int num = bottom_blob->num();
+			int w = bottom_blob->width();
+			int h = bottom_blob->height();
+			int inch = bottom_blob->channels();
+
+			int outw = top_blob->width();
+			int outh = top_blob->height();
+			int outch = top_blob->channels();
+
+			// pad to 2n+2, winograd F(2,3)
+			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+
+			outw = (outw + 1) / 2 * 2;
+			outh = (outh + 1) / 2 * 2;
+
+			w = outw + 2;
+			h = outh + 2;
+			tensor_operation_cpu::make_border_cpu(bottom_blob, bottom_blob_bordered, 0, h - bottom_blob->height(), 0, w - bottom_blob->width());
+			int bordered_h = bottom_blob_bordered->height();
+			int bordered_w = bottom_blob_bordered->width();
+			float *bottom_blob_bordered_data = bottom_blob_bordered->mutable_cpu_data();
+			const float* kernel_tm_data = kernel_tm->cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+			{
+				bias = _bias->cpu_data();
+			}
+
+			std::shared_ptr<tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
+			int top_dim_ = top_blob_bordered->count(1, 4);
+			float *top_data = top_blob_bordered->mutable_cpu_data();
+			int output_spatial_dim_ = top_blob_bordered->height() * top_blob_bordered->width();
+
+			int input_Channel_ = inch;
+			int total_tile_num = outh * outw / 4;
+			int tile_length_ = 16;
+			int output_Channel_ = outch;
+			int bottom_dim_ = bottom_blob_bordered->count(1, 4);
+			float *bottom_data = bottom_blob_bordered->mutable_cpu_data();
+			int input_spatial_dim_ = bordered_h * bordered_w;
+			int h_w_tile_stride = total_tile_num * 16;
+			int h_tile_num_ = outh / 2;
+			int w_tile_num_ = outw / 2;
+			int m_ = 2;
+			int input_dim_w_ = bordered_w;
+			int tile_size_ = 4;
+			int m_length_ = 4;
+			int output_dim_w_ = top_blob_bordered->width();
+			
+			std::shared_ptr<tensor<float>> V_;
+			V_.reset(new tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+			float *V_data = V_->mutable_cpu_data();
+
+			std::shared_ptr<tensor<float>> Mult_;
+			Mult_.reset(new tensor<float>(std::vector<int>{1, output_Channel_, total_tile_num, tile_length_}));
+			float *Mult_data = Mult_->mutable_cpu_data();
+
+			int U_offset_single_och = input_Channel_ * tile_length_;
+
+			
+			for (int n = 0; n < num; n++)
+			{
+				//float *bottom_blob_bordered_data_n = bottom_blob_bordered_data + n * inch * bordered_h * bordered_w;
+				//float *top_blob_bordered_data_n = top_blob_bordered_data + n * outch * outh * outw;
+				int bottom_offset_num = n * bottom_dim_;
+				int top_offset_num = n * top_dim_;
+
+				// BEGIN transform input
+#ifdef CALC_INDIVIDUAL
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif
+					//get transformed bottom_data: V
+					{
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int ich = 0; ich < input_Channel_; ich++)
+						{
+							int bottom_offset_num_ich = bottom_offset_num + ich * input_spatial_dim_;
+							int V_offset_ich = ich * h_w_tile_stride;
+
+							std::shared_ptr<tensor<float>> TILE_;
+							TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
+							float *tile_data = TILE_->mutable_cpu_data();
+
+							for (int i = 0; i < total_tile_num; i++)
+							{
+								int row_in_input_data = (i / w_tile_num_) * m_;
+								int col_in_input_data = (i % w_tile_num_) * m_;
+								int bottom_offset_num_ich_row_col = bottom_offset_num_ich + row_in_input_data * input_dim_w_ + col_in_input_data;
+								int V_offset_ich_row_col = V_offset_ich + i * tile_length_;
+
+								for (int row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
+								{
+									int tile_offset_row = row_in_tile * tile_size_;
+									memcpy(tile_data + tile_offset_row, bottom_data + bottom_offset_num_ich_row_col, tile_size_ * sizeof(float));
+									bottom_offset_num_ich_row_col += input_dim_w_;
+								}
+
+								calculate_BTdB2(tile_data, V_data + V_offset_ich_row_col);
+							}
+						}
+					}
+
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "V:" << std::setw(5) << elapseTime << ",";
+#endif
+
+				// BEGIN dot
+#ifdef CALC_INDIVIDUAL
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif //  CALC_INDIVIDUAL
+
+
+					//multiply
+					{
+						std::memset(Mult_data, 0, Mult_->count() * sizeof(float));
+						int nn_outch = output_Channel_ >> 2;
+						int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int nn = 0; nn < nn_outch; nn++)
+						{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum_1_0;
+							mm_type sum_1_8;
+							mm_type sum_2_0;
+							mm_type sum_2_8;
+							mm_type sum_3_0;
+							mm_type sum_3_8;
+							mm_type sum_4_0;
+							mm_type sum_4_8;
+							mm_type u_1_0;
+							mm_type u_1_8;
+							mm_type u_1_16;
+							mm_type u_1_24;
+							mm_type u_1_32;
+							mm_type u_1_40;
+							mm_type u_1_48;
+							mm_type u_1_56;
+							mm_type u_2_0;
+							mm_type u_2_8;
+							mm_type u_2_16;
+							mm_type u_2_24;
+							mm_type u_2_32;
+							mm_type u_2_40;
+							mm_type u_2_48;
+							mm_type u_2_56;
+							mm_type u_3_0;
+							mm_type u_3_8;
+							mm_type u_3_16;
+							mm_type u_3_24;
+							mm_type u_3_32;
+							mm_type u_3_40;
+							mm_type u_3_48;
+							mm_type u_3_56;
+							mm_type u_4_0;
+							mm_type u_4_8;
+							mm_type u_4_16;
+							mm_type u_4_24;
+							mm_type u_4_32;
+							mm_type u_4_40;
+							mm_type u_4_48;
+							mm_type u_4_56;
+							mm_type v_1_0;
+							mm_type v_1_8;
+							mm_type v_2_0;
+							mm_type v_2_8;
+							mm_type v_3_0;
+							mm_type v_3_8;
+							mm_type v_4_0;
+							mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum_1_0;
+							mm_type sum_1_4;
+							mm_type sum_1_8;
+							mm_type sum_1_12;
+							mm_type sum_2_0;
+							mm_type sum_2_4;
+							mm_type sum_2_8;
+							mm_type sum_2_12;
+							mm_type sum_3_0;
+							mm_type sum_3_4;
+							mm_type sum_3_8;
+							mm_type sum_3_12;
+							mm_type sum_4_0;
+							mm_type sum_4_4;
+							mm_type sum_4_8;
+							mm_type sum_4_12;
+							mm_type u_1_0;
+							mm_type u_1_4;
+							mm_type u_1_8;
+							mm_type u_1_12;
+							mm_type u_1_16;
+							mm_type u_1_20;
+							mm_type u_1_24;
+							mm_type u_1_28;
+							mm_type u_1_32;
+							mm_type u_1_36;
+							mm_type u_1_40;
+							mm_type u_1_44;
+							mm_type u_1_48;
+							mm_type u_1_52;
+							mm_type u_1_56;
+							mm_type u_1_60;
+							mm_type u_2_0;
+							mm_type u_2_4;
+							mm_type u_2_8;
+							mm_type u_2_12;
+							mm_type u_2_16;
+							mm_type u_2_20;
+							mm_type u_2_24;
+							mm_type u_2_28;
+							mm_type u_2_32;
+							mm_type u_2_36;
+							mm_type u_2_40;
+							mm_type u_2_44;
+							mm_type u_2_48;
+							mm_type u_2_52;
+							mm_type u_2_56;
+							mm_type u_2_60;
+							mm_type u_3_0;
+							mm_type u_3_4;
+							mm_type u_3_8;
+							mm_type u_3_12;
+							mm_type u_3_16;
+							mm_type u_3_20;
+							mm_type u_3_24;
+							mm_type u_3_28;
+							mm_type u_3_32;
+							mm_type u_3_36;
+							mm_type u_3_40;
+							mm_type u_3_44;
+							mm_type u_3_48;
+							mm_type u_3_52;
+							mm_type u_3_56;
+							mm_type u_3_60;
+							mm_type u_4_0;
+							mm_type u_4_4;
+							mm_type u_4_8;
+							mm_type u_4_12;
+							mm_type u_4_16;
+							mm_type u_4_20;
+							mm_type u_4_24;
+							mm_type u_4_28;
+							mm_type u_4_32;
+							mm_type u_4_36;
+							mm_type u_4_40;
+							mm_type u_4_44;
+							mm_type u_4_48;
+							mm_type u_4_52;
+							mm_type u_4_56;
+							mm_type u_4_60;
+							mm_type v_1_0;
+							mm_type v_1_4;
+							mm_type v_1_8;
+							mm_type v_1_12;
+							mm_type v_2_0;
+							mm_type v_2_4;
+							mm_type v_2_8;
+							mm_type v_2_12;
+							mm_type v_3_0;
+							mm_type v_3_4;
+							mm_type v_3_8;
+							mm_type v_3_12;
+							mm_type v_4_0;
+							mm_type v_4_4;
+							mm_type v_4_8;
+							mm_type v_4_12;
+#endif
+
+							int och = nn * 4;
+							int Mult_offset_och_1 = och * h_w_tile_stride;
+							int U_offset_och_1 = och * U_offset_single_och;
+							int Mult_offset_och_2 = (och + 1) * h_w_tile_stride;
+							int U_offset_och_2 = (och + 1) * U_offset_single_och;
+							int Mult_offset_och_3 = (och + 2) * h_w_tile_stride;
+							int U_offset_och_3 = (och + 2) * U_offset_single_och;
+							int Mult_offset_och_4 = (och + 3) * h_w_tile_stride;
+							int U_offset_och_4 = (och + 3) * U_offset_single_och;
+
+							for (int i = 0; i < total_tile_num; i++)
+							{
+								int V_offset_row_col = i * tile_length_;
+								int Mult_offset_och_row_col_1 = Mult_offset_och_1 + i * tile_length_;
+								int Mult_offset_och_row_col_2 = Mult_offset_och_2 + i * tile_length_;
+								int Mult_offset_och_row_col_3 = Mult_offset_och_3 + i * tile_length_;
+								int Mult_offset_och_row_col_4 = Mult_offset_och_4 + i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								sum_1_0 = mm_setzero_ps();
+								sum_1_8 = mm_setzero_ps();
+								sum_2_0 = mm_setzero_ps();
+								sum_2_8 = mm_setzero_ps();
+								sum_3_0 = mm_setzero_ps();
+								sum_3_8 = mm_setzero_ps();
+								sum_4_0 = mm_setzero_ps();
+								sum_4_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								sum_1_0 = mm_setzero_ps();
+								sum_1_4 = mm_setzero_ps();
+								sum_1_8 = mm_setzero_ps();
+								sum_1_12 = mm_setzero_ps();
+								sum_2_0 = mm_setzero_ps();
+								sum_2_4 = mm_setzero_ps();
+								sum_2_8 = mm_setzero_ps();
+								sum_2_12 = mm_setzero_ps();
+								sum_3_0 = mm_setzero_ps();
+								sum_3_4 = mm_setzero_ps();
+								sum_3_8 = mm_setzero_ps();
+								sum_3_12 = mm_setzero_ps();
+								sum_4_0 = mm_setzero_ps();
+								sum_4_4 = mm_setzero_ps();
+								sum_4_8 = mm_setzero_ps();
+								sum_4_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+								int ich = 0;
+								for (; ich + 3 < input_Channel_; ich += 4)
+								{
+									int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+									int U_offset_och_ich_2 = U_offset_och_2 + ich * tile_length_;
+									int U_offset_och_ich_3 = U_offset_och_3 + ich * tile_length_;
+									int U_offset_och_ich_4 = U_offset_och_4 + ich * tile_length_;
+
+									int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+									int V_offset_ich_row_col_2 = V_offset_row_col + (ich + 1) * h_w_tile_stride;
+									int V_offset_ich_row_col_3 = V_offset_row_col + (ich + 2) * h_w_tile_stride;
+									int V_offset_ich_row_col_4 = V_offset_row_col + (ich + 3) * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 16);
+									u_1_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 24);
+									u_1_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 32);
+									u_1_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 40);
+									u_1_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 48);
+									u_1_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 56);
+
+									u_2_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2);
+									u_2_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 8);
+									u_2_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 16);
+									u_2_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 24);
+									u_2_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 32);
+									u_2_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 40);
+									u_2_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 48);
+									u_2_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 56);
+
+									u_3_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3);
+									u_3_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 8);
+									u_3_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 16);
+									u_3_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 24);
+									u_3_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 32);
+									u_3_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 40);
+									u_3_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 48);
+									u_3_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 56);
+
+									u_4_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4);
+									u_4_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 8);
+									u_4_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 16);
+									u_4_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 24);
+									u_4_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 32);
+									u_4_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 40);
+									u_4_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 48);
+									u_4_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 56);
+
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+									v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+									v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+									v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+									v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+									v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+									sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+									sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+									sum_2_0 = mm_fmadd_ps(v_2_0, u_2_16, sum_2_0);
+									sum_2_8 = mm_fmadd_ps(v_2_8, u_2_24, sum_2_8);
+									sum_2_0 = mm_fmadd_ps(v_3_0, u_2_32, sum_2_0);
+									sum_2_8 = mm_fmadd_ps(v_3_8, u_2_40, sum_2_8);
+									sum_2_0 = mm_fmadd_ps(v_4_0, u_2_48, sum_2_0);
+									sum_2_8 = mm_fmadd_ps(v_4_8, u_2_56, sum_2_8);
+
+									sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+									sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+									sum_3_0 = mm_fmadd_ps(v_2_0, u_3_16, sum_3_0);
+									sum_3_8 = mm_fmadd_ps(v_2_8, u_3_24, sum_3_8);
+									sum_3_0 = mm_fmadd_ps(v_3_0, u_3_32, sum_3_0);
+									sum_3_8 = mm_fmadd_ps(v_3_8, u_3_40, sum_3_8);
+									sum_3_0 = mm_fmadd_ps(v_4_0, u_3_48, sum_3_0);
+									sum_3_8 = mm_fmadd_ps(v_4_8, u_3_56, sum_3_8);
+
+									sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+									sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+									sum_4_0 = mm_fmadd_ps(v_2_0, u_4_16, sum_4_0);
+									sum_4_8 = mm_fmadd_ps(v_2_8, u_4_24, sum_4_8);
+									sum_4_0 = mm_fmadd_ps(v_3_0, u_4_32, sum_4_0);
+									sum_4_8 = mm_fmadd_ps(v_3_8, u_4_40, sum_4_8);
+									sum_4_0 = mm_fmadd_ps(v_4_0, u_4_48, sum_4_0);
+									sum_4_8 = mm_fmadd_ps(v_4_8, u_4_56, sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 4);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 12);
+									u_1_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 16);
+									u_1_20 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 20);
+									u_1_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 24);
+									u_1_28 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 28);
+									u_1_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 32);
+									u_1_36 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 36);
+									u_1_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 40);
+									u_1_44 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 44);
+									u_1_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 48);
+									u_1_52 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 52);
+									u_1_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 56);
+									u_1_60 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 60);
+
+									u_2_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2);
+									u_2_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 4);
+									u_2_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 8);
+									u_2_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 12);
+									u_2_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 16);
+									u_2_20 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 20);
+									u_2_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 24);
+									u_2_28 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 28);
+									u_2_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 32);
+									u_2_36 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 36);
+									u_2_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 40);
+									u_2_44 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 44);
+									u_2_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 48);
+									u_2_52 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 52);
+									u_2_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 56);
+									u_2_60 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 60);
+
+									u_3_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3);
+									u_3_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 4);
+									u_3_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 8);
+									u_3_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 12);
+									u_3_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 16);
+									u_3_20 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 20);
+									u_3_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 24);
+									u_3_28 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 28);
+									u_3_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 32);
+									u_3_36 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 36);
+									u_3_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 40);
+									u_3_44 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 44);
+									u_3_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 48);
+									u_3_52 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 52);
+									u_3_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 56);
+									u_3_60 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 60);
+
+									u_4_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4);
+									u_4_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 4);
+									u_4_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 8);
+									u_4_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 12);
+									u_4_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 16);
+									u_4_20 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 20);
+									u_4_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 24);
+									u_4_28 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 28);
+									u_4_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 32);
+									u_4_36 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 36);
+									u_4_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 40);
+									u_4_44 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 44);
+									u_4_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 48);
+									u_4_52 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 52);
+									u_4_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 56);
+									u_4_60 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 60);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+									v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+									v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+									v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+									v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+									v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+									v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+									v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+									v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+									v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+									v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+									v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+									v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+
+									sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+									sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+									sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+									sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+									sum_2_0 = mm_fmadd_ps(v_2_0, u_2_16, sum_2_0);
+									sum_2_4 = mm_fmadd_ps(v_2_4, u_2_20, sum_2_4);
+									sum_2_8 = mm_fmadd_ps(v_2_8, u_2_24, sum_2_8);
+									sum_2_12 = mm_fmadd_ps(v_2_12, u_2_28, sum_2_12);
+									sum_2_0 = mm_fmadd_ps(v_3_0, u_2_32, sum_2_0);
+									sum_2_4 = mm_fmadd_ps(v_3_4, u_2_36, sum_2_4);
+									sum_2_8 = mm_fmadd_ps(v_3_8, u_2_40, sum_2_8);
+									sum_2_12 = mm_fmadd_ps(v_3_12, u_2_44, sum_2_12);
+									sum_2_0 = mm_fmadd_ps(v_4_0, u_2_48, sum_2_0);
+									sum_2_4 = mm_fmadd_ps(v_4_4, u_2_52, sum_2_4);
+									sum_2_8 = mm_fmadd_ps(v_4_8, u_2_56, sum_2_8);
+									sum_2_12 = mm_fmadd_ps(v_4_12, u_2_60, sum_2_12);
+
+									sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+									sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+									sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+									sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+									sum_3_0 = mm_fmadd_ps(v_2_0, u_3_16, sum_3_0);
+									sum_3_4 = mm_fmadd_ps(v_2_4, u_3_20, sum_3_4);
+									sum_3_8 = mm_fmadd_ps(v_2_8, u_3_24, sum_3_8);
+									sum_3_12 = mm_fmadd_ps(v_2_12, u_3_28, sum_3_12);
+									sum_3_0 = mm_fmadd_ps(v_3_0, u_3_32, sum_3_0);
+									sum_3_4 = mm_fmadd_ps(v_3_4, u_3_36, sum_3_4);
+									sum_3_8 = mm_fmadd_ps(v_3_8, u_3_40, sum_3_8);
+									sum_3_12 = mm_fmadd_ps(v_3_12, u_3_44, sum_3_12);
+									sum_3_0 = mm_fmadd_ps(v_4_0, u_3_48, sum_3_0);
+									sum_3_4 = mm_fmadd_ps(v_4_4, u_3_52, sum_3_4);
+									sum_3_8 = mm_fmadd_ps(v_4_8, u_3_56, sum_3_8);
+									sum_3_12 = mm_fmadd_ps(v_4_12, u_3_60, sum_3_12);
+
+									sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+									sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+									sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+									sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+									sum_4_0 = mm_fmadd_ps(v_2_0, u_4_16, sum_4_0);
+									sum_4_4 = mm_fmadd_ps(v_2_4, u_4_20, sum_4_4);
+									sum_4_8 = mm_fmadd_ps(v_2_8, u_4_24, sum_4_8);
+									sum_4_12 = mm_fmadd_ps(v_2_12, u_4_28, sum_4_12);
+									sum_4_0 = mm_fmadd_ps(v_3_0, u_4_32, sum_4_0);
+									sum_4_4 = mm_fmadd_ps(v_3_4, u_4_36, sum_4_4);
+									sum_4_8 = mm_fmadd_ps(v_3_8, u_4_40, sum_4_8);
+									sum_4_12 = mm_fmadd_ps(v_3_12, u_4_44, sum_4_12);
+									sum_4_0 = mm_fmadd_ps(v_4_0, u_4_48, sum_4_0);
+									sum_4_4 = mm_fmadd_ps(v_4_4, u_4_52, sum_4_4);
+									sum_4_8 = mm_fmadd_ps(v_4_8, u_4_56, sum_4_8);
+									sum_4_12 = mm_fmadd_ps(v_4_12, u_4_60, sum_4_12);
+#else
+									for (int i = 0; i < tile_length_; i++)
+									{
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+										Mult_data[Mult_offset_och_row_col_2 + i] += kernel_tm_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_2 + i] += kernel_tm_data[U_offset_och_ich_2 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+										Mult_data[Mult_offset_och_row_col_2 + i] += kernel_tm_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+										Mult_data[Mult_offset_och_row_col_2 + i] += kernel_tm_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+										Mult_data[Mult_offset_och_row_col_3 + i] += kernel_tm_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_3 + i] += kernel_tm_data[U_offset_och_ich_3 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+										Mult_data[Mult_offset_och_row_col_3 + i] += kernel_tm_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+										Mult_data[Mult_offset_och_row_col_3 + i] += kernel_tm_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+										Mult_data[Mult_offset_och_row_col_4 + i] += kernel_tm_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_4 + i] += kernel_tm_data[U_offset_och_ich_4 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+										Mult_data[Mult_offset_och_row_col_4 + i] += kernel_tm_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+										Mult_data[Mult_offset_och_row_col_4 + i] += kernel_tm_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+									}
+#endif
+								}
+
+								for (; ich < input_Channel_; ich++)
+								{
+									int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+									int U_offset_och_ich_2 = U_offset_och_2 + ich * tile_length_;
+									int U_offset_och_ich_3 = U_offset_och_3 + ich * tile_length_;
+									int U_offset_och_ich_4 = U_offset_och_4 + ich * tile_length_;
+
+									int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_2_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2);
+									u_2_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 8);
+									u_3_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3);
+									u_3_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 8);
+									u_4_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4);
+									u_4_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 8);
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+									sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+									sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+									sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+									sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+									sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 4);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 12);
+
+									u_2_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2);
+									u_2_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 4);
+									u_2_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 8);
+									u_2_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_2 + 12);
+
+									u_3_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3);
+									u_3_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 4);
+									u_3_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 8);
+									u_3_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_3 + 12);
+
+									u_4_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4);
+									u_4_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 4);
+									u_4_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 8);
+									u_4_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_4 + 12);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+
+									sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+									sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+									sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+									sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+
+									sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+									sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+									sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+									sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+
+									sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+									sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+									sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+									sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+#else
+									for (int i = 0; i < tile_length_; i++)
+									{
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_2 + i] += kernel_tm_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_3 + i] += kernel_tm_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_4 + i] += kernel_tm_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+									}
+#endif
+							}
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2, sum_2_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 8, sum_2_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3, sum_3_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 8, sum_3_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4, sum_4_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 4, sum_1_4);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 12, sum_1_12);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2, sum_2_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 4, sum_2_4);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 8, sum_2_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 12, sum_2_12);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3, sum_3_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 4, sum_3_4);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 8, sum_3_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 12, sum_3_12);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4, sum_4_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 4, sum_4_4);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 8, sum_4_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 12, sum_4_12);
+#endif
+
+						}
+					}
+
+						for (int och = remain_outch_start; och < output_Channel_; och++)
+						{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+							mm_type sum_1_0;
+							mm_type sum_1_8;
+							mm_type u_1_0;
+							mm_type u_1_8;
+							mm_type u_1_16;
+							mm_type u_1_24;
+							mm_type u_1_32;
+							mm_type u_1_40;
+							mm_type u_1_48;
+							mm_type u_1_56;
+							mm_type v_1_0;
+							mm_type v_1_8;
+							mm_type v_2_0;
+							mm_type v_2_8;
+							mm_type v_3_0;
+							mm_type v_3_8;
+							mm_type v_4_0;
+							mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+							mm_type sum_1_0;
+							mm_type sum_1_4;
+							mm_type sum_1_8;
+							mm_type sum_1_12;
+							mm_type u_1_0;
+							mm_type u_1_4;
+							mm_type u_1_8;
+							mm_type u_1_12;
+							mm_type u_1_16;
+							mm_type u_1_20;
+							mm_type u_1_24;
+							mm_type u_1_28;
+							mm_type u_1_32;
+							mm_type u_1_36;
+							mm_type u_1_40;
+							mm_type u_1_44;
+							mm_type u_1_48;
+							mm_type u_1_52;
+							mm_type u_1_56;
+							mm_type u_1_60;
+							mm_type v_1_0;
+							mm_type v_1_4;
+							mm_type v_1_8;
+							mm_type v_1_12;
+							mm_type v_2_0;
+							mm_type v_2_4;
+							mm_type v_2_8;
+							mm_type v_2_12;
+							mm_type v_3_0;
+							mm_type v_3_4;
+							mm_type v_3_8;
+							mm_type v_3_12;
+							mm_type v_4_0;
+							mm_type v_4_4;
+							mm_type v_4_8;
+							mm_type v_4_12;
+#endif
+
+							int Mult_offset_och_1 = och * h_w_tile_stride;
+							int U_offset_och_1 = och * U_offset_single_och;
+
+							for (int i = 0; i < total_tile_num; i++)
+							{
+								int V_offset_row_col = i * tile_length_;
+								int Mult_offset_och_row_col_1 = Mult_offset_och_1 + i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								sum_1_0 = mm_setzero_ps();
+								sum_1_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								sum_1_0 = mm_setzero_ps();
+								sum_1_4 = mm_setzero_ps();
+								sum_1_8 = mm_setzero_ps();
+								sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+								int ich = 0;
+								for (; ich + 3 < input_Channel_; ich += 4)
+								{
+									int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+									int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+									int V_offset_ich_row_col_2 = V_offset_row_col + (ich + 1) * h_w_tile_stride;
+									int V_offset_ich_row_col_3 = V_offset_row_col + (ich + 2) * h_w_tile_stride;
+									int V_offset_ich_row_col_4 = V_offset_row_col + (ich + 3) * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 16);
+									u_1_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 24);
+									u_1_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 32);
+									u_1_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 40);
+									u_1_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 48);
+									u_1_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 56);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+									v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+									v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+									v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+									v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+									v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+									sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 4);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 12);
+									u_1_16 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 16);
+									u_1_20 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 20);
+									u_1_24 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 24);
+									u_1_28 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 28);
+									u_1_32 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 32);
+									u_1_36 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 36);
+									u_1_40 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 40);
+									u_1_44 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 44);
+									u_1_48 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 48);
+									u_1_52 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 52);
+									u_1_56 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 56);
+									u_1_60 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 60);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+									v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+									v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+									v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+									v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+									v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+									v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+									v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+									v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+									v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+									v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+									v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+									v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+									sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+									for (int i = 0; i < tile_length_; i++)
+									{
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+									}
+#endif
+						}
+
+								for (; ich < input_Channel_; ich++)
+								{
+									int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+									int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									u_1_0 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1);
+									u_1_4 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 4);
+									u_1_8 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 8);
+									u_1_12 = mm_load_ps(kernel_tm_data + U_offset_och_ich_1 + 12);
+
+									v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+									v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+									v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+									v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+									sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+									sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+									sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+									sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+									for (int i = 0; i < tile_length_; i++)
+									{
+										Mult_data[Mult_offset_och_row_col_1 + i] += kernel_tm_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+									}
+#endif
+								}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
+#elif SIME_TYPE >= SIMDTYPE_SSE
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 4, sum_1_4);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
+								mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+			}
+								}
+							}
+
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "multiply:" << std::setw(5) << elapseTime << ",";
+
+				calcTime.Start();
+				for (int i = 0; i < loop; i++)
+				{
+#endif
+					// BEGIN transform output
+					//result
+					{
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int och = 0; och < output_Channel_; och++)
+						{
+							const float bias0 = bias ? bias[och] : 0.f;
+							std::shared_ptr<tensor<float>> RESULT_;
+							RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
+							float *result = RESULT_->mutable_cpu_data();
+
+							int Mult_offset_och = och * h_w_tile_stride;
+							int top_offset_num_och = top_offset_num + och * output_spatial_dim_;
+
+							for (int i = 0; i < total_tile_num; i++)
+							{
+								int Mult_offset_och_row_col = Mult_offset_och + i * tile_length_;
+								calculate_ATmA2(Mult_data + Mult_offset_och_row_col, result);
+
+								int row_in_output_data = i / h_tile_num_ * m_;
+								int col_in_output_data = i % h_tile_num_* m_;
+								int top_offset_num_och_row_col = top_offset_num_och + row_in_output_data * output_dim_w_ + col_in_output_data;
+
+								for (int row = 0; row < m_; row++)
+								{
+									int result_offset_row = row * m_;
+									for (int col = 0; col < m_; col++)
+									{
+										top_data[top_offset_num_och_row_col + col] = result[result_offset_row + col] + bias0;
+									}
+									top_offset_num_och_row_col += output_dim_w_;
+								}
+							}
+						}
+					}
+
+#ifdef CALC_INDIVIDUAL
+				}
+				calcTime.Stop();
+				elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+				std::cout << "result:" << std::setw(5) << elapseTime << std::endl;
+#endif
+			}
+			// cut result pad
+			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, top_blob, 0, top_blob_bordered->height() - top_blob->height(), 0, top_blob_bordered->width() - top_blob->width());
+		}
+
+		static void conv3x3s1_winograd43_transform_kernel_sse(const std::shared_ptr<tensor<float> >& kernel, std::vector<std::shared_ptr<tensor<float> >> &kernel_tm2, int inch, int outch)
+		{
+			const float *kernel_data = kernel->cpu_data();
+			std::shared_ptr<tensor<float> > kernel_tm;
+			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch, inch, 6 * 6}));
+			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
+
+			// G
+			const float ktm[6][3] = {
+				{  1.0f / 4,     0.0f,    0.0f},
+				{ -1.0f / 6,  -1.0f / 6, -1.0f / 6},
+				{ -1.0f / 6,   1.0f / 6, -1.0f / 6},
+				{ 1.0f / 24,  1.0f / 12,  1.0f / 6},
+				{ 1.0f / 24, -1.0f / 12,  1.0f / 6},
+				{    0.0f,     0.0f,    1.0f}
+			};
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+			for (int p = 0; p < outch; p++)
+			{
+				for (int q = 0; q < inch; q++)
+				{
+					const float* kernel0 = kernel_data + p * inch * 9 + q * 9;
+					float* kernel_tm0 = kernel_tm_data + p * inch * 36 + q * 36;
+
+					// transform kernel
+					const float* k0 = kernel0;
+					const float* k1 = kernel0 + 3;
+					const float* k2 = kernel0 + 6;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+
+					__m128 ktm0_data = _mm_loadu_ps(ktm[0]);
+					__m128 ktm1_data = _mm_loadu_ps(ktm[1]);
+					__m128 ktm2_data = _mm_loadu_ps(ktm[2]);
+					__m128 ktm3_data = _mm_loadu_ps(ktm[3]);
+					__m128 ktm4_data = _mm_loadu_ps(ktm[4]);
+					__m128 ktm5_data = _mm_loadu_ps(ktm[5]);
+
+					__m128 tmp00_data = _mm_mul_ps(k0_data, ktm0_data);
+					__m128 tmp01_data = _mm_mul_ps(k1_data, ktm0_data);
+					__m128 tmp02_data = _mm_mul_ps(k2_data, ktm0_data);
+					__m128 tmp10_data = _mm_mul_ps(k0_data, ktm1_data);
+					__m128 tmp11_data = _mm_mul_ps(k1_data, ktm1_data);
+					__m128 tmp12_data = _mm_mul_ps(k2_data, ktm1_data);
+					__m128 tmp20_data = _mm_mul_ps(k0_data, ktm2_data);
+					__m128 tmp21_data = _mm_mul_ps(k1_data, ktm2_data);
+					__m128 tmp22_data = _mm_mul_ps(k2_data, ktm2_data);
+					__m128 tmp30_data = _mm_mul_ps(k0_data, ktm3_data);
+					__m128 tmp31_data = _mm_mul_ps(k1_data, ktm3_data);
+					__m128 tmp32_data = _mm_mul_ps(k2_data, ktm3_data);
+					__m128 tmp40_data = _mm_mul_ps(k0_data, ktm4_data);
+					__m128 tmp41_data = _mm_mul_ps(k1_data, ktm4_data);
+					__m128 tmp42_data = _mm_mul_ps(k2_data, ktm4_data);
+					__m128 tmp50_data = _mm_mul_ps(k0_data, ktm5_data);
+					__m128 tmp51_data = _mm_mul_ps(k1_data, ktm5_data);
+					__m128 tmp52_data = _mm_mul_ps(k2_data, ktm5_data);
+
+					// h
+					float tmp[6][3] = {0};
+
+					tmp[0][0] += tmp00_data.m128_f32[0] + tmp00_data.m128_f32[1] + tmp00_data.m128_f32[2];
+					tmp[0][1] += tmp01_data.m128_f32[0] + tmp01_data.m128_f32[1] + tmp01_data.m128_f32[2];
+					tmp[0][2] += tmp02_data.m128_f32[0] + tmp02_data.m128_f32[1] + tmp02_data.m128_f32[2];
+					tmp[1][0] += tmp10_data.m128_f32[0] + tmp10_data.m128_f32[1] + tmp10_data.m128_f32[2];
+					tmp[1][1] += tmp11_data.m128_f32[0] + tmp11_data.m128_f32[1] + tmp11_data.m128_f32[2];
+					tmp[1][2] += tmp12_data.m128_f32[0] + tmp12_data.m128_f32[1] + tmp12_data.m128_f32[2];
+					tmp[2][0] += tmp20_data.m128_f32[0] + tmp20_data.m128_f32[1] + tmp20_data.m128_f32[2];
+					tmp[2][1] += tmp21_data.m128_f32[0] + tmp21_data.m128_f32[1] + tmp21_data.m128_f32[2];
+					tmp[2][2] += tmp22_data.m128_f32[0] + tmp22_data.m128_f32[1] + tmp22_data.m128_f32[2];
+					tmp[3][0] += tmp30_data.m128_f32[0] + tmp30_data.m128_f32[1] + tmp30_data.m128_f32[2];
+					tmp[3][1] += tmp31_data.m128_f32[0] + tmp31_data.m128_f32[1] + tmp31_data.m128_f32[2];
+					tmp[3][2] += tmp32_data.m128_f32[0] + tmp32_data.m128_f32[1] + tmp32_data.m128_f32[2];
+					tmp[4][0] += tmp40_data.m128_f32[0] + tmp40_data.m128_f32[1] + tmp40_data.m128_f32[2];
+					tmp[4][1] += tmp41_data.m128_f32[0] + tmp41_data.m128_f32[1] + tmp41_data.m128_f32[2];
+					tmp[4][2] += tmp42_data.m128_f32[0] + tmp42_data.m128_f32[1] + tmp42_data.m128_f32[2];
+					tmp[5][0] += tmp50_data.m128_f32[0] + tmp50_data.m128_f32[1] + tmp50_data.m128_f32[2];
+					tmp[5][1] += tmp51_data.m128_f32[0] + tmp51_data.m128_f32[1] + tmp51_data.m128_f32[2];
+					tmp[5][2] += tmp52_data.m128_f32[0] + tmp52_data.m128_f32[1] + tmp52_data.m128_f32[2];
+
+					// U
+					for (int j = 0; j < 6; j++)
+					{
+						__m128 tmpp = _mm_loadu_ps(tmp[j]);
+
+						__m128 result = _mm_mul_ps(tmpp, ktm0_data);
+						kernel_tm0[j * 6 + 0] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+
+						result = _mm_mul_ps(tmpp, ktm1_data);
+						kernel_tm0[j * 6 + 1] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+
+						result = _mm_mul_ps(tmpp, ktm2_data);
+						kernel_tm0[j * 6 + 2] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+
+						result = _mm_mul_ps(tmpp, ktm3_data);
+						kernel_tm0[j * 6 + 3] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+
+						result = _mm_mul_ps(tmpp, ktm4_data);
+						kernel_tm0[j * 6 + 4] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+
+						result = _mm_mul_ps(tmpp, ktm5_data);
+						kernel_tm0[j * 6 + 5] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+					}
+
+#else
+					// h
+					float tmp[6][3];
+					for (int i = 0; i < 6; i++)
+					{
+						tmp[i][0] = k0[0] * ktm[i][0] + k0[1] * ktm[i][1] + k0[2] * ktm[i][2];
+						tmp[i][1] = k1[0] * ktm[i][0] + k1[1] * ktm[i][1] + k1[2] * ktm[i][2];
+						tmp[i][2] = k2[0] * ktm[i][0] + k2[1] * ktm[i][1] + k2[2] * ktm[i][2];
+					}
+
+					// U
+					for (int j = 0; j < 6; j++)
+					{
+						float* tmpp = &tmp[j][0];
+
+						for (int i = 0; i < 6; i++)
+						{
+							kernel_tm0[j * 6 + i] = tmpp[0] * ktm[i][0] + tmpp[1] * ktm[i][1] + tmpp[2] * ktm[i][2];
+						}
+					}
+
+#endif
+				}
+			}
+
+			for (int r = 0; r < 9; r++)
+			{
+				std::shared_ptr<tensor<float> > kernel_tm_test;
+				kernel_tm_test.reset(new tensor<float>(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, inch, 4 * 8}));
+				float *kernel_tm_test_data = kernel_tm_test->mutable_cpu_data();
+
+				int p = 0;
+				for (; p + 7 < outch; p += 8)
+				{
+					const float* kernel0 = kernel_tm_data + p * inch * 36;
+					const float* kernel1 = kernel_tm_data + (p + 1) * inch * 36;
+					const float* kernel2 = kernel_tm_data + (p + 2) * inch * 36;
+					const float* kernel3 = kernel_tm_data + (p + 3) * inch * 36;
+					const float* kernel4 = kernel_tm_data + (p + 4) * inch * 36;
+					const float* kernel5 = kernel_tm_data + (p + 5) * inch * 36;
+					const float* kernel6 = kernel_tm_data + (p + 6) * inch * 36;
+					const float* kernel7 = kernel_tm_data + (p + 7) * inch * 36;
+
+					float* ktmp = kernel_tm_test_data + (p / 8) * inch * 32;
+
+					for (int q = 0; q < inch; q++)
+					{
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						int offset = r * 4;
+						__m128 temp = _mm_loadu_ps(kernel0 + offset);
+						_mm_storeu_ps(ktmp, temp);
+
+						temp = _mm_loadu_ps(kernel1 + offset);
+						_mm_storeu_ps(ktmp + 4, temp);
+
+						temp = _mm_loadu_ps(kernel2 + offset);
+						_mm_storeu_ps(ktmp + 8, temp);
+
+						temp = _mm_loadu_ps(kernel3 + offset);
+						_mm_storeu_ps(ktmp + 12, temp);
+
+						temp = _mm_loadu_ps(kernel4 + offset);
+						_mm_storeu_ps(ktmp + 16, temp);
+
+						temp = _mm_loadu_ps(kernel5 + offset);
+						_mm_storeu_ps(ktmp + 20, temp);
+
+						temp = _mm_loadu_ps(kernel6 + offset);
+						_mm_storeu_ps(ktmp + 24, temp);
+
+						temp = _mm_loadu_ps(kernel7 + offset);
+						_mm_storeu_ps(ktmp + 28, temp);
+
+#else
+						ktmp[0] = kernel0[r * 4 + 0];
+						ktmp[1] = kernel0[r * 4 + 1];
+						ktmp[2] = kernel0[r * 4 + 2];
+						ktmp[3] = kernel0[r * 4 + 3];
+
+						ktmp[4] = kernel1[r * 4 + 0];
+						ktmp[5] = kernel1[r * 4 + 1];
+						ktmp[6] = kernel1[r * 4 + 2];
+						ktmp[7] = kernel1[r * 4 + 3];
+
+						ktmp[8] = kernel2[r * 4 + 0];
+						ktmp[9] = kernel2[r * 4 + 1];
+						ktmp[10] = kernel2[r * 4 + 2];
+						ktmp[11] = kernel2[r * 4 + 3];
+
+						ktmp[12] = kernel3[r * 4 + 0];
+						ktmp[13] = kernel3[r * 4 + 1];
+						ktmp[14] = kernel3[r * 4 + 2];
+						ktmp[15] = kernel3[r * 4 + 3];
+
+						ktmp[16] = kernel4[r * 4 + 0];
+						ktmp[17] = kernel4[r * 4 + 1];
+						ktmp[18] = kernel4[r * 4 + 2];
+						ktmp[19] = kernel4[r * 4 + 3];
+
+						ktmp[20] = kernel5[r * 4 + 0];
+						ktmp[21] = kernel5[r * 4 + 1];
+						ktmp[22] = kernel5[r * 4 + 2];
+						ktmp[23] = kernel5[r * 4 + 3];
+
+						ktmp[24] = kernel6[r * 4 + 0];
+						ktmp[25] = kernel6[r * 4 + 1];
+						ktmp[26] = kernel6[r * 4 + 2];
+						ktmp[27] = kernel6[r * 4 + 3];
+
+						ktmp[28] = kernel7[r * 4 + 0];
+						ktmp[29] = kernel7[r * 4 + 1];
+						ktmp[30] = kernel7[r * 4 + 2];
+						ktmp[31] = kernel7[r * 4 + 3];
+#endif
+
+						ktmp += 32;
+						kernel0 += 36;
+						kernel1 += 36;
+						kernel2 += 36;
+						kernel3 += 36;
+						kernel4 += 36;
+						kernel5 += 36;
+						kernel6 += 36;
+						kernel7 += 36;
+					}
+				}
+
+				for (; p + 3 < outch; p += 4)
+				{
+					const float* kernel0 = kernel_tm_data + p * inch * 36;
+					const float* kernel1 = kernel_tm_data + (p + 1) * inch * 36;
+					const float* kernel2 = kernel_tm_data + (p + 2) * inch * 36;
+					const float* kernel3 = kernel_tm_data + (p + 3) * inch * 36;
+
+					float* ktmp = kernel_tm_test_data + (p / 8 + (p % 8) / 4) * inch * 32;
+
+					for (int q = 0; q < inch; q++)
+					{
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						int offset = r * 4;
+						__m128 temp = _mm_loadu_ps(kernel0 + offset);
+						_mm_storeu_ps(ktmp, temp);
+
+						temp = _mm_loadu_ps(kernel1 + offset);
+						_mm_storeu_ps(ktmp + 4, temp);
+
+						temp = _mm_loadu_ps(kernel2 + offset);
+						_mm_storeu_ps(ktmp + 8, temp);
+
+						temp = _mm_loadu_ps(kernel3 + offset);
+						_mm_storeu_ps(ktmp + 12, temp);
+#else
+						ktmp[0] = kernel0[r * 4 + 0];
+						ktmp[1] = kernel0[r * 4 + 1];
+						ktmp[2] = kernel0[r * 4 + 2];
+						ktmp[3] = kernel0[r * 4 + 3];
+
+						ktmp[4] = kernel1[r * 4 + 0];
+						ktmp[5] = kernel1[r * 4 + 1];
+						ktmp[6] = kernel1[r * 4 + 2];
+						ktmp[7] = kernel1[r * 4 + 3];
+
+						ktmp[8] = kernel2[r * 4 + 0];
+						ktmp[9] = kernel2[r * 4 + 1];
+						ktmp[10] = kernel2[r * 4 + 2];
+						ktmp[11] = kernel2[r * 4 + 3];
+
+						ktmp[12] = kernel3[r * 4 + 0];
+						ktmp[13] = kernel3[r * 4 + 1];
+						ktmp[14] = kernel3[r * 4 + 2];
+						ktmp[15] = kernel3[r * 4 + 3];
+#endif
+
+						ktmp += 16;
+						kernel0 += 36;
+						kernel1 += 36;
+						kernel2 += 36;
+						kernel3 += 36;
+					}
+				}
+
+				for (; p < outch; p++)
+				{
+					const float* kernel0 = kernel_tm_data + p * inch * 36;
+					float* ktmp = kernel_tm_test_data + (p / 8 + (p % 8) / 4 + p % 4) * inch * 32;
+
+					for (int q = 0; q < inch; q++)
+					{
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+						int offset = r * 4;
+						__m128 temp = _mm_loadu_ps(kernel0 + offset);
+						_mm_storeu_ps(ktmp, temp);
+#else
+						ktmp[0] = kernel0[r * 4 + 0];
+						ktmp[1] = kernel0[r * 4 + 1];
+						ktmp[2] = kernel0[r * 4 + 2];
+						ktmp[3] = kernel0[r * 4 + 3];
+#endif
+
+						ktmp += 4;
+						kernel0 += 36;
+					}
+				}
+				kernel_tm2.push_back(kernel_tm_test);
+			}
+		}
+
+		static void conv3x3s1_winograd43_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::vector<std::shared_ptr<tensor<float> >> &kernel_tm_test, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		{
+			int num = bottom_blob->num();
+			int w = bottom_blob->width();
+			int h = bottom_blob->height();
+			int inch = bottom_blob->channels();
+
+			int outw = top_blob->width();
+			int outh = top_blob->height();
+			int outch = top_blob->channels();
+
+			// pad to 4n+2, winograd F(4,3)
+			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+
+			outw = (outw + 3) / 4 * 4;
+			outh = (outh + 3) / 4 * 4;
+
+			w = outw + 2;
+			h = outh + 2;
+			tensor_operation_cpu::make_border_cpu(bottom_blob, bottom_blob_bordered, 0, h - bottom_blob->height(), 0, w - bottom_blob->width());
+			int bordered_h = bottom_blob_bordered->height();
+			int bordered_w = bottom_blob_bordered->width();
+			float *bottom_blob_bordered_data = bottom_blob_bordered->mutable_cpu_data();
+			const float* bias = nullptr;
+			if (bias_term_)
+			{
+				bias = _bias->cpu_data();
+			}
+
+			std::vector<const float*> kernel_tm_test_data;
+			for (int i = 0; i < kernel_tm_test.size(); i++)
+			{
+				kernel_tm_test_data.push_back(kernel_tm_test[i]->cpu_data());
+			}
+
+			std::shared_ptr<tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				float *bottom_blob_bordered_data_n = bottom_blob_bordered_data + n * inch * bordered_h * bordered_w;
+				float *top_blob_bordered_data_n = top_blob_bordered_data + n * outch * outh * outw;
+
+				// BEGIN transform input
+				std::shared_ptr<tensor<float> > bottom_blob_tm;
+				{
+					int w_tm = outw / 4 * 6;
+					int h_tm = outh / 4 * 6;
+
+					int nColBlocks = h_tm / 6; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 6;
+
+					const int tiles = nColBlocks * nRowBlocks;
+
+					bottom_blob_tm.reset(new tensor<float>(std::vector<int>{1, tiles * 9, inch, 4}));
+					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
+
+					// BT
+					// const float itm[4][4] = {
+					//     {4.0f, 0.0f, -5.0f, 0.0f, 1.0f, 0.0f},
+					//     {0.0f,-4.0f, -4.0f, 1.0f, 1.0f, 0.0f},
+					//     {0.0f, 4.0f, -4.0f,-1.0f, 1.0f, 0.0f},
+					//     {0.0f,-2.0f, -1.0f, 2.0f, 1.0f, 0.0f},
+					//     {0.0f, 2.0f, -1.0f,-2.0f, 1.0f, 0.0f},
+					//     {0.0f, 4.0f,  0.0f,-5.0f, 0.0f, 1.0f}
+					// };
+
+					// 0 =	4 * r00  - 5 * r02	+ r04
+					// 1 = -4 * (r01 + r02)  + r03 + r04
+					// 2 =	4 * (r01 - r02)  - r03 + r04
+					// 3 = -2 * r01 - r02 + 2 * r03 + r04
+					// 4 =	2 * r01 - r02 - 2 * r03 + r04
+					// 5 =	4 * r01 - 5 * r03 + r05
+
+					// 0 =	4 * r00  - 5 * r02	+ r04
+					// 1 = -4 * (r01 + r02)  + r03 + r04
+					// 2 =	4 * (r01 - r02)  - r03 + r04
+					// 3 = -2 * r01 - r02 + 2 * r03 + r04
+					// 4 =	2 * r01 - r02 - 2 * r03 + r04
+					// 5 =	4 * r01 - 5 * r03 + r05
+
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type _1_n = mm_set1_ps(-1);
+					mm_type _2_p = mm_set1_ps(2);
+					mm_type _2_n = mm_set1_ps(-2);
+					mm_type _4_p = mm_set1_ps(4);
+					mm_type _4_n = mm_set1_ps(-4);
+					mm_type _5_n = mm_set1_ps(-5);
+#endif        
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int q = 0; q < inch; q++)
+					{
+						const float* img = bottom_blob_bordered_data_n + q * bordered_h * bordered_w;
+
+						for (int j = 0; j < nColBlocks; j++)
+						{
+							const float* r0 = img + w * j * 4;
+							const float* r1 = r0 + w;
+							const float* r2 = r1 + w;
+							const float* r3 = r2 + w;
+							const float* r4 = r3 + w;
+							const float* r5 = r4 + w;
+
+							for (int i = 0; i < nRowBlocks; i++)
+							{
+								float* out_tm0 = bottom_blob_tm_data + (tiles * 0 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm1 = bottom_blob_tm_data + (tiles * 1 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm2 = bottom_blob_tm_data + (tiles * 2 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm3 = bottom_blob_tm_data + (tiles * 3 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm4 = bottom_blob_tm_data + (tiles * 4 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm5 = bottom_blob_tm_data + (tiles * 5 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm6 = bottom_blob_tm_data + (tiles * 6 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm7 = bottom_blob_tm_data + (tiles * 7 + j * nRowBlocks + i) * 4 * inch + q * 4;
+								float* out_tm8 = bottom_blob_tm_data + (tiles * 8 + j * nRowBlocks + i) * 4 * inch + q * 4;
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								mm_type _d0, _d1, _d2, _d3, _d4, _d5;
+								mm_type _w0, _w1, _w2, _w3, _w4, _w5;
+								mm_type _t0, _t1, _t2, _t3, _t4, _t5;
+								mm_type _n0, _n1, _n2, _n3, _n4, _n5;
+								// load
+								_d0 = mm_load_ps(r0);
+								_d1 = mm_load_ps(r1);
+								_d2 = mm_load_ps(r2);
+								_d3 = mm_load_ps(r3);
+								_d4 = mm_load_ps(r4);
+								_d5 = mm_load_ps(r5);
+
+								// w = B_t * d
+								_w0 = mm_mul_ps(_d0, _4_p);
+								_w0 = mm_fmadd_ps(_d2, _5_n, _w0);
+								_w0 = mm_add_ps(_w0, _d4);
+
+								_w1 = mm_mul_ps(_d1, _4_n);
+								_w1 = mm_fmadd_ps(_d2, _4_n, _w1);
+								_w1 = mm_add_ps(_w1, _d3);
+								_w1 = mm_add_ps(_w1, _d4);
+
+								_w2 = mm_mul_ps(_d1, _4_p);
+								_w2 = mm_fmadd_ps(_d2, _4_n, _w2);
+								_w2 = mm_fmadd_ps(_d3, _1_n, _w2);
+								_w2 = mm_add_ps(_w2, _d4);
+
+								_w3 = mm_mul_ps(_d1, _2_n);
+								_w3 = mm_fmadd_ps(_d2, _1_n, _w3);
+								_w3 = mm_fmadd_ps(_d3, _2_p, _w3);
+								_w3 = mm_add_ps(_w3, _d4);
+
+								_w4 = mm_mul_ps(_d1, _2_p);
+								_w4 = mm_fmadd_ps(_d2, _1_n, _w4);
+								_w4 = mm_fmadd_ps(_d3, _2_n, _w4);
+								_w4 = mm_add_ps(_w4, _d4);
+
+								_w5 = mm_mul_ps(_d1, _4_p);
+								_w5 = mm_fmadd_ps(_d3, _5_n, _w5);
+								_w5 = mm_add_ps(_w5, _d5);
+								// transpose d to d_t
+#ifdef _WIN32
+								{
+									_t0.m256_f32[0] = _w0.m256_f32[0]; _t1.m256_f32[0] = _w0.m256_f32[1]; _t2.m256_f32[0] = _w0.m256_f32[2]; _t3.m256_f32[0] = _w0.m256_f32[3]; _t4.m256_f32[0] = _w0.m256_f32[4]; _t5.m256_f32[0] = _w0.m256_f32[5];
+									_t0.m256_f32[1] = _w1.m256_f32[0]; _t1.m256_f32[1] = _w1.m256_f32[1]; _t2.m256_f32[1] = _w1.m256_f32[2]; _t3.m256_f32[1] = _w1.m256_f32[3]; _t4.m256_f32[1] = _w1.m256_f32[4]; _t5.m256_f32[1] = _w1.m256_f32[5];
+									_t0.m256_f32[2] = _w2.m256_f32[0]; _t1.m256_f32[2] = _w2.m256_f32[1]; _t2.m256_f32[2] = _w2.m256_f32[2]; _t3.m256_f32[2] = _w2.m256_f32[3]; _t4.m256_f32[2] = _w2.m256_f32[4]; _t5.m256_f32[2] = _w2.m256_f32[5];
+									_t0.m256_f32[3] = _w3.m256_f32[0]; _t1.m256_f32[3] = _w3.m256_f32[1]; _t2.m256_f32[3] = _w3.m256_f32[2]; _t3.m256_f32[3] = _w3.m256_f32[3]; _t4.m256_f32[3] = _w3.m256_f32[4]; _t5.m256_f32[3] = _w3.m256_f32[5];
+									_t0.m256_f32[4] = _w4.m256_f32[0]; _t1.m256_f32[4] = _w4.m256_f32[1]; _t2.m256_f32[4] = _w4.m256_f32[2]; _t3.m256_f32[4] = _w4.m256_f32[3]; _t4.m256_f32[4] = _w4.m256_f32[4]; _t5.m256_f32[4] = _w4.m256_f32[5];
+									_t0.m256_f32[5] = _w5.m256_f32[0]; _t1.m256_f32[5] = _w5.m256_f32[1]; _t2.m256_f32[5] = _w5.m256_f32[2]; _t3.m256_f32[5] = _w5.m256_f32[3]; _t4.m256_f32[5] = _w5.m256_f32[4]; _t5.m256_f32[5] = _w5.m256_f32[5];
+								}
+#else
+								{
+									_t0[0] = _w0[0]; _t1[0] = _w0[1]; _t2[0] = _w0[2]; _t3[0] = _w0[3]; _t4[0] = _w0[4]; _t5[0] = _w0[5];
+									_t0[1] = _w1[0]; _t1[1] = _w1[1]; _t2[1] = _w1[2]; _t3[1] = _w1[3]; _t4[1] = _w1[4]; _t5[1] = _w1[5];
+									_t0[2] = _w2[0]; _t1[2] = _w2[1]; _t2[2] = _w2[2]; _t3[2] = _w2[3]; _t4[2] = _w2[4]; _t5[2] = _w2[5];
+									_t0[3] = _w3[0]; _t1[3] = _w3[1]; _t2[3] = _w3[2]; _t3[3] = _w3[3]; _t4[3] = _w3[4]; _t5[3] = _w3[5];
+									_t0[4] = _w4[0]; _t1[4] = _w4[1]; _t2[4] = _w4[2]; _t3[4] = _w4[3]; _t4[4] = _w4[4]; _t5[4] = _w4[5];
+									_t0[5] = _w5[0]; _t1[5] = _w5[1]; _t2[5] = _w5[2]; _t3[5] = _w5[3]; _t4[5] = _w5[4]; _t5[5] = _w5[5];
+								}
+#endif
+								// d = B_t * d_t
+								_n0 = mm_mul_ps(_t0, _4_p);
+								_n0 = mm_fmadd_ps(_t2, _5_n, _n0);
+								_n0 = mm_add_ps(_n0, _t4);
+
+								_n1 = mm_mul_ps(_t1, _4_n);
+								_n1 = mm_fmadd_ps(_t2, _4_n, _n1);
+								_n1 = mm_add_ps(_n1, _t3);
+								_n1 = mm_add_ps(_n1, _t4);
+
+								_n2 = mm_mul_ps(_t1, _4_p);
+								_n2 = mm_fmadd_ps(_t2, _4_n, _n2);
+								_n2 = mm_fmadd_ps(_t3, _1_n, _n2);
+								_n2 = mm_add_ps(_n2, _t4);
+
+								_n3 = mm_mul_ps(_t1, _2_n);
+								_n3 = mm_fmadd_ps(_t2, _1_n, _n3);
+								_n3 = mm_fmadd_ps(_t3, _2_p, _n3);
+								_n3 = mm_add_ps(_n3, _t4);
+
+								_n4 = mm_mul_ps(_t1, _2_p);
+								_n4 = mm_fmadd_ps(_t2, _1_n, _n4);
+								_n4 = mm_fmadd_ps(_t3, _2_n, _n4);
+								_n4 = mm_add_ps(_n4, _t4);
+
+								_n5 = mm_mul_ps(_t1, _4_p);
+								_n5 = mm_fmadd_ps(_t3, _5_n, _n5);
+								_n5 = mm_add_ps(_n5, _t5);
+								// save to out_tm
+								float output_n0[8] = { 0.f }; mm_store_ps(output_n0, _n0);
+								float output_n1[8] = { 0.f }; mm_store_ps(output_n1, _n1);
+								float output_n2[8] = { 0.f }; mm_store_ps(output_n2, _n2);
+								float output_n3[8] = { 0.f }; mm_store_ps(output_n3, _n3);
+								float output_n4[8] = { 0.f }; mm_store_ps(output_n4, _n4);
+								float output_n5[8] = { 0.f }; mm_store_ps(output_n5, _n5);
+
+								out_tm0[0] = output_n0[0]; out_tm0[1] = output_n0[1]; out_tm0[2] = output_n0[2]; out_tm0[3] = output_n0[3];
+								out_tm1[0] = output_n0[4]; out_tm1[1] = output_n0[5]; out_tm1[2] = output_n1[0]; out_tm1[3] = output_n1[1];
+								out_tm2[0] = output_n1[2]; out_tm2[1] = output_n1[3]; out_tm2[2] = output_n1[4]; out_tm2[3] = output_n1[5];
+
+								out_tm3[0] = output_n2[0]; out_tm3[1] = output_n2[1]; out_tm3[2] = output_n2[2]; out_tm3[3] = output_n2[3];
+								out_tm4[0] = output_n2[4]; out_tm4[1] = output_n2[5]; out_tm4[2] = output_n3[0]; out_tm4[3] = output_n3[1];
+								out_tm5[0] = output_n3[2]; out_tm5[1] = output_n3[3]; out_tm5[2] = output_n3[4]; out_tm5[3] = output_n3[5];
+
+								out_tm6[0] = output_n4[0]; out_tm6[1] = output_n4[1]; out_tm6[2] = output_n4[2]; out_tm6[3] = output_n4[3];
+								out_tm7[0] = output_n4[4]; out_tm7[1] = output_n4[5]; out_tm7[2] = output_n5[0]; out_tm7[3] = output_n5[1];
+								out_tm8[0] = output_n5[2]; out_tm8[1] = output_n5[3]; out_tm8[2] = output_n5[4]; out_tm8[3] = output_n5[5];
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								mm_type _d0_0, _d1_0, _d2_0, _d3_0, _d4_0, _d5_0;
+								mm_type _w0_0, _w1_0, _w2_0, _w3_0, _w4_0, _w5_0;
+								mm_type _t0_0, _t1_0, _t2_0, _t3_0, _t4_0, _t5_0;
+								mm_type _n0_0, _n1_0, _n2_0, _n3_0, _n4_0, _n5_0;
+
+								mm_type _d0_4, _d1_4, _d2_4, _d3_4, _d4_4, _d5_4;
+								mm_type _w0_4, _w1_4, _w2_4, _w3_4, _w4_4, _w5_4;
+								mm_type _t0_4, _t1_4, _t2_4, _t3_4, _t4_4, _t5_4;
+								mm_type _n0_4, _n1_4, _n2_4, _n3_4, _n4_4, _n5_4;
+
+								// load
+								_d0_0 = mm_load_ps(r0);
+								_d1_0 = mm_load_ps(r1);
+								_d2_0 = mm_load_ps(r2);
+								_d3_0 = mm_load_ps(r3);
+								_d4_0 = mm_load_ps(r4);
+								_d5_0 = mm_load_ps(r5);
+
+								_d0_4 = mm_load_ps(r0 + 4);
+								_d1_4 = mm_load_ps(r1 + 4);
+								_d2_4 = mm_load_ps(r2 + 4);
+								_d3_4 = mm_load_ps(r3 + 4);
+								_d4_4 = mm_load_ps(r4 + 4);
+								_d5_4 = mm_load_ps(r5 + 4);
+
+								// w = B_t * d
+								_w0_0 = mm_mul_ps(_d0_0, _4_p);
+								_w0_0 = mm_fmadd_ps(_d2_0, _5_n, _w0_0);
+								_w0_0 = mm_add_ps(_w0_0, _d4_0);
+								_w0_4 = mm_mul_ps(_d0_4, _4_p);
+								_w0_4 = mm_fmadd_ps(_d2_4, _5_n, _w0_4);
+								_w0_4 = mm_add_ps(_w0_4, _d4_4);
+
+								_w1_0 = mm_mul_ps(_d1_0, _4_n);
+								_w1_0 = mm_fmadd_ps(_d2_0, _4_n, _w1_0);
+								_w1_0 = mm_add_ps(_w1_0, _d3_0);
+								_w1_0 = mm_add_ps(_w1_0, _d4_0);
+								_w1_4 = mm_mul_ps(_d1_4, _4_n);
+								_w1_4 = mm_fmadd_ps(_d2_4, _4_n, _w1_4);
+								_w1_4 = mm_add_ps(_w1_4, _d3_4);
+								_w1_4 = mm_add_ps(_w1_4, _d4_4);
+
+								_w2_0 = mm_mul_ps(_d1_0, _4_p);
+								_w2_0 = mm_fmadd_ps(_d2_0, _4_n, _w2_0);
+								_w2_0 = mm_fmadd_ps(_d3_0, _1_n, _w2_0);
+								_w2_0 = mm_add_ps(_w2_0, _d4_0);
+								_w2_4 = mm_mul_ps(_d1_4, _4_p);
+								_w2_4 = mm_fmadd_ps(_d2_4, _4_n, _w2_4);
+								_w2_4 = mm_fmadd_ps(_d3_4, _1_n, _w2_4);
+								_w2_4 = mm_add_ps(_w2_4, _d4_4);
+
+								_w3_0 = mm_mul_ps(_d1_0, _2_n);
+								_w3_0 = mm_fmadd_ps(_d2_0, _1_n, _w3_0);
+								_w3_0 = mm_fmadd_ps(_d3_0, _2_p, _w3_0);
+								_w3_0 = mm_add_ps(_w3_0, _d4_0);
+								_w3_4 = mm_mul_ps(_d1_4, _2_n);
+								_w3_4 = mm_fmadd_ps(_d2_4, _1_n, _w3_4);
+								_w3_4 = mm_fmadd_ps(_d3_4, _2_p, _w3_4);
+								_w3_4 = mm_add_ps(_w3_4, _d4_4);
+
+								_w4_0 = mm_mul_ps(_d1_0, _2_p);
+								_w4_0 = mm_fmadd_ps(_d2_0, _1_n, _w4_0);
+								_w4_0 = mm_fmadd_ps(_d3_0, _2_n, _w4_0);
+								_w4_0 = mm_add_ps(_w4_0, _d4_0);
+								_w4_4 = mm_mul_ps(_d1_4, _2_p);
+								_w4_4 = mm_fmadd_ps(_d2_4, _1_n, _w4_4);
+								_w4_4 = mm_fmadd_ps(_d3_4, _2_n, _w4_4);
+								_w4_4 = mm_add_ps(_w4_4, _d4_4);
+
+								_w5_0 = mm_mul_ps(_d1_0, _4_p);
+								_w5_0 = mm_fmadd_ps(_d3_0, _5_n, _w5_0);
+								_w5_0 = mm_add_ps(_w5_0, _d5_0);
+								_w5_4 = mm_mul_ps(_d1_4, _4_p);
+								_w5_4 = mm_fmadd_ps(_d3_4, _5_n, _w5_4);
+								_w5_4 = mm_add_ps(_w5_4, _d5_4);
+
+								// transpose d to d_t
+								{
+									_t0_0.m128_f32[0] = _w0_0.m128_f32[0]; _t1_0.m128_f32[0] = _w0_0.m128_f32[1]; _t2_0.m128_f32[0] = _w0_0.m128_f32[2]; _t3_0.m128_f32[0] = _w0_0.m128_f32[3]; _t4_0.m128_f32[0] = _w0_4.m128_f32[0]; _t5_0.m128_f32[0] = _w0_4.m128_f32[1];
+									_t0_0.m128_f32[1] = _w1_0.m128_f32[0]; _t1_0.m128_f32[1] = _w1_0.m128_f32[1]; _t2_0.m128_f32[1] = _w1_0.m128_f32[2]; _t3_0.m128_f32[1] = _w1_0.m128_f32[3]; _t4_0.m128_f32[1] = _w1_4.m128_f32[0]; _t5_0.m128_f32[1] = _w1_4.m128_f32[1];
+									_t0_0.m128_f32[2] = _w2_0.m128_f32[0]; _t1_0.m128_f32[2] = _w2_0.m128_f32[1]; _t2_0.m128_f32[2] = _w2_0.m128_f32[2]; _t3_0.m128_f32[2] = _w2_0.m128_f32[3]; _t4_0.m128_f32[2] = _w2_4.m128_f32[0]; _t5_0.m128_f32[2] = _w2_4.m128_f32[1];
+									_t0_0.m128_f32[3] = _w3_0.m128_f32[0]; _t1_0.m128_f32[3] = _w3_0.m128_f32[1]; _t2_0.m128_f32[3] = _w3_0.m128_f32[2]; _t3_0.m128_f32[3] = _w3_0.m128_f32[3]; _t4_0.m128_f32[3] = _w3_4.m128_f32[0]; _t5_0.m128_f32[3] = _w3_4.m128_f32[1];
+									_t0_4.m128_f32[0] = _w4_0.m128_f32[0]; _t1_4.m128_f32[0] = _w4_0.m128_f32[1]; _t2_4.m128_f32[0] = _w4_0.m128_f32[2]; _t3_4.m128_f32[0] = _w4_0.m128_f32[3]; _t4_4.m128_f32[0] = _w4_4.m128_f32[0]; _t5_4.m128_f32[0] = _w4_4.m128_f32[1];
+									_t0_4.m128_f32[1] = _w5_0.m128_f32[0]; _t1_4.m128_f32[1] = _w5_0.m128_f32[1]; _t2_4.m128_f32[1] = _w5_0.m128_f32[2]; _t3_4.m128_f32[1] = _w5_0.m128_f32[3]; _t4_4.m128_f32[1] = _w5_4.m128_f32[0]; _t5_4.m128_f32[1] = _w5_4.m128_f32[1];
+								}
+
+								// d = B_t * d_t
+								_n0_0 = mm_mul_ps(_t0_0, _4_p);
+								_n0_0 = mm_fmadd_ps(_t2_0, _5_n, _n0_0);
+								_n0_0 = mm_add_ps(_n0_0, _t4_0);
+								_n0_4 = mm_mul_ps(_t0_4, _4_p);
+								_n0_4 = mm_fmadd_ps(_t2_4, _5_n, _n0_4);
+								_n0_4 = mm_add_ps(_n0_4, _t4_4);
+
+								_n1_0 = mm_mul_ps(_t1_0, _4_n);
+								_n1_0 = mm_fmadd_ps(_t2_0, _4_n, _n1_0);
+								_n1_0 = mm_add_ps(_n1_0, _t3_0);
+								_n1_0 = mm_add_ps(_n1_0, _t4_0);
+								_n1_4 = mm_mul_ps(_t1_4, _4_n);
+								_n1_4 = mm_fmadd_ps(_t2_4, _4_n, _n1_4);
+								_n1_4 = mm_add_ps(_n1_4, _t3_4);
+								_n1_4 = mm_add_ps(_n1_4, _t4_4);
+
+								_n2_0 = mm_mul_ps(_t1_0, _4_p);
+								_n2_0 = mm_fmadd_ps(_t2_0, _4_n, _n2_0);
+								_n2_0 = mm_fmadd_ps(_t3_0, _1_n, _n2_0);
+								_n2_0 = mm_add_ps(_n2_0, _t4_0);
+								_n2_4 = mm_mul_ps(_t1_4, _4_p);
+								_n2_4 = mm_fmadd_ps(_t2_4, _4_n, _n2_4);
+								_n2_4 = mm_fmadd_ps(_t3_4, _1_n, _n2_4);
+								_n2_4 = mm_add_ps(_n2_4, _t4_4);
+
+								_n3_0 = mm_mul_ps(_t1_0, _2_n);
+								_n3_0 = mm_fmadd_ps(_t2_0, _1_n, _n3_0);
+								_n3_0 = mm_fmadd_ps(_t3_0, _2_p, _n3_0);
+								_n3_0 = mm_add_ps(_n3_0, _t4_0);
+								_n3_4 = mm_mul_ps(_t1_4, _2_n);
+								_n3_4 = mm_fmadd_ps(_t2_4, _1_n, _n3_4);
+								_n3_4 = mm_fmadd_ps(_t3_4, _2_p, _n3_4);
+								_n3_4 = mm_add_ps(_n3_4, _t4_4);
+
+								_n4_0 = mm_mul_ps(_t1_0, _2_p);
+								_n4_0 = mm_fmadd_ps(_t2_0, _1_n, _n4_0);
+								_n4_0 = mm_fmadd_ps(_t3_0, _2_n, _n4_0);
+								_n4_0 = mm_add_ps(_n4_0, _t4_0);
+								_n4_4 = mm_mul_ps(_t1_4, _2_p);
+								_n4_4 = mm_fmadd_ps(_t2_4, _1_n, _n4_4);
+								_n4_4 = mm_fmadd_ps(_t3_4, _2_n, _n4_4);
+								_n4_4 = mm_add_ps(_n4_4, _t4_4);
+
+								_n5_0 = mm_mul_ps(_t1_0, _4_p);
+								_n5_0 = mm_fmadd_ps(_t3_0, _5_n, _n5_0);
+								_n5_0 = mm_add_ps(_n5_0, _t5_0);
+								_n5_4 = mm_mul_ps(_t1_4, _4_p);
+								_n5_4 = mm_fmadd_ps(_t3_4, _5_n, _n5_4);
+								_n5_4 = mm_add_ps(_n5_4, _t5_4);
+
+								// save to out_tm
+								float output_n0[8] = { 0.f }; mm_store_ps(output_n0, _n0_0); mm_store_ps(output_n0 + 4, _n0_4);
+								float output_n1[8] = { 0.f }; mm_store_ps(output_n1, _n1_0); mm_store_ps(output_n1 + 4, _n1_4);
+								float output_n2[8] = { 0.f }; mm_store_ps(output_n2, _n2_0); mm_store_ps(output_n2 + 4, _n2_4);
+								float output_n3[8] = { 0.f }; mm_store_ps(output_n3, _n3_0); mm_store_ps(output_n3 + 4, _n3_4);
+								float output_n4[8] = { 0.f }; mm_store_ps(output_n4, _n4_0); mm_store_ps(output_n4 + 4, _n4_4);
+								float output_n5[8] = { 0.f }; mm_store_ps(output_n5, _n5_0); mm_store_ps(output_n5 + 4, _n5_4);
+
+								out_tm0[0] = output_n0[0]; out_tm0[1] = output_n0[1]; out_tm0[2] = output_n0[2]; out_tm0[3] = output_n0[3];
+								out_tm1[0] = output_n0[4]; out_tm1[1] = output_n0[5]; out_tm1[2] = output_n1[0]; out_tm1[3] = output_n1[1];
+								out_tm2[0] = output_n1[2]; out_tm2[1] = output_n1[3]; out_tm2[2] = output_n1[4]; out_tm2[3] = output_n1[5];
+
+								out_tm3[0] = output_n2[0]; out_tm3[1] = output_n2[1]; out_tm3[2] = output_n2[2]; out_tm3[3] = output_n2[3];
+								out_tm4[0] = output_n2[4]; out_tm4[1] = output_n2[5]; out_tm4[2] = output_n3[0]; out_tm4[3] = output_n3[1];
+								out_tm5[0] = output_n3[2]; out_tm5[1] = output_n3[3]; out_tm5[2] = output_n3[4]; out_tm5[3] = output_n3[5];
+
+								out_tm6[0] = output_n4[0]; out_tm6[1] = output_n4[1]; out_tm6[2] = output_n4[2]; out_tm6[3] = output_n4[3];
+								out_tm7[0] = output_n4[4]; out_tm7[1] = output_n4[5]; out_tm7[2] = output_n5[0]; out_tm7[3] = output_n5[1];
+								out_tm8[0] = output_n5[2]; out_tm8[1] = output_n5[3]; out_tm8[2] = output_n5[4]; out_tm8[3] = output_n5[5];
+#else
+								float d0[6], d1[6], d2[6], d3[6], d4[6], d5[6];
+								float w0[6], w1[6], w2[6], w3[6], w4[6], w5[6];
+								float t0[6], t1[6], t2[6], t3[6], t4[6], t5[6];
+
+								// load
+								for (int n = 0; n < 6; n++)
+								{
+									d0[n] = r0[n];
+									d1[n] = r1[n];
+									d2[n] = r2[n];
+									d3[n] = r3[n];
+									d4[n] = r4[n];
+									d5[n] = r5[n];
+								}
+								// w = B_t * d
+								for (int n = 0; n < 6; n++)
+								{
+									w0[n] = 4 * d0[n] - 5 * d2[n] + d4[n];
+									w1[n] = -4 * d1[n] - 4 * d2[n] + d3[n] + d4[n];
+									w2[n] = 4 * d1[n] - 4 * d2[n] - d3[n] + d4[n];
+									w3[n] = -2 * d1[n] - d2[n] + 2 * d3[n] + d4[n];
+									w4[n] = 2 * d1[n] - d2[n] - 2 * d3[n] + d4[n];
+									w5[n] = 4 * d1[n] - 5 * d3[n] + d5[n];
+								}
+								// transpose d to d_t
+								{
+									t0[0] = w0[0]; t1[0] = w0[1]; t2[0] = w0[2]; t3[0] = w0[3]; t4[0] = w0[4]; t5[0] = w0[5];
+									t0[1] = w1[0]; t1[1] = w1[1]; t2[1] = w1[2]; t3[1] = w1[3]; t4[1] = w1[4]; t5[1] = w1[5];
+									t0[2] = w2[0]; t1[2] = w2[1]; t2[2] = w2[2]; t3[2] = w2[3]; t4[2] = w2[4]; t5[2] = w2[5];
+									t0[3] = w3[0]; t1[3] = w3[1]; t2[3] = w3[2]; t3[3] = w3[3]; t4[3] = w3[4]; t5[3] = w3[5];
+									t0[4] = w4[0]; t1[4] = w4[1]; t2[4] = w4[2]; t3[4] = w4[3]; t4[4] = w4[4]; t5[4] = w4[5];
+									t0[5] = w5[0]; t1[5] = w5[1]; t2[5] = w5[2]; t3[5] = w5[3]; t4[5] = w5[4]; t5[5] = w5[5];
+								}
+								// d = B_t * d_t
+								for (int n = 0; n < 6; n++)
+								{
+									d0[n] = 4 * t0[n] - 5 * t2[n] + t4[n];
+									d1[n] = -4 * t1[n] - 4 * t2[n] + t3[n] + t4[n];
+									d2[n] = 4 * t1[n] - 4 * t2[n] - t3[n] + t4[n];
+									d3[n] = -2 * t1[n] - t2[n] + 2 * t3[n] + t4[n];
+									d4[n] = 2 * t1[n] - t2[n] - 2 * t3[n] + t4[n];
+									d5[n] = 4 * t1[n] - 5 * t3[n] + t5[n];
+								}
+								// save to out_tm
+								{
+									out_tm0[0] = d0[0]; out_tm0[1] = d0[1]; out_tm0[2] = d0[2]; out_tm0[3] = d0[3];
+									out_tm1[0] = d0[4]; out_tm1[1] = d0[5]; out_tm1[2] = d1[0]; out_tm1[3] = d1[1];
+									out_tm2[0] = d1[2]; out_tm2[1] = d1[3]; out_tm2[2] = d1[4]; out_tm2[3] = d1[5];
+
+									out_tm3[0] = d2[0]; out_tm3[1] = d2[1]; out_tm3[2] = d2[2]; out_tm3[3] = d2[3];
+									out_tm4[0] = d2[4]; out_tm4[1] = d2[5]; out_tm4[2] = d3[0]; out_tm4[3] = d3[1];
+									out_tm5[0] = d3[2]; out_tm5[1] = d3[3]; out_tm5[2] = d3[4]; out_tm5[3] = d3[5];
+
+									out_tm6[0] = d4[0]; out_tm6[1] = d4[1]; out_tm6[2] = d4[2]; out_tm6[3] = d4[3];
+									out_tm7[0] = d4[4]; out_tm7[1] = d4[5]; out_tm7[2] = d5[0]; out_tm7[3] = d5[1];
+									out_tm8[0] = d5[2]; out_tm8[1] = d5[3]; out_tm8[2] = d5[4]; out_tm8[3] = d5[5];
+								}
+#endif // #if SIMD_TYPE >= SIMDTYPE_AVX
+								r0 += 4;
+								r1 += 4;
+								r2 += 4;
+								r3 += 4;
+								r4 += 4;
+								r5 += 4;
+							}
+						}
+					}
+				}
+
+				// BEGIN dot
+				std::shared_ptr<tensor<float> > top_blob_tm;
+				{
+					int w_tm = outw / 4 * 6;
+					int h_tm = outh / 4 * 6;
+
+					int nColBlocks = h_tm / 6; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 6;
+
+					const int tiles = nColBlocks * nRowBlocks;
+					top_blob_tm.reset(new tensor<float>(std::vector<int>{1, outch, tiles, 36}));
+					float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
+					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int r = 0; r < 9; r++)
+					{
+						int nn_outch = 0;
+						int remain_outch_start = 0;
+
+						nn_outch = outch >> 3;
+						remain_outch_start = nn_outch << 3;
+
+						for (int pp = 0; pp < nn_outch; pp++)
+						{
+							int p = pp * 8;
+
+							float* output0_tm = top_blob_tm_data + p * tiles * 36;
+							float* output1_tm = top_blob_tm_data + (p + 1) * tiles * 36;
+							float* output2_tm = top_blob_tm_data + (p + 2) * tiles * 36;
+							float* output3_tm = top_blob_tm_data + (p + 3) * tiles * 36;
+							float* output4_tm = top_blob_tm_data + (p + 4) * tiles * 36;
+							float* output5_tm = top_blob_tm_data + (p + 5) * tiles * 36;
+							float* output6_tm = top_blob_tm_data + (p + 6) * tiles * 36;
+							float* output7_tm = top_blob_tm_data + (p + 7) * tiles * 36;
+
+							output0_tm = output0_tm + r * 4;
+							output1_tm = output1_tm + r * 4;
+							output2_tm = output2_tm + r * 4;
+							output3_tm = output3_tm + r * 4;
+							output4_tm = output4_tm + r * 4;
+							output5_tm = output5_tm + r * 4;
+							output6_tm = output6_tm + r * 4;
+							output7_tm = output7_tm + r * 4;
+
+							for (int i = 0; i < tiles; i++)
+							{
+								const float* kptr = kernel_tm_test_data[r] + (p / 8) * inch * 32;
+								const float* r0 = bottom_blob_tm_data + (tiles * r + i) * inch * 4;
+#if SIMD_TYPE >= SIMDTYPE_SSE
+
+								__m128 sum0 = _mm_setzero_ps();
+								__m128 sum1 = _mm_setzero_ps();
+								__m128 sum2 = _mm_setzero_ps();
+								__m128 sum3 = _mm_setzero_ps();
+								__m128 sum4 = _mm_setzero_ps();
+								__m128 sum5 = _mm_setzero_ps();
+								__m128 sum6 = _mm_setzero_ps();
+								__m128 sum7 = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 r0_data = _mm_loadu_ps(r0);
+									__m128 kptr0_data = _mm_loadu_ps(kptr + 0);
+									__m128 kptr4_data = _mm_loadu_ps(kptr + 4);
+									__m128 kptr8_data = _mm_loadu_ps(kptr + 8);
+									__m128 kptr12_data = _mm_loadu_ps(kptr + 12);
+									__m128 kptr16_data = _mm_loadu_ps(kptr + 16);
+									__m128 kptr20_data = _mm_loadu_ps(kptr + 20);
+									__m128 kptr24_data = _mm_loadu_ps(kptr + 24);
+									__m128 kptr28_data = _mm_loadu_ps(kptr + 28);
+
+#if USE_FMADD128
+									sum0 = _mm_fmadd_ps(r0_data, kptr0_data, sum0);
+									sum1 = _mm_fmadd_ps(r0_data, kptr4_data, sum1);
+									sum2 = _mm_fmadd_ps(r0_data, kptr8_data, sum2);
+									sum3 = _mm_fmadd_ps(r0_data, kptr12_data, sum3);
+									sum4 = _mm_fmadd_ps(r0_data, kptr16_data, sum4);
+									sum5 = _mm_fmadd_ps(r0_data, kptr20_data, sum5);
+									sum6 = _mm_fmadd_ps(r0_data, kptr24_data, sum6);
+									sum7 = _mm_fmadd_ps(r0_data, kptr28_data, sum7);
+#else
+									sum0 = _mm_add_ps(_mm_mul_ps(r0_data, kptr0_data), sum0);
+									sum1 = _mm_add_ps(_mm_mul_ps(r0_data, kptr4_data), sum1);
+									sum2 = _mm_add_ps(_mm_mul_ps(r0_data, kptr8_data), sum2);
+									sum3 = _mm_add_ps(_mm_mul_ps(r0_data, kptr12_data), sum3);
+									sum4 = _mm_add_ps(_mm_mul_ps(r0_data, kptr16_data), sum4);
+									sum5 = _mm_add_ps(_mm_mul_ps(r0_data, kptr20_data), sum5);
+									sum6 = _mm_add_ps(_mm_mul_ps(r0_data, kptr24_data), sum6);
+									sum7 = _mm_add_ps(_mm_mul_ps(r0_data, kptr28_data), sum7);
+#endif
+
+									kptr += 32;
+									r0 += 4;
+								}
+
+								_mm_storeu_ps(output0_tm, sum0);
+								_mm_storeu_ps(output1_tm, sum1);
+								_mm_storeu_ps(output2_tm, sum2);
+								_mm_storeu_ps(output3_tm, sum3);
+								_mm_storeu_ps(output4_tm, sum4);
+								_mm_storeu_ps(output5_tm, sum5);
+								_mm_storeu_ps(output6_tm, sum6);
+								_mm_storeu_ps(output7_tm, sum7);
+
+#else
+								float sum0[4] = { 0 };
+								float sum1[4] = { 0 };
+								float sum2[4] = { 0 };
+								float sum3[4] = { 0 };
+								float sum4[4] = { 0 };
+								float sum5[4] = { 0 };
+								float sum6[4] = { 0 };
+								float sum7[4] = { 0 };
+
+								for (int q = 0; q < inch; q++)
+								{
+									for (int n = 0; n < 4; n++)
+									{
+										sum0[n] += r0[n] * kptr[n];
+										sum1[n] += r0[n] * kptr[n + 4];
+										sum2[n] += r0[n] * kptr[n + 8];
+										sum3[n] += r0[n] * kptr[n + 12];
+										sum4[n] += r0[n] * kptr[n + 16];
+										sum5[n] += r0[n] * kptr[n + 20];
+										sum6[n] += r0[n] * kptr[n + 24];
+										sum7[n] += r0[n] * kptr[n + 28];
+									}
+									kptr += 32;
+									r0 += 4;
+								}
+
+								for (int n = 0; n < 4; n++)
+								{
+									output0_tm[n] = sum0[n];
+									output1_tm[n] = sum1[n];
+									output2_tm[n] = sum2[n];
+									output3_tm[n] = sum3[n];
+									output4_tm[n] = sum4[n];
+									output5_tm[n] = sum5[n];
+									output6_tm[n] = sum6[n];
+									output7_tm[n] = sum7[n];
+								}
+#endif 
+								output0_tm += 36;
+								output1_tm += 36;
+								output2_tm += 36;
+								output3_tm += 36;
+								output4_tm += 36;
+								output5_tm += 36;
+								output6_tm += 36;
+								output7_tm += 36;
+							}
+						}
+
+						nn_outch = (outch - remain_outch_start) >> 2;
+
+						for (int pp = 0; pp < nn_outch; pp++)
+						{
+							int p = remain_outch_start + pp * 4;
+
+							float* output0_tm = top_blob_tm_data + p * tiles * 36;
+							float* output1_tm = top_blob_tm_data + (p + 1) * tiles * 36;
+							float* output2_tm = top_blob_tm_data + (p + 2) * tiles * 36;
+							float* output3_tm = top_blob_tm_data + (p + 3) * tiles * 36;
+
+							output0_tm = output0_tm + r * 4;
+							output1_tm = output1_tm + r * 4;
+							output2_tm = output2_tm + r * 4;
+							output3_tm = output3_tm + r * 4;
+
+							for (int i = 0; i < tiles; i++)
+							{
+								const float* kptr = kernel_tm_test_data[r] + (p / 8 + (p % 8) / 4) * inch * 32;
+								const float* r0 = bottom_blob_tm_data + (tiles * r + i) * inch * 4;
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum0 = _mm_setzero_ps();
+								__m128 sum1 = _mm_setzero_ps();
+								__m128 sum2 = _mm_setzero_ps();
+								__m128 sum3 = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 r0_data = _mm_loadu_ps(r0);
+									__m128 kptr0_data = _mm_loadu_ps(kptr + 0);
+									__m128 kptr4_data = _mm_loadu_ps(kptr + 4);
+									__m128 kptr8_data = _mm_loadu_ps(kptr + 8);
+									__m128 kptr12_data = _mm_loadu_ps(kptr + 12);
+
+#if USE_FMADD128
+									sum0 = _mm_fmadd_ps(r0_data, kptr0_data, sum0);
+									sum1 = _mm_fmadd_ps(r0_data, kptr4_data, sum1);
+									sum2 = _mm_fmadd_ps(r0_data, kptr8_data, sum2);
+									sum3 = _mm_fmadd_ps(r0_data, kptr12_data, sum3);
+#else
+									sum0 = _mm_add_ps(_mm_mul_ps(r0_data, kptr0_data), sum0);
+									sum1 = _mm_add_ps(_mm_mul_ps(r0_data, kptr4_data), sum1);
+									sum2 = _mm_add_ps(_mm_mul_ps(r0_data, kptr8_data), sum2);
+									sum3 = _mm_add_ps(_mm_mul_ps(r0_data, kptr12_data), sum3);
+#endif
+
+									kptr += 16;
+									r0 += 4;
+								}
+
+								_mm_storeu_ps(output0_tm, sum0);
+								_mm_storeu_ps(output1_tm, sum1);
+								_mm_storeu_ps(output2_tm, sum2);
+								_mm_storeu_ps(output3_tm, sum3);
+#else
+								float sum0[4] = { 0 };
+								float sum1[4] = { 0 };
+								float sum2[4] = { 0 };
+								float sum3[4] = { 0 };
+
+								for (int q = 0; q < inch; q++)
+								{
+									for (int n = 0; n < 4; n++)
+									{
+										sum0[n] += r0[n] * kptr[n];
+										sum1[n] += r0[n] * kptr[n + 4];
+										sum2[n] += r0[n] * kptr[n + 8];
+										sum3[n] += r0[n] * kptr[n + 12];
+									}
+									kptr += 16;
+									r0 += 4;
+								}
+
+								for (int n = 0; n < 4; n++)
+								{
+									output0_tm[n] = sum0[n];
+									output1_tm[n] = sum1[n];
+									output2_tm[n] = sum2[n];
+									output3_tm[n] = sum3[n];
+								}
+#endif // __AVX__
+								output0_tm += 36;
+								output1_tm += 36;
+								output2_tm += 36;
+								output3_tm += 36;
+							}
+						}
+
+						remain_outch_start += nn_outch << 2;
+
+						for (int p = remain_outch_start; p < outch; p++)
+						{
+							float* output0_tm = top_blob_tm_data + p * tiles * 36;
+
+							output0_tm = output0_tm + r * 4;
+
+							for (int i = 0; i < tiles; i++)
+							{
+								const float* kptr = kernel_tm_test_data[r] + (p / 8 + (p % 8) / 4 + p % 4) * inch * 32;
+								const float* r0 = bottom_blob_tm_data + (tiles * r + i) * inch * 4;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								__m128 sum0 = _mm_setzero_ps();
+
+								for (int q = 0; q < inch; q++)
+								{
+									__m128 r0_data = _mm_loadu_ps(r0);
+									__m128 kptr0_data = _mm_loadu_ps(kptr);
+									
+#if USE_FMADD128
+									sum0 = _mm_fmadd_ps(r0_data, kptr0_data, sum0);
+#else
+									sum0 = _mm_add_ps(_mm_mul_ps(r0_data, kptr0_data), sum0);
+#endif
+
+									kptr += 4;
+									r0 += 4;
+								}
+
+								_mm_storeu_ps(output0_tm, sum0);
+#else
+								float sum0[4] = { 0 };
+
+								for (int q = 0; q < inch; q++)
+								{
+									for (int n = 0; n < 4; n++)
+									{
+										sum0[n] += (int)r0[n] * kptr[n];
+									}
+									kptr += 4;
+									r0 += 4;
+								}
+
+								for (int n = 0; n < 4; n++)
+								{
+									output0_tm[n] = sum0[n];
+								}
+#endif // #if SIMD_TYPE >= SIMDTYPE_SSE
+								output0_tm += 36;
+							}
+						}
+
+						// for (int p=0; p<outch; p++)
+						// {
+						//     std::shared_ptr<tensor<float> > out0_tm = top_blob_tm->channels()hannel(p);
+						//     const std::shared_ptr<tensor<float> > kernel0_tm = kernel_tm->channels()hannel(p);
+
+						//     for (int i=0; i<tiles; i++)
+						//     {
+						//         float* output0_tm = out0_tm.row<int>(i);
+
+						//         int sum0[36] = {0};
+
+						//         for (int q=0; q<inch; q++)
+						//         {
+						//             const float* r0 = bottom_blob_tm->channels()hannel(q).row<float>(i);
+						//             const float* k0 = kernel0_tm.row<float>(q);
+
+						//             for (int n=0; n<36; n++)
+						//             {
+						//                 sum0[n] += (int)r0[n] * k0[n];
+						//             }
+						//         }
+
+						//         for (int n=0; n<36; n++)
+						//         {
+						//             output0_tm[n] = sum0[n];
+						//         }
+						//     }
+						// }
+					}
+
+				}
+				// END dot 
+
+				// BEGIN transform output
+				{
+					// AT
+					// const float itm[4][6] = {
+					//     {1.0f, 1.0f,  1.0f, 1.0f,  1.0f, 0.0f},
+					//     {0.0f, 1.0f, -1.0f, 2.0f, -2.0f, 0.0f},
+					//     {0.0f, 1.0f,  1.0f, 4.0f,  4.0f, 0.0f},
+					//     {0.0f, 1.0f, -1.0f, 8.0f, -8.0f, 1.0f}
+					// };
+
+					// 0 =	r00 + r01 + r02 + r03 +	r04
+					// 1 =		  r01 - r02 + 2 * (r03 - r04)
+					// 2 =		  r01 + r02 + 4 * (r03 + r04)
+					// 3 =		  r01 - r02 + 8 * (r03 - r04)  + r05
+					float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
+
+					int w_tm = outw / 4 * 6;
+					int h_tm = outh / 4 * 6;
+
+					int nColBlocks = h_tm / 6; // may be the block num in Feathercnn
+					int nRowBlocks = w_tm / 6;
+
+					const int tiles = nColBlocks * nRowBlocks;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+					mm_type mul_2 = mm_set1_ps(2);
+					mm_type mul_4 = mm_set1_ps(4);
+					mm_type mul_8 = mm_set1_ps(8);
+
+					__m128 mul_2_s = _mm_set1_ps(2);
+					__m128 mul_4_s = _mm_set1_ps(4);
+					__m128 mul_8_s = _mm_set1_ps(8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+					mm_type mul_2 = mm_set1_ps(2);
+					mm_type mul_4 = mm_set1_ps(4);
+					mm_type mul_8 = mm_set1_ps(8);
+#endif
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+					for (int p = 0; p < outch; p++)
+					{
+						float* out_tile = top_blob_tm_data + p * tiles * 36;
+						float* outRow0 = top_blob_bordered_data_n + p * outh * outw;
+						float* outRow1 = outRow0 + outw;
+						float* outRow2 = outRow0 + outw * 2;
+						float* outRow3 = outRow0 + outw * 3;
+
+						const float bias0 = bias ? bias[p] : 0.f;
+
+						for (int j = 0; j < nColBlocks; j++)
+						{
+							for (int i = 0; i < nRowBlocks; i++)
+							{
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+								// load
+								mm_type s0 = mm_load_ps(out_tile);
+								mm_type s1 = mm_load_ps(out_tile + 6);
+								mm_type s2 = mm_load_ps(out_tile + 12);
+								mm_type s3 = mm_load_ps(out_tile + 18);
+								mm_type s4 = mm_load_ps(out_tile + 24);
+								mm_type s5 = mm_load_ps(out_tile + 30);
+
+								// w = A_T * W
+								mm_type w0 = mm_add_ps(s0, s1);
+								w0 = mm_add_ps(w0, s2);
+								w0 = mm_add_ps(w0, s3);
+								w0 = mm_add_ps(w0, s4);
+
+								mm_type w1 = mm_sub_ps(s1, s2);
+								mm_type temp = mm_mul_ps(s3, mul_2);
+								w1 = mm_add_ps(w1, temp);
+								temp = mm_mul_ps(s4, mul_2);
+								w1 = mm_sub_ps(w1, temp);
+
+								mm_type w2 = mm_add_ps(s1, s2);
+								temp = mm_mul_ps(s3, mul_4);
+								w2 = mm_add_ps(w2, temp);
+								temp = mm_mul_ps(s4, mul_4);
+								w2 = mm_add_ps(w2, temp);
+
+								mm_type w3 = mm_sub_ps(s1, s2);
+								temp = mm_mul_ps(s3, mul_8);
+								w3 = mm_add_ps(w3, temp);
+								temp = mm_mul_ps(s4, mul_8);
+								w3 = mm_sub_ps(w3, temp);
+								w3 = mm_add_ps(w3, s5);
+
+								// transpose w to w_t
+								__m128 d0, d1, d2, d3, d4, d5;
+								{									
+									d0.m128_f32[0] = w0.m256_f32[0]; d0.m128_f32[1] = w1.m256_f32[0]; d0.m128_f32[2] = w2.m256_f32[0]; d0.m128_f32[3] = w3.m256_f32[0];
+									d1.m128_f32[0] = w0.m256_f32[1]; d1.m128_f32[1] = w1.m256_f32[1]; d1.m128_f32[2] = w2.m256_f32[1]; d1.m128_f32[3] = w3.m256_f32[1];
+									d2.m128_f32[0] = w0.m256_f32[2]; d2.m128_f32[1] = w1.m256_f32[2]; d2.m128_f32[2] = w2.m256_f32[2]; d2.m128_f32[3] = w3.m256_f32[2];
+									d3.m128_f32[0] = w0.m256_f32[3]; d3.m128_f32[1] = w1.m256_f32[3]; d3.m128_f32[2] = w2.m256_f32[3]; d3.m128_f32[3] = w3.m256_f32[3];
+									d4.m128_f32[0] = w0.m256_f32[4]; d4.m128_f32[1] = w1.m256_f32[4]; d4.m128_f32[2] = w2.m256_f32[4]; d4.m128_f32[3] = w3.m256_f32[4];
+									d5.m128_f32[0] = w0.m256_f32[5]; d5.m128_f32[1] = w1.m256_f32[5]; d5.m128_f32[2] = w2.m256_f32[5]; d5.m128_f32[3] = w3.m256_f32[5];
+								}
+
+								// Y = A_T * w_t
+								__m128 o0 = _mm_add_ps(d0, d1);
+								o0 = _mm_add_ps(o0, d2);
+								o0 = _mm_add_ps(o0, d3);
+								o0 = _mm_add_ps(o0, d4);
+
+								__m128 o1 = _mm_sub_ps(d1, d2);
+								__m128 temp_s = _mm_mul_ps(d3, mul_2_s);
+								o1 = _mm_add_ps(o1, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_2_s);
+								o1 = _mm_sub_ps(o1, temp_s);
+
+								__m128 o2 = _mm_add_ps(d1, d2);
+								temp_s = _mm_mul_ps(d3, mul_4_s);
+								o2 = _mm_add_ps(o2, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_4_s);
+								o2 = _mm_add_ps(o2, temp_s);
+
+								__m128 o3 = _mm_sub_ps(d1, d2);
+								temp_s = _mm_mul_ps(d3, mul_8_s);
+								o3 = _mm_add_ps(o3, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_8_s);
+								o3 = _mm_sub_ps(o3, temp_s);
+								o3 = _mm_add_ps(o3, d5);
+
+								// save to top blob tm
+								__m128 bias00 = _mm_set1_ps(bias0);
+								o0 = _mm_add_ps(o0, bias00);
+								o1 = _mm_add_ps(o1, bias00);
+								o2 = _mm_add_ps(o2, bias00);
+								o3 = _mm_add_ps(o3, bias00);
+
+								_mm_storeu_ps(outRow0, o0);
+								_mm_storeu_ps(outRow1, o1);
+								_mm_storeu_ps(outRow2, o2);
+								_mm_storeu_ps(outRow3, o3);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+								// load
+								mm_type s0_0 = mm_load_ps(out_tile);
+								mm_type s0_4 = mm_load_ps(out_tile + 4);
+								mm_type s1_0 = mm_load_ps(out_tile + 6);
+								mm_type s1_4 = mm_load_ps(out_tile + 10);
+								mm_type s2_0 = mm_load_ps(out_tile + 12);
+								mm_type s2_4 = mm_load_ps(out_tile + 16);
+								mm_type s3_0 = mm_load_ps(out_tile + 18);
+								mm_type s3_4 = mm_load_ps(out_tile + 22);
+								mm_type s4_0 = mm_load_ps(out_tile + 24);
+								mm_type s4_4 = mm_load_ps(out_tile + 28);
+								mm_type s5_0 = mm_load_ps(out_tile + 30);
+								mm_type s5_4 = mm_load_ps(out_tile + 34);
+
+								// w = A_T * W
+								mm_type w0_0 = mm_add_ps(s0_0, s1_0);
+								w0_0 = mm_add_ps(w0_0, s2_0);
+								w0_0 = mm_add_ps(w0_0, s3_0);
+								w0_0 = mm_add_ps(w0_0, s4_0);
+								mm_type w0_4 = mm_add_ps(s0_4, s1_4);
+								w0_4 = mm_add_ps(w0_4, s2_4);
+								w0_4 = mm_add_ps(w0_4, s3_4);
+								w0_4 = mm_add_ps(w0_4, s4_4);
+
+								mm_type w1_0 = mm_sub_ps(s1_0, s2_0);
+								mm_type temp = mm_mul_ps(s3_0, mul_2);
+								w1_0 = mm_add_ps(w1_0, temp);
+								temp = mm_mul_ps(s4_0, mul_2);
+								w1_0 = mm_sub_ps(w1_0, temp);
+								mm_type w1_4 = mm_sub_ps(s1_4, s2_4);
+								temp = mm_mul_ps(s3_4, mul_2);
+								w1_4 = mm_add_ps(w1_4, temp);
+								temp = mm_mul_ps(s4_4, mul_2);
+								w1_4 = mm_sub_ps(w1_4, temp);
+
+								mm_type w2_0 = mm_add_ps(s1_0, s2_0);
+								temp = mm_mul_ps(s3_0, mul_4);
+								w2_0 = mm_add_ps(w2_0, temp);
+								temp = mm_mul_ps(s4_0, mul_4);
+								w2_0 = mm_add_ps(w2_0, temp);
+								mm_type w2_4 = mm_add_ps(s1_4, s2_4);
+								temp = mm_mul_ps(s3_4, mul_4);
+								w2_4 = mm_add_ps(w2_4, temp);
+								temp = mm_mul_ps(s4_4, mul_4);
+								w2_4 = mm_add_ps(w2_4, temp);
+
+								mm_type w3_0 = mm_sub_ps(s1_0, s2_0);
+								temp = mm_mul_ps(s3_0, mul_8);
+								w3_0 = mm_add_ps(w3_0, temp);
+								temp = mm_mul_ps(s4_0, mul_8);
+								w3_0 = mm_sub_ps(w3_0, temp);
+								w3_0 = mm_add_ps(w3_0, s5_0);
+								mm_type w3_4 = mm_sub_ps(s1_4, s2_4);
+								temp = mm_mul_ps(s3_4, mul_8);
+								w3_4 = mm_add_ps(w3_4, temp);
+								temp = mm_mul_ps(s4_4, mul_8);
+								w3_4 = mm_sub_ps(w3_4, temp);
+								w3_4 = mm_add_ps(w3_4, s5_4);
+
+								// transpose w to w_t
+								__m128 d0, d1, d2, d3, d4, d5;
+								{
+									d0.m128_f32[0] = w0_0.m128_f32[0]; d0.m128_f32[1] = w1_0.m128_f32[0]; d0.m128_f32[2] = w2_0.m128_f32[0]; d0.m128_f32[3] = w3_0.m128_f32[0];
+									d1.m128_f32[0] = w0_0.m128_f32[1]; d1.m128_f32[1] = w1_0.m128_f32[1]; d1.m128_f32[2] = w2_0.m128_f32[1]; d1.m128_f32[3] = w3_0.m128_f32[1];
+									d2.m128_f32[0] = w0_0.m128_f32[2]; d2.m128_f32[1] = w1_0.m128_f32[2]; d2.m128_f32[2] = w2_0.m128_f32[2]; d2.m128_f32[3] = w3_0.m128_f32[2];
+									d3.m128_f32[0] = w0_0.m128_f32[3]; d3.m128_f32[1] = w1_0.m128_f32[3]; d3.m128_f32[2] = w2_0.m128_f32[3]; d3.m128_f32[3] = w3_0.m128_f32[3];
+									d4.m128_f32[0] = w0_4.m128_f32[0]; d4.m128_f32[1] = w1_4.m128_f32[0]; d4.m128_f32[2] = w2_4.m128_f32[0]; d4.m128_f32[3] = w3_4.m128_f32[0];
+									d5.m128_f32[0] = w0_4.m128_f32[1]; d5.m128_f32[1] = w1_4.m128_f32[1]; d5.m128_f32[2] = w2_4.m128_f32[1]; d5.m128_f32[3] = w3_4.m128_f32[1];
+								}
+
+								// Y = A_T * w_t
+								__m128 o0 = _mm_add_ps(d0, d1);
+								o0 = _mm_add_ps(o0, d2);
+								o0 = _mm_add_ps(o0, d3);
+								o0 = _mm_add_ps(o0, d4);
+
+								__m128 o1 = _mm_sub_ps(d1, d2);
+								__m128 temp_s = _mm_mul_ps(d3, mul_2);
+								o1 = _mm_add_ps(o1, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_2);
+								o1 = _mm_sub_ps(o1, temp_s);
+
+								__m128 o2 = _mm_add_ps(d1, d2);
+								temp_s = _mm_mul_ps(d3, mul_4);
+								o2 = _mm_add_ps(o2, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_4);
+								o2 = _mm_add_ps(o2, temp_s);
+
+								__m128 o3 = _mm_sub_ps(d1, d2);
+								temp_s = _mm_mul_ps(d3, mul_8);
+								o3 = _mm_add_ps(o3, temp_s);
+								temp_s = _mm_mul_ps(d4, mul_8);
+								o3 = _mm_sub_ps(o3, temp_s);
+								o3 = _mm_add_ps(o3, d5);
+
+								// save to top blob tm
+								__m128 bias00 = _mm_set1_ps(bias0);
+								o0 = _mm_add_ps(o0, bias00);
+								o1 = _mm_add_ps(o1, bias00);
+								o2 = _mm_add_ps(o2, bias00);
+								o3 = _mm_add_ps(o3, bias00);
+
+								_mm_storeu_ps(outRow0, o0);
+								_mm_storeu_ps(outRow1, o1);
+								_mm_storeu_ps(outRow2, o2);
+								_mm_storeu_ps(outRow3, o3);
+#else
+								// TODO AVX2
+								float s0[6], s1[6], s2[6], s3[6], s4[6], s5[6];
+								float w0[6], w1[6], w2[6], w3[6];
+								float d0[4], d1[4], d2[4], d3[4], d4[4], d5[4];
+								float o0[4], o1[4], o2[4], o3[4];
+
+								// load
+								for (int n = 0; n < 6; n++)
+								{
+									s0[n] = out_tile[n];
+									s1[n] = out_tile[n + 6];
+									s2[n] = out_tile[n + 12];
+									s3[n] = out_tile[n + 18];
+									s4[n] = out_tile[n + 24];
+									s5[n] = out_tile[n + 30];
+								}
+								// w = A_T * W
+								for (int n = 0; n < 6; n++)
+								{
+									w0[n] = s0[n] + s1[n] + s2[n] + s3[n] + s4[n];
+									w1[n] = s1[n] - s2[n] + 2 * s3[n] - 2 * s4[n];
+									w2[n] = s1[n] + s2[n] + 4 * s3[n] + 4 * s4[n];
+									w3[n] = s1[n] - s2[n] + 8 * s3[n] - 8 * s4[n] + s5[n];
+								}
+								// transpose w to w_t
+								{
+									d0[0] = w0[0]; d0[1] = w1[0]; d0[2] = w2[0]; d0[3] = w3[0];
+									d1[0] = w0[1]; d1[1] = w1[1]; d1[2] = w2[1]; d1[3] = w3[1];
+									d2[0] = w0[2]; d2[1] = w1[2]; d2[2] = w2[2]; d2[3] = w3[2];
+									d3[0] = w0[3]; d3[1] = w1[3]; d3[2] = w2[3]; d3[3] = w3[3];
+									d4[0] = w0[4]; d4[1] = w1[4]; d4[2] = w2[4]; d4[3] = w3[4];
+									d5[0] = w0[5]; d5[1] = w1[5]; d5[2] = w2[5]; d5[3] = w3[5];
+								}
+								// Y = A_T * w_t
+								for (int n = 0; n < 4; n++)
+								{
+									o0[n] = d0[n] + d1[n] + d2[n] + d3[n] + d4[n];
+									o1[n] = d1[n] - d2[n] + 2 * d3[n] - 2 * d4[n];
+									o2[n] = d1[n] + d2[n] + 4 * d3[n] + 4 * d4[n];
+									o3[n] = d1[n] - d2[n] + 8 * d3[n] - 8 * d4[n] + d5[n];
+								}
+								// save to top blob tm
+								for (int n = 0; n < 4; n++)
+								{
+									outRow0[n] = o0[n] + bias0;
+									outRow1[n] = o1[n] + bias0;
+									outRow2[n] = o2[n] + bias0;
+									outRow3[n] = o3[n] + bias0;
+								}
+#endif
+
+								out_tile += 36;
+
+								outRow0 += 4;
+								outRow1 += 4;
+								outRow2 += 4;
+								outRow3 += 4;
+							}
+
+							outRow0 += outw * 3;
+							outRow1 += outw * 3;
+							outRow2 += outw * 3;
+							outRow3 += outw * 3;
+						}
+					}
+				}
+				// END transform output
+			}
+
+			// cut result pad
+			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, top_blob, 0, top_blob_bordered->height() - top_blob->height(), 0, top_blob_bordered->width() - top_blob->width());
+		}
+
 	}
 }
 
