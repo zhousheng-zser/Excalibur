@@ -274,8 +274,8 @@ namespace glasssix
 			Init_PReLU_Params(relu1_dw, 64, false);//nchw:1*64*64*64->1*64*64*64
 			Init_Conv_Params(conv2_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*64*64->1*128*64*64
 			Init_PReLU_Params(relu2_ex, 128, false);//nchw:1*128*64*64->1*128*64*64
-			Init_Conv_Params(conv2_dw, 128, 128, 128, 3, 2, 1, true);//nchw:1*128*64*64->1*128*64*64
-			Init_PReLU_Params(relu2_dw, 128, false);//nchw:1*128*64*64->1*128*32*32
+			Init_Conv_Params(conv2_dw, 128, 128, 128, 3, 2, 1, true);//nchw:1*128*64*64->1*128*32*32
+			Init_PReLU_Params(relu2_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
 			Init_Conv_Params(conv2_1_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_1_ex, 128, false);//nchw:1*128*32*32->1*128*32*32
@@ -512,6 +512,551 @@ namespace glasssix
 #endif
 		}
 
+//#define CALC_LAYERS
+#ifdef CALC_LAYERS
+		void Unicorn_mobile::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		{
+			int loop = 1000;
+			glasssix::Timer calcTime;
+			double elapseTime;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1->Forward(input_data, conv1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu1->Forward_cpu(conv1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1_dw->Forward(conv1_top_data, conv1_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu1_dw->Forward_cpu(conv1_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_ex->Forward(conv1_dw_top_data, conv2_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_ex->Forward_cpu(conv2_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_dw->Forward(conv2_ex_top_data, conv2_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_dw->Forward_cpu(conv2_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_em->Forward(conv2_dw_top_data, conv2_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_em:" << std::setw(5) << elapseTime << std::endl;
+			
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_1_ex->Forward(conv2_em_top_data, conv2_1_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_1_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_1_ex->Forward_cpu(conv2_1_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_1_dw->Forward(conv2_1_ex_top_data, conv2_1_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_1_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_1_dw->Forward_cpu(conv2_1_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_1_em->Forward(conv2_1_dw_top_data, conv2_1_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_1_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res2_1->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_2_ex->Forward(res2_1_top_data, conv2_2_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_2_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_2_ex->Forward_cpu(conv2_2_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_2_dw->Forward(conv2_2_ex_top_data, conv2_2_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_2_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_2_dw->Forward_cpu(conv2_2_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_2_em->Forward(conv2_2_dw_top_data, conv2_2_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_2_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res2_1_top_data, conv2_2_em_top_data}, res2_2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_3_ex->Forward(res2_2_top_data, conv2_3_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_3_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_3_ex->Forward_cpu(conv2_3_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_3_dw->Forward(conv2_3_ex_top_data, conv2_3_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_3_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_3_dw->Forward_cpu(conv2_3_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_3_em->Forward(conv2_3_dw_top_data, conv2_3_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_3_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res2_3->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res2_2_top_data, conv2_3_em_top_data}, res2_3_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_4_ex->Forward(res2_3_top_data, conv2_4_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_4_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_4_ex->Forward_cpu(conv2_4_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_4_dw->Forward(conv2_4_ex_top_data, conv2_4_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_4_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_4_dw->Forward_cpu(conv2_4_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_4_em->Forward(conv2_4_dw_top_data, conv2_4_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_4_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res2_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res2_3_top_data, conv2_4_em_top_data}, res2_4_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_ex->Forward(res2_4_top_data, conv3_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_ex->Forward_cpu(conv3_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_dw->Forward(conv3_ex_top_data, conv3_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_dw->Forward_cpu(conv3_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_em->Forward(conv3_dw_top_data, conv3_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_em:" << std::setw(5) << elapseTime << std::endl;
+			
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_1_ex->Forward(conv3_em_top_data, conv3_1_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_1_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_1_ex->Forward_cpu(conv3_1_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_1_dw->Forward(conv3_1_ex_top_data, conv3_1_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_1_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_1_dw->Forward_cpu(conv3_1_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_1_em->Forward(conv3_1_dw_top_data, conv3_1_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_1_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_1->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_2_ex->Forward(res3_1_top_data, conv3_2_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_2_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_2_ex->Forward_cpu(conv3_2_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_2_dw->Forward(conv3_2_ex_top_data, conv3_2_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_2_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_2_dw->Forward_cpu(conv3_2_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_2_em->Forward(conv3_2_dw_top_data, conv3_2_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_2_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_1_top_data, conv3_2_em_top_data}, res3_2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_3_ex->Forward(res3_2_top_data, conv3_3_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_3_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_3_ex->Forward_cpu(conv3_3_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_3_dw->Forward(conv3_3_ex_top_data, conv3_3_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_3_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_3_dw->Forward_cpu(conv3_3_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_3_em->Forward(conv3_3_dw_top_data, conv3_3_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_3_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_3->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_3_em_top_data}, res3_3_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_4_ex->Forward(res3_3_top_data, conv3_4_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_4_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_4_ex->Forward_cpu(conv3_4_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_4_dw->Forward(conv3_4_ex_top_data, conv3_4_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_4_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_4_dw->Forward_cpu(conv3_4_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_4_em->Forward(conv3_4_dw_top_data, conv3_4_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_4_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_3_top_data, conv3_4_em_top_data}, res3_4_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_5_ex->Forward(res3_4_top_data, conv3_5_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_5_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_5_ex->Forward_cpu(conv3_5_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_5_dw->Forward(conv3_5_ex_top_data, conv3_5_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_5_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_5_dw->Forward_cpu(conv3_5_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_5_em->Forward(conv3_5_dw_top_data, conv3_5_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_5_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_5->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_4_top_data, conv3_5_em_top_data}, res3_5_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_6_ex->Forward(res3_5_top_data, conv3_6_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_6_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_6_ex->Forward_cpu(conv3_6_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_6_dw->Forward(conv3_6_ex_top_data, conv3_6_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_6_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu3_6_dw->Forward_cpu(conv3_6_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_6_em->Forward(conv3_6_dw_top_data, conv3_6_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_6_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res3_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_5_top_data, conv3_6_em_top_data}, res3_6_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_ex->Forward(res3_6_top_data, conv4_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_ex->Forward_cpu(conv4_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_dw->Forward(conv4_ex_top_data, conv4_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_dw->Forward_cpu(conv4_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_em->Forward(conv4_dw_top_data, conv4_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_em:" << std::setw(5) << elapseTime << std::endl;
+			
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_1_ex->Forward(conv4_em_top_data, conv4_1_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_1_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_1_ex->Forward_cpu(conv4_1_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_1_dw->Forward(conv4_1_ex_top_data, conv4_1_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_1_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_1_dw->Forward_cpu(conv4_1_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_1_em->Forward(conv4_1_dw_top_data, conv4_1_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_1_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res4_1->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_2_ex->Forward(res4_1_top_data, conv4_2_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_2_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_2_ex->Forward_cpu(conv4_2_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_2_dw->Forward(conv4_2_ex_top_data, conv4_2_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_2_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu4_2_dw->Forward_cpu(conv4_2_dw_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_2_em->Forward(conv4_2_dw_top_data, conv4_2_em_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_2_em:" << std::setw(5) << elapseTime << std::endl;
+			
+			res4_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_1_top_data, conv4_2_em_top_data}, res4_2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_ex->Forward(res4_2_top_data, conv5_ex_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_ex:" << std::setw(5) << elapseTime << std::endl;
+			
+			relu5_ex->Forward_cpu(conv5_ex_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_dw->Forward(conv5_ex_top_data, conv5_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_dw:" << std::setw(5) << elapseTime << std::endl;
+			
+			fc5->Forward_cpu(conv5_dw_top_data, fc5_top_data);
+		}
+#else
 		void Unicorn_mobile::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
@@ -610,6 +1155,7 @@ namespace glasssix
 			conv5_dw->Forward(conv5_ex_top_data, conv5_dw_top_data);
 			fc5->Forward_cpu(conv5_dw_top_data, fc5_top_data);
 		}
+#endif // CALC_LAYERS
 
 #ifdef USE_CUDA
 		void Unicorn_mobile::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)

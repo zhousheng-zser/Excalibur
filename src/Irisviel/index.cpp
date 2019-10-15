@@ -39,7 +39,7 @@ namespace glasssix
 			if (abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -49,7 +49,7 @@ namespace glasssix
 			}
 			else
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -142,7 +142,7 @@ namespace glasssix
 			if (std::abs(sum / calcNum - 1) <= 1e-5)
 			{
 				isNormalized = true;
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -152,7 +152,7 @@ namespace glasssix
 			}
 			else
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < baseNum_; ++i)
@@ -216,9 +216,10 @@ namespace glasssix
 			std::vector<std::vector<unsigned>> &tempGraph = ngraph_.finalGraph_;
 			assert(tempGraph.size() == baseNum_);
 
-			out.write(reinterpret_cast<char const *>(&isNormalized), sizeof(bool));
-			out.write(reinterpret_cast<char const *>(&(ngraph_.width)), sizeof(unsigned));
-			out.write(reinterpret_cast<char const *>(&(ngraph_.navigateNode)), sizeof(unsigned));
+			// Write the header.
+			index_header header = { 0, isNormalized, ngraph_.width, ngraph_.navigateNode };
+			out.write(reinterpret_cast<const char*>(&header), sizeof(header));
+
 			for (unsigned i = 0; i < baseNum_; i++) {
 				unsigned GK = (unsigned)tempGraph[i].size();
 				out.write(reinterpret_cast<char const *>(&GK), sizeof(unsigned));
@@ -228,6 +229,10 @@ namespace glasssix
 					out.flush();
 				}
 			}
+
+			auto pos = out.tellp();
+			out.seekp(0,std::ios::beg);
+			out.write(reinterpret_cast<const char*>(&pos), sizeof(uint64_t));
 			out.close();
 		}
 

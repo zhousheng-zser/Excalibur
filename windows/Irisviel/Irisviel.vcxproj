@@ -87,9 +87,10 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>true</OpenMPSupport>
+      <PreprocessorDefinitions>RELEASE_SDK;NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>false</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <ProjectReference>
       <LinkLibraryDependencies>true</LinkLibraryDependencies>
@@ -125,9 +126,10 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>true</OpenMPSupport>
+      <PreprocessorDefinitions>RELEASE_SDK;NOMINMAX;__cplusplus_cli;RELEASE_SDK;TRIAL;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <OpenMPSupport>false</OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -153,6 +155,11 @@
     <ClCompile Include="..\..\src\Irisviel\kGraph.cpp" />
     <ClCompile Include="..\..\src\Irisviel\nGraph.cpp" />
     <ClCompile Include="..\..\src\Irisviel\search.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\License\License.vcxproj">
+      <Project>{b1dbda1f-7496-49bc-b423-c8924aa8e126}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
