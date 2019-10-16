@@ -17,7 +17,7 @@ TRIAL := 0
 QUANTIZATION_TYPE := INT8_DATA
 COSINE_DISTANCE := 1
 USE_OPENMP := 1
-USE_OPENCV := 0
+USE_OPENCV := 1
 
 COMMON_INCLUDES := C:/Tools/vcpkg/installed/x64-windows/include
 OPENCV_ANDROID_SDK_ROOT := E:/OpenCV-android-sdk

@@ -21,8 +21,8 @@ public class Irisvika {
 	public native void saveGraph(String graphPath);
 	public native void saveGraphwithData(String graphPath, String baseDataPath);
 	public native float[][] getBaseData();
-	public native void loadGraph(String graphPath);
-	public native void loadGraphwithData(String graphPath, String basedataPath);
+	public native boolean loadGraph(String graphPath);
+	public native boolean loadGraphwithData(String graphPath, String basedataPath);
 	public native void optimizeGraph();
 	public native void searchVector(float[][] queryData, int topK, int[][] returnIDs, float[][] returnSimilarities);
 	public native void saveResult(String resultPath, int[][] returnIDs);
