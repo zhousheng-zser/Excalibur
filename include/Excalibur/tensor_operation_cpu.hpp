@@ -3,7 +3,7 @@
 
 #include <glasssix/tensor.hpp>
 #include <glasssix/timer.hpp>
-//#include "math_functions.hpp"
+#include "math_functions.hpp"
 #include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
 #include <cstring>

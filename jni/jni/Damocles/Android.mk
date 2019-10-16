@@ -23,7 +23,9 @@ ifeq ($(TRIAL), 0)
 	LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
 	LOCAL_MODULE := Damocles
 	LOCAL_SRC_FILES := $(SRC_PATH)/damocles.cpp $(SRC_PATH)/mtcnn.cpp \
-						$(SRC_PATH)/mtcnn_onet.cpp $(SRC_PATH)/mtcnn_pnet.cpp $(SRC_PATH)/mtcnn_rnet.cpp
+						$(SRC_PATH)/mtcnn_onet.cpp $(SRC_PATH)/mtcnn_pnet.cpp $(SRC_PATH)/mtcnn_rnet.cpp \
+						$(SRC_PATH)/mtcnn_mobile.cpp \
+						$(SRC_PATH)/onet_mobile.cpp $(SRC_PATH)/pnet_mobile.cpp $(SRC_PATH)/rnet_mobile.cpp \
 
 	LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
 	LOCAL_STATIC_LIBRARIES := Excalibur

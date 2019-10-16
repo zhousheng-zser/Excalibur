@@ -15,8 +15,8 @@ JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraphwithData(JN
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraph(JNIEnv *, jobject, jstring);
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraphwithData(JNIEnv *, jobject, jstring, jstring);
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_IrisvikagetBaseData(JNIEnv *, jobject);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *, jobject, jstring);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNIEnv *, jobject, jstring, jstring);
+JNIEXPORT jboolean JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *, jobject, jstring);
+JNIEXPORT jboolean JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNIEnv *, jobject, jstring, jstring);
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_optimizeGraph(JNIEnv *, jobject);
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_searchVector(JNIEnv *, jobject, jobjectArray, jint, jobjectArray, jobjectArray);
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveResult(JNIEnv *, jobject, jstring, jobjectArray);

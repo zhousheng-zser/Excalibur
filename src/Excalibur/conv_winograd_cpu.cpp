@@ -4553,25 +4553,25 @@ namespace glasssix
 #else
 											for (int i = 0; i < tile_length_; i++)
 											{
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 
-												Mult_data[Mult_offset_och_row_col_2 + i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_2 + i] += U_data[U_offset_och_ich_2 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
-												Mult_data[Mult_offset_och_row_col_2 + i] += U_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
-												Mult_data[Mult_offset_och_row_col_2 + i] += U_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+												mult_data2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data2[i] += U_data[U_offset_och_ich_2 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data2[i] += U_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data2[i] += U_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 
-												Mult_data[Mult_offset_och_row_col_3 + i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_3 + i] += U_data[U_offset_och_ich_3 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
-												Mult_data[Mult_offset_och_row_col_3 + i] += U_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
-												Mult_data[Mult_offset_och_row_col_3 + i] += U_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+												mult_data3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data3[i] += U_data[U_offset_och_ich_3 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data3[i] += U_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data3[i] += U_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 
-												Mult_data[Mult_offset_och_row_col_4 + i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_4 + i] += U_data[U_offset_och_ich_4 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
-												Mult_data[Mult_offset_och_row_col_4 + i] += U_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
-												Mult_data[Mult_offset_och_row_col_4 + i] += U_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+												mult_data4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data4[i] += U_data[U_offset_och_ich_4 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data4[i] += U_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data4[i] += U_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 											}
 #endif
 										}
@@ -4697,10 +4697,10 @@ namespace glasssix
 #else
 											for (int i = 0; i < tile_length_; i++)
 											{
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_2 + i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_3 + i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_4 + i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
 											}
 #endif
 										}
@@ -4727,22 +4727,22 @@ namespace glasssix
 										mm_store_ps(mult_data4 + 24, sum_4_24);
 										_mm_storeu_ps(mult_data4 + 32, sum_4_32);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 4, sum_1_4);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 12, sum_1_12);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_2, sum_2_0);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 4, sum_2_4);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 8, sum_2_8);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_2 + 12, sum_2_12);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_3, sum_3_0);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 4, sum_3_4);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 8, sum_3_8);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_3 + 12, sum_3_12);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_4, sum_4_0);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 4, sum_4_4);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 8, sum_4_8);
-										mm_store_ps(Mult_data + Mult_offset_och_row_col_4 + 12, sum_4_12);
+										mm_store_ps(mult_data1, sum_1_0);
+										mm_store_ps(mult_data1 + 4, sum_1_4);
+										mm_store_ps(mult_data1 + 8, sum_1_8);
+										mm_store_ps(mult_data1 + 12, sum_1_12);
+										mm_store_ps(mult_data2, sum_2_0);
+										mm_store_ps(mult_data2 + 4, sum_2_4);
+										mm_store_ps(mult_data2 + 8, sum_2_8);
+										mm_store_ps(mult_data2 + 12, sum_2_12);
+										mm_store_ps(mult_data3, sum_3_0);
+										mm_store_ps(mult_data3 + 4, sum_3_4);
+										mm_store_ps(mult_data3 + 8, sum_3_8);
+										mm_store_ps(mult_data3 + 12, sum_3_12);
+										mm_store_ps(mult_data4, sum_4_0);
+										mm_store_ps(mult_data4 + 4, sum_4_4);
+										mm_store_ps(mult_data4 + 8, sum_4_8);
+										mm_store_ps(mult_data4 + 12, sum_4_12);
 #endif
 
 										calculate_ATmA43(mult_data1, result1);
@@ -5022,10 +5022,10 @@ namespace glasssix
 #else
 											for (int i = 0; i < tile_length_; i++)
 											{
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 											}
 #endif
 										}
@@ -5074,7 +5074,7 @@ namespace glasssix
 #else
 											for (int i = 0; i < tile_length_; i++)
 											{
-												Mult_data[Mult_offset_och_row_col_1 + i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
 											}
 #endif
 										}
