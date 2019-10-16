@@ -39,6 +39,11 @@ namespace glasssix
 			FaceRect() :x(0), y(0), width(0), height(0), neighbors(0), confidence(0.0) {}
 			FaceRect(int x_, int y_, int width_, int height_, int neighbors_, double confidence_)
 				:x(x_), y(y_), width(width_), height(height_), neighbors(neighbors_), confidence(confidence_) {}
+
+			bool operator <(const FaceRect& s) const
+			{
+				return (width * height) > (s.width * s.height);
+			}
 		} FaceRect;
 
 		class BaseLonginusCascade;

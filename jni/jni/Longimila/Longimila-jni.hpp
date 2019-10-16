@@ -16,7 +16,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithI
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectbyMetaData(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jfloat, jint);
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithInfobyMetaData(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jfloat, jint, jint);
 JNIEXPORT jstring JNICALL Java_com_glasssix_Longimila_Longimila_getVersion(JNIEnv *, jclass);
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEnv *, jobject, jobjectArray, jint);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEnv *, jobject, jobjectArray, jint, jfloat);
 #ifdef USE_OPENCV
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFacebyMat(JNIEnv *, jobject, jlong, jobjectArray, jobjectArray);
 #endif
@@ -24,11 +24,16 @@ JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignFacebyMe
 #ifndef TRIAL
 #ifdef USE_OPENCV
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMat(JNIEnv *, jobject, jlong, jint, jfloatArray, jfloat, jint, jint);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMatMobile(JNIEnv *, jobject, jlong, jint, jfloatArray, jfloat, jint, jint);
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignSingleFacebyMat(JNIEnv *, jobject, jlong);
 #endif
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMetaData(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jfloatArray, jfloat, jint, jint);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyMetaDataMobile(JNIEnv *, jobject, jbyteArray, jint, jint, jint, jfloatArray, jfloat, jint, jint);
 JNIEXPORT jbyteArray JNICALL Java_com_glasssix_Longimila_Longimila_alignSingleFacebyMetaData(JNIEnv *, jobject, jbyteArray, jint, jint);
 #endif
+
+//JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_extract_biggest_faceinfo(JNIEnv *, jclass, jobjectArray, jobjectArray, jobjectArray);
+//JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_extract_faceinfo(JNIEnv *, jclass, jobjectArray, jobjectArray, jobjectArray);
 
 #ifdef __cplusplus
 }
