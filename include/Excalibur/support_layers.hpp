@@ -30,6 +30,7 @@
 #include "arm/sigmoid_arm.hpp"
 #include "arm/batchnorm_arm.hpp"
 #include "arm/scale_arm.hpp"
+#include "arm/eltwise_arm.hpp"
 
 #include <climits>
 
@@ -251,5 +252,8 @@ batchnorm_name->set_bias(batchnorm_name##_##bias);
 scale_name = new scale_arm(input_channel, bias_term); \
 scale_name->set_weights(scale_name##_##weights); \
 scale_name->set_bias(scale_name##_##bias);
+
+#define Init_Eltwise_arm_Params(eltwise_name, type)\
+eltwise_name = new eltwise_arm(type, device_);
 
 #endif //_SUPPORT_LAYERS_HPP_
