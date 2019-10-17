@@ -373,7 +373,7 @@ namespace glasssix
 			Init_PReLU_Params(relu2_1, 64, false);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_Params(conv2_2, 64, 64, 1, 3, 1, 1, true);//nchw:1*64*62*62->1*64*62*62
 			Init_PReLU_Params(relu2_2, 64, false);//nchw:1*64*62*62->1*64*62*62
-			Init_Eltwise_arm_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
+			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_Params(conv2, 64, 128, 1, 3, 1, 0, true);//nchw:1*64*62*62->1*128*60*60
 			Init_PReLU_Params(relu2, 128, false);//nchw:1*128*60*60->1*128*60*60
 			Init_Pooling_Params(pool2, 2, 2, 0, 0);//nchw:1*128*60*60->1*128*30*30
@@ -381,12 +381,12 @@ namespace glasssix
 			Init_PReLU_Params(relu3_1, 128, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_Params(conv3_2, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_Params(relu3_2, 128, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_arm_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_Params(conv3_3, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_Params(relu3_3, 128, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_Params(conv3_4, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_Params(relu3_4, 128, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_arm_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_Params(conv3, 128, 256, 1, 3, 1, 0, true);//nchw:1*128*30*30->1*256*28*28
 			Init_PReLU_Params(relu3, 256, false);//nchw:1*256*28*28->1*256*28*28
 			Init_Pooling_Params(pool3, 2, 2, 0, 0);//nchw:1*256*28*28->1*256*14*14
@@ -394,27 +394,27 @@ namespace glasssix
 			Init_PReLU_Params(relu4_1, 256, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_2, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_2, 256, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_arm_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_3, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_3, 256, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_4, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_4, 256, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_arm_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_5, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_5, 256, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_6, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_6, 256, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_arm_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_7, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_7, 256, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_8, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_8, 256, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_arm_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_9, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_9, 256, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4_10, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_Params(relu4_10, 256, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_arm_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_Params(conv4, 256, 512, 1, 3, 1, 0, true);//nchw:1*256*14*14->1*512*12*12
 			Init_PReLU_Params(relu4, 512, false);//nchw:1*512*12*12->1*512*12*12
 			Init_Pooling_Params(pool4, 2, 2, 0, 0);//nchw:1*512*12*12->1*512*6*6
@@ -422,17 +422,17 @@ namespace glasssix
 			Init_PReLU_Params(relu5_1, 512, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5_2, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_Params(relu5_2, 512, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_arm_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5_3, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_Params(relu5_3, 512, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5_4, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_Params(relu5_4, 512, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_arm_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5_5, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_Params(relu5_5, 512, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5_6, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_Params(relu5_6, 512, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_arm_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_Params(relu5, 512, false);//nchw:1*512*4*4->1*512*4*4
 			Init_Pooling_Params(pool5, 4, 4, 0, 1);//nchw:1*512*4*4->1*512*1*1
