@@ -186,25 +186,25 @@ namespace glasssix
 			Init_Conv_arm_Params(conv2_1_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_1_dw, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_1_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_1, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_1, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_arm_Params(conv2_2_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_2_ex, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_2_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_2_dw, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_2_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_2, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_arm_Params(conv2_3_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_3_ex, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_3_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_3_dw, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_3_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_3, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_3, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_arm_Params(conv2_4_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_4_ex, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_4_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_arm_Params(relu2_4_dw, 128, false, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_arm_Params(conv2_4_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_4, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_4, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_arm_Params(conv3_ex, 64, 256, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*256*32*32
 			Init_PReLU_arm_Params(relu3_ex, 256, false, false);//nchw:1*256*32*32->1*256*32*32
 			Init_Conv_arm_Params(conv3_dw, 256, 256, 256, 3, 2, 1, true);//nchw:1*256*32*32->1*256*16*16
@@ -215,37 +215,37 @@ namespace glasssix
 			Init_Conv_arm_Params(conv3_1_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_1_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_1_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_1, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_1, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv3_2_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_2_ex, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_2_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_2_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_2_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_2, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv3_3_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_3_ex, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_3_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_3_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_3_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_3, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_3, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv3_4_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_4_ex, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_4_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_4_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_4_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_4, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv3_5_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_5_ex, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_5_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_5_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_5_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_5, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_5, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv3_6_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_6_ex, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_6_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_arm_Params(relu3_6_dw, 256, false, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_arm_Params(conv3_6_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_6, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_6, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_arm_Params(conv4_ex, 128, 512, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*512*16*16
 			Init_PReLU_arm_Params(relu4_ex, 512, false, false);//nchw:1*512*16*16->1*512*16*16
 			Init_Conv_arm_Params(conv4_dw, 512, 512, 512, 3, 2, 1, true);//nchw:1*512*16*16->1*512*8*8
@@ -256,13 +256,13 @@ namespace glasssix
 			Init_Conv_arm_Params(conv4_1_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*8*8->1*256*8*8
 			Init_PReLU_arm_Params(relu4_1_dw, 256, false, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_arm_Params(conv4_1_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*8*8->1*128*8*8
-			Init_Eltwise_Params(res4_1, 0);//nchw:1*128*8*8->1*128*8*8
+			Init_Eltwise_arm_Params(res4_1, 0);//nchw:1*128*8*8->1*128*8*8
 			Init_Conv_arm_Params(conv4_2_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*8*8->1*256*8*8
 			Init_PReLU_arm_Params(relu4_2_ex, 256, false, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_arm_Params(conv4_2_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*8*8->1*256*8*8
 			Init_PReLU_arm_Params(relu4_2_dw, 256, false, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_arm_Params(conv4_2_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*8*8->1*128*8*8
-			Init_Eltwise_Params(res4_2, 0);//nchw:1*128*8*8->1*128*8*8
+			Init_Eltwise_arm_Params(res4_2, 0);//nchw:1*128*8*8->1*128*8*8
 			Init_Conv_arm_Params(conv5_ex, 128, 512, 1, 1, 1, 0, true);//nchw:1*128*8*8->1*512*8*8
 			Init_PReLU_arm_Params(relu5_ex, 512, false, false);//nchw:1*512*8*8->1*512*8*8
 			Init_Conv_arm_Params(conv5_dw, 512, 512, 512, 8, 1, 0, true);//nchw:1*512*8*8->1*512*1*1
@@ -282,25 +282,25 @@ namespace glasssix
 			Init_Conv_Params(conv2_1_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_1_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_1_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_1, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_1, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_Params(conv2_2_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_2_ex, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_2_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_2_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_2_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_2, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_Params(conv2_3_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_3_ex, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_3_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_3_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_3_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_3, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_3, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_Params(conv2_4_ex, 64, 128, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_4_ex, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_4_dw, 128, 128, 128, 3, 1, 1, true);//nchw:1*128*32*32->1*128*32*32
 			Init_PReLU_Params(relu2_4_dw, 128, false);//nchw:1*128*32*32->1*128*32*32
 			Init_Conv_Params(conv2_4_em, 128, 64, 1, 1, 1, 0, true);//nchw:1*128*32*32->1*64*32*32
-			Init_Eltwise_Params(res2_4, 0);//nchw:1*64*32*32->1*64*32*32
+			Init_Eltwise_arm_Params(res2_4, 0);//nchw:1*64*32*32->1*64*32*32
 			Init_Conv_Params(conv3_ex, 64, 256, 1, 1, 1, 0, true);//nchw:1*64*32*32->1*256*32*32
 			Init_PReLU_Params(relu3_ex, 256, false);//nchw:1*256*32*32->1*256*32*32
 			Init_Conv_Params(conv3_dw, 256, 256, 256, 3, 2, 1, true);//nchw:1*256*32*32->1*256*16*16
@@ -311,37 +311,37 @@ namespace glasssix
 			Init_Conv_Params(conv3_1_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_1_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_1_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_1, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_1, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv3_2_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_2_ex, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_2_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_2_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_2_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_2, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv3_3_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_3_ex, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_3_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_3_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_3_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_3, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_3, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv3_4_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_4_ex, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_4_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_4_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_4_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_4, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv3_5_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_5_ex, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_5_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_5_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_5_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_5, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_5, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv3_6_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_6_ex, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_6_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*16*16->1*256*16*16
 			Init_PReLU_Params(relu3_6_dw, 256, false);//nchw:1*256*16*16->1*256*16*16
 			Init_Conv_Params(conv3_6_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*16*16->1*128*16*16
-			Init_Eltwise_Params(res3_6, 0);//nchw:1*128*16*16->1*128*16*16
+			Init_Eltwise_arm_Params(res3_6, 0);//nchw:1*128*16*16->1*128*16*16
 			Init_Conv_Params(conv4_ex, 128, 512, 1, 1, 1, 0, true);//nchw:1*128*16*16->1*512*16*16
 			Init_PReLU_Params(relu4_ex, 512, false);//nchw:1*512*16*16->1*512*16*16
 			Init_Conv_Params(conv4_dw, 512, 512, 512, 3, 2, 1, true);//nchw:1*512*16*16->1*512*8*8
@@ -352,13 +352,13 @@ namespace glasssix
 			Init_Conv_Params(conv4_1_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*8*8->1*256*8*8
 			Init_PReLU_Params(relu4_1_dw, 256, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_Params(conv4_1_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*8*8->1*128*8*8
-			Init_Eltwise_Params(res4_1, 0);//nchw:1*128*8*8->1*128*8*8
+			Init_Eltwise_arm_Params(res4_1, 0);//nchw:1*128*8*8->1*128*8*8
 			Init_Conv_Params(conv4_2_ex, 128, 256, 1, 1, 1, 0, true);//nchw:1*128*8*8->1*256*8*8
 			Init_PReLU_Params(relu4_2_ex, 256, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_Params(conv4_2_dw, 256, 256, 256, 3, 1, 1, true);//nchw:1*256*8*8->1*256*8*8
 			Init_PReLU_Params(relu4_2_dw, 256, false);//nchw:1*256*8*8->1*256*8*8
 			Init_Conv_Params(conv4_2_em, 256, 128, 1, 1, 1, 0, true);//nchw:1*256*8*8->1*128*8*8
-			Init_Eltwise_Params(res4_2, 0);//nchw:1*128*8*8->1*128*8*8
+			Init_Eltwise_arm_Params(res4_2, 0);//nchw:1*128*8*8->1*128*8*8
 			Init_Conv_Params(conv5_ex, 128, 512, 1, 1, 1, 0, true);//nchw:1*128*8*8->1*512*8*8
 			Init_PReLU_Params(relu5_ex, 512, false);//nchw:1*512*8*8->1*512*8*8
 			Init_Conv_Params(conv5_dw, 512, 512, 512, 8, 1, 0, true);//nchw:1*512*8*8->1*512*1*1
