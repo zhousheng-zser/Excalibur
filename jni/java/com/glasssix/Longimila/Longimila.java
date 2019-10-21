@@ -71,15 +71,20 @@ public class Longimila {
 	}
 
 
-	
+//	public static native void extract_biggest_faceinfo(FaceRectwithFaceInfo[] face_info,
+//			int[][] bboxes, int[][] landmarks);
+//	public static native void extract_faceinfo(FaceRectwithFaceInfo[] face_info,
+//			int[][] bboxes, int[][] landmarks);
 	public static native String getVersion();
 	public native FaceRect[] detectbyMat(long grayNativeObj, int minSize, float scale, int minNeighbors);
 	public native FaceRectwithFaceInfo[] detectwithInfobyMat(long grayNativeObj, int minSize, float scale, int minNeighbors, int order);
 	public native FaceRectwithFaceInfo[] detectExbyMat(long matNativeObj, int minSize, float[] threshold, float factor, int stage, int order);
+	public native FaceRectwithFaceInfo[] detectExbyMatMobile(long matNativeObj, int minSize, float[] threshold, float factor, int stage, int order);
 	public native FaceRect[] detectbyMetaData(byte[] metadata, int width, int height, int minSize, float scale, int minNeighbors);
 	public native FaceRectwithFaceInfo[] detectwithInfobyMetaData(byte[] metadata, int width, int height, int minSize, float scale, int minNeighbors, int order);
 	public native FaceRectwithFaceInfo[] detectExbyMetaData(byte[] metadata, int width, int height, int minSize, float[] threshold, float factor, int stage, int order);
-	public native Match_Rectval[] match(FaceRect[] faceRect, int frame_extract_frequency);
+	public native FaceRectwithFaceInfo[] detectExbyMetaDataMobile(byte[] metadata, int width, int height, int minSize, float[] threshold, float factor, int stage, int order);
+	public native Match_Rectval[] match(FaceRect[] faceRect, int frame_extract_frequency, float distance_fractor);
 	private native byte[] alignFacebyMat(long grayNativeObj, int[][] bbox, int[][] landmarks);
 	private native byte[] alignFacebyMetaData(byte[] metadata, int width, int height, int[][] bbox, int[][] landmarks);
 	public native byte[] alignSingleFacebyMat(long grayNativeObj);

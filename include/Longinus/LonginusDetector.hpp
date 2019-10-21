@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <algorithm>
 #include "BaseLonginusCascade.hpp"
 #include "../Romancia/romancia.hpp"
 #include "matcher.hpp"
@@ -123,6 +124,16 @@ namespace glasssix
 												  static_cast<int>(face_info[index].pts[2].x), static_cast<int>(face_info[index].pts[2].y),
 												  static_cast<int>(face_info[index].pts[3].x), static_cast<int>(face_info[index].pts[3].y),
 												  static_cast<int>(face_info[index].pts[4].x), static_cast<int>(face_info[index].pts[4].y) });
+		}
+
+		static void sort_descend(std::vector<FaceRect>& rects)
+		{
+			std::sort(rects.begin(), rects.end());
+		}
+
+		static void sort_descend(std::vector<FaceRectwithFaceInfo>& rects)
+		{
+			std::sort(rects.begin(), rects.end());
 		}
 
 		class LonginusDetector
