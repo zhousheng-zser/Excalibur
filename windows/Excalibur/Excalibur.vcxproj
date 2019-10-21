@@ -143,6 +143,7 @@
     <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\conv_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\conv_arm_func.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\inner_product_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\neon_mathfun.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\pooling_arm.hpp" />
@@ -192,6 +193,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\arm\batchnorm_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\arm\conv_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\eltwise_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\arm\inner_product_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\arm\pooling_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\arm\prelu_arm.cpp" />
