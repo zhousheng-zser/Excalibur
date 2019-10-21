@@ -26,6 +26,8 @@ extern "C" {
 
 // A simple way to define the vsl unary functions. The operation should
 // be in the form e.g. y[i] = sqrt(a[i])
+#ifndef DEFINE_VSL_UNARY_FUNC(name, operation)
+
 #define DEFINE_VSL_UNARY_FUNC(name, operation) \
   template<typename Dtype> \
   void v##name(const int n, const Dtype* a, Dtype* y) { \
@@ -42,8 +44,12 @@ DEFINE_VSL_UNARY_FUNC(Exp, y[i] = exp(a[i]));
 DEFINE_VSL_UNARY_FUNC(Ln, y[i] = log(a[i]));
 DEFINE_VSL_UNARY_FUNC(Abs, y[i] = fabs(a[i]));
 
+#endif // !DEFINE_VSL_UNARY_FUNC(name, operation)
+
 // A simple way to define the vsl unary functions with singular parameter b.
 // The operation should be in the form e.g. y[i] = pow(a[i], b)
+#ifndef DEFINE_VSL_UNARY_FUNC_WITH_PARAM(name, operation)
+
 #define DEFINE_VSL_UNARY_FUNC_WITH_PARAM(name, operation) \
   template<typename Dtype> \
   void v##name(const int n, const Dtype* a, const Dtype b, Dtype* y) { \
@@ -57,8 +63,14 @@ DEFINE_VSL_UNARY_FUNC(Abs, y[i] = fabs(a[i]));
 
 DEFINE_VSL_UNARY_FUNC_WITH_PARAM(Powx, y[i] = pow(a[i], b));
 
+#endif // !DEFINE_VSL_UNARY_FUNC_WITH_PARAM(name, operation)
+
+
+
 // A simple way to define the vsl binary functions. The operation should
 // be in the form e.g. y[i] = a[i] + b[i]
+#ifndef DEFINE_VSL_BINARY_FUNC(name, operation)
+
 #define DEFINE_VSL_BINARY_FUNC(name, operation) \
   template<typename Dtype> \
   void v##name(const int n, const Dtype* a, const Dtype* b, Dtype* y) { \
@@ -74,6 +86,8 @@ DEFINE_VSL_BINARY_FUNC(Add, y[i] = a[i] + b[i]);
 DEFINE_VSL_BINARY_FUNC(Sub, y[i] = a[i] - b[i]);
 DEFINE_VSL_BINARY_FUNC(Mul, y[i] = a[i] * b[i]);
 DEFINE_VSL_BINARY_FUNC(Div, y[i] = a[i] / b[i]);
+
+#endif // !DEFINE_VSL_BINARY_FUNC(name, operation)
 
 #ifdef USE_OPENBLAS
 // In addition, MKL comes with an additional function axpby that is not present

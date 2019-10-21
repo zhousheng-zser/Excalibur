@@ -69,6 +69,8 @@ namespace glasssix
 			Declear_Params(relu5_6);
 			Declear_Params(conv5);
 			Declear_Params(relu5);
+			Declear_Params(conv5_dw);
+			Declear_Params(relu5_dw);
 
 			//
 			int device_;
@@ -226,8 +228,8 @@ namespace glasssix
 			Neuron_Name(conv5);
 			Declear_Opration(prelu, relu5);
 			Neuron_Name(relu5);
-			Declear_Opration(pooling, pool5);
-			Neuron_Name(pool5);
+			Declear_Opration(baseconv, conv5_dw);
+			Neuron_Name(conv5_dw);
 			Declear_Opration(mirrormax, mirrmax);
 			Neuron_Name(feature);
 			Declear_Opration(normalize, normalizer);
