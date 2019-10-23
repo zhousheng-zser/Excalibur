@@ -216,10 +216,9 @@ namespace glasssix
 			std::vector<std::vector<unsigned>> &tempGraph = ngraph_.finalGraph_;
 			assert(tempGraph.size() == baseNum_);
 
-			// Write the header.
-			index_header header = { 0, isNormalized, ngraph_.width, ngraph_.navigateNode };
-			out.write(reinterpret_cast<const char*>(&header), sizeof(header));
-
+			out.write(reinterpret_cast<char const *>(&isNormalized), sizeof(bool));
+			out.write(reinterpret_cast<char const *>(&(ngraph_.width)), sizeof(unsigned));
+			out.write(reinterpret_cast<char const *>(&(ngraph_.navigateNode)), sizeof(unsigned));
 			for (unsigned i = 0; i < baseNum_; i++) {
 				unsigned GK = (unsigned)tempGraph[i].size();
 				out.write(reinterpret_cast<char const *>(&GK), sizeof(unsigned));
@@ -229,14 +228,11 @@ namespace glasssix
 					out.flush();
 				}
 			}
-
-			auto pos = out.tellp();
-			out.seekp(0,std::ios::beg);
-			out.write(reinterpret_cast<const char*>(&pos), sizeof(uint64_t));
 			out.close();
 		}
 
-		void Index::saveGraph(const char *nGraphPath, const char *basedataPath) {
+		void Index::saveGraph(const char *nGraphPath, const char *basedataPath) 
+		{
 			//save ngraph
 			std::ofstream outGraph(nGraphPath, std::ios::binary);
 			std::vector<std::vector<unsigned>> &tempGraph = ngraph_.finalGraph_;
@@ -267,5 +263,6 @@ namespace glasssix
 			}
 			outBaseData.close();
 		}
+
 	}
 }

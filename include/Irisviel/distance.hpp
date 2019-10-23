@@ -1,5 +1,6 @@
 #ifndef _DISTANCE_HPP_
 #define _DISTANCE_HPP_
+#include "nsg_calculate_error.hpp"
 
 namespace glasssix {
 	namespace irisviel {

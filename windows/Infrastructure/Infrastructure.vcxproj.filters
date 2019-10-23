@@ -63,6 +63,9 @@
     <ClInclude Include="..\..\include\Infrastructure\fi_extended_conversions.hpp">
       <Filter>头文件\free_image</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Infrastructure\tensor_layout.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="../../src/Infrastructure/tensor_builder_factory.cpp">
