@@ -54,7 +54,7 @@ namespace glasssix
 						cerr << ' ' << p.id << ':' << p.distance;
 					}
 					cerr << endl;
-					throw runtime_error("distance is unstable");
+					throw nsg_calculate_error("distance is unstable");
 				}
 			}
 			return float(found) / accurateResults.size();
