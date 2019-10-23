@@ -159,6 +159,14 @@ namespace glasssix
 
 
 			template <typename Dtype>
+			static void mean_value_blur_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3);
+
+			template <typename Dtype>
+			static void mean_value_blur_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3);
+
+
+
+			template <typename Dtype>
 			static void sobel_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int dx = 1, int dy = 1);
 
 			template <typename Dtype>

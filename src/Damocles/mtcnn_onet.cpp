@@ -77,6 +77,25 @@ namespace glasssix
 #endif
 #endif
 			//
+#ifdef __ARM_NEON
+			Init_Conv_arm_Params(conv1, 3, 16, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu1, 16, false, false);
+			Init_Pooling_arm_Params(pool1, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv2, 16, 32, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu2, 32, false, false);
+			Init_Pooling_arm_Params(pool2, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv3, 32, 32, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu3, 32, false, false);
+			Init_Pooling_arm_Params(pool3, 2, 2, 0, 0);
+			Init_Conv_arm_Params(conv4, 32, 64, 1, 2, 1, 0, true);
+			Init_PReLU_arm_Params(prelu4, 64, false, false);
+			Init_InnerProduct_arm_Params(conv5, 64, 3, 3, 128, true);
+			Init_PReLU_arm_Params(prelu5, 128, false, false);
+			Init_InnerProduct_arm_Params(conv6_1, 128, 1, 1, 2, true);
+			Init_InnerProduct_arm_Params(conv6_2, 128, 1, 1, 4, true);
+			Init_InnerProduct_arm_Params(conv6_3, 128, 1, 1, 10, true);
+			Init_Softmax_arm_Params(prob1, 2);
+#else
 			Init_Conv_Params(conv1, 3, 16, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu1, 16, false);
 			Init_Pooling_Params(pool1, 3, 2, 0, 0);
@@ -94,6 +113,7 @@ namespace glasssix
 			Init_InnerProduct_Params(conv6_2, 128, 1, 1, 4, true);
 			Init_InnerProduct_Params(conv6_3, 128, 1, 1, 10, true);
 			Init_Softmax_Params(prob1, 2);
+#endif
 		}
 
 
@@ -155,7 +175,7 @@ namespace glasssix
 			conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
+			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);			
 		}
 
 #ifdef USE_CUDA

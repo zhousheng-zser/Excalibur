@@ -75,14 +75,14 @@ namespace glasssix
 				search->saveGraph(graphPath, basedataPath);
 			}
 
-			void loadGraph(const char* graphPath)
+			bool loadGraph(const char* graphPath)
 			{
-				search->loadGraph(graphPath);
+				return search->loadGraph(graphPath);
 			}
 
-			void loadGraph(const char* graphPath, const char *basedataPath)
+			bool loadGraph(const char* graphPath, const char *basedataPath)
 			{
-				search->loadGraph(graphPath, basedataPath);
+				return search->loadGraph(graphPath, basedataPath);
 			}
 
 			const std::vector<const float*>* getBasedata()

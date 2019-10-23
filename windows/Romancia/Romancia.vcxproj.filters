@@ -21,9 +21,6 @@
     <ClInclude Include="..\..\include\Romancia\romancia.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Romancia\vbanshee.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Romancia\banshee.cpp">

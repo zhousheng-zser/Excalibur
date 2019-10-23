@@ -230,21 +230,66 @@ void datafile::writedatahpp(std::string netpath, std::string netname, std::strin
 	{
 		LayerParameter& layer_param = *param.mutable_layer(i);
 		int n = param.mutable_layer(i)->mutable_blobs()->size();
-		if (n)
+		if (layer_param.type() == "BatchNorm")
 		{
+
 			std::string layer_name = layer_param.name();
 			std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
-			writedatahead(netname, layer_name + "_weights", DATA_TYPE);
-			const BlobProto& blob = layer_param.blobs(0);
-			writedata(blob.data().data(), blob.data_size(), DATA_TYPE);
+
+			const float bn_scale_factor = layer_param.mutable_blobs(2)->data(0) == 0 ?
+				0 : 1 / layer_param.mutable_blobs(2)->data(0);
+
 			
-			writedataend();
-			if (n>1)
+			const BlobProto& mean = layer_param.blobs(0);
+			const BlobProto& variance = layer_param.blobs(1);
+
+			float *temp_weights = new float[variance.data_size()];
+			std::memcpy(temp_weights, variance.data().data(), variance.data_size() * sizeof(variance.data().data()[0]));
+			for (int j = 0; j < variance.data_size(); j++)
 			{
-				writedatahead(netname, layer_name + "_bias", DATA_TYPE);
-				const BlobProto& bias = layer_param.blobs(1);
-				writedata(bias.data().data(), bias.data_size(), DATA_TYPE);
+				temp_weights[j] = pow(variance.data(j) * bn_scale_factor + layer_param.batch_norm_param().eps(), 0.5);
+			}
+
+			float *temp_bias = new float[mean.data_size()];
+			std::memcpy(temp_bias, mean.data().data(), mean.data_size() * sizeof(mean.data().data()[0]));
+			for (int j = 0; j < mean.data_size(); j++)
+			{
+				temp_bias[j] *= -1.0f * bn_scale_factor / temp_weights[j];
+			}
+
+			for (int j = 0; j < variance.data_size(); j++)
+			{
+				temp_weights[j] = 1.0f / temp_weights[j];
+			}
+			
+			writedatahead(netname, layer_name + "_weights", DATA_TYPE);
+			writedata(temp_weights, variance.data_size(), DATA_TYPE);
+			delete[] temp_weights;
+			writedataend();
+
+			writedatahead(netname, layer_name + "_bias", DATA_TYPE);
+			writedata(temp_bias, mean.data_size(), DATA_TYPE);
+			delete[] temp_bias;
+			writedataend();
+		}
+		else
+		{
+			if (n)
+			{
+				std::string layer_name = layer_param.name();
+				std::transform(layer_name.begin(), layer_name.end(), layer_name.begin(), tolower);
+				writedatahead(netname, layer_name + "_weights", DATA_TYPE);
+				const BlobProto& blob = layer_param.blobs(0);
+				writedata(blob.data().data(), blob.data_size(), DATA_TYPE);
+
 				writedataend();
+				if (n>1)
+				{
+					writedatahead(netname, layer_name + "_bias", DATA_TYPE);
+					const BlobProto& bias = layer_param.blobs(1);
+					writedata(bias.data().data(), bias.data_size(), DATA_TYPE);
+					writedataend();
+				}
 			}
 		}
 	}

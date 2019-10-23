@@ -237,6 +237,8 @@ namespace glasssix
 				int type_id = src.type() % 8;
 				auto type_name = std::string(typeid(Dtype).name());
 
+#ifdef _MSC_VER
+
 				if (type_id == 0)
 				{
 					if (type_name != std::string("unsigned char"))
@@ -274,6 +276,51 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
+
+#elif defined __linux__
+
+				if (type_id == 0)
+				{
+					if (type_name != std::string("h"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 1)
+				{
+					if (type_name != std::string("c"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 4)
+				{
+					if (type_name != std::string("i"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 5)
+				{
+					if (type_name != std::string("f"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support data type.";
+					return;
+				}
+
+#else
+				NOT_IMPLEMENTED;
+				return;
+#endif // _MSC_VER
 
 				if (order == NCHW)
 				{
@@ -339,6 +386,8 @@ namespace glasssix
 				int type_id = src.type() % 8;
 				auto type_name = std::string(typeid(Dtype).name());
 
+#ifdef _MSC_VER
+
 				if (type_id == 0)
 				{
 					if (type_name != std::string("unsigned char"))
@@ -376,6 +425,51 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
+
+#elif defined __linux__
+
+				if (type_id == 0)
+				{
+					if (type_name != std::string("h"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 1)
+				{
+					if (type_name != std::string("c"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 4)
+				{
+					if (type_name != std::string("i"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else if (type_id == 5)
+				{
+					if (type_name != std::string("f"))
+					{
+						LOG(ERROR) << "Un-matched data type.";
+						return;
+					}
+				}
+				else
+				{
+					LOG(ERROR) << "Un-support data type.";
+					return;
+				}
+
+#else
+				NOT_IMPLEMENTED;
+				return;
+#endif // _MSC_VER
 
 				if (order == NCHW)
 				{
@@ -681,82 +775,152 @@ namespace glasssix
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
-					void* temp_buf = 0;
-					int scale_x, scale_y;
-					int sx, sy, dx, dy;
-					int xmax = dst_width, buf_size;
-					int *buf0, *buf1;
-					CvResizeAlpha *xofs, *yofs;
-					int fx_1024x, fy_1024x;
-
-					scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
-					scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
-
-					buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
-					temp_buf = buf0 = (int*)malloc(buf_size);
-					buf1 = buf0 + dst_width;
-					xofs = (CvResizeAlpha*)(buf1 + dst_width);
-					yofs = xofs + dst_width;
-
-					for (dx = 0; dx < dst_width; dx++)
+					auto name = typeid(Dtype).name();
+					if (std::string("unsigned char") == std::string(name))
 					{
-						fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
-						sx = (fx_1024x >> ICV_WARP_SHIFT2);
-						fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+						void* temp_buf = 0;
+						int scale_x, scale_y;
+						int sx, sy, dx, dy;
+						int xmax = dst_width, buf_size;
+						int *buf0, *buf1;
+						CvResizeAlpha *xofs, *yofs;
+						int fx_1024x, fy_1024x;
 
-						if (sx < 0)
+						scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
+						scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
+
+						buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
+						temp_buf = buf0 = (int*)malloc(buf_size);
+						buf1 = buf0 + dst_width;
+						xofs = (CvResizeAlpha*)(buf1 + dst_width);
+						yofs = xofs + dst_width;
+
+						for (dx = 0; dx < dst_width; dx++)
 						{
-							sx = 0;
-							fx_1024x = 0;
+							fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
+							sx = (fx_1024x >> ICV_WARP_SHIFT2);
+							fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+
+							if (sx < 0)
+							{
+								sx = 0;
+								fx_1024x = 0;
+							}
+
+							if (sx >= width - 1)
+							{
+								fx_1024x = 0;
+								sx = width - 1;
+
+								if (xmax >= dst_width)
+								{
+									xmax = dx;
+								}
+							}
+
+							xofs[dx].idx = sx;
+							xofs[dx].ialpha = fx_1024x;
 						}
 
-						if (sx >= width - 1)
+						for (dy = 0; dy < dst_height; dy++)
 						{
-							fx_1024x = 0;
-							sx = width - 1;
+							fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
+							sy = (fy_1024x >> ICV_WARP_SHIFT2);
+							fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
 
-							if (xmax >= dst_width)
+							if (sy < 0)
 							{
-								xmax = dx;
+								sy = 0;
+								fy_1024x = 0;
+							}
+
+							yofs[dy].idx = sy;
+							yofs[dy].ialpha = fy_1024x;
+						}
+
+						for (int n = 0; n < num; n++)
+						{
+							int src_n_offset = n * src_num_offset;
+							int dst_n_offset = n * dst_num_offset;
+
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								int src_channel_offset = ch * src_offset;
+								int dst_channel_offset = ch * dst_offset;
+
+								icvResize_Bilinear_8u_C1((const unsigned char*)&src_data[src_n_offset + src_channel_offset], width * sizeof(unsigned char), width, height, (unsigned char*)&dst_data[dst_n_offset + dst_channel_offset],
+									dst_width * sizeof(unsigned char), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
 							}
 						}
 
-						xofs[dx].idx = sx;
-						xofs[dx].ialpha = fx_1024x;
+						free(temp_buf);
 					}
-
-					for (dy = 0; dy < dst_height; dy++)
+					else
 					{
-						fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
-						sy = (fy_1024x >> ICV_WARP_SHIFT2);
-						fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+						float width_ratio = (float)width / dst_width;
+						float height_ratio = (float)height / dst_height;
+						float beta = 0.5f;
 
-						if (sy < 0)
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < dst_height; ++row)
 						{
-							sy = 0;
-							fy_1024x = 0;
-						}							
+							float yf = row * height_ratio + beta;
+							int y = (int)yf;
+							float ydiff = yf - y;
 
-						yofs[dy].idx = sy;
-						yofs[dy].ialpha = fy_1024x;
-					}
+							int src_pos1 = y * width;
+							int dst_pos1 = row * dst_width;
 
-					for (int n = 0; n < num; n++)
-					{
-						int src_n_offset = n * src_num_offset;
-						int dst_n_offset = n * dst_num_offset;
+							for (int col = 0; col < dst_width; ++col)
+							{
+								float xf = col * width_ratio + beta;
+								int x = (int)xf;
+								float xdiff = xf - x;
 
-						for (int ch = 0; ch < channels; ++ch)
-						{
-							int src_channel_offset = ch * src_offset;
-							int dst_channel_offset = ch * dst_offset;
+								int src_pos2 = src_pos1 + x;
+								int dst_pos2 = dst_pos1 + col;
 
-							icvResize_Bilinear_8u_C1(&src_data[src_n_offset + src_channel_offset], width * sizeof(Dtype), width, height, &dst_data[dst_n_offset + dst_channel_offset],
-								dst_width * sizeof(Dtype), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
+								for (int n = 0; n < num; n++)
+								{
+									int src_n_offset = n * src_num_offset;
+									int dst_n_offset = n * dst_num_offset;
+
+									for (int ch = 0; ch < channels; ++ch)
+									{
+										int src_pos3 = src_pos2 + ch * src_offset;
+										int dst_pos3 = dst_pos2 + ch * dst_offset;
+
+										if (type == Nearest)
+										{
+											dst_data[dst_n_offset + dst_pos3] = src_data[src_n_offset + src_pos3];
+										}
+										else if (type == Bilinear)
+										{
+											unsigned indexA = std::min(unsigned(src_pos3), maxIndex);
+											unsigned indexB = std::min(unsigned(src_pos3 + channels), maxIndex);
+											unsigned indexC = std::min(unsigned(src_pos3 + width * channels), maxIndex);
+											unsigned indexD = std::min(unsigned(src_pos3 + (width + 1) * channels), maxIndex);
+											Dtype A = src_data[src_n_offset + indexA];
+											Dtype B = src_data[src_n_offset + indexB];
+											Dtype C = src_data[src_n_offset + indexC];
+											Dtype D = src_data[src_n_offset + indexD];
+
+											dst_data[dst_n_offset + dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
+												static_cast<float>(B) * xdiff * (1 - ydiff) +
+												static_cast<float>(C) * ydiff * (1 - xdiff) +
+												static_cast<float>(D) * xdiff * ydiff);
+										}
+										else
+										{
+											LOG(ERROR) << "Un-support interpolation type.";
+										}
+									}
+								}
+							}
 						}
 					}
-
-					free(temp_buf);
 				}
 				else if (src->order() == NHWC)
 				{
@@ -882,82 +1046,152 @@ namespace glasssix
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
-					void* temp_buf = 0;
-					int scale_x, scale_y;
-					int sx, sy, dx, dy;
-					int xmax = dst_width, buf_size;
-					int *buf0, *buf1;
-					CvResizeAlpha *xofs, *yofs;
-					int fx_1024x, fy_1024x;
-
-					scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
-					scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
-
-					buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
-					temp_buf = buf0 = (int*)malloc(buf_size);
-					buf1 = buf0 + dst_width;
-					xofs = (CvResizeAlpha*)(buf1 + dst_width);
-					yofs = xofs + dst_width;
-
-					for (dx = 0; dx < dst_width; dx++)
+					auto name = typeid(Dtype).name();
+					if (std::string("unsigned char") == std::string(name))
 					{
-						fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
-						sx = (fx_1024x >> ICV_WARP_SHIFT2);
-						fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
+						void* temp_buf = 0;
+						int scale_x, scale_y;
+						int sx, sy, dx, dy;
+						int xmax = dst_width, buf_size;
+						int *buf0, *buf1;
+						CvResizeAlpha *xofs, *yofs;
+						int fx_1024x, fy_1024x;
 
-						if (sx < 0)
+						scale_x = ((width << ICV_WARP_SHIFT2) + dst_width / 2) / dst_width;
+						scale_y = ((height << ICV_WARP_SHIFT2) + dst_height / 2) / dst_height;
+
+						buf_size = dst_width * 2 * sizeof(int) + (dst_width + dst_height) * sizeof(CvResizeAlpha);
+						temp_buf = buf0 = (int*)malloc(buf_size);
+						buf1 = buf0 + dst_width;
+						xofs = (CvResizeAlpha*)(buf1 + dst_width);
+						yofs = xofs + dst_width;
+
+						for (dx = 0; dx < dst_width; dx++)
 						{
-							sx = 0;
-							fx_1024x = 0;
-						}							
+							fx_1024x = ((dx * 2 + 1)*scale_x - (1 << ICV_WARP_SHIFT2)) / 2;
+							sx = (fx_1024x >> ICV_WARP_SHIFT2);
+							fx_1024x = ((fx_1024x - (sx << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
 
-						if (sx >= width - 1)
-						{
-							fx_1024x = 0;
-							sx = width - 1;
-
-							if (xmax >= dst_width)
+							if (sx < 0)
 							{
-								xmax = dx;
-							}								
+								sx = 0;
+								fx_1024x = 0;
+							}
+
+							if (sx >= width - 1)
+							{
+								fx_1024x = 0;
+								sx = width - 1;
+
+								if (xmax >= dst_width)
+								{
+									xmax = dx;
+								}
+							}
+
+							xofs[dx].idx = sx;
+							xofs[dx].ialpha = fx_1024x;
 						}
 
-						xofs[dx].idx = sx;
-						xofs[dx].ialpha = fx_1024x;
-					}
-
-					for (dy = 0; dy < dst_height; dy++)
-					{
-						fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
-						sy = (fy_1024x >> ICV_WARP_SHIFT2);
-						fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
-
-						if (sy < 0)
+						for (dy = 0; dy < dst_height; dy++)
 						{
-							sy = 0;
-							fy_1024x = 0;
-						}							
+							fy_1024x = ((dy * 2 + 1)*scale_y - (1 << ICV_WARP_SHIFT2)) / 2;
+							sy = (fy_1024x >> ICV_WARP_SHIFT2);
+							fy_1024x = ((fy_1024x - (sy << ICV_WARP_SHIFT2)) >> ICV_SHIFT_DIFF);
 
-						yofs[dy].idx = sy;
-						yofs[dy].ialpha = fy_1024x;
-					}
+							if (sy < 0)
+							{
+								sy = 0;
+								fy_1024x = 0;
+							}
 
-					for (int n = 0; n < num; n++)
-					{
-						int src_n_offset = n * src_num_offset;
-						int dst_n_offset = n * dst_num_offset;
+							yofs[dy].idx = sy;
+							yofs[dy].ialpha = fy_1024x;
+						}
 
-						for (int ch = 0; ch < channels; ++ch)
+						for (int n = 0; n < num; n++)
 						{
-							int src_channel_offset = ch * src_offset;
-							int dst_channel_offset = ch * dst_offset;
+							int src_n_offset = n * src_num_offset;
+							int dst_n_offset = n * dst_num_offset;
 
-							icvResize_Bilinear_8u_C1(&src_data[src_n_offset + src_channel_offset], width * sizeof(Dtype), width, height, &dst_data[dst_n_offset + dst_channel_offset],
-								dst_width * sizeof(Dtype), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
+							for (int ch = 0; ch < channels; ++ch)
+							{
+								int src_channel_offset = ch * src_offset;
+								int dst_channel_offset = ch * dst_offset;
+
+								icvResize_Bilinear_8u_C1((const unsigned char*)&src_data[src_n_offset + src_channel_offset], width * sizeof(unsigned char), width, height, (unsigned char*)&dst_data[dst_n_offset + dst_channel_offset],
+									dst_width * sizeof(unsigned char), dst_width, dst_height, xmax, xofs, yofs, buf0, buf1);
+							}
+						}
+
+						free(temp_buf);
+					}
+					else
+					{
+						float width_ratio = (float)width / dst_width;
+						float height_ratio = (float)height / dst_height;
+						float beta = 0.5f;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < dst_height; ++row)
+						{
+							float yf = row * height_ratio + beta;
+							int y = (int)yf;
+							float ydiff = yf - y;
+
+							int src_pos1 = y * width;
+							int dst_pos1 = row * dst_width;
+
+							for (int col = 0; col < dst_width; ++col)
+							{
+								float xf = col * width_ratio + beta;
+								int x = (int)xf;
+								float xdiff = xf - x;
+
+								int src_pos2 = src_pos1 + x;
+								int dst_pos2 = dst_pos1 + col;
+
+								for (int n = 0; n < num; n++)
+								{
+									int src_n_offset = n * src_num_offset;
+									int dst_n_offset = n * dst_num_offset;
+
+									for (int ch = 0; ch < channels; ++ch)
+									{
+										int src_pos3 = src_pos2 + ch * src_offset;
+										int dst_pos3 = dst_pos2 + ch * dst_offset;
+
+										if (type == Nearest)
+										{
+											dst_data[dst_n_offset + dst_pos3] = src_data[src_n_offset + src_pos3];
+										}
+										else if (type == Bilinear)
+										{
+											unsigned indexA = std::min(unsigned(src_pos3), maxIndex);
+											unsigned indexB = std::min(unsigned(src_pos3 + channels), maxIndex);
+											unsigned indexC = std::min(unsigned(src_pos3 + width * channels), maxIndex);
+											unsigned indexD = std::min(unsigned(src_pos3 + (width + 1) * channels), maxIndex);
+											Dtype A = src_data[src_n_offset + indexA];
+											Dtype B = src_data[src_n_offset + indexB];
+											Dtype C = src_data[src_n_offset + indexC];
+											Dtype D = src_data[src_n_offset + indexD];
+
+											dst_data[dst_n_offset + dst_pos3] = Dtype(static_cast<float>(A) * (1 - xdiff) * (1 - ydiff) +
+												static_cast<float>(B) * xdiff * (1 - ydiff) +
+												static_cast<float>(C) * ydiff * (1 - xdiff) +
+												static_cast<float>(D) * xdiff * ydiff);
+										}
+										else
+										{
+											LOG(ERROR) << "Un-support interpolation type.";
+										}
+									}
+								}
+							}
 						}
 					}
-
-					free(temp_buf);
 				}
 				else if (src.order() == NHWC)
 				{
@@ -2318,7 +2552,7 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				Dtype* dst_data = dst->mutable_cpu_data();
 
-				if (center.x < radius || center.x >= width - radius && center.y < radius && center.y >= height - radius)
+				if (center.x < radius || center.x >= width - radius || center.y < radius || center.y >= height - radius)
 				{
 					LOG(WARNING) << "circle out of image, return without any changes.";
 					return;
@@ -2629,7 +2863,7 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				Dtype* dst_data = dst.mutable_cpu_data();
 
-				if (center.x < radius || center.x >= width - radius && center.y < radius && center.y >= height - radius)
+				if (center.x < radius || center.x >= width - radius || center.y < radius || center.y >= height - radius)
 				{
 					LOG(WARNING) << "circle out of image, return without any changes.";
 					return;
@@ -5015,7 +5249,6 @@ namespace glasssix
 				int dst_width = width - left - right;
 				int dst_offset = dst_height * dst_width;
 				int dst_num_offset = channels * dst_height * dst_width;
-
 				if (dst_height == height && dst_width == width)
 				{
 					dst = std::make_shared<tensor<Dtype>>(src->clone());
@@ -5030,8 +5263,9 @@ namespace glasssix
 
 				if (src->order() == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					std::shared_ptr<tensor<Dtype>> dst_temp;
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -5052,6 +5286,8 @@ namespace glasssix
 							}
 						}
 					}
+
+					dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 				}
 				else if (src->order() == NHWC)
 				{
@@ -5117,9 +5353,9 @@ namespace glasssix
 				int dst_offset = dst_height * dst_width;
 				int dst_num_offset = channels * dst_height * dst_width;
 
+				dst = src.clone();
 				if (dst_height == height && dst_width == width)
 				{
-					dst = src.clone();
 					return;
 				}
 
@@ -6797,6 +7033,386 @@ namespace glasssix
 				{
 					tensor<Dtype> temp = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
 					Dtype* temp_data = temp.mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col) * channels + ch];
+										}
+									}
+									temp_data[index + col * channels + ch] = (Dtype)sum2;
+								}
+							}
+						}
+
+
+						//vertical
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								int pos = index + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width * channels + ch];
+										}
+									}
+									dst_data[n * num_offset + pos + ch] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
+			/// mean value blur
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
+			template <typename Dtype>
+			static void mean_value_blur_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				if (ksize % 2 != 1)
+				{
+					LOG(WARNING) << "convolution kernel: width and height should be odd.";
+					return;
+				}
+
+				if (ksize == 1)
+				{
+					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					return;
+				}
+
+				int num = src->num();
+				int channels = src->channels();
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				int half = (ksize - 1) * 0.5;
+				std::vector<double> convolution_kernel(ksize);
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[col] = double(1) / ksize;
+				}
+
+				const Dtype* src_data = src->cpu_data();
+				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst->mutable_cpu_data();
+
+				if (src->order() == NCHW)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col)];
+										}
+									}
+									temp_data[index + col] = (Dtype)sum2;
+								}
+							}
+						}
+
+						//vertical
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									int pos = index + col;
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width];
+										}
+									}
+									dst_data[n * num_offset + pos] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else if (src->order() == NHWC)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col) * channels + ch];
+										}
+									}
+									temp_data[index + col * channels + ch] = (Dtype)sum2;
+								}
+							}
+						}
+
+
+						//vertical
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+						for (int row = 0; row < height; ++row)
+						{
+							int index = row * width * channels;
+							for (int col = 0; col < width; ++col)
+							{
+								int pos = index + col * channels;
+								for (int ch = 0; ch < channels; ++ch)
+								{
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width * channels + ch];
+										}
+									}
+									dst_data[n * num_offset + pos + ch] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+			}
+
+
+
+			/// <summary>
+			/// mean value blur
+			/// </summary>
+			/// <param name="src">original tensor</param>
+			/// <param name="dst">new tensor</param>
+			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
+			template <typename Dtype>
+			static void mean_value_blur_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3)
+			{
+				if (src.device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				if (ksize % 2 != 1)
+				{
+					LOG(WARNING) << "convolution kernel: width and height should be odd.";
+					return;
+				}
+
+				if (ksize == 1)
+				{
+					dst = src.clone();
+					return;
+				}
+
+				int num = src.num();
+				int channels = src.channels();
+				int height = src.height();
+				int width = src.width();
+				int offset = height * width;
+				int num_offset = channels * height * width;
+
+				int half = (ksize - 1) * 0.5;
+				std::vector<double> convolution_kernel(ksize);
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[col] = double(1) / ksize;
+				}
+
+				const Dtype* src_data = src.cpu_data();
+				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst.mutable_cpu_data();
+
+				if (src.order() == NCHW)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
+
+					for (int n = 0; n < num; n++)
+					{
+						//horizontal
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									double sum2 = 0;
+									for (int kernel_col = -1 * half; kernel_col <= half; ++kernel_col)
+									{
+										if (col + kernel_col < 0 || col + kernel_col >= width)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_col + half] * src_data[n * num_offset + index + (col + kernel_col)];
+										}
+									}
+									temp_data[index + col] = (Dtype)sum2;
+								}
+							}
+						}
+
+						//vertical
+						for (int ch = 0; ch < channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+							for (int row = 0; row < height; ++row)
+							{
+								int index = channel_offset + row * width;
+								for (int col = 0; col < width; ++col)
+								{
+									int pos = index + col;
+									double sum2 = 0;
+									for (int kernel_row = -1 * half; kernel_row <= half; ++kernel_row)
+									{
+										if (row + kernel_row < 0 || row + kernel_row >= height)
+										{
+											continue;
+										}
+										else
+										{
+											sum2 += convolution_kernel[kernel_row + half] * temp_data[pos + kernel_row * width];
+										}
+									}
+									dst_data[n * num_offset + pos] = (Dtype)sum2;
+								}
+							}
+						}
+					}
+				}
+				else if (src.order() == NHWC)
+				{
+					std::shared_ptr<tensor<Dtype>> temp;
+					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order()));
+					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
 					{

@@ -1,9 +1,9 @@
 
 include_directories(../../include/Excalibur)
 if(USE_CUDA)
-	file(GLOB Excalibur_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cu)
+	file(GLOB Excalibur_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/arm/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cu)
 else()
-	file(GLOB Excalibur_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp)
+	file(GLOB Excalibur_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/arm/*.cpp)
 endif()
 
 

@@ -25,7 +25,13 @@ LOCAL_SRC_FILES := axpy.cpp concat.cpp conv_native_cpu.cpp \
 					io.cpp math_functions.cpp mirrormax.cpp \
 					normalize.cpp pca.cpp pooling.cpp \
 					prelu.cpp sigmoid.cpp slice.cpp \
-					softmax.cpp tensor_operation_cpu.cpp
+					softmax.cpp tensor_operation_cpu.cpp \
+					arm/batchnorm_arm.cpp arm/conv_arm.cpp \
+					arm/inner_product_arm.cpp arm/pooling_arm.cpp \
+					arm/prelu_arm.cpp arm/scale_arm.cpp \
+					arm/sigmoid_arm.cpp arm/softmax_arm.cpp \
+					arm/eltwise_arm.cpp
+					
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
 LOCAL_STATIC_LIBRARIES := Julius

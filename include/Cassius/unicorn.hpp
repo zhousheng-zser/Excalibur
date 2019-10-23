@@ -4,7 +4,6 @@
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
-#include "vunicorn.hpp"
 
 using namespace glasssix::excalibur;
 
@@ -12,7 +11,7 @@ namespace glasssix
 {
 	namespace cassius
 	{
-		class Unicorn: public vUnicorn
+		class Unicorn
 		{
 			Declear_Params(conv1a);
 			Declear_Params(relu1a);
@@ -70,11 +69,13 @@ namespace glasssix
 			Declear_Params(relu5_6);
 			Declear_Params(conv5);
 			Declear_Params(relu5);
+			Declear_Params(conv5_dw);
+			Declear_Params(relu5_dw);
 
 			//
 			int device_;
 			bool cudnn_ready_ = false;
-			bool int8_quantization_ = true;
+			bool int8_quantization_ = false;
 
 			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
@@ -227,8 +228,8 @@ namespace glasssix
 			Neuron_Name(conv5);
 			Declear_Opration(prelu, relu5);
 			Neuron_Name(relu5);
-			Declear_Opration(pooling, pool5);
-			Neuron_Name(pool5);
+			Declear_Opration(baseconv, conv5_dw);
+			Neuron_Name(conv5_dw);
 			Declear_Opration(mirrormax, mirrmax);
 			Neuron_Name(feature);
 			Declear_Opration(normalize, normalizer);
@@ -247,9 +248,9 @@ namespace glasssix
 			Unicorn(int device);
 			virtual ~Unicorn();
 
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const float* input_data, int num, int order = 0);
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) override;
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, int num, int order = 0);
 
 
 			static int get_input_channel()

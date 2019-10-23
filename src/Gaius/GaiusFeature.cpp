@@ -8,12 +8,11 @@ namespace glasssix
 	{
 		GaiusFeature::GaiusFeature(int device)
 		{
-			mobile_unicornia_ = new Unicorn_mobile(device);
+			mobile_unicornia_.reset(new Unicorn_mobile(device));
 		}
 
 		GaiusFeature::~GaiusFeature()
 		{
-			delete mobile_unicornia_;
 		}
 
 		std::vector<std::vector<float> > GaiusFeature::Forward(const float* input_data, unsigned num, int order) const

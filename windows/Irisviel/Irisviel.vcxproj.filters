@@ -15,12 +15,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Irisviel\baseIndex.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Irisviel\baseSearch.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Irisviel\distance.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -40,6 +34,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Irisviel\search.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Irisviel\nsg_calculate_error.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

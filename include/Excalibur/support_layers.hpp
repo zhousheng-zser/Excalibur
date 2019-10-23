@@ -6,6 +6,7 @@
 #include "conv_cudnn_gpu.hpp"
 #include "conv_native_cpu.hpp"
 #include "conv_native_gpu.hpp"
+#include "conv_1x1s1_cpu.hpp"
 #include "conv_winograd_cpu.hpp"
 #include "prelu.hpp"
 #include "pooling.hpp"
@@ -20,6 +21,16 @@
 #include "sigmoid.hpp"
 #include "axpy.hpp"
 #include "deconv.hpp"
+
+#include "arm/conv_arm.hpp"
+#include "arm/inner_product_arm.hpp"
+#include "arm/pooling_arm.hpp"
+#include "arm/prelu_arm.hpp"
+#include "arm/softmax_arm.hpp"
+#include "arm/sigmoid_arm.hpp"
+#include "arm/batchnorm_arm.hpp"
+#include "arm/scale_arm.hpp"
+#include "arm/eltwise_arm.hpp"
 
 #include <climits>
 
@@ -124,8 +135,10 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 if(device_ < 0){\
     bool int8_quantization = int8_quantization_;\
     if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
-    if(kernel_size == 3 && stride == 1){\
-        conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	if((stride == 1) && (kernel_size == 1)){\
+		conv_name = new conv_1x1s1_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	else if((stride == 1) && (kernel_size == 3)){\
+		conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     else{\
         conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     conv_name->set_bias(conv_name##_##bias);\
@@ -195,5 +208,52 @@ norm_name = new normalize(type, rescale, device_);
 
 #define Init_MirrorMax_Param(mm_name, mirror_axis)\
 mm_name = new mirrormax(mirror_axis, device_);
+
+#define Init_Conv_arm_Params(conv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term) \
+if(device_ < 0){\
+    bool int8_quantization = int8_quantization_;\
+    if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
+    if (!int8_quantization) {\
+		if(group > 1 && kernel_size > 3){conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+		else{conv_name = new conv_arm(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}}\
+	else { conv_name = new conv_native_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+    conv_name->set_bias(conv_name##_##bias);\
+    if(int8_quantization){\
+        conv_name->set_weights(conv_name##_##weights_int8);\
+        conv_name->set_scales(conv_name##_##scales);}\
+    else{conv_name->set_weights(conv_name##_##weights);}}\
+else{\
+    NOT_IMPLEMENTED;}
+
+#define Init_PReLU_arm_Params(prelu_name, input_channel, isrelu, is_shared)\
+prelu_name = new prelu_arm(input_channel, isrelu, -1, is_shared);\
+prelu_name->setslope(prelu_name##_##weights);
+
+#define Init_Pooling_arm_Params(pooling_name, kernel, stride, pad, type)\
+pooling_name = new pooling_arm(kernel, stride, pad, type, -1);
+
+#define Init_Softmax_arm_Params(softmax_name, input_channel)\
+softmax_name = new softmax_arm(input_channel, -1);
+
+#define Init_InnerProduct_arm_Params(ip_name, input_channel, input_height, input_width, num_output, bias_term)\
+ip_name = new inner_product_arm(std::vector<int>{1, input_channel, input_height, input_width}, num_output, bias_term, -1);\
+ip_name->set_weights(ip_name##_##weights);\
+ip_name->set_bias(ip_name##_##bias);
+
+#define Init_Sigmoid_arm_Params(sigmoid_name)\
+sigmoid_name = new sigmoid_arm();
+
+#define Init_BatchNorm_arm_Params(batchnorm_name, input_channel) \
+batchnorm_name = new batchnorm_arm(input_channel); \
+batchnorm_name->set_weights(batchnorm_name##_##weights); \
+batchnorm_name->set_bias(batchnorm_name##_##bias);
+
+#define Init_Scale_arm_Params(scale_name, input_channel, bias_term) \
+scale_name = new scale_arm(input_channel, bias_term); \
+scale_name->set_weights(scale_name##_##weights); \
+scale_name->set_bias(scale_name##_##bias);
+
+#define Init_Eltwise_arm_Params(eltwise_name, type)\
+eltwise_name = new eltwise_arm(type, device_);
 
 #endif //_SUPPORT_LAYERS_HPP_

@@ -235,7 +235,7 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
-			
+
 
 			float scale = 12.f / minSize;
 			float minWH = std::min(height, width) *scale;
@@ -378,7 +378,7 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					float *input_data_n = input_data + input_layer->offset(n);
-					if (rect_h * rect_w>0)
+					if (rect_h > 0 && rect_w > 0)
 					{
 						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, input_h, input_w);
@@ -395,7 +395,7 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					float *input_data_n = input_data + input_layer->offset(n);
-					if (rect_h * rect_w>0)
+					if (rect_h > 0 && rect_w > 0)
 					{
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);
@@ -472,7 +472,7 @@ namespace glasssix
 			{
 				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor, order_);
 			}
-			
+
 			if (stage >= 2 && pnet_res.size()>0) {
 				if (pnet_max_detect_num < (int)pnet_res.size()) {
 					pnet_res.resize(pnet_max_detect_num);
