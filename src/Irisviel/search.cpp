@@ -1,6 +1,6 @@
 #include "search.hpp"
 #include <glasssix/accelerator.hpp>
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
@@ -12,7 +12,7 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		Search::Search(const std::vector<const float*> *baseData, int dimension)
+		Search::Search(const std::vector<const float*>* baseData, int dimension)
 			: dimension_(dimension)
 		{
 			baseData_ = baseData;
@@ -20,67 +20,110 @@ namespace glasssix
 		}
 
 		Search::Search(int dimension)
-			: dimension_(dimension){}
+			: dimension_(dimension) {}
 
-		Search::~Search(){}
+		Search::~Search() {}
 
-		void Search::loadGraph(const char *graphPath)
-		{
-			ngraph.clear();
-			std::ifstream in(graphPath, std::ios::binary);
-			in.read((char *)&isNormalized, sizeof(bool));
-			in.read((char *)&width, sizeof(unsigned));
-			in.read((char *)&navigateNode, sizeof(unsigned));
-			while (!in.eof()) {
-				unsigned k;
-				in.read((char *)&k, sizeof(unsigned));
-				if (in.eof())break;
-				std::vector<unsigned> tmp(k);
-				in.read((char *)tmp.data(), k * sizeof(unsigned));
-				ngraph.push_back(tmp);
-			}
-		}
-
-		void Search::loadGraph(const char *graphPath, const char *basedataPath)
+		bool Search::loadGraph(const char* graphPath)
 		{
 			//load graph
 			ngraph.clear();
 			std::ifstream inGraph(graphPath, std::ios::binary);
 			if (!inGraph.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open ngraph file error");
 			}
 
-			inGraph.read((char *)&isNormalized, sizeof(bool));
-			inGraph.read((char *)&width, sizeof(unsigned));
-			inGraph.read((char *)&navigateNode, sizeof(unsigned));
-			while (!inGraph.eof()) 
+			if (inGraph.eof())
 			{
-				unsigned k;
-				inGraph.read((char *)&k, sizeof(unsigned));
-				if (inGraph.eof())break;
-				std::vector<unsigned> tmp(k);
-				inGraph.read((char *)tmp.data(), k * sizeof(unsigned));
+				throw nsg_calculate_error("empty ngraph file");
+			}
+
+			constexpr size_t header_size = sizeof(bool) + sizeof(unsigned) + sizeof(unsigned);
+
+			// Get the file size.
+			inGraph.seekg(0, std::ios::end);
+			streamoff file_size = inGraph.tellg();
+			inGraph.seekg(0, std::ios::beg);
+
+			// Check the file size alignment.
+			if (file_size < header_size || file_size % sizeof(unsigned) != 1 || (file_size - header_size) % sizeof(unsigned) != 0)
+			{
+				throw nsg_calculate_error{ "Invalid file size alignment." };
+			}
+
+			inGraph.read((char*)&isNormalized, sizeof(bool));
+			inGraph.read((char*)&width, sizeof(unsigned));
+			inGraph.read((char*)&navigateNode, sizeof(unsigned));
+
+			while (!inGraph.eof())
+			{
+				unsigned k = 0;
+				inGraph.read((char*)&k, sizeof(unsigned));
+				
+				if (inGraph.eof())
+				{
+					break;
+				}
+
+				std::vector<unsigned> tmp;
+
+				// Tranverse the allocation exception.
+				try
+				{
+					tmp.resize(k);
+				}
+				catch (std::bad_alloc&)
+				{
+					throw nsg_calculate_error{ "Failed to allocate the data segment." };
+				}
+
+				inGraph.read((char*)tmp.data(), k * sizeof(unsigned));
+
+				// Check the size.
+				if (inGraph.gcount() < k * sizeof(unsigned))
+				{
+					throw nsg_calculate_error{ "Invalid data segment size." };
+				}
+
 				ngraph.push_back(tmp);
 			}
+
+			return true;
+		}
+
+		bool Search::loadGraph(const char* graphPath, const char* basedataPath)
+		{
+			loadGraph(graphPath);
 
 			//load basedata
 			baseDataPtr.clear();
 			std::ifstream inBaseData(basedataPath, std::ios::binary);
 			if (!inBaseData.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open basedata file error");
 			}
 
-			while (!inBaseData.eof()) 
+			if (inBaseData.eof())
 			{
-				float *temp_data = (float*)malloc(dimension_ * sizeof(float));
+				throw nsg_calculate_error("empty basedata file");
+			}
+
+			while (!inBaseData.eof())
+			{
+				float* temp_data = (float*)malloc(dimension_ * sizeof(float));
 				inBaseData.read((char*)(temp_data), dimension_ * sizeof(float));
 				baseDataPtr.push_back(const_cast<const float*>(temp_data));
 			}
-			
+
 			baseData_ = &baseDataPtr;
 			baseNum_ = baseDataPtr.size() - 1;
+			if ((baseDataPtr.size() - 1) <= 0)
+			{
+				throw nsg_calculate_error("empty basedata file");
+			}
+
+			return true;
 		}
 
 		const std::vector<const float*>* Search::getBasedata()
@@ -88,7 +131,7 @@ namespace glasssix
 			return baseData_;
 		}
 
-		void Search::optimizeGraph() 
+		void Search::optimizeGraph()
 		{
 			//use after build or load
 			if (baseNum_ <= 50000) {
@@ -118,7 +161,12 @@ namespace glasssix
 			nodeSize = dataLen + neighborLen;
 			optGraph_tensor_.reset(new tensor<char>(nodeSize * baseNum_));
 			optGraph_ = optGraph_tensor_->mutable_cpu_data();
-			for (unsigned i = 0; i<baseNum_; i++) {
+			if (optGraph_ == nullptr)
+			{
+				throw nsg_calculate_error("optGraph_ nullptr");
+			}
+
+			for (unsigned i = 0; i < baseNum_; i++) {
 				char* curNodeOffset = optGraph_ + i * nodeSize;
 
 				float cur_norm = 0;
@@ -140,6 +188,11 @@ namespace glasssix
 
 				curNodeOffset += dataLen;
 				unsigned k = ngraph[i].size();
+				if (k > neighborLen)
+				{
+					throw nsg_calculate_error("ngraph has a huge k");
+				}
+
 				memcpy(curNodeOffset, &k, sizeof(unsigned));
 				memcpy(curNodeOffset + sizeof(unsigned), ngraph[i].data(), k * sizeof(unsigned));
 				std::vector<unsigned>().swap(ngraph[i]);
@@ -147,8 +200,8 @@ namespace glasssix
 			CompactGraph().swap(ngraph);
 		}
 
-		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs,
-			std::vector<std::vector<float>> &returnSimilarities)
+		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>>& returnIDs,
+			std::vector<std::vector<float>>& returnSimilarities)
 		{
 			queryData_ = queryData;
 			queryNum_ = (*queryData).size();
@@ -158,7 +211,7 @@ namespace glasssix
 
 			if (baseNum_ != 1)
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < queryNum_; ++i)
@@ -190,8 +243,8 @@ namespace glasssix
 			}
 		}
 
-		void Search::searchWithOptGraph(const float *singleQueryData, unsigned topK,
-			std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities)
+		void Search::searchWithOptGraph(const float* singleQueryData, unsigned topK,
+			std::vector<unsigned>& returnIDs, std::vector<float>& returnSimilarities)
 		{
 			if (topK > neighborsMaxLength || topK > baseNum_)
 			{
@@ -207,7 +260,7 @@ namespace glasssix
 
 			boost::dynamic_bitset<> flags{ baseNum_, 0 };
 			unsigned count = 0;
-			unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * navigateNode + dataLen);
+			unsigned* neighbors = (unsigned*)(optGraph_ + nodeSize * navigateNode + dataLen);
 			unsigned MaxM_ep = *neighbors;
 			neighbors++;
 
@@ -252,7 +305,7 @@ namespace glasssix
 			for (unsigned i = 0; i < initIds.size(); i++)
 			{
 				unsigned id = initIds[i];
-				float *x = (float*)(optGraph_ + nodeSize * id);
+				float* x = (float*)(optGraph_ + nodeSize * id);
 				float norm_x = *x; x++;
 
 #ifdef COSINE_DISTANCE
@@ -280,7 +333,7 @@ namespace glasssix
 					_mm_prefetch(optGraph_ + nodeSize * n + dataLen, _MM_HINT_T0);
 #endif
 
-					unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
+					unsigned* neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
 					unsigned MaxM = *neighbors;
 					neighbors++;
 
@@ -294,7 +347,7 @@ namespace glasssix
 						unsigned id = neighbors[m];
 						if (flags[id])continue;
 						flags[id] = 1;
-						float *data = (float*)(optGraph_ + nodeSize * id);
+						float* data = (float*)(optGraph_ + nodeSize * id);
 						float normID = *data; data++;
 
 #ifdef COSINE_DISTANCE
@@ -344,13 +397,13 @@ namespace glasssix
 			}
 		}
 
-		void Search::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) {
+		void Search::saveResult(const char* resultPath, std::vector<std::vector<unsigned> >& returnIDs) {
 			std::ofstream out(resultPath, std::ios::binary | std::ios::out);
 
 			for (unsigned i = 0; i < returnIDs.size(); i++) {
 				unsigned GK = (unsigned)returnIDs[i].size();
-				out.write((char *)&GK, sizeof(unsigned));
-				out.write((char *)returnIDs[i].data(), GK * sizeof(unsigned));
+				out.write((char*)&GK, sizeof(unsigned));
+				out.write((char*)returnIDs[i].data(), GK * sizeof(unsigned));
 				if (i % 100 == 0)
 				{
 					out.flush();

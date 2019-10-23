@@ -1,5 +1,5 @@
 #include "distance.hpp"
-#include "../../include/Julius/simd_helper.hpp"
+//#include "../../include/Julius/simd_helper.hpp"
 
 #include <cmath>
 
@@ -111,6 +111,11 @@ namespace glasssix
 				result += diff0 * diff0;
 			}
 #endif
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+			
 			return result;
 		}
 
@@ -208,6 +213,12 @@ namespace glasssix
 				result += *a++ * *b++;
 			}
 #endif
+
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+
 			return result;
 		}
 
@@ -297,6 +308,16 @@ namespace glasssix
 				a++;
 			}
 #endif
+			
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+			else if (abs(result) < 1e-5)
+			{
+				throw nsg_calculate_error("zero vector");
+			}
+
 			return result;
 		}
 
@@ -304,6 +325,12 @@ namespace glasssix
 		{
 			float result = -2 * DistanceInnerProduct::compare(a, b, size);
 			result = result + norma + normb;//(a-b)*(a-b)=a^2 + b^2 - 2*a*b
+
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+
 			return result;
 		}
 
@@ -395,6 +422,16 @@ namespace glasssix
 			}
 #endif
 			result = sqrt(result);
+
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+			else if (abs(result) < 1e-5)
+			{
+				throw nsg_calculate_error("zero vector");
+			}
+
 			return result;
 		}
 
@@ -403,6 +440,12 @@ namespace glasssix
 			float result = DistanceInnerProduct::compare(a, b, size);
 			result = result / (norma * normb);
 			result = 1-result;//more similar, distance should be closer, so we add minus before result
+
+			if (!isfinite(result))
+			{
+				throw nsg_calculate_error("infinite number");
+			}
+
 			return result;
 		}
 	}
