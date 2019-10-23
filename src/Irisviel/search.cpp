@@ -30,25 +30,17 @@ namespace glasssix
 			std::ifstream in(graphPath, std::ios::binary);
 			if (!in.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open ngraph file error");
 			}
 
-			index_header header;
-			in.read((char *)&header, sizeof(index_header));
-
-			isNormalized = header.normalized;
-			width = header.graph_width;
-			navigateNode = header.navigate_node;
-			uint64_t file_size = header.file_size;
-			
-			in.seekg(0, std::ios::end);
-			auto pos = in.tellg();
-			if (pos != file_size)
+			if (in.eof())
 			{
-				return false;
+				throw nsg_calculate_error("empty ngraph file");
 			}
 
-			in.seekg(sizeof(index_header), std::ios::beg);
+			in.read((char *)&isNormalized, sizeof(bool));
+			in.read((char *)&width, sizeof(unsigned));
+			in.read((char *)&navigateNode, sizeof(unsigned));
 			while (!in.eof()) {
 				unsigned k;
 				in.read((char *)&k, sizeof(unsigned));
@@ -65,38 +57,27 @@ namespace glasssix
 		{
 			//load graph
 			ngraph.clear();
-			std::ifstream in(graphPath, std::ios::binary);
-			if (!in.is_open())
+			std::ifstream inGraph(graphPath, std::ios::binary);
+			if (!inGraph.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open ngraph file error");
 			}
 
-			index_header header;
-			in.read((char *)&header, sizeof(index_header));
-
-			isNormalized = header.normalized;
-			width = header.graph_width;
-			navigateNode = header.navigate_node;
-			uint64_t file_size = header.file_size;
-
-			in.seekg(0, std::ios::end);
-			auto pos = in.tellg();
-			if (pos != file_size)
+			if(inGraph.eof())
 			{
-				return false;
+				throw nsg_calculate_error("empty ngraph file");
 			}
 
-			//in.read((char *)&isNormalized, sizeof(bool));
-			//in.read((char *)&width, sizeof(unsigned));
-			//in.read((char *)&navigateNode, sizeof(unsigned));
-			in.seekg(sizeof(index_header), std::ios::beg);
-			while (!in.eof())
+			inGraph.read((char *)&isNormalized, sizeof(bool));
+			inGraph.read((char *)&width, sizeof(unsigned));
+			inGraph.read((char *)&navigateNode, sizeof(unsigned));
+			while (!inGraph.eof())
 			{
 				unsigned k;
-				in.read((char *)&k, sizeof(unsigned));
-				if (in.eof())break;
+				inGraph.read((char *)&k, sizeof(unsigned));
+				if (inGraph.eof())break;
 				std::vector<unsigned> tmp(k);
-				in.read((char *)tmp.data(), k * sizeof(unsigned));
+				inGraph.read((char *)tmp.data(), k * sizeof(unsigned));
 				ngraph.push_back(tmp);
 			}
 
@@ -105,18 +86,27 @@ namespace glasssix
 			std::ifstream inBaseData(basedataPath, std::ios::binary);
 			if (!inBaseData.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open basedata file error");
 			}
 
-			while (!inBaseData.eof()) 
+			if (inBaseData.eof())
+			{
+				throw nsg_calculate_error("empty basedata file");
+			}
+
+			while (!inBaseData.eof())
 			{
 				float *temp_data = (float*)malloc(dimension_ * sizeof(float));
 				inBaseData.read((char*)(temp_data), dimension_ * sizeof(float));
 				baseDataPtr.push_back(const_cast<const float*>(temp_data));
 			}
-			
+
 			baseData_ = &baseDataPtr;
 			baseNum_ = baseDataPtr.size() - 1;
+			if ((baseDataPtr.size() - 1) <= 0)
+			{
+				throw nsg_calculate_error("empty basedata file");
+			}
 
 			return true;
 		}
@@ -156,6 +146,11 @@ namespace glasssix
 			nodeSize = dataLen + neighborLen;
 			optGraph_tensor_.reset(new tensor<char>(nodeSize * baseNum_));
 			optGraph_ = optGraph_tensor_->mutable_cpu_data();
+			if (optGraph_ == nullptr)
+			{
+				throw nsg_calculate_error("optGraph_ nullptr");
+			}
+
 			for (unsigned i = 0; i<baseNum_; i++) {
 				char* curNodeOffset = optGraph_ + i * nodeSize;
 
@@ -178,6 +173,11 @@ namespace glasssix
 
 				curNodeOffset += dataLen;
 				unsigned k = ngraph[i].size();
+				if (k > neighborLen)
+				{
+					throw nsg_calculate_error("ngraph has a huge k");
+				}
+
 				memcpy(curNodeOffset, &k, sizeof(unsigned));
 				memcpy(curNodeOffset + sizeof(unsigned), ngraph[i].data(), k * sizeof(unsigned));
 				std::vector<unsigned>().swap(ngraph[i]);

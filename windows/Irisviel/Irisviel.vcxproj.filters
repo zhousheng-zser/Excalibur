@@ -36,6 +36,9 @@
     <ClInclude Include="..\..\include\Irisviel\search.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Irisviel\nsg_calculate_error.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Irisviel\distance.cpp">
