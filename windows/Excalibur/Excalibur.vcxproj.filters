@@ -19,6 +19,12 @@
     <Filter Include="Source Files\cu">
       <UniqueIdentifier>{9b30e52f-e92e-4b71-9e27-fb6d3508a41e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\arm">
+      <UniqueIdentifier>{877363b3-2532-4782-8fb0-28cace06e72a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\arm">
+      <UniqueIdentifier>{94875b32-5b5b-4f01-b267-30802ff8fb85}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Excalibur\base_conv.hpp">
@@ -114,6 +120,48 @@
     <ClInclude Include="tensor_io.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\conv_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\conv_arm_func.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\inner_product_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\neon_mathfun.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\pooling_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\pooling_arm_func.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\prelu_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\scale_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\sigmoid_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\softmax_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -179,8 +227,35 @@
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="tensor_io.cpp">
+    <ClCompile Include="..\..\src\Excalibur\arm\batchnorm_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\conv_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\inner_product_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\pooling_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\prelu_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\scale_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\sigmoid_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\eltwise_arm.cpp">
+      <Filter>Source Files\arm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

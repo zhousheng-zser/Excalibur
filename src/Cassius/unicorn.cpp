@@ -4,13 +4,12 @@
 #include "../../include/Julius/simd_helper.hpp"
 
 #ifdef INT8_DATA
-#include "unicorn_int8data.hpp"
+#include "unicorn_data.hpp"
 #elif defined HALF_DATA
-#include "unicorn_halfdata.hpp"
+#include "unicorn_data.hpp"
 #else
 #include "unicorn_data.hpp"
 #endif//HALF_DATA
-
 
 namespace glasssix
 {
@@ -107,6 +106,7 @@ namespace glasssix
 				Copy_Params(relu5_6_weights, Unicorn, quantize_level);//512
 				Copy_Int8_Params(conv5, Unicorn);//2359296
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
+				Copy_Int8_Params(conv5_dw, Unicorn);//2359296
 			}
 			else
 			{
@@ -195,7 +195,8 @@ namespace glasssix
 				Copy_Int8_to_FP32_Params(conv5, Unicorn);//2359296
 				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
-
+				Copy_Int8_to_FP32_Params(conv5_dw_weights, Unicorn);//2359296
+				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//1024
 #else				
 				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
@@ -281,9 +282,89 @@ namespace glasssix
 				Copy_Params(conv5_weights, Unicorn, quantize_level);//2359296
 				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
+				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//2359296
+				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//1024
 #endif //!INT8_DATA
 			}
 
+#ifdef __ARM_NEON
+			bool temp_quantization = int8_quantization_;
+			int8_quantization_ = false;// conv1a use float32 weights
+			Init_Conv_arm_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
+			int8_quantization_ = temp_quantization;
+			Init_PReLU_arm_Params(relu1a, 32, false, false);//nchw:1*32*126*126->1*32*126*126
+			Init_Conv_arm_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
+			Init_PReLU_arm_Params(relu1b, 64, false, false);//nchw:1*64*124*124->1*64*124*124
+			Init_Pooling_arm_Params(pool1b, 2, 2, 0, 0);//nchw:1*64*124*124->1*64*62*62
+			Init_Conv_arm_Params(conv2_1, 64, 64, 1, 3, 1, 1, true);//nchw:1*64*62*62->1*64*62*62
+			Init_PReLU_arm_Params(relu2_1, 64, false, false);//nchw:1*64*62*62->1*64*62*62
+			Init_Conv_arm_Params(conv2_2, 64, 64, 1, 3, 1, 1, true);//nchw:1*64*62*62->1*64*62*62
+			Init_PReLU_arm_Params(relu2_2, 64, false, false);//nchw:1*64*62*62->1*64*62*62
+			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
+			Init_Conv_arm_Params(conv2, 64, 128, 1, 3, 1, 0, true);//nchw:1*64*62*62->1*128*60*60
+			Init_PReLU_arm_Params(relu2, 128, false, false);//nchw:1*128*60*60->1*128*60*60
+			Init_Pooling_arm_Params(pool2, 2, 2, 0, 0);//nchw:1*128*60*60->1*128*30*30
+			Init_Conv_arm_Params(conv3_1, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
+			Init_PReLU_arm_Params(relu3_1, 128, false, false);//nchw:1*128*30*30->1*128*30*30
+			Init_Conv_arm_Params(conv3_2, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
+			Init_PReLU_arm_Params(relu3_2, 128, false, false);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Conv_arm_Params(conv3_3, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
+			Init_PReLU_arm_Params(relu3_3, 128, false, false);//nchw:1*128*30*30->1*128*30*30
+			Init_Conv_arm_Params(conv3_4, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
+			Init_PReLU_arm_Params(relu3_4, 128, false, false);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Conv_arm_Params(conv3, 128, 256, 1, 3, 1, 0, true);//nchw:1*128*30*30->1*256*28*28
+			Init_PReLU_arm_Params(relu3, 256, false, false);//nchw:1*256*28*28->1*256*28*28
+			Init_Pooling_arm_Params(pool3, 2, 2, 0, 0);//nchw:1*256*28*28->1*256*14*14
+			Init_Conv_arm_Params(conv4_1, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_1, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_2, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_2, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_3, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_3, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_4, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_4, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_5, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_5, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_6, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_6, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_7, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_7, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_8, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_8, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_9, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_9, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4_10, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
+			Init_PReLU_arm_Params(relu4_10, 256, false, false);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Conv_arm_Params(conv4, 256, 512, 1, 3, 1, 0, true);//nchw:1*256*14*14->1*512*12*12
+			Init_PReLU_arm_Params(relu4, 512, false, false);//nchw:1*512*12*12->1*512*12*12
+			Init_Pooling_arm_Params(pool4, 2, 2, 0, 0);//nchw:1*512*12*12->1*512*6*6
+			Init_Conv_arm_Params(conv5_1, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_1, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5_2, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_2, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5_3, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_3, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5_4, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_4, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5_5, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_5, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5_6, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
+			Init_PReLU_arm_Params(relu5_6, 512, false, false);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Conv_arm_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
+			Init_PReLU_arm_Params(relu5, 512, false, false);//nchw:1*512*4*4->1*512*4*4
+			Init_Conv_arm_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*4*4->1*512*1*1
+			Init_Normalize_Params(normalizer, 1, false);
+#else
 			bool temp_quantization = int8_quantization_;
 			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
@@ -358,8 +439,10 @@ namespace glasssix
 			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_Params(relu5, 512, false);//nchw:1*512*4*4->1*512*4*4
-			Init_Pooling_Params(pool5, 4, 4, 0, 1);//nchw:1*512*4*4->1*512*1*1
+			Init_Conv_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_Normalize_Params(normalizer, 1, false);
+#endif //!__ARM_NEON
+			
 		}
 
 
@@ -436,7 +519,7 @@ namespace glasssix
 			delete res5_6;
 			delete conv5;
 			delete relu5;
-			delete pool5;
+			delete conv5_dw;
 			delete normalizer;
 
 			FreeHost(relu1a_weights, false);
@@ -482,6 +565,327 @@ namespace glasssix
 #endif
 		} 
 
+//#define CALC_LAYERS
+
+#ifdef CALC_LAYERS
+		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		{
+			int loop = 1000;
+			glasssix::Timer calcTime;
+			double elapseTime;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1a->Forward(input_data, conv1a_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1a  :" << std::setw(5) << elapseTime << std::endl;
+			
+			relu1a->Forward_cpu(conv1a_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1b->Forward(conv1a_top_data, conv1b_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1b  :" << std::setw(5) << elapseTime << std::endl;
+			
+			relu1b->Forward_cpu(conv1b_top_data);
+			pool1b->Forward_cpu(conv1b_top_data, pool1b_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_1->Forward(pool1b_top_data, conv2_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_1 :" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_1->Forward_cpu(conv2_1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2_2->Forward(conv2_1_top_data, conv2_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2_2 :" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2_2->Forward_cpu(conv2_2_top_data);
+
+			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2->Forward(res2_2_top_data, conv2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2   :" << std::setw(5) << elapseTime << std::endl;
+			
+			relu2->Forward_cpu(conv2_top_data);
+
+			pool2->Forward_cpu(conv2_top_data, pool2_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_1->Forward(pool2_top_data, conv3_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_1 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu3_1->Forward_cpu(conv3_1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_2->Forward(conv3_1_top_data, conv3_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_2 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu3_2->Forward_cpu(conv3_2_top_data);
+			res3_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_3->Forward(res3_2_top_data, conv3_3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_3 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu3_3->Forward_cpu(conv3_3_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3_4->Forward(conv3_3_top_data, conv3_4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3_4 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu3_4->Forward_cpu(conv3_4_top_data);
+			res3_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3->Forward(res3_4_top_data, conv3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3   :" << std::setw(5) << elapseTime << std::endl;
+
+			relu3->Forward_cpu(conv3_top_data);
+			pool3->Forward_cpu(conv3_top_data, pool3_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_1->Forward(pool3_top_data, conv4_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_1 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu4_1->Forward_cpu(conv4_1_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_2->Forward(conv4_1_top_data, conv4_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_2 :" << std::setw(5) << elapseTime << std::endl;
+
+			relu4_2->Forward_cpu(conv4_2_top_data);
+			res4_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_3->Forward(res4_2_top_data, conv4_3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_3 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_3->Forward_cpu(conv4_3_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_4->Forward(conv4_3_top_data, conv4_4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_4 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_4->Forward_cpu(conv4_4_top_data);
+			res4_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_5->Forward(res4_4_top_data, conv4_5_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_5 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_5->Forward_cpu(conv4_5_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_6->Forward(conv4_5_top_data, conv4_6_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_6 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_6->Forward_cpu(conv4_6_top_data);
+			res4_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_7->Forward(res4_6_top_data, conv4_7_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_7 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_7->Forward_cpu(conv4_7_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_8->Forward(conv4_7_top_data, conv4_8_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_8 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_8->Forward_cpu(conv4_8_top_data);
+			res4_8->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_9->Forward(res4_8_top_data, conv4_9_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_9 :" << std::setw(5) << elapseTime << std::endl;
+			relu4_9->Forward_cpu(conv4_9_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4_10->Forward(conv4_9_top_data, conv4_10_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4_10:" << std::setw(5) << elapseTime << std::endl;
+			relu4_10->Forward_cpu(conv4_10_top_data);
+			res4_10->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4->Forward(res4_10_top_data, conv4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4   :" << std::setw(5) << elapseTime << std::endl;
+			relu4->Forward_cpu(conv4_top_data);
+			pool4->Forward_cpu(conv4_top_data, pool4_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_1->Forward(pool4_top_data, conv5_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_1 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_1->Forward_cpu(conv5_1_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_2->Forward(conv5_1_top_data, conv5_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_2 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_2->Forward_cpu(conv5_2_top_data);
+			res5_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_3->Forward(res5_2_top_data, conv5_3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_3 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_3->Forward_cpu(conv5_3_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_4->Forward(conv5_3_top_data, conv5_4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_4 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_4->Forward_cpu(conv5_4_top_data);
+			res5_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_5->Forward(res5_4_top_data, conv5_5_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_5 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_5->Forward_cpu(conv5_5_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_6->Forward(conv5_5_top_data, conv5_6_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_6 :" << std::setw(5) << elapseTime << std::endl;
+			relu5_6->Forward_cpu(conv5_6_top_data);
+			res5_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5->Forward(res5_6_top_data, conv5_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5   :" << std::setw(5) << elapseTime << std::endl;
+			relu5->Forward_cpu(conv5_top_data);
+			pool5->Forward_cpu(conv5_top_data, pool5_top_data);
+			normalizer->Forward_cpu(pool5_top_data);//feature_top_data
+		}
+#else
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
 			conv1a->Forward(input_data, conv1a_top_data);
@@ -493,7 +897,7 @@ namespace glasssix
 			relu2_1->Forward_cpu(conv2_1_top_data);
 			conv2_2->Forward(conv2_1_top_data, conv2_2_top_data);
 			relu2_2->Forward_cpu(conv2_2_top_data);
-			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);	
+			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
 			conv2->Forward(res2_2_top_data, conv2_top_data);
 			relu2->Forward_cpu(conv2_top_data);
 			pool2->Forward_cpu(conv2_top_data, pool2_top_data);
@@ -555,9 +959,11 @@ namespace glasssix
 			res5_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 			conv5->Forward(res5_6_top_data, conv5_top_data);
 			relu5->Forward_cpu(conv5_top_data);
-			pool5->Forward_cpu(conv5_top_data, pool5_top_data);
-			normalizer->Forward_cpu(pool5_top_data);//feature_top_data
+			conv5_dw->Forward(conv5_top_data, conv5_dw_top_data);
+			normalizer->Forward_cpu(conv5_dw_top_data);//feature_top_data
 		}
+#endif
+		
 
 
 #ifdef USE_CUDA
@@ -634,8 +1040,8 @@ namespace glasssix
 			res5_6->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 			conv5->Forward(cublas_handle_, res5_6_top_data, conv5_top_data);
 			relu5->Forward_gpu_native(conv5_top_data);
-			pool5->Forward_gpu_native(conv5_top_data, pool5_top_data);
-			normalizer->Forward_gpu_native(pool5_top_data);//feature_top_data
+			conv5_dw->Forward(cublas_handle_, conv5_top_data, conv5_dw_top_data);
+			normalizer->Forward_gpu_native(conv5_dw_top_data);//feature_top_data
 		}
 #ifdef USE_CUDNN
 		void Unicorn::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
@@ -711,13 +1117,13 @@ namespace glasssix
 			res5_6->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 			conv5->Forward(cudnn_handle_, res5_6_top_data, conv5_top_data);
 			relu5->Forward_gpu_native(conv5_top_data);
-			pool5->Forward_gpu_cudnn(conv5_top_data, pool5_top_data);
-			normalizer->Forward_gpu_native(pool5_top_data);//feature_top_data
+			conv5_dw->Forward(cudnn_handle_, conv5_top_data, conv5_dw_top_data);
+			normalizer->Forward_gpu_native(conv5_dw_top_data);//feature_top_data
 		}
 #endif
 #endif
 
-		std::vector<std::vector<float> > Unicorn::Forward(const float* input_data, unsigned num, int order)
+		std::vector<std::vector<float> > Unicorn::Forward(const float* input_data, int num, int order)
 		{
 			if (num <= 0)
 			{
@@ -745,7 +1151,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -761,7 +1167,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -770,7 +1176,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -781,7 +1187,7 @@ namespace glasssix
 			}
 		}
 
-		std::vector<std::vector<float> > Unicorn::Forward(const unsigned char* input_data, unsigned num, int order)
+		std::vector<std::vector<float> > Unicorn::Forward(const unsigned char* input_data, int num, int order)
 		{
 			if (num <= 0)
 			{
@@ -811,7 +1217,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -827,7 +1233,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;
@@ -836,7 +1242,7 @@ namespace glasssix
 				for (size_t i = 0; i < num; i++)
 				{
 					std::vector<float> temp(512);
-					std::memcpy(temp.data(), get_pool5()->cpu_data() + i * 512, 512 * sizeof(float));
+					std::memcpy(temp.data(), get_conv5_dw()->cpu_data() + i * 512, 512 * sizeof(float));
 					feature.push_back(temp);
 				}
 				return feature;

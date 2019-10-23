@@ -21,11 +21,12 @@ ifeq ($(TRIAL), 0)
 
 	LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Cassius
 	LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-	LOCAL_MODULE := Cassius-java
+	LOCAL_MODULE := Cassiutia
 	LOCAL_SRC_FILES := $(SRC_PATH)/CassiusFeature.cpp $(SRC_PATH)/unicorn.cpp \
-						Cassius-jni.cpp
+						Cassiutia-jni.cpp
 
 	LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
+	LOCAL_CPPFLAGS += -D$(QUANTIZATION_TYPE)
 	LOCAL_STATIC_LIBRARIES := Excalibur
 
 	LOCAL_LDLIBS += -L$(OPENCV_ANDROID_SDK_ROOT)/sdk/native/libs/$(APP_ABI) -lopencv_java3

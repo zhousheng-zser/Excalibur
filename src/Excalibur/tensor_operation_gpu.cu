@@ -259,6 +259,9 @@ namespace glasssix
 			}
 			int type_id = src.type() % 8;
 			auto type_name = std::string(typeid(Dtype).name());
+
+#ifdef _MSC_VER
+
 			if (type_id == 0)
 			{
 				if (type_name != std::string("unsigned char"))
@@ -297,6 +300,50 @@ namespace glasssix
 				return;
 			}
 
+#elif defined __linux__
+
+			if (type_id == 0)
+			{
+				if (type_name != std::string("h"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("c"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("i"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("f"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+#else
+			NOT_IMPLEMENTED;
+			return;
+#endif // _MSC_VER
 
 			if (order == NHWC)
 			{
@@ -337,6 +384,9 @@ namespace glasssix
 			}
 			int type_id = src.type() % 8;
 			auto type_name = std::string(typeid(Dtype).name());
+
+#ifdef _MSC_VER
+
 			if (type_id == 0)
 			{
 				if (type_name != std::string("unsigned char"))
@@ -375,6 +425,50 @@ namespace glasssix
 				return;
 			}
 
+#elif defined __linux__
+
+			if (type_id == 0)
+			{
+				if (type_name != std::string("h"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 1)
+			{
+				if (type_name != std::string("c"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 4)
+			{
+				if (type_name != std::string("i"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else if (type_id == 5)
+			{
+				if (type_name != std::string("f"))
+				{
+					LOG(ERROR) << "Un-matched data type.";
+					return;
+				}
+			}
+			else
+			{
+				LOG(ERROR) << "Un-support data type.";
+				return;
+			}
+
+#else
+			NOT_IMPLEMENTED;
+			return;
+#endif // _MSC_VER
 
 			if (order == NHWC)
 			{
@@ -2478,19 +2572,19 @@ namespace glasssix
 
 
 		/// <summary>
-		/// gaussian blur
+		/// blur filter(gaussian_blur mean_value_blur)
 		/// </summary>
 		/// <param name="src_data">original image data</param>
 		/// <param name="dst_data">new image data</param>
 		/// <param name="channels">image channel</param>
 		/// <param name="height">image height</param>
 		/// <param name="width">image width</param>
-		/// <param name="ksize">size of gaussian kernel, odd value required</param>
-		/// <param name="paras">weights of gaussian kernel</param>
+		/// <param name="ksize">size of kernel, odd value required</param>
+		/// <param name="paras">weights of kernel</param>
 		/// <param name="order">orderType: NHWC / NCHW</param>
 		template<typename Dtype>
 		__global__
-			void kernel_gaussian_blur(const Dtype* src_data, Dtype* dst_data, int channels, int height, int width, int ksize, double *paras, orderType order)
+			void kernel_blur(const Dtype* src_data, Dtype* dst_data, int channels, int height, int width, int ksize, double *paras, orderType order)
 		{
 			int totalID = (blockIdx.z * gridDim.x * gridDim.y + blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int channelID = totalID % channels;
@@ -2631,7 +2725,7 @@ namespace glasssix
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_gaussian_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src->order());
+			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src->order());
 		}
 
 
@@ -2708,10 +2802,129 @@ namespace glasssix
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_gaussian_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src.order());
+			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src.order());
 		}
 
 
+
+
+
+		/// <summary>
+		/// mean value blur
+		/// </summary>
+		/// <param name="src">original tensor</param>
+		/// <param name="dst">new tensor</param>
+		/// <param name="ksize">size of kernel, odd value required</param>
+		template<typename Dtype>
+		void tensor_operation_gpu::mean_value_blur_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize)
+		{
+			if (src->device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			if (ksize % 2 != 1)
+			{
+				LOG(WARNING) << "convolution kernel: width and height should be odd.";
+				return;
+			}
+
+			if (ksize == 1)
+			{
+				dst = std::make_shared<tensor<Dtype>>(src->clone());
+				return;
+			}
+
+			int num = src->num();
+			int channels = src->channels();
+			int height = src->height();
+			int width = src->width();
+
+			int half = (ksize - 1) * 0.5;
+			double *convolution_kernel = (double*)malloc(ksize * ksize * sizeof(double));
+			for (int row = 0; row < ksize; ++row)
+			{
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[row * ksize + col] = (double)1/(ksize * ksize);
+				}
+			}
+
+			double *paras = nullptr;
+			cudaMalloc(&paras, ksize * ksize * sizeof(double));
+			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+
+			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst->mutable_gpu_data();
+			const Dtype* src_data = src->gpu_data();
+
+			const dim3 block_size(channels, 1, 1);
+			const dim3 grid_size(width, height, num);
+
+
+			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src->order());
+		}
+
+
+
+
+		/// <summary>
+		/// mean value blur
+		/// </summary>
+		/// <param name="src">original tensor</param>
+		/// <param name="dst">new tensor</param>
+		/// <param name="ksize">size of kernel, odd value required</param>
+		template<typename Dtype>
+		void tensor_operation_gpu::mean_value_blur_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize)
+		{
+			if (src.device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			if (ksize % 2 != 1)
+			{
+				LOG(WARNING) << "convolution kernel: width and height should be odd.";
+				return;
+			}
+
+			if (ksize == 1)
+			{
+				dst = src.clone();
+				return;
+			}
+
+			int num = src.num();
+			int channels = src.channels();
+			int height = src.height();
+			int width = src.width();
+
+			int half = (ksize - 1) * 0.5;
+			double *convolution_kernel = (double*)malloc(ksize * ksize * sizeof(double));
+			for (int row = 0; row < ksize; ++row)
+			{
+				for (int col = 0; col < ksize; ++col)
+				{
+					convolution_kernel[row * ksize + col] = (double)1/(ksize * ksize);
+				}
+			}
+
+			double *paras = nullptr;
+			cudaMalloc(&paras, ksize * ksize * sizeof(double));
+			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+
+			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst.mutable_gpu_data();
+			const Dtype* src_data = src.gpu_data();
+
+			const dim3 block_size(channels, 1, 1);
+			const dim3 grid_size(width, height, num);
+
+
+			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src.order());
+		}
 
 
 
@@ -3287,7 +3500,7 @@ namespace glasssix
 		template <typename DtypeSRC, typename DtypeDST>
 		void tensor_operation_gpu::preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
 		{
-			if (dst->device() < 0)
+			if (src->device() < 0)
 			{
 				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
 				return;
@@ -3319,16 +3532,16 @@ namespace glasssix
 		template <typename DtypeSRC, typename DtypeDST>
 		void tensor_operation_gpu::preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 		{
-			if (dst.device() < 0)
+			if (src.device() < 0)
 			{
 				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
 				return;
 			}
 
-			int num = dst.num();
-			int channels = dst.channels();
-			int height = dst.height();
-			int width = dst.width();
+			int num = src.num();
+			int channels = src.channels();
+			int height = src.height();
+			int width = src.width();
 
 			const DtypeSRC* src_data = src.gpu_data();
 			dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
@@ -3845,21 +4058,22 @@ namespace glasssix
 				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 			}
 			const Dtype* src_data = src->gpu_data();
+			const Dtype* src_cpu_data = src->cpu_data();
 			Dtype* dst_data = dst->mutable_gpu_data();
 			Dtype* temp_dst = new Dtype[offset];
 
 			for (int n = 0; n < num; n++)
 			{
 				int n_offset = n * offset;
-				unsigned char gray_value[256] = { 0 };
+				int gray_value[256] = { 0 };
 				float probability_distribution[256] = { 0 };
 				float accumulate_probability_distribution[256] = { 0 };
-				unsigned char normalized_gray_value[256] = { 0 };
+				int normalized_gray_value[256] = { 0 };
 
 				//Count the number of pixels in each grayscale
 				for (size_t i = 0; i < offset; i++)
 				{
-					int value = static_cast<unsigned char>(src->cpu_data()[n_offset + i]);
+					int value = static_cast<unsigned char>(src_cpu_data[n_offset + i]);
 					gray_value[value]++;
 				}
 
@@ -3881,7 +4095,7 @@ namespace glasssix
 
 				for (size_t i = 0; i < offset; i++)
 				{
-					temp_dst[i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src->cpu_data()[n_offset + i])]);
+					temp_dst[i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src_cpu_data[n_offset + i])]);
 				}
 
 				cudaMemcpy(dst_data + n_offset, temp_dst, offset * sizeof(Dtype), cudaMemcpyDefault);
@@ -4413,6 +4627,22 @@ namespace glasssix
 		template void tensor_operation_gpu::gaussian_blur_gpu<unsigned int>(const tensor<unsigned int> &src, tensor<unsigned int> &dst, int ksize);
 		template void tensor_operation_gpu::gaussian_blur_gpu<int>(const tensor<int> &src, tensor<int> &dst, int ksize);
 		template void tensor_operation_gpu::gaussian_blur_gpu<float>(const tensor<float> &src, tensor<float> &dst, int ksize);
+
+
+
+		template void tensor_operation_gpu::mean_value_blur_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, int ksize);
+
+
+
+		template void tensor_operation_gpu::mean_value_blur_gpu<unsigned char>(const tensor<unsigned char> &src, tensor<unsigned char> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<char>(const tensor<char> &src, tensor<char> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<unsigned int>(const tensor<unsigned int> &src, tensor<unsigned int> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<int>(const tensor<int> &src, tensor<int> &dst, int ksize);
+		template void tensor_operation_gpu::mean_value_blur_gpu<float>(const tensor<float> &src, tensor<float> &dst, int ksize);
 
 
 

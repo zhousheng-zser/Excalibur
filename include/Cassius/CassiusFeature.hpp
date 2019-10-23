@@ -21,13 +21,16 @@
 #endif
 #endif
 
-#include "vunicorn.hpp"
 #include <string>
+#include <vector>
+#include <memory>
 
 namespace glasssix
 {
 	namespace cassius
 	{
+		class Unicorn;
+
 		class EXPORT_CASSIUS CassiusFeature
 		{
 		public:
@@ -38,15 +41,13 @@ namespace glasssix
 
 			~CassiusFeature();
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
+			std::vector<std::vector<float> > Forward(const unsigned char* input_data, int num, int order = 0) const;
 
 			static std::string getVersion();
 
 		private:
-
-			vUnicorn* unicornia_;
-
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;
+			std::shared_ptr<Unicorn> unicornia_;
+			std::vector<std::vector<float> > Forward(const float* input_data, int num, int order = 0) const;
 		};
 	}
 }
