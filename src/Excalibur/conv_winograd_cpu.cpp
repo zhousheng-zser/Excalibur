@@ -39,7 +39,7 @@ namespace glasssix
 		void conv_winograd_cpu::Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			Forward_F23(bottom, top);
-			//Forward_F43(bottom, top);
+			//Forward_F43(bottom, top);//modify m_=4,calculate_GgGT43, only AVX supported
 		}
 
 		void conv_winograd_cpu::Forward_F23(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)

@@ -49,7 +49,7 @@ namespace glasssix
 				std::vector<const float*> baseDataPtr;
 
 				std::shared_ptr<glasssix::excalibur::tensor<char>> optGraph_tensor_;
-				char* optGraph_;
+				char* optGraph_ = nullptr;
 
 				size_t nodeSize;
 				size_t dataLen;
