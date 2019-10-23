@@ -11,6 +11,14 @@ namespace glasssix
 {
 	namespace irisviel 
 	{
+		struct index_header
+		{
+			uint64_t file_size;
+			bool normalized;
+			uint32_t graph_width;
+			uint32_t navigate_node;
+		};
+
 		class NGraph 
 		{
 		public:
