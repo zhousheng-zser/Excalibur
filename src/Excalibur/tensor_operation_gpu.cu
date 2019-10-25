@@ -148,7 +148,7 @@ namespace glasssix
 				{
 					int n_offset = n * num_offset;
 					cv::Mat temp = cv::Mat(height, width, CV_MAKETYPE(type, channels));
-					cudaMemcpy(temp.data, src->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(temp.data, src->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 					dst.push_back(temp);
 				}
 				
@@ -167,7 +167,7 @@ namespace glasssix
 			{
 				int n_offset = n * num_offset;
 				cv::Mat temp = cv::Mat(height, width, CV_MAKETYPE(type, channels));
-				cudaMemcpy(temp.data, dst_ptr->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(temp.data, dst_ptr->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 				dst.push_back(temp);
 			}
 		}
@@ -214,7 +214,7 @@ namespace glasssix
 				{
 					int n_offset = n * num_offset;
 					cv::Mat temp = cv::Mat(height, width, CV_MAKETYPE(type, channels));
-					cudaMemcpy(temp.data, src.gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(temp.data, src.gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 					dst.push_back(temp);
 				}
 				
@@ -233,7 +233,7 @@ namespace glasssix
 			{
 				int n_offset = n * num_offset;
 				cv::Mat temp = cv::Mat(height, width, CV_MAKETYPE(type, channels));
-				cudaMemcpy(temp.data, dst_ptr->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(temp.data, dst_ptr->gpu_data() + n_offset, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 				dst.push_back(temp);
 			}
 		}
@@ -348,13 +348,13 @@ namespace glasssix
 			if (order == NHWC)
 			{
 				dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, 0, order));
-				cudaMemcpy(dst->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(dst->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 				return;
 			}
 
 			dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, 0, order));
 			std::shared_ptr<tensor<Dtype>> src_ptr = std::make_shared<tensor<Dtype>>(tensor<Dtype>(std::vector<int>{1, channels, height, width}, 0, order));
-			cudaMemcpy(src_ptr->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMemcpy(src_ptr->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, 1);
@@ -473,13 +473,13 @@ namespace glasssix
 			if (order == NHWC)
 			{
 				dst = tensor<Dtype>(std::vector<int>{1, height, width, channels}, 0, order);
-				cudaMemcpy(dst.mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(dst.mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 				return;
 			}
 
 			dst = tensor<Dtype>(std::vector<int>{1, channels, height, width}, 0, order);
 			std::shared_ptr<tensor<Dtype>> src_ptr = std::make_shared<tensor<Dtype>>(tensor<Dtype>(std::vector<int>{1, channels, height, width}, 0, order));
-			cudaMemcpy(src_ptr->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMemcpy(src_ptr->mutable_gpu_data(), src.data, height * width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, 1);
@@ -513,13 +513,15 @@ namespace glasssix
 			int channels = src->channels();
 			int offset = height * width;
 
-			dst.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_nchw2nhwc << <grid_size, block_size >> > (src->gpu_data(), dst->mutable_gpu_data(), channels, height, width);
+			kernel_nchw2nhwc << <grid_size, block_size >> > (src->gpu_data(), dst_temp->mutable_gpu_data(), channels, height, width);
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -545,13 +547,14 @@ namespace glasssix
 			int channels = src.channels();
 			int offset = height * width;
 
-			dst = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
+			tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_nchw2nhwc << <grid_size, block_size >> > (src.gpu_data(), dst.mutable_gpu_data(), channels, height, width);
+			kernel_nchw2nhwc << <grid_size, block_size >> > (src.gpu_data(), dst_temp.mutable_gpu_data(), channels, height, width);
+			dst = dst_temp.clone();
 		}
 
 
@@ -577,13 +580,15 @@ namespace glasssix
 			int channels = src->channels();
 			int offset = height * width;
 
-			dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_nhwc2nchw << <grid_size, block_size >> > (src->gpu_data(), dst->mutable_gpu_data(), channels, height, width);
+			kernel_nhwc2nchw << <grid_size, block_size >> > (src->gpu_data(), dst_temp->mutable_gpu_data(), channels, height, width);
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -609,13 +614,14 @@ namespace glasssix
 			int channels = src.channels();
 			int offset = height * width;
 
-			dst = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
+			tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
-			kernel_nhwc2nchw << <grid_size, block_size >> > (src.gpu_data(), dst.mutable_gpu_data(), channels, height, width);
+			kernel_nhwc2nchw << <grid_size, block_size >> > (src.gpu_data(), dst_temp.mutable_gpu_data(), channels, height, width);
+			dst = dst_temp.clone();
 		}
 
 
@@ -758,20 +764,21 @@ namespace glasssix
 				return;
 			}
 
+			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
 			else if (src->order() == NHWC)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
 
-			Dtype* dst_data = dst->mutable_gpu_data();
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -779,6 +786,7 @@ namespace glasssix
 
 			
 			kernel_resize << <grid_size, block_size >> > (channels, src_data, height, width, dst_data, dst_height, dst_width, type, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -818,20 +826,21 @@ namespace glasssix
 				return;
 			}
 
+			tensor<Dtype> dst_temp;
 			if (src.order() == NCHW)
 			{
-				dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 			}
 			else if (src.order() == NHWC)
 			{
-				dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
 
-			Dtype* dst_data = dst.mutable_gpu_data();
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -839,6 +848,7 @@ namespace glasssix
 
 			
 			kernel_resize << <grid_size, block_size >> > (channels, src_data, height, width, dst_data, dst_height, dst_width, type, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -994,20 +1004,21 @@ namespace glasssix
 			float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 			float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
+			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				dst_temp.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
 			else if (src->order() == NHWC)
 			{
-				dst.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				dst_temp.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
 
-			Dtype* dst_data = dst->mutable_gpu_data();
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -1015,6 +1026,7 @@ namespace glasssix
 
 			
 			kernel_rotate_with_center << <grid_size, block_size >> > (channels, src_data, height, width, dst_data, dst_height, dst_width, sina, cosa, VarX, VarY, fill_pixel_value, type, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -1059,20 +1071,21 @@ namespace glasssix
 			float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 			float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
+			tensor<Dtype> dst_temp;
 			if (src.order() == NCHW)
 			{
-				dst = excalibur::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 			}
 			else if (src.order() == NHWC)
 			{
-				dst = excalibur::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
 
-			Dtype* dst_data = dst.mutable_gpu_data();
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -1080,6 +1093,7 @@ namespace glasssix
 
 			
 			kernel_rotate_with_center << <grid_size, block_size >> > (channels, src_data, height, width, dst_data, dst_height, dst_width, sina, cosa, VarX, VarY, fill_pixel_value, type, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -1262,13 +1276,14 @@ namespace glasssix
 			}
 
 			double *reverse_M_data = nullptr;
-			cudaMalloc(&reverse_M_data, 9 * sizeof(double));
-			cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault);
-			cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault);
-			cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&reverse_M_data, 9 * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault));
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -1276,7 +1291,7 @@ namespace glasssix
 
 			
 			kernel_rotate_with_points << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, reverse_M_data, fill_pixel_value, type, src->order());
-
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -1346,13 +1361,13 @@ namespace glasssix
 			}
 
 			double *reverse_M_data = nullptr;
-			cudaMalloc(&reverse_M_data, 9 * sizeof(double));
-			cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault);
-			cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault);
-			cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&reverse_M_data, 9 * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data, &(reverse_M[0][0]), 3 * sizeof(double), cudaMemcpyDefault));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data + 3, &(reverse_M[1][0]), 3 * sizeof(double), cudaMemcpyDefault));
+			CUDA_CHECK(cudaMemcpy(reverse_M_data + 6, &(reverse_M[2][0]), 3 * sizeof(double), cudaMemcpyDefault));
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 			
 			const dim3 block_size(channels, 1, 1);
@@ -1360,6 +1375,7 @@ namespace glasssix
 
 			
 			kernel_rotate_with_points << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, reverse_M_data, fill_pixel_value, type, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -1477,8 +1493,9 @@ namespace glasssix
 			int height = src->height();
 			int width = src->width();
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -1486,6 +1503,7 @@ namespace glasssix
 
 			
 			kernel_flip << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, axis, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -1510,8 +1528,8 @@ namespace glasssix
 			int height = src.height();
 			int width = src.width();
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -1519,6 +1537,7 @@ namespace glasssix
 
 			
 			kernel_flip << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, axis, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -1793,15 +1812,17 @@ namespace glasssix
 				return;
 			}
 
-			dst.reset(new tensor<Dtype>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
 
 			const Dtype* src_data = src->gpu_data();
-			Dtype* dst_data = dst->mutable_gpu_data();
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 
 			const dim3 block_size(1, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			kernel_rgb2hsv << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -1832,15 +1853,16 @@ namespace glasssix
 				return;
 			}
 
-			dst = tensor<Dtype>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
+			tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
 
 			const Dtype* src_data = src.gpu_data();
-			Dtype* dst_data = dst.mutable_gpu_data();
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 
 			const dim3 block_size(1, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			kernel_rgb2hsv << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -1910,13 +1932,14 @@ namespace glasssix
 			int width = src->width();
 			int offset = height * width;
 
+			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
 			}
 			else if (src->order() == NHWC)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
 			}
 			else
 			{
@@ -1924,13 +1947,14 @@ namespace glasssix
 			}
 
 			const Dtype* src_data = src->gpu_data();
-			Dtype* dst_data = dst->mutable_gpu_data();
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(height, width, num);
 
 			
 			kernel_matrix_transpose << <grid_size, block_size >> > (src_data, dst_data, channels, width, height, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -1955,13 +1979,14 @@ namespace glasssix
 			int width = src.width();
 			int offset = height * width;
 
+			tensor<Dtype> dst_temp;
 			if (src.order() == NCHW)
 			{
-				dst = tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
 			}
 			else if (src.order() == NHWC)
 			{
-				dst = tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
+				dst_temp = tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
 			}
 			else
 			{
@@ -1969,13 +1994,14 @@ namespace glasssix
 			}
 
 			const Dtype* src_data = src.gpu_data();
-			Dtype* dst_data = dst.mutable_gpu_data();
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(height, width, num);
 
 			
 			kernel_matrix_transpose << <grid_size, block_size >> > (src_data, dst_data, channels, width, height, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -2254,8 +2280,9 @@ namespace glasssix
 			int width = src->width();
 			int src_offset = height * width;
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype *src_data = src->gpu_data();
 
 			const dim3 block_size(1, 1, 1);
@@ -2263,6 +2290,7 @@ namespace glasssix
 
 			
 			kernel_threshold<Dtype> << <grid_size, block_size >> > (src_data, dst_data, thresh, maxval, type);
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -2296,8 +2324,8 @@ namespace glasssix
 			int width = src.width();
 			int src_offset = height * width;
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype *src_data = src.gpu_data();
 
 			const dim3 block_size(1, 1, 1);
@@ -2305,6 +2333,7 @@ namespace glasssix
 
 			
 			kernel_threshold<Dtype> << <grid_size, block_size >> > (src_data, dst_data, thresh, maxval, type);
+			dst = dst_temp.clone();
 		}
 
 
@@ -2477,11 +2506,12 @@ namespace glasssix
 
 			X = math_functions::gauss_all(A, B);
 			float *X_data = nullptr;
-			cudaMalloc(&X_data, 6 * sizeof(float));
-			cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&X_data, 6 * sizeof(float)));
+			CUDA_CHECK(cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault));
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2489,6 +2519,7 @@ namespace glasssix
 
 			
 			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, X_data, fill_pixel_value, type, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -2552,11 +2583,11 @@ namespace glasssix
 
 			X = math_functions::gauss_all(A, B);
 			float *X_data = nullptr;
-			cudaMalloc(&X_data, 6 * sizeof(float));
-			cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&X_data, 6 * sizeof(float)));
+			CUDA_CHECK(cudaMemcpy(X_data, X.data(), 6 * sizeof(float), cudaMemcpyDefault));
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2564,6 +2595,7 @@ namespace glasssix
 
 			
 			kernel_warp_affine << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, X_data, fill_pixel_value, type, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -2714,11 +2746,12 @@ namespace glasssix
 			}
 
 			double *paras = nullptr;
-			cudaMalloc(&paras, ksize * ksize * sizeof(double));
-			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&paras, ksize * ksize * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault));
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2726,6 +2759,7 @@ namespace glasssix
 
 			
 			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -2791,11 +2825,11 @@ namespace glasssix
 			}
 
 			double *paras = nullptr;
-			cudaMalloc(&paras, ksize * ksize * sizeof(double));
-			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&paras, ksize * ksize * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault));
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2803,6 +2837,7 @@ namespace glasssix
 
 			
 			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -2852,11 +2887,12 @@ namespace glasssix
 			}
 
 			double *paras = nullptr;
-			cudaMalloc(&paras, ksize * ksize * sizeof(double));
-			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&paras, ksize * ksize * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault));
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2864,6 +2900,7 @@ namespace glasssix
 
 
 			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -2912,11 +2949,11 @@ namespace glasssix
 			}
 
 			double *paras = nullptr;
-			cudaMalloc(&paras, ksize * ksize * sizeof(double));
-			cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault);
+			CUDA_CHECK(cudaMalloc(&paras, ksize * ksize * sizeof(double)));
+			CUDA_CHECK(cudaMemcpy(paras, convolution_kernel, ksize * ksize * sizeof(double), cudaMemcpyDefault));
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -2924,6 +2961,7 @@ namespace glasssix
 
 
 			kernel_blur << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, ksize, paras, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -3068,8 +3106,9 @@ namespace glasssix
 			int height = src->height();
 			int width = src->width();
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -3077,6 +3116,7 @@ namespace glasssix
 
 			
 			kernel_sobel << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, dx, dy, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -3108,8 +3148,8 @@ namespace glasssix
 			int height = src.height();
 			int width = src.width();
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -3117,6 +3157,7 @@ namespace glasssix
 
 			
 			kernel_sobel << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, dx, dy, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -3309,8 +3350,9 @@ namespace glasssix
 			int height = src->height();
 			int width = src->width();
 
-			dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			const Dtype* src_data = src->gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -3318,6 +3360,7 @@ namespace glasssix
 
 			
 			kernel_morph << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, type, ksize, src->order());
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -3355,8 +3398,8 @@ namespace glasssix
 			int height = src.height();
 			int width = src.width();
 
-			dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-			Dtype* dst_data = dst.mutable_gpu_data();
+			tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+			Dtype* dst_data = dst_temp.mutable_gpu_data();
 			const Dtype* src_data = src.gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
@@ -3364,6 +3407,7 @@ namespace glasssix
 
 			
 			kernel_morph << <grid_size, block_size >> > (src_data, dst_data, channels, height, width, type, ksize, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -3398,14 +3442,16 @@ namespace glasssix
 			}
 
 			const DtypeSRC* src_data = src->gpu_data();
-			dst.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
-			DtypeDST* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<DtypeDST>> dst_temp;
+			dst_temp.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
+			DtypeDST* dst_data = dst_temp->mutable_gpu_data();
 
 			const dim3 block_size(1, 1, 1);
 			const dim3 grid_size(src->count(), 1, 1);
 
 			
 			kernel_type_converter << <grid_size, block_size >> > (src_data, dst_data);
+			dst = std::make_shared<tensor<DtypeDST>>(dst_temp->clone());
 		}
 
 
@@ -3425,14 +3471,15 @@ namespace glasssix
 			}
 
 			const DtypeSRC* src_data = src.gpu_data();
-			dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-			DtypeDST* dst_data = dst.mutable_gpu_data();
+			tensor<DtypeDST> dst_temp = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
+			DtypeDST* dst_data = dst_temp.mutable_gpu_data();
 
 			const dim3 block_size(1, 1, 1);
 			const dim3 grid_size(src.count(), 1, 1);
 
 			
 			kernel_type_converter << <grid_size, block_size >> > (src_data, dst_data);
+			dst = dst_temp.clone();
 		}
 
 
@@ -3512,14 +3559,16 @@ namespace glasssix
 			int width = src->width();
 
 			const DtypeSRC* src_data = src->gpu_data();
-			dst.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
-			DtypeDST* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<DtypeDST>> dst_temp;
+			dst_temp.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
+			DtypeDST* dst_data = dst_temp->mutable_gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
 			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src->order());
+			dst = std::make_shared<tensor<DtypeDST>>(dst_temp->clone());
 		}
 
 
@@ -3544,14 +3593,15 @@ namespace glasssix
 			int width = src.width();
 
 			const DtypeSRC* src_data = src.gpu_data();
-			dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-			DtypeDST* dst_data = dst.mutable_gpu_data();
+			tensor<DtypeDST> dst_temp = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
+			DtypeDST* dst_data = dst_temp.mutable_gpu_data();
 
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
 			
 			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src.order());
+			dst = dst_temp.clone();
 		}
 
 
@@ -3601,10 +3651,11 @@ namespace glasssix
 				return;
 			}
 
+			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_gpu_data();
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_gpu_data();
 				const Dtype* src_data = src->gpu_data();
 
 				if (type == Border_Constant)
@@ -3625,7 +3676,7 @@ namespace glasssix
 							int dst_channel_offset = ch * dst_offset;
 
 							//top
-							cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset, top_data.data(), top * dst_width * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset, top_data.data(), top * dst_width * sizeof(Dtype), cudaMemcpyDefault));
 
 							//center
 							for (int row = top; row < top + height; ++row)
@@ -3633,15 +3684,15 @@ namespace glasssix
 								int src_index = src_channel_offset + (row - top) * width;
 								int dst_index = dst_channel_offset + row * dst_width;
 
-								cudaMemcpy(dst_data + dst_n_offset + dst_index, center_left_data.data(), left * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index, center_left_data.data(), left * sizeof(Dtype), cudaMemcpyDefault));
 
-								cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault));
 
-								cudaMemcpy(dst_data + dst_n_offset + dst_index + left + width, center_right_data.data(), right * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index + left + width, center_right_data.data(), right * sizeof(Dtype), cudaMemcpyDefault));
 							}
 
 							//bottom
-							cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset + (top + height) * dst_width, bottom_data.data(), bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_channel_offset + (top + height) * dst_width, bottom_data.data(), bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault));
 						}
 					}
 				}
@@ -3669,7 +3720,7 @@ namespace glasssix
 								}
 
 								//center
-								cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_channel_offset, width * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_channel_offset, width * sizeof(Dtype), cudaMemcpyDefault));
 
 								//right
 								for (int col = left + width; col < dst_width; col++)
@@ -3691,7 +3742,7 @@ namespace glasssix
 								}
 
 								//center
-								cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault));
 
 								//right
 								for (int col = left + width; col < dst_width; col++)
@@ -3713,7 +3764,7 @@ namespace glasssix
 								}
 
 								//center
-								cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault);
+								CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype), cudaMemcpyDefault));
 
 								//right
 								for (int col = left + width; col < dst_width; col++)
@@ -3732,8 +3783,8 @@ namespace glasssix
 			}
 			else if (src->order() == NHWC)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_gpu_data();
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_gpu_data();
 				const Dtype* src_data = src->gpu_data();
 
 				if (type == Border_Constant)
@@ -3749,7 +3800,7 @@ namespace glasssix
 						int dst_n_offset = n * dst_num_offset;
 
 						//top
-						cudaMemcpy(dst_data + dst_n_offset, top_data.data(), channels * top * dst_width * sizeof(Dtype), cudaMemcpyDefault);
+						CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset, top_data.data(), channels * top * dst_width * sizeof(Dtype), cudaMemcpyDefault));
 
 						//center
 						for (int row = top; row < top + height; ++row)
@@ -3757,17 +3808,17 @@ namespace glasssix
 							int src_index = (row - top) * width * channels;
 
 							//left
-							cudaMemcpy(dst_data + dst_n_offset + row * dst_width * channels, center_left_data.data(), channels * left * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + row * dst_width * channels, center_left_data.data(), channels * left * sizeof(Dtype), cudaMemcpyDefault));
 
 							//center
-							cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left) * channels, src_data + src_n_offset + src_index, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left) * channels, src_data + src_n_offset + src_index, width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 							//right
-							cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left + width) * channels, center_right_data.data(), channels * right * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + (row * dst_width + left + width) * channels, center_right_data.data(), channels * right * sizeof(Dtype), cudaMemcpyDefault));
 						}
 
 						//bottom
-						cudaMemcpy(dst_data + dst_n_offset + (top + height) * dst_width * channels, bottom_data.data(), channels * bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault);
+						CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + (top + height) * dst_width * channels, bottom_data.data(), channels * bottom * dst_width * sizeof(Dtype), cudaMemcpyDefault));
 					}
 				}
 				else if (type == Border_Replicate)
@@ -3793,7 +3844,7 @@ namespace glasssix
 							}
 
 							//center
-							cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset, width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 							//right
 							for (int col = left + width; col < dst_width; ++col)
@@ -3825,7 +3876,7 @@ namespace glasssix
 							}
 
 							//center
-							cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 							//right
 							int src_index2 = src_index1 + (width - 1) * channels;
@@ -3857,7 +3908,7 @@ namespace glasssix
 							}
 
 							//center
-							cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index1 + left * channels, src_data + src_n_offset + src_index1, width * channels * sizeof(Dtype), cudaMemcpyDefault));
 
 							//right
 							int src_index2 = src_index1 + (width - 1) * channels;
@@ -3882,6 +3933,8 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
+
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -3934,10 +3987,11 @@ namespace glasssix
 				return;
 			}
 
+			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_gpu_data();
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_gpu_data();
 				const Dtype* src_data = src->gpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -3954,15 +4008,15 @@ namespace glasssix
 						{
 							int src_index = src_channel_offset + (row + top) * width + left;
 							int dst_index = dst_channel_offset + row * dst_width;
-							cudaMemcpy(dst_data + dst_n_offset + dst_index, src_data + src_n_offset + src_index, dst_width * sizeof(Dtype), cudaMemcpyDefault);
+							CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index, src_data + src_n_offset + src_index, dst_width * sizeof(Dtype), cudaMemcpyDefault));
 						}
 					}
 				}
 			}
 			else if (src->order() == NHWC)
 			{
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_gpu_data();
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_gpu_data();
 				const Dtype* src_data = src->gpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -3974,7 +4028,7 @@ namespace glasssix
 					{
 						int src_index = ((row + top) * width + left) * channels;
 						int dst_index = row * dst_width * channels;
-						cudaMemcpy(dst_data + dst_n_offset + dst_index, src_data + src_n_offset + src_index, dst_width * channels * sizeof(Dtype), cudaMemcpyDefault);
+						CUDA_CHECK(cudaMemcpy(dst_data + dst_n_offset + dst_index, src_data + src_n_offset + src_index, dst_width * channels * sizeof(Dtype), cudaMemcpyDefault));
 					}
 				}
 			}
@@ -3982,6 +4036,8 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
+
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 		}
 
 
@@ -4053,13 +4109,11 @@ namespace glasssix
 			int height = src->height();
 			int width = src->width();
 			int offset = height * width;
-			if (dst->count() != src->count())
-			{
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-			}
 			const Dtype* src_data = src->gpu_data();
 			const Dtype* src_cpu_data = src->cpu_data();
-			Dtype* dst_data = dst->mutable_gpu_data();
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+			dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
 			Dtype* temp_dst = new Dtype[offset];
 
 			for (int n = 0; n < num; n++)
@@ -4098,9 +4152,10 @@ namespace glasssix
 					temp_dst[i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src_cpu_data[n_offset + i])]);
 				}
 
-				cudaMemcpy(dst_data + n_offset, temp_dst, offset * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(dst_data + n_offset, temp_dst, offset * sizeof(Dtype), cudaMemcpyDefault));
 			}
 			
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			delete temp_dst;
 		}
 
@@ -4164,7 +4219,7 @@ namespace glasssix
 			for (int i = 0; i < src_vector.size(); ++i)
 			{
 				const Dtype* temp_data = src_vector.at(i)->gpu_data();
-				cudaMemcpy((void*)(dst_data + i * offset), (void*)(temp_data), offset * sizeof(Dtype), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy((void*)(dst_data + i * offset), (void*)(temp_data), offset * sizeof(Dtype), cudaMemcpyDefault));
 			}
 		}
 

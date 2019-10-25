@@ -557,8 +557,9 @@ namespace glasssix
 				int channels = src->channels();
 				int offset = height * width;
 
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -581,6 +582,7 @@ namespace glasssix
 					}
 				}
 
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -606,8 +608,8 @@ namespace glasssix
 				int channels = src.channels();
 				int offset = height * width;
 
-				dst = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -629,6 +631,8 @@ namespace glasssix
 						}
 					}
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -654,8 +658,9 @@ namespace glasssix
 				int channels = src->channels();
 				int offset = height * width;
 
-				dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -677,6 +682,8 @@ namespace glasssix
 						}
 					}
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -702,8 +709,8 @@ namespace glasssix
 				int channels = src.channels();
 				int offset = height * width;
 
-				dst = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -725,6 +732,8 @@ namespace glasssix
 						}
 					}
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -769,14 +778,15 @@ namespace glasssix
 					return;
 				}
 
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 				if (src->order() == NCHW)
-				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+				{					
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					auto name = typeid(Dtype).name();
-					if (std::string("unsigned char") == std::string(name))
+					if (std::string("h") == std::string(name) || std::string("unsigned char") == std::string(name))
 					{
 						void* temp_buf = 0;
 						int scale_x, scale_y;
@@ -928,8 +938,8 @@ namespace glasssix
 					float height_ratio = (float)height / dst_height;
 					float beta = 0.5f;
 
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 #ifdef _OPENMP
@@ -996,6 +1006,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1040,14 +1052,15 @@ namespace glasssix
 					return;
 				}
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					auto name = typeid(Dtype).name();
-					if (std::string("unsigned char") == std::string(name))
+					if (std::string("h") == std::string(name) || std::string("unsigned char") == std::string(name))
 					{
 						void* temp_buf = 0;
 						int scale_x, scale_y;
@@ -1199,8 +1212,8 @@ namespace glasssix
 					float height_ratio = (float)height / dst_height;
 					float beta = 0.5f;
 
-					dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 #ifdef _OPENMP
@@ -1267,6 +1280,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp.clone());
 			}
 
 
@@ -1317,10 +1332,11 @@ namespace glasssix
 				float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 				float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 				if (src->order() == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -1389,8 +1405,8 @@ namespace glasssix
 				}
 				else if (src->order() == NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 #ifdef _OPENMP
@@ -1461,6 +1477,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1511,10 +1529,11 @@ namespace glasssix
 				float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 				float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -1583,8 +1602,8 @@ namespace glasssix
 				}
 				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 #ifdef _OPENMP
@@ -1655,6 +1674,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -1693,9 +1714,10 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				const Dtype* src_data = src->cpu_data();
-				Dtype* dst_data = dst->mutable_cpu_data();
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 				double rad = theta*(PI / 180);
 				double cosa = cos(rad);
@@ -1866,6 +1888,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1904,9 +1928,9 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				const Dtype* src_data = src.cpu_data();
-				Dtype* dst_data = dst.mutable_cpu_data();
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 				double rad = theta*(PI / 180);
 				double cosa = cos(rad);
@@ -2080,6 +2104,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -3166,9 +3192,10 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				const Dtype* src_data = src->cpu_data();
-				Dtype* dst_data = dst->mutable_cpu_data();
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 				if (src->order() == NCHW)
 				{
@@ -3348,6 +3375,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -3374,9 +3403,9 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				const Dtype* src_data = src.cpu_data();
-				Dtype* dst_data = dst.mutable_cpu_data();
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 				if (src.order() == NCHW)
 				{
@@ -3556,6 +3585,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -3850,9 +3881,10 @@ namespace glasssix
 					return;
 				}
 
-				dst.reset(new tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
+				std::shared_ptr<tensor<unsigned char>> dst_temp;
+				dst_temp.reset(new tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
 				const unsigned char* src_data = src->cpu_data();
-				unsigned char* dst_data = dst->mutable_cpu_data();
+				unsigned char* dst_data = dst_temp->mutable_cpu_data();
 
 				if (src->order() == NCHW)
 				{
@@ -3981,6 +4013,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<unsigned char>>(dst_temp->clone());
 			}
 
 
@@ -4011,9 +4045,9 @@ namespace glasssix
 					return;
 				}
 
-				dst = tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
+				tensor<unsigned char> dst_temp = tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
 				const unsigned char* src_data = src.cpu_data();
-				unsigned char* dst_data = dst.mutable_cpu_data();
+				unsigned char* dst_data = dst_temp.mutable_cpu_data();
 
 				if (src.order() == NCHW)
 				{
@@ -4142,6 +4176,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -4167,11 +4203,12 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 				if (src->order() == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
-					Dtype* dst_data = dst->mutable_cpu_data();
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
 					{
@@ -4191,9 +4228,9 @@ namespace glasssix
 				}
 				else if (src->order() == NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
-					Dtype* dst_data = dst->mutable_cpu_data();
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
 					{
@@ -4218,6 +4255,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -4243,11 +4282,12 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
-					Dtype* dst_data = dst.mutable_cpu_data();
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
 					{
@@ -4267,9 +4307,9 @@ namespace glasssix
 				}
 				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
+					dst_temp = tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
-					Dtype* dst_data = dst.mutable_cpu_data();
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
 					{
@@ -4294,6 +4334,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -4542,10 +4584,11 @@ namespace glasssix
 					return;
 				}
 
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 				if (src->order() == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					if (type == Border_Constant)
@@ -4686,8 +4729,8 @@ namespace glasssix
 				}
 				else if (src->order() == NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					if (type == Border_Constant)
@@ -4868,6 +4911,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -4917,10 +4962,11 @@ namespace glasssix
 					return;
 				}
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					if (type == Border_Constant)
@@ -5043,8 +5089,8 @@ namespace glasssix
 				}
 				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					if (type == Border_Constant)
@@ -5209,6 +5255,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -5261,9 +5309,9 @@ namespace glasssix
 					return;
 				}
 
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 				if (src->order() == NCHW)
-				{
-					std::shared_ptr<tensor<Dtype>> dst_temp;
+				{					
 					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
@@ -5286,13 +5334,11 @@ namespace glasssix
 							}
 						}
 					}
-
-					dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 				}
 				else if (src->order() == NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
-					Dtype* dst_data = dst->mutable_cpu_data();
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -5312,6 +5358,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -5365,10 +5413,11 @@ namespace glasssix
 					return;
 				}
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -5391,8 +5440,8 @@ namespace glasssix
 				}
 				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
-					Dtype* dst_data = dst.mutable_cpu_data();
+					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -5411,6 +5460,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -5670,12 +5721,11 @@ namespace glasssix
 				int height = src->height();
 				int width = src->width();
 				int offset = height * width;
-				if (dst == nullptr || (dst->count() != src->count()))
-				{
-					dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-				}
+
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
-				Dtype* dst_data = dst->mutable_cpu_data();
 
 				for (int n = 0; n < num; n++)
 				{
@@ -5712,6 +5762,8 @@ namespace glasssix
 						dst_data[n * offset + i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src_data[n * offset + i])]);
 					}
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -5736,13 +5788,9 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				if (dst.count() != src.count())
-				{
-					dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-				}
-				
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());				
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
-				Dtype* dst_data = dst.mutable_cpu_data();
 
 				for (int n = 0; n < num; n++)
 				{
@@ -5779,6 +5827,8 @@ namespace glasssix
 						dst_data[n * offset + i] = Dtype(normalized_gray_value[static_cast<unsigned char>(src_data[n * offset + i])]);
 					}
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -6096,9 +6146,10 @@ namespace glasssix
 				int height = src->height();
 				int width = src->width();
 				int offset = height * width;
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype *src_data = src->cpu_data();
 
 				switch (type)
@@ -6173,6 +6224,8 @@ namespace glasssix
 					LOG(ERROR) << "Un-support threshold type.";
 					break;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -6204,9 +6257,8 @@ namespace glasssix
 				int height = src.height();
 				int width = src.width();
 				int offset = height * width;
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype *src_data = src.cpu_data();
 
 				switch (type)
@@ -6281,6 +6333,8 @@ namespace glasssix
 					LOG(ERROR) << "Un-support threshold type.";
 					break;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -6321,9 +6375,10 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));				
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
-				Dtype* dst_data = dst->mutable_cpu_data();
 
 				//AX=B, expand A to 6*6, expand B to 6*1
 				std::vector<std::vector<float> > A;
@@ -6490,6 +6545,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -6527,9 +6583,9 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
-				Dtype* dst_data = dst.mutable_cpu_data();
 
 				//AX=B, expand A to 6*6, expand B to 6*1
 				std::vector<std::vector<float> > A;
@@ -6695,6 +6751,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -6754,8 +6812,9 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src->cpu_data();
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 				if (src->order() == NCHW)
 				{
@@ -6898,6 +6957,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -6957,8 +7018,8 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src.cpu_data();
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 				if (src.order() == NCHW)
 				{
@@ -7099,6 +7160,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -7145,8 +7208,9 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src->cpu_data();
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
 				if (src->order() == NCHW)
 				{
@@ -7289,6 +7353,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -7335,8 +7401,8 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src.cpu_data();
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
 				if (src.order() == NCHW)
 				{
@@ -7479,6 +7545,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -7512,8 +7580,9 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
 				if (src->order() == NCHW)
@@ -7629,6 +7698,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -7662,8 +7733,8 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
 				if (src.order() == NCHW)
@@ -7780,6 +7851,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -7820,8 +7893,9 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				int half = (ksize - 1) * 0.5;
 
-				dst.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
-				Dtype* dst_data = dst->mutable_cpu_data();
+				std::shared_ptr<tensor<Dtype>> dst_temp;
+				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
 				if (src->order() == NCHW)
@@ -8028,6 +8102,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -8068,8 +8144,8 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				int half = (ksize - 1) * 0.5;
 
-				dst = tensor<Dtype>(src.data_shape(), src.device(), src.order());
-				Dtype* dst_data = dst.mutable_cpu_data();
+				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
 				if (src.order() == NCHW)
@@ -8276,6 +8352,8 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				dst = dst_temp.clone();
 			}
 
 
@@ -8301,14 +8379,15 @@ namespace glasssix
 				int width = src->width();
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height - 2) * (width - 2);
+				std::shared_ptr<tensor<Dtype>> dst_temp;
 
 				if (src->order() == NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order()));
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order()));
 				}
 				else if (src->order() == NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order()));
+					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order()));
 				}
 				else
 				{
@@ -8316,7 +8395,7 @@ namespace glasssix
 				}
 				
 				const Dtype* src_data = src->cpu_data();
-				Dtype* dst_data = dst->mutable_cpu_data();
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				switch (type)
 				{
 				case excalibur::Native:
@@ -8411,6 +8490,8 @@ namespace glasssix
 					break;
 				}
 				showimage(dst);
+
+				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -8437,20 +8518,21 @@ namespace glasssix
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height - 2) * (width - 2);
 
+				tensor<Dtype> dst_temp;
 				if (src.order() == NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order());
+					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order());
 				}
 				else if (src.order() == NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order());
+					dst_temp = tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order());
 				}
 				else
 				{
 					NOT_IMPLEMENTED;
 				}
 				const Dtype* src_data = src.cpu_data();
-				Dtype* dst_data = dst.mutable_cpu_data();
+				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				switch (type)
 				{
 				case excalibur::Native:
@@ -8544,6 +8626,8 @@ namespace glasssix
 					break;
 				}
 				showimage(dst);
+
+				dst = dst_temp.clone();
 			}
 
 

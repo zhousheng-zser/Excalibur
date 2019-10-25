@@ -153,14 +153,8 @@
     <ClInclude Include="..\..\include\Excalibur\arm\softmax_arm.hpp">
       <Filter>Header Files\arm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
       <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp">
-      <Filter>Header Files\arm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -253,9 +247,6 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
       <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\arm\eltwise_arm.cpp">
-      <Filter>Source Files\arm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
