@@ -433,7 +433,6 @@
     <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
     <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
     <ClInclude Include="tensor_io.hpp" />
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

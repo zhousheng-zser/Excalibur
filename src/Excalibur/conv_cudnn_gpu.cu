@@ -114,7 +114,7 @@ namespace glasssix
 				{
 					if (extra != nullptr)
 					{
-						cudaFree(extra);
+						CUDA_CHECK(cudaFree(extra));
 					}
 					CUDA_CHECK(cudaMalloc((void **)&extra, size));
 					current_size = size;
@@ -238,7 +238,7 @@ namespace glasssix
 				{
 					if (extra != nullptr)
 					{
-						cudaFree(extra);
+						CUDA_CHECK(cudaFree(extra));
 					}
 					CUDA_CHECK(cudaMalloc((void **)&extra, size));
 					current_size = size;

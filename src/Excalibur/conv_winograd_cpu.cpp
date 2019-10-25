@@ -74,10 +74,14 @@ namespace glasssix
 
 			std::shared_ptr<tensor<float>> bottom_bordered;
 			tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_ + add_h, pad_, pad_ + add_w);
+			if (order_ == NHWC)
+			{
+				tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
+			}
 			bottom_data = bottom_bordered->cpu_data();
 			bottom_dim_ = bottom_bordered->count(1, 4);
 
-			top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
+			top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, NCHW));
 			top_data = top->mutable_cpu_data();
 			top_dim_ = top->count(1, 4);
 
@@ -139,7 +143,7 @@ namespace glasssix
 				//V_int16_data = V_int16->mutable_cpu_data();
 				V_int16_data = new short[input_Channel_ * total_tile_num * tile_length_];
 
-				if (order_ == NCHW)
+				if ((order_ == NCHW) || (order_ == NHWC))
 				{
 					if (group_ > 1)
 					{
@@ -775,6 +779,11 @@ namespace glasssix
 						{
 							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
 						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else if (group_ == 1)
 					{
@@ -2186,15 +2195,16 @@ namespace glasssix
 						{
 							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
 						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else
 					{
 						LOG(FATAL) << "group wrong!!!";
 					}
-				}
-				else if (order_ == NHWC)
-				{
-					NOT_IMPLEMENTED;
 				}
 				else
 				{
@@ -2210,7 +2220,7 @@ namespace glasssix
 				//V_data = V_->mutable_cpu_data();
 				V_data = new float[input_Channel_ * total_tile_num * tile_length_];
 
-				if (order_ == NCHW)
+				if ((order_ == NCHW) || (order_ == NHWC))
 				{
 					if (group_ > 1)
 					{
@@ -2680,6 +2690,11 @@ namespace glasssix
 						{
 							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
 						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else if (group_ == 1)
 					{
@@ -3660,15 +3675,16 @@ namespace glasssix
 						{
 							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
 						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else
 					{
 						LOG(FATAL) << "group wrong!!!";
 					}
-				}
-				else if (order_ == NHWC)
-				{
-					NOT_IMPLEMENTED;
 				}
 				else
 				{

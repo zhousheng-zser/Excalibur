@@ -35,12 +35,12 @@ namespace glasssix
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
 			//float32
-			std::shared_ptr<tensor<float>> weights_;
+			std::shared_ptr<tensor<float>> weights_, weights1x1_;
 			std::shared_ptr<tensor<float>> col_buffer_;
 			std::shared_ptr<tensor<float>> bias_;
 			std::shared_ptr<tensor<float>> bias_multiplier_;
 			float *col_buffer_data, *bias_multiplier_data;
-			const float *weights_data, *bias_data;
+			const float *weights_data, *weights1x1_data, *bias_data;
 
 			float *top_data;
 			const float *bottom_data;
@@ -111,7 +111,7 @@ namespace glasssix
 				//1*1s1				
 				if ((stride_ == 1) && (kernelSize_ == 1))
 				{
-					use_sgemm1x1 = true;
+					use_conv1x1 = true;
 				}
 
 				//winograd
@@ -174,7 +174,7 @@ namespace glasssix
 					
 					if (extra != nullptr)
 					{
-				        cudaFree(extra);
+						CUDA_CHECK(cudaFree(extra));
 					}
 				}
 #endif
@@ -219,10 +219,11 @@ namespace glasssix
 						}
 					}
 
-					if (use_sgemm1x1)
+					if (use_conv1x1)
 					{
 						conv1x1s1_transform_kernel();
 					}
+
 				}
 				else
 				{
@@ -271,13 +272,14 @@ namespace glasssix
 			virtual void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 
 			//1*1s1
-			bool use_sgemm1x1 = false;
+			bool use_conv1x1 = false;
+
 			inline void conv1x1s1_transform_kernel()
 			{
 				int inch = input_Channel_;
 				int outch = output_Channel_;
-				std::shared_ptr<tensor<float>> weight_temp;
-				weight_temp.reset(new tensor<float>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, NCHW));
+				weights1x1_.reset(new tensor<float>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, NCHW));
+				float *weights1x1_temp_data = weights1x1_->mutable_cpu_data();
 
 				int p = 0;
 				for (; p + 3 < outch; p += 4)
@@ -287,7 +289,7 @@ namespace glasssix
 					const float* kernel2 = weights_data + (p + 2)*inch;
 					const float* kernel3 = weights_data + (p + 3)*inch;
 
-					float* ktmp = weight_temp->mutable_cpu_data() + (p / 4) * weight_temp->width() * weight_temp->height();
+					float* ktmp = weights1x1_temp_data + (p / 4) * weights1x1_->width() * weights1x1_->height();
 
 					for (int q = 0; q < inch; q++)
 					{
@@ -307,7 +309,7 @@ namespace glasssix
 				for (; p < outch; p++)
 				{
 					const float* kernel0 = weights_data + p * inch;
-					float* ktmp = weight_temp->mutable_cpu_data() + (p / 4 + p % 4) * weight_temp->width() * weight_temp->height();
+					float* ktmp = weights1x1_temp_data + (p / 4 + p % 4) * weights1x1_->width() * weights1x1_->height();
 
 					for (int q = 0; q < inch; q++)
 					{
@@ -317,9 +319,9 @@ namespace glasssix
 					}
 				}
 
-				weights_ = std::make_shared<tensor<float>>(weight_temp->clone());
-				weights_data = weights_->cpu_data();
+				weights1x1_data = weights1x1_->cpu_data();
 			}
+				
 
 			//winograd
 			bool useWinograd23 = false;
