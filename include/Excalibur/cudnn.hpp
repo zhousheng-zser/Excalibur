@@ -16,7 +16,7 @@
       << cudnnGetErrorString(status); \
   } while (0)
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
 inline const char* cudnnGetErrorString(cudnnStatus_t status) {
 	switch (status) {
 	case CUDNN_STATUS_SUCCESS:

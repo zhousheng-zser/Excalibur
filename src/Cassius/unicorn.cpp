@@ -25,13 +25,9 @@ namespace glasssix
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
 			if (device >= 0)
 			{
@@ -300,7 +296,7 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu2_1, 64, false, false);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_arm_Params(conv2_2, 64, 64, 1, 3, 1, 1, true);//nchw:1*64*62*62->1*64*62*62
 			Init_PReLU_arm_Params(relu2_2, 64, false, false);//nchw:1*64*62*62->1*64*62*62
-			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
+			Init_Eltwise_arm_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_arm_Params(conv2, 64, 128, 1, 3, 1, 0, true);//nchw:1*64*62*62->1*128*60*60
 			Init_PReLU_arm_Params(relu2, 128, false, false);//nchw:1*128*60*60->1*128*60*60
 			Init_Pooling_arm_Params(pool2, 2, 2, 0, 0);//nchw:1*128*60*60->1*128*30*30
@@ -308,12 +304,12 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu3_1, 128, false, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_2, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_2, 128, false, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_arm_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_3, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_3, 128, false, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_4, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_4, 128, false, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_arm_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3, 128, 256, 1, 3, 1, 0, true);//nchw:1*128*30*30->1*256*28*28
 			Init_PReLU_arm_Params(relu3, 256, false, false);//nchw:1*256*28*28->1*256*28*28
 			Init_Pooling_arm_Params(pool3, 2, 2, 0, 0);//nchw:1*256*28*28->1*256*14*14
@@ -321,27 +317,27 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu4_1, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_2, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_2, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_3, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_3, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_4, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_4, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_5, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_5, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_6, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_6, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_7, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_7, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_8, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_8, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_9, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_9, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_10, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_10, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4, 256, 512, 1, 3, 1, 0, true);//nchw:1*256*14*14->1*512*12*12
 			Init_PReLU_arm_Params(relu4, 512, false, false);//nchw:1*512*12*12->1*512*12*12
 			Init_Pooling_arm_Params(pool4, 2, 2, 0, 0);//nchw:1*512*12*12->1*512*6*6
@@ -349,17 +345,17 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu5_1, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_2, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_2, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_3, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_3, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_4, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_4, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_5, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_5, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_6, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_6, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_arm_Params(relu5, 512, false, false);//nchw:1*512*4*4->1*512*4*4
 			Init_Conv_arm_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*4*4->1*512*1*1
@@ -1160,7 +1156,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault));
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
@@ -1226,7 +1222,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
