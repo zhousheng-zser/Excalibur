@@ -34,7 +34,7 @@ namespace glasssix
 			top.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
 			int top_cstep = outw * outh;
 
-			int kernel_cstep = weights_->width() * weights_->height();
+			int kernel_cstep = weights1x1_->width() * weights1x1_->height();
 
 			// interleave
 			tensor<float> tmp(std::vector<int>{1, size / 8 + (size % 8) / 4 + size % 4, inch / 4 + inch % 4, 8 * 4}, -1, NCHW);
@@ -163,7 +163,7 @@ namespace glasssix
 					for (; i + 7 < size; i += 8)
 					{
 						const float* tmpptr = tmp_data + (i / 8) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4) * kernel_cstep;
+						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
 						mm_type sum0 = mm_set1_ps(biasptr[0]);
@@ -369,7 +369,7 @@ namespace glasssix
 					for (; i + 3 < size; i += 4)
 					{
 						const float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4) * kernel_cstep;
+						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 						__m128 sum0 = _mm_set1_ps(biasptr[0]);
@@ -487,7 +487,7 @@ namespace glasssix
 					for (; i < size; i++)
 					{
 						const float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4 + i % 4) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4) * kernel_cstep;
+						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 						__m128 sum = _mm_loadu_ps(biasptr);
@@ -566,7 +566,7 @@ namespace glasssix
 					for (; i + 7 < size; i += 8)
 					{
 						const float* tmpptr = tmp_data + (i / 8) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4 + p % 4) * kernel_cstep;
+						const float* kptr = weights1x1_data + (p / 4 + p % 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
 						mm_type sum = mm_set1_ps(bias0);
@@ -639,7 +639,7 @@ namespace glasssix
 					for (; i + 3 < size; i += 4)
 					{
 						const float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4 + p % 4) * kernel_cstep;
+						const float* kptr = weights1x1_data + (p / 4 + p % 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 						__m128 sum = _mm_set1_ps(bias0);
@@ -690,7 +690,7 @@ namespace glasssix
 					for (; i < size; i++)
 					{
 						const float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4 + i % 4) * tmp_cstep;
-						const float* kptr = weights_data + (p / 4 + p % 4) * tmp_cstep;
+						const float* kptr = weights1x1_data + (p / 4 + p % 4) * tmp_cstep;
 
 						int q = 0;
 

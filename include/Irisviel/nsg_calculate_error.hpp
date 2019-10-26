@@ -1,34 +1,32 @@
 #ifndef _NSG_CALCULATE_ERROR_HPP_
 #define _NSG_CALCULATE_ERROR_HPP_
 #include <stdexcept>
+#include <string>
 
 namespace glasssix {
 	namespace irisviel {
 		class nsg_calculate_error
 			: public std::exception
 		{	// base of all runtime-error exceptions
+
+			std::string message_;
 		public:
 			typedef std::exception _Mybase;
 
 			explicit nsg_calculate_error(const std::string& _Message)
-				: _Mybase(_Message.c_str())
-			{	// construct from message string
+				: _Mybase(), message_(_Message)
+			{	// construct from message string				
 			}
 
 			explicit nsg_calculate_error(const char *_Message)
-				: _Mybase(_Message)
+				: _Mybase(), message_(_Message)
 			{	// construct from message string
 			}
 
-#if _HAS_EXCEPTIONS
-
-#else /* _HAS_EXCEPTIONS */
-		protected:
-			virtual void _Doraise() const
-			{	// perform class-specific exception handling
-				_RAISE(*this);
+			virtual char const* what() const noexcept
+			{
+				return message_.c_str();
 			}
-#endif /* _HAS_EXCEPTIONS */
 		};
 	}
 }

@@ -20,6 +20,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Excalibur
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
 LOCAL_MODULE := Excalibur
 LOCAL_SRC_FILES := axpy.cpp concat.cpp conv_native_cpu.cpp \
+					conv_1x1s1_cpu.cpp \
 					conv_winograd_cpu.cpp deconv.cpp eltwise.cpp \
 					flip.cpp im2col.cpp inner_product.cpp \
 					io.cpp math_functions.cpp mirrormax.cpp \
