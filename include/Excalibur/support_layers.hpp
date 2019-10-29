@@ -70,7 +70,7 @@ layername##_##weights =  (float*)_aligned_malloc(sizeof(netname##_##layername##_
 int8_to_float((const signed char*)netname##_##layername##_##weights,(const float*)netname##_##layername##_##scales_weight,(float*)layername##_##weights,\
     sizeof(netname##_##layername##_##weights) / sizeof(signed char),sizeof(netname##_##layername##_##scales_weight) / sizeof(float));
 
-
+//#define INT8_DATA
 #ifdef INT8_DATA //copy directely, do not caculate
 
 #define Copy_Int8_Params(layername, netname)\

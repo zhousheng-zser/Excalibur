@@ -156,6 +156,9 @@
     <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\scale.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
@@ -248,6 +251,9 @@
     <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\scale.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
@@ -305,6 +311,9 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\scale.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

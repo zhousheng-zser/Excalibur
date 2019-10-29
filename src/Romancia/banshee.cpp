@@ -86,18 +86,11 @@ namespace glasssix
 
 			//			
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS)
-			{
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
-
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
-			{
-				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
-#endif // USE_CUDNN
+#endif
 #endif
 
 #ifdef __ARM_NEON
@@ -308,9 +301,9 @@ namespace glasssix
 				{
 					std::vector<float> temp;
 					std::vector<float> conv_6_1(1), conv_6_2(3), conv_6_3(10);
-					cudaMemcpy(conv_6_1.data(), get_conv6_1()->gpu_data(), 1 * sizeof(float), cudaMemcpyDefault);
-					cudaMemcpy(conv_6_2.data(), get_conv6_2()->gpu_data(), 3 * sizeof(float), cudaMemcpyDefault);
-					cudaMemcpy(conv_6_3.data(), get_conv6_3()->gpu_data(), 10 * sizeof(float), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(conv_6_1.data(), get_conv6_1()->gpu_data(), 1 * sizeof(float), cudaMemcpyDefault));
+					CUDA_CHECK(cudaMemcpy(conv_6_2.data(), get_conv6_2()->gpu_data(), 3 * sizeof(float), cudaMemcpyDefault));
+					CUDA_CHECK(cudaMemcpy(conv_6_3.data(), get_conv6_3()->gpu_data(), 10 * sizeof(float), cudaMemcpyDefault));
 
 					for (size_t j = 0; j < 1; j++)
 					{
@@ -407,7 +400,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
-				cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				rectangle<int> MarginRect = rectangle<int>((float)width / 7,
 					(float)height / 7,
@@ -456,7 +449,7 @@ namespace glasssix
 				tensor_operation_gpu::merge_channel_gpu(src_vector, color_img);
 				tensor_operation_gpu::resize_gpu(color_img, resized_color_img, 128, 128);
 
-				cudaMemcpy(res.data(), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(res.data(), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 
 #else
 				NO_GPU;
@@ -544,7 +537,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
-				cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				for (size_t i = 0; i < landmarks.size(); i++)
 				{
@@ -589,7 +582,7 @@ namespace glasssix
 					tensor_operation_gpu::merge_channel_gpu(src_vector, color_img);
 					tensor_operation_gpu::resize_gpu(color_img, resized_color_img, 128, 128);
 
-					cudaMemcpy(&(res[0]) + i * 3 * 128 * 128 * sizeof(unsigned char), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(&(res[0]) + i * 3 * 128 * 128 * sizeof(unsigned char), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 				}
 
 #else

@@ -232,7 +232,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -250,7 +250,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -268,7 +268,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -286,7 +286,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -304,7 +304,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -328,7 +328,7 @@
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
       <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>false</OpenMPSupport>
+      <OpenMPSupport>true</OpenMPSupport>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -414,6 +414,9 @@
     </ProjectReference>
     <ProjectReference Include="..\..\windows\Gaius\Gaius.vcxproj">
       <Project>{a62873ee-5fa6-4729-bea1-8ba45c9127f8}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\windows\Irisviel\Irisviel.vcxproj">
+      <Project>{d73d41d7-9c35-4e48-a85a-aba45068223a}</Project>
     </ProjectReference>
     <ProjectReference Include="..\..\windows\Longinus\Longinus.vcxproj">
       <Project>{9700e429-6846-4c83-89cf-1881147fe5d6}</Project>

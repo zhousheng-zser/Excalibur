@@ -72,12 +72,6 @@ namespace glasssix
 			onet_mobile* ONet_;
 
 			int device_id_;
-			//omp
-#ifdef _OPENMP
-			const int threads_num = omp_get_num_procs();
-#else
-			const int threads_num = 1;
-#endif
 			//pnet config
 			const int pnet_stride = 4;
 			const int pnet_size = 20;

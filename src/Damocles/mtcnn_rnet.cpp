@@ -62,15 +62,10 @@ namespace glasssix
 			}
 			
 			//
-			
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
-			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
 #endif
 #endif

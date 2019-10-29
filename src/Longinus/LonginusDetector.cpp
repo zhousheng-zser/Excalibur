@@ -173,10 +173,10 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 
 			for (size_t row = 0; row < rects[i].height; row++)
 			{
-				cudaMemcpy(rect_tensor_data + row * rects[i].width, gray + (rects[i].y + row) * step + rects[i].x, rects[i].width * sizeof(unsigned char), cudaMemcpyHostToDevice);
+				CUDA_CHECK(cudaMemcpy(rect_tensor_data + row * rects[i].width, gray + (rects[i].y + row) * step + rects[i].x, rects[i].width * sizeof(unsigned char), cudaMemcpyHostToDevice));
 			}
 			tensor_operation_gpu::resize_gpu(rect_tensor, rect48_tensor, 48, 48);
-			cudaMemcpy(group_rect_tensor->mutable_gpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->gpu_data(), 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDeviceToDevice);
+			CUDA_CHECK(cudaMemcpy(group_rect_tensor->mutable_gpu_data() + i * 1 * 48 * 48 * sizeof(unsigned char), rect48_tensor->gpu_data(), 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDeviceToDevice));
 		}
 
 		bansheelia_->Forward(group_rect_tensor->gpu_data(), rects.size(), order);
@@ -186,12 +186,11 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detect(unsigned char *gray, 
 #endif
 	}
 
-	float threshold = 0.8;
 	std::vector<FaceRectwithFaceInfo> rectsWithLandmark;
 	rectsWithLandmark.clear();
 	for (size_t i = 0; i < rects.size(); i++)
 	{
-		if (infoParam[i][0] < threshold)
+		if (infoParam[i][0] < 0.8)
 		{
 			continue;
 		}
@@ -347,12 +346,16 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char
 	auto res = diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
 	for (auto i = 0; i < res.size(); i++)
 	{
+		if (res[i].bbox.score < 0.8)
+		{
+			continue;
+		}
 		float w = res[i].bbox.xmax - res[i].bbox.xmin;
 		float h = res[i].bbox.ymax - res[i].bbox.ymin;
 		FaceRectwithFaceInfo info(FaceRect(res[i].bbox.xmin + w / 2 - h / 2, res[i].bbox.ymin, h, h, 0, res[i].bbox.score));
-		info.yaw = 0.0f;
-		info.pitch = 0.0f;
-		info.roll = 0.0f;
+		info.yaw = res[i].headpose[0];
+		info.pitch = res[i].headpose[1];
+		info.roll = res[i].headpose[2];
 		for (auto j = 0; j < 5; j++)
 		{
 			info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
@@ -361,12 +364,18 @@ std::vector<FaceRectwithFaceInfo> LonginusDetector::detectEx(const unsigned char
 	}
 	return output;
 }
+
+
 std::vector<FaceRectwithFaceInfo> glasssix::longinus::LonginusDetector::detectEx_mobile(const unsigned char * image, const int channels, const int height, const int width, const int minSize, const float * threshold, const float factor, const int stage, const int order) const
 {
 	std::vector<FaceRectwithFaceInfo> output;
 	auto res = diodorus_mobile_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
 	for (auto i = 0; i < res.size(); i++)
 	{
+		if (res[i].bbox.score < 0.8)
+		{
+			continue;
+		}
 		float w = res[i].bbox.xmax - res[i].bbox.xmin;
 		float h = res[i].bbox.ymax - res[i].bbox.ymin;
 		FaceRectwithFaceInfo info(FaceRect(res[i].bbox.xmin + w / 2 - h / 2, res[i].bbox.ymin, h, h, 0, res[i].bbox.score));
