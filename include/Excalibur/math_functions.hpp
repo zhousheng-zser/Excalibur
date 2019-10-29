@@ -41,7 +41,7 @@ namespace glasssix
 					if (device >= 0)
 					{
 #ifdef USE_CUDA
-						cudaSetDevice(device);
+						CUDA_CHECK(cudaSetDevice(device));
 						CUDA_CHECK(cudaMemcpy(Y, X, sizeof(Dtype) * N, cudaMemcpyDefault));
 #else
 						NO_GPU;
