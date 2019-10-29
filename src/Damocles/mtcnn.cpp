@@ -2,7 +2,8 @@
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
 #include <algorithm>
-
+#include <fstream>
+using namespace std;
 
 namespace glasssix
 {
@@ -15,9 +16,6 @@ namespace glasssix
 
 		MTCNN::MTCNN(int device_id) {
 			device_id_ = device_id;
-#ifdef _OPENMP
-			omp_set_num_threads(threads_num);
-#endif
 			PNet_ = new mtcnn_pnet(device_id_);
 			RNet_ = new mtcnn_rnet(device_id_);
 			ONet_ = new mtcnn_onet(device_id_);
@@ -75,7 +73,7 @@ namespace glasssix
 				select_idx++;
 
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_num)
+#pragma omp parallel for
 #endif
 				for (int32_t i = select_idx; i < num_bbox; i++) {
 					if (mask_merged[i] == 1)
@@ -112,13 +110,14 @@ namespace glasssix
 		void MTCNN::BBoxRegression(std::vector<FaceInfomation>& bboxes)
 		{
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_num)
+#pragma omp parallel for
 #endif // _OPENMP
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
 				float *bbox_reg = bboxes[i].bbox_reg;
 				float w = bbox.xmax - bbox.xmin + 1;
 				float h = bbox.ymax - bbox.ymin + 1;
+
 				bbox.xmin += bbox_reg[0] * w;
 				bbox.ymin += bbox_reg[1] * h;
 				bbox.xmax += bbox_reg[2] * w;
@@ -129,7 +128,7 @@ namespace glasssix
 		void MTCNN::BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_num)
+#pragma omp parallel for
 #endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
@@ -143,7 +142,7 @@ namespace glasssix
 		void MTCNN::BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height)
 		{
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_num)
+#pragma omp parallel for
 #endif
 			for (int i = 0; i < bboxes.size(); ++i) {
 				FaceBox &bbox = bboxes[i].bbox;
@@ -180,7 +179,7 @@ namespace glasssix
 					faceBox.ymin = (float)(y * pnet_stride) / scale;
 					faceBox.xmax = (float)(x * pnet_stride + pnet_cell_size - 1.f) / scale;
 					faceBox.ymax = (float)(y * pnet_stride + pnet_cell_size - 1.f) / scale;
-
+					
 					FaceInfomation.bbox_reg[0] = reg_data[i];
 					FaceInfomation.bbox_reg[1] = reg_data[i + spatical_size];
 					FaceInfomation.bbox_reg[2] = reg_data[i + 2 * spatical_size];
@@ -208,7 +207,7 @@ namespace glasssix
 				else
 				{
 #ifdef USE_CUDA
-					cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
 #else
 					NO_GPU;
@@ -225,7 +224,7 @@ namespace glasssix
 				else
 				{
 #ifdef USE_CUDA
-					cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 #else
 					NO_GPU;
 #endif // USE_CUDA
@@ -235,7 +234,6 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
-
 
 			float scale = 12.f / minSize;
 			float minWH = std::min(height, width) *scale;
@@ -247,10 +245,15 @@ namespace glasssix
 			}
 			total_boxes_.clear();
 			std::shared_ptr<tensor<float>> input_layer;
+
 			for (int i = 0; i < scales.size(); i++) {
-				int ws = (int)std::ceil(width*scales[i]);
-				int hs = (int)std::ceil(height*scales[i]);
+				float coef = scales[i];
+				float wsf = width * coef + 0.5;
+				float hsf = height * coef + 0.5;
+				int ws = static_cast<int>(width * coef + 0.5);
+				int hs = static_cast<int>(height * coef + 0.5);
 				input_layer.reset(new tensor<float>(std::vector<int>{ 1, channels, hs, ws }, device_id_));
+
 				if (device_id_ < 0)
 				{
 					tensor_operation_cpu::resize_cpu(src_tensor, resized_tensor, hs, ws);
@@ -306,7 +309,7 @@ namespace glasssix
 				else
 				{
 #ifdef USE_CUDA
-					cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
 #else
 					NO_GPU;
@@ -323,7 +326,7 @@ namespace glasssix
 				else
 				{
 #ifdef USE_CUDA
-					cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 #else
 					NO_GPU;
 #endif // USE_CUDA
@@ -362,7 +365,7 @@ namespace glasssix
 			}
 
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(threads_num)
+#pragma omp parallel for
 #endif
 			for (int n = 0; n < batch_size; ++n)
 			{
@@ -400,11 +403,11 @@ namespace glasssix
 						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);
 						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-						cudaMemcpy(input_data_n, roi_resized_float_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault);
+						CUDA_CHECK(cudaMemcpy(input_data_n, roi_resized_float_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault));
 					}
 					else
 					{
-						cudaMemset(input_data_n, 0, channels * input_h * input_w * sizeof(float));
+						CUDA_CHECK(cudaMemset(input_data_n, 0, channels * input_h * input_w * sizeof(float)));
 					}
 #else
 					NO_GPU;

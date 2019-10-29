@@ -23,7 +23,7 @@ void glasssix::excalibur::pooling_arm::Forward_cpu(const std::shared_ptr<tensor<
 	int wtailpad = 0, htailpad = 0;
 	int wtail = (w + 2 * pad_ - kernel_) % stride_;
 	int htail = (h + 2 * pad_ - kernel_) % stride_;
-	
+
 	if (wtail || htail)
 	{
 		if (wtail)

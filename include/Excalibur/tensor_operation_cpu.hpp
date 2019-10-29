@@ -111,7 +111,7 @@ namespace glasssix
 						dst.push_back(temp);
 					}
 
-					delete c_src_offset;
+					delete [] c_src_offset;
 				}
 				else if(src->order() == NHWC)
 				{
@@ -196,7 +196,7 @@ namespace glasssix
 						dst.push_back(temp);
 					}
 
-					delete c_src_offset;
+					delete [] c_src_offset;
 				}
 				else if (src.order() == NHWC)
 				{
@@ -277,7 +277,7 @@ namespace glasssix
 					return;
 				}
 
-#elif defined __linux__
+#else
 
 				if (type_id == 0)
 				{
@@ -316,10 +316,6 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
-
-#else
-				NOT_IMPLEMENTED;
-				return;
 #endif // _MSC_VER
 
 				if (order == NCHW)
@@ -349,7 +345,7 @@ namespace glasssix
 						}
 					}
 
-					delete c_dst_offset;
+					delete [] c_dst_offset;
 				}
 				else if (order == NHWC)
 				{
@@ -426,7 +422,7 @@ namespace glasssix
 					return;
 				}
 
-#elif defined __linux__
+#else
 
 				if (type_id == 0)
 				{
@@ -465,10 +461,6 @@ namespace glasssix
 					LOG(ERROR) << "Un-support data type.";
 					return;
 				}
-
-#else
-				NOT_IMPLEMENTED;
-				return;
 #endif // _MSC_VER
 
 				if (order == NCHW)
@@ -498,7 +490,7 @@ namespace glasssix
 						}
 					}
 
-					delete c_dst_offset;
+					delete [] c_dst_offset;
 				}
 				else if (order == NHWC)
 				{
@@ -786,7 +778,12 @@ namespace glasssix
 					const Dtype* src_data = src->cpu_data();
 
 					auto name = typeid(Dtype).name();
-					if (std::string("h") == std::string(name) || std::string("unsigned char") == std::string(name))
+
+#ifdef _MSC_VER
+					if (std::string("unsigned char") == std::string(name))
+#else
+					if (std::string("h") == std::string(name))
+#endif
 					{
 						void* temp_buf = 0;
 						int scale_x, scale_y;
@@ -909,9 +906,9 @@ namespace glasssix
 										else if (type == Bilinear)
 										{
 											unsigned indexA = std::min(unsigned(src_pos3), maxIndex);
-											unsigned indexB = std::min(unsigned(src_pos3 + channels), maxIndex);
-											unsigned indexC = std::min(unsigned(src_pos3 + width * channels), maxIndex);
-											unsigned indexD = std::min(unsigned(src_pos3 + (width + 1) * channels), maxIndex);
+											unsigned indexB = std::min(unsigned(src_pos3 + 1), maxIndex);
+											unsigned indexC = std::min(unsigned(src_pos3 + width), maxIndex);
+											unsigned indexD = std::min(unsigned(src_pos3 + (width + 1)), maxIndex);
 											Dtype A = src_data[src_n_offset + indexA];
 											Dtype B = src_data[src_n_offset + indexB];
 											Dtype C = src_data[src_n_offset + indexC];
@@ -1060,7 +1057,11 @@ namespace glasssix
 					const Dtype* src_data = src.cpu_data();
 
 					auto name = typeid(Dtype).name();
-					if (std::string("h") == std::string(name) || std::string("unsigned char") == std::string(name))
+#ifdef _MSC_VER
+					if (std::string("unsigned char") == std::string(name))
+#else
+					if (std::string("h") == std::string(name))
+#endif
 					{
 						void* temp_buf = 0;
 						int scale_x, scale_y;
@@ -1281,7 +1282,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp.clone());
+				dst = dst_temp.clone();
 			}
 
 
@@ -1369,7 +1370,7 @@ namespace glasssix
 
 									if (x >= width || x < 0 || y >= height || y < 0)
 									{
-										dst_data[dst_pos2] = (Dtype)fill_pixel_value;
+										dst_data[dst_pos2] = 0;
 									}
 									else
 									{
@@ -1439,7 +1440,7 @@ namespace glasssix
 
 									if (x >= width || x < 0 || y >= height || y < 0)
 									{
-										dst_data[dst_n_offset + dst_pos3] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_pos3] = 0;
 									}
 									else
 									{
@@ -1566,7 +1567,7 @@ namespace glasssix
 
 									if (x >= width || x < 0 || y >= height || y < 0)
 									{
-										dst_data[dst_n_offset + dst_pos2] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_pos2] = 0;
 									}
 									else
 									{
@@ -1636,7 +1637,7 @@ namespace glasssix
 
 									if (x >= width || x < 0 || y >= height || y < 0)
 									{
-										dst_data[dst_n_offset + dst_pos3] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_pos3] = 0;
 									}
 									else
 									{
@@ -1783,7 +1784,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_index] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_index] = 0;
 									}
 									else
 									{
@@ -1850,7 +1851,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_pos3] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_pos3] = 0;
 									}
 									else
 									{
@@ -1998,7 +1999,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_index] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_index] = 0;
 									}
 									else
 									{
@@ -2066,7 +2067,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_pos3] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_pos3] = 0;
 									}
 									else
 									{
@@ -4552,7 +4553,7 @@ namespace glasssix
 			/// <param name="fill_pixel_value">validate when borderType is Border_Constant, zero by default</param>
 			template <typename Dtype>
 			static void make_border_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-				int top, int bottom, int left, int right, borderType type = Border_Constant, int fill_pixel_value = 0)
+				int top, int bottom, int left, int right, borderType type = Border_Constant, Dtype fill_pixel_value = 0)
 			{
 				if (src->device() >= 0)
 				{
@@ -4608,7 +4609,7 @@ namespace glasssix
 									int dst_index = dst_channel_offset + row * dst_width;
 									for (int col = 0; col < dst_width; col++)
 									{
-										dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index + col] = 0;
 									}
 								}
 
@@ -4620,14 +4621,14 @@ namespace glasssix
 
 									for (int col = 0; col < left; col++)
 									{
-										dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index + col] = 0;
 									}
 
 									memcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype));
 
 									for (int col = left + width; col < dst_width; col++)
 									{
-										dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index + col] = 0;
 									}
 								}
 
@@ -4637,7 +4638,7 @@ namespace glasssix
 									int dst_index = dst_channel_offset + row * dst_width;
 									for (int col = 0; col < dst_width; col++)
 									{
-										dst_data[dst_n_offset + dst_index + col] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index + col] = 0;
 									}
 								}
 							}
@@ -4749,7 +4750,7 @@ namespace glasssix
 									int dst_index2 = dst_index1 + col * channels;
 									for (int ch = 0; ch < channels; ch++)
 									{
-										dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index2 + ch] = 0;
 									}
 								}
 							}
@@ -4766,7 +4767,7 @@ namespace glasssix
 									int dst_index2 = dst_index1 + col * channels;
 									for (int ch = 0; ch < channels; ch++)
 									{
-										dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index2 + ch] = 0;
 									}
 								}
 
@@ -4779,7 +4780,7 @@ namespace glasssix
 									int dst_index2 = dst_index1 + col * channels;
 									for (int ch = 0; ch < channels; ch++)
 									{
-										dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index2 + ch] = 0;
 									}
 								}
 							}
@@ -4793,7 +4794,7 @@ namespace glasssix
 									int dst_index2 = dst_index1 + col * channels;
 									for (int ch = 0; ch < channels; ch++)
 									{
-										dst_data[dst_n_offset + dst_index2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + dst_index2 + ch] = 0;
 									}
 								}
 							}
@@ -4983,7 +4984,7 @@ namespace glasssix
 								//top
 								for (int i = dst_channel_offset; i < dst_channel_offset + top * dst_width; i++)
 								{
-									dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+									dst_data[dst_n_offset + i] = 0;
 								}
 
 								//center
@@ -4994,21 +4995,21 @@ namespace glasssix
 
 									for (int i = dst_index; i < dst_index + left; i++)
 									{
-										dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + i] = 0;
 									}
 
 									memcpy(dst_data + dst_n_offset + dst_index + left, src_data + src_n_offset + src_index, width * sizeof(Dtype));
 									
 									for (int i = dst_index + left + width; i < dst_index + left + width + right; i++)
 									{
-										dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+										dst_data[dst_n_offset + i] = 0;
 									}
 								}
 
 								//bottom
 								for (int i = dst_channel_offset + (top + height) * dst_width; i < dst_channel_offset + (top + height) * dst_width + bottom * dst_width; i++)
 								{
-									dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+									dst_data[dst_n_offset + i] = 0;
 								}
 							}
 						}
@@ -5103,7 +5104,7 @@ namespace glasssix
 							//top
 							for (int i = 0; i < top * dst_width * channels; i++)
 							{
-								dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+								dst_data[dst_n_offset + i] = 0;
 							}
 
 							//center
@@ -5115,7 +5116,7 @@ namespace glasssix
 								int dst_pos1 = row * dst_width * channels;
 								for (int i = dst_pos1; i < dst_pos1 + left * channels; i++)
 								{
-									dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+									dst_data[dst_n_offset + i] = 0;
 								}
 
 								//center
@@ -5126,14 +5127,14 @@ namespace glasssix
 								int dst_pos3 = dst_pos2 + width * channels;
 								for (int i = dst_pos3; i < dst_pos3 + right * channels; i++)
 								{
-									dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+									dst_data[dst_n_offset + i] = 0;
 								}
 							}
 
 							//bottom
 							for (int i = (top + height) * dst_width * channels; i < (top + height) * dst_width * channels + bottom * dst_width * channels; i++)
 							{
-								dst_data[dst_n_offset + i] = (Dtype)fill_pixel_value;
+								dst_data[dst_n_offset + i] = 0;
 							}
 						}
 					}
@@ -6441,7 +6442,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_index] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_index] = 0;
 									}
 									else
 									{
@@ -6506,7 +6507,7 @@ namespace glasssix
 								{
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_pos2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_pos2 + ch] = 0;
 									}
 									else
 									{
@@ -6648,7 +6649,7 @@ namespace glasssix
 
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_index] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_index] = 0;
 									}
 									else
 									{
@@ -6713,7 +6714,7 @@ namespace glasssix
 								{
 									if (x < 0 || x >= width || y < 0 || y >= height)
 									{
-										dst_data[n_offset + dst_pos2 + ch] = (Dtype)fill_pixel_value;
+										dst_data[n_offset + dst_pos2 + ch] = 0;
 									}
 									else
 									{

@@ -121,7 +121,7 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					float* tensor_data = tensor_float_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault));
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
 #ifdef USE_CUDNN
 					Forward_gpu_cudnn(tensor_float_data);
@@ -159,7 +159,7 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault));
 					tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
 #ifdef USE_CUDNN
 					Forward_gpu_cudnn(tensor_float_data);

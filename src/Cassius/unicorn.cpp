@@ -4,12 +4,10 @@
 #include "../../include/Julius/simd_helper.hpp"
 
 #ifdef INT8_DATA
-#include "unicorn_data.hpp"
-#elif defined HALF_DATA
-#include "unicorn_data.hpp"
+#include "unicorn_int8_data.hpp"
 #else
 #include "unicorn_data.hpp"
-#endif//HALF_DATA
+#endif//INT8_DATA
 
 namespace glasssix
 {
@@ -36,17 +34,11 @@ namespace glasssix
 #endif
 #endif
 
-#ifdef HALF_DATA
-			float quantize_level = USHRT_MAX;
-			int8_quantization_ = false;//do not use int8 in HALF_DATA
-#else
 			float quantize_level = INT_MAX;
-#endif//HAL
 
-			if (int8_quantization_)
+			if (int8_quantization_)//false, doesn't use
 			{
-				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
-				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
+				Copy_Int8_Params(conv1a, Unicorn);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_Params(conv1b, Unicorn);//18432
 				Copy_Params(relu1b_weights, Unicorn, quantize_level);//64
@@ -102,12 +94,13 @@ namespace glasssix
 				Copy_Params(relu5_6_weights, Unicorn, quantize_level);//512
 				Copy_Int8_Params(conv5, Unicorn);//2359296
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
-				Copy_Int8_Params(conv5_dw, Unicorn);//2359296
+				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//864
+				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//64
 			}
 			else
 			{
 #ifdef INT8_DATA
-				Copy_Params(conv1a_weights, Unicorn, quantize_level);//64
+				Copy_Int8_to_FP32_Params(conv1a, Unicorn);//18432
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_to_FP32_Params(conv1b, Unicorn);//18432
@@ -191,7 +184,7 @@ namespace glasssix
 				Copy_Int8_to_FP32_Params(conv5, Unicorn);//2359296
 				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
-				Copy_Int8_to_FP32_Params(conv5_dw_weights, Unicorn);//2359296
+				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//64
 				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//1024
 #else				
 				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
@@ -284,10 +277,7 @@ namespace glasssix
 			}
 
 #ifdef __ARM_NEON
-			bool temp_quantization = int8_quantization_;
-			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_arm_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
-			int8_quantization_ = temp_quantization;
 			Init_PReLU_arm_Params(relu1a, 32, false, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_arm_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
 			Init_PReLU_arm_Params(relu1b, 64, false, false);//nchw:1*64*124*124->1*64*124*124
@@ -358,13 +348,11 @@ namespace glasssix
 			Init_Eltwise_arm_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_arm_Params(relu5, 512, false, false);//nchw:1*512*4*4->1*512*4*4
+			int8_quantization_ = false;// conv5_dw use float32 weights
 			Init_Conv_arm_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*4*4->1*512*1*1
 			Init_Normalize_Params(normalizer, 1, false);
 #else
-			bool temp_quantization = int8_quantization_;
-			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
-			int8_quantization_ = temp_quantization;
 			Init_PReLU_Params(relu1a, 32, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
 			Init_PReLU_Params(relu1b, 64, false);//nchw:1*64*124*124->1*64*124*124
@@ -435,6 +423,7 @@ namespace glasssix
 			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_Params(relu5, 512, false);//nchw:1*512*4*4->1*512*4*4
+			int8_quantization_ = false;// conv5_dw use float32 weights
 			Init_Conv_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_Normalize_Params(normalizer, 1, false);
 #endif //!__ARM_NEON
@@ -878,8 +867,17 @@ namespace glasssix
 			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
 			std::cout << "layer-conv5   :" << std::setw(5) << elapseTime << std::endl;
 			relu5->Forward_cpu(conv5_top_data);
-			pool5->Forward_cpu(conv5_top_data, pool5_top_data);
-			normalizer->Forward_cpu(pool5_top_data);//feature_top_data
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_dw->Forward(conv5_top_data, conv5_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_dw:" << std::setw(5) << elapseTime << std::endl;
+
+			normalizer->Forward_cpu(conv5_dw_top_data);//feature_top_data
 		}
 #else
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
