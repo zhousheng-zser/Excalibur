@@ -12,9 +12,6 @@ using namespace glasssix::longinus;
 glasssix::longinus::mtcnn_mobile::mtcnn_mobile(int device_id, bool handle_big_face) : vDamocles(device_id)
 {
 	device_id_ = device_id;
-#ifdef _OPENMP
-	omp_set_num_threads(threads_num);
-#endif
 	PNet_ = new pnet_mobile(device_id_);
 	RNet_ = new rnet_mobile(device_id_);
 	ONet_ = new onet_mobile(device_id_);
@@ -308,8 +305,7 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 		}
 		else
 		{
-			int chunk_size = ceil(box_num / thread_num);
-#pragma omp parallel for schedule(static, chunk_size) num_threads(thread_num)
+#pragma omp parallel for
 			for (int num = 0; num < box_num; num++)
 			{
 				if (boundingBox.at(num).exist)
@@ -744,11 +740,11 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
 					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * rnet_size * rnet_size * sizeof(float), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * rnet_size * rnet_size * sizeof(float), cudaMemcpyDefault));
 				}
 				else
 				{
-					cudaMemset(input_data_i, 0, channels * rnet_size * rnet_size * sizeof(float));
+					CUDA_CHECK(cudaMemset(input_data_i, 0, channels * rnet_size * rnet_size * sizeof(float)));
 				}
 #else
 				NO_GPU;
@@ -963,11 +959,11 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
 					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * onet_size * onet_size * sizeof(float), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * onet_size * onet_size * sizeof(float), cudaMemcpyDefault));
 				}
 				else
 				{
-					cudaMemset(input_data_i, 0, channels * onet_size * onet_size * sizeof(float));
+					CUDA_CHECK(cudaMemset(input_data_i, 0, channels * onet_size * onet_size * sizeof(float)));
 				}
 #else
 				NO_GPU;
