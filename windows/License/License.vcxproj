@@ -181,63 +181,63 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\include;$(IncludePath)</IncludePath>
+    <IncludePath>../../include/License;$(VCInstallDir)\Tools\MSVC\14.23.28105\atlmfc\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(VCInstallDir)\Tools\MSVC\14.22.27905\atlmfc\lib\x86;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -246,6 +246,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -263,7 +264,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -276,6 +277,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -289,6 +291,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -302,6 +305,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -315,6 +319,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -328,6 +333,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -350,7 +356,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -372,7 +378,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -394,7 +400,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -416,7 +422,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -438,7 +444,7 @@
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(VCPackage)/lib/*.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Lib>
       <AdditionalDependencies>libcrypto.lib;WbemUuid.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>

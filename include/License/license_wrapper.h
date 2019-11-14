@@ -1,11 +1,13 @@
 #pragma once
 
-#include "license_context.h"
+#include "license_error.hpp"
 
 namespace glasssix
 {
     namespace hippogriff
     {
+		using unauthorized_handler_type = void(*)();
+
         /// <summary>
         /// Check if the license is valid.
         /// </summary>
@@ -33,6 +35,8 @@ namespace glasssix
 
         extern "C" __declspec(dllexport) void check_license_fatal_exit(const std::string& component_name);
 
+		extern "C" __declspec(dllexport) void set_unauthorized_handler(unauthorized_handler_type handler);
+
         /// <summary>
         /// Start the watchdog timer.
         /// </summary>
@@ -44,6 +48,8 @@ namespace glasssix
         extern "C" void check_license_fatal_exit_sync();
 
         extern "C" void check_license_fatal_exit(const std::string& component_name);
+
+		extern "C" void set_unauthorized_handler(unauthorized_handler_type handler);
 
         /// <summary>
         /// Start the watchdog timer.
