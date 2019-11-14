@@ -4,12 +4,10 @@
 #include "../../include/Julius/simd_helper.hpp"
 
 #ifdef INT8_DATA
-#include "unicorn_data.hpp"
-#elif defined HALF_DATA
-#include "unicorn_data.hpp"
+#include "unicorn_int8_data.hpp"
 #else
 #include "unicorn_data.hpp"
-#endif//HALF_DATA
+#endif//INT8_DATA
 
 namespace glasssix
 {
@@ -25,13 +23,9 @@ namespace glasssix
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
 			if (device >= 0)
 			{
@@ -40,17 +34,11 @@ namespace glasssix
 #endif
 #endif
 
-#ifdef HALF_DATA
-			float quantize_level = USHRT_MAX;
-			int8_quantization_ = false;//do not use int8 in HALF_DATA
-#else
 			float quantize_level = INT_MAX;
-#endif//HAL
 
-			if (int8_quantization_)
+			if (int8_quantization_)//false, doesn't use
 			{
-				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
-				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
+				Copy_Int8_Params(conv1a, Unicorn);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_Params(conv1b, Unicorn);//18432
 				Copy_Params(relu1b_weights, Unicorn, quantize_level);//64
@@ -106,12 +94,13 @@ namespace glasssix
 				Copy_Params(relu5_6_weights, Unicorn, quantize_level);//512
 				Copy_Int8_Params(conv5, Unicorn);//2359296
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
-				Copy_Int8_Params(conv5_dw, Unicorn);//2359296
+				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//864
+				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//64
 			}
 			else
 			{
 #ifdef INT8_DATA
-				Copy_Params(conv1a_weights, Unicorn, quantize_level);//64
+				Copy_Int8_to_FP32_Params(conv1a, Unicorn);//18432
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
 				Copy_Int8_to_FP32_Params(conv1b, Unicorn);//18432
@@ -195,7 +184,7 @@ namespace glasssix
 				Copy_Int8_to_FP32_Params(conv5, Unicorn);//2359296
 				Copy_Params(conv5_bias, Unicorn, quantize_level);//1024
 				Copy_Params(relu5_weights, Unicorn, quantize_level);//512
-				Copy_Int8_to_FP32_Params(conv5_dw_weights, Unicorn);//2359296
+				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//64
 				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//1024
 #else				
 				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
@@ -288,10 +277,7 @@ namespace glasssix
 			}
 
 #ifdef __ARM_NEON
-			bool temp_quantization = int8_quantization_;
-			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_arm_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
-			int8_quantization_ = temp_quantization;
 			Init_PReLU_arm_Params(relu1a, 32, false, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_arm_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
 			Init_PReLU_arm_Params(relu1b, 64, false, false);//nchw:1*64*124*124->1*64*124*124
@@ -300,7 +286,7 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu2_1, 64, false, false);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_arm_Params(conv2_2, 64, 64, 1, 3, 1, 1, true);//nchw:1*64*62*62->1*64*62*62
 			Init_PReLU_arm_Params(relu2_2, 64, false, false);//nchw:1*64*62*62->1*64*62*62
-			Init_Eltwise_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
+			Init_Eltwise_arm_Params(res2_2, 0);//nchw:1*64*62*62->1*64*62*62
 			Init_Conv_arm_Params(conv2, 64, 128, 1, 3, 1, 0, true);//nchw:1*64*62*62->1*128*60*60
 			Init_PReLU_arm_Params(relu2, 128, false, false);//nchw:1*128*60*60->1*128*60*60
 			Init_Pooling_arm_Params(pool2, 2, 2, 0, 0);//nchw:1*128*60*60->1*128*30*30
@@ -308,12 +294,12 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu3_1, 128, false, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_2, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_2, 128, false, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_arm_Params(res3_2, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_3, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_3, 128, false, false);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3_4, 128, 128, 1, 3, 1, 1, true);//nchw:1*128*30*30->1*128*30*30
 			Init_PReLU_arm_Params(relu3_4, 128, false, false);//nchw:1*128*30*30->1*128*30*30
-			Init_Eltwise_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
+			Init_Eltwise_arm_Params(res3_4, 0);//nchw:1*128*30*30->1*128*30*30
 			Init_Conv_arm_Params(conv3, 128, 256, 1, 3, 1, 0, true);//nchw:1*128*30*30->1*256*28*28
 			Init_PReLU_arm_Params(relu3, 256, false, false);//nchw:1*256*28*28->1*256*28*28
 			Init_Pooling_arm_Params(pool3, 2, 2, 0, 0);//nchw:1*256*28*28->1*256*14*14
@@ -321,27 +307,27 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu4_1, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_2, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_2, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_2, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_3, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_3, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_4, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_4, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_4, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_5, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_5, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_6, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_6, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_6, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_7, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_7, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_8, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_8, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_8, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_9, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_9, 256, false, false);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4_10, 256, 256, 1, 3, 1, 1, true);//nchw:1*256*14*14->1*256*14*14
 			Init_PReLU_arm_Params(relu4_10, 256, false, false);//nchw:1*256*14*14->1*256*14*14
-			Init_Eltwise_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
+			Init_Eltwise_arm_Params(res4_10, 0);//nchw:1*256*14*14->1*256*14*14
 			Init_Conv_arm_Params(conv4, 256, 512, 1, 3, 1, 0, true);//nchw:1*256*14*14->1*512*12*12
 			Init_PReLU_arm_Params(relu4, 512, false, false);//nchw:1*512*12*12->1*512*12*12
 			Init_Pooling_arm_Params(pool4, 2, 2, 0, 0);//nchw:1*512*12*12->1*512*6*6
@@ -349,26 +335,24 @@ namespace glasssix
 			Init_PReLU_arm_Params(relu5_1, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_2, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_2, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_2, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_3, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_3, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_4, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_4, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_4, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_5, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_5, 512, false, false);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5_6, 512, 512, 1, 3, 1, 1, true);//nchw:1*512*6*6->1*512*6*6
 			Init_PReLU_arm_Params(relu5_6, 512, false, false);//nchw:1*512*6*6->1*512*6*6
-			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
+			Init_Eltwise_arm_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_arm_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_arm_Params(relu5, 512, false, false);//nchw:1*512*4*4->1*512*4*4
+			int8_quantization_ = false;// conv5_dw use float32 weights
 			Init_Conv_arm_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*4*4->1*512*1*1
 			Init_Normalize_Params(normalizer, 1, false);
 #else
-			bool temp_quantization = int8_quantization_;
-			int8_quantization_ = false;// conv1a use float32 weights
 			Init_Conv_Params(conv1a, 3, 32, 1, 3, 1, 0, true);//nchw:1*3*128*128->1*32*126*126
-			int8_quantization_ = temp_quantization;
 			Init_PReLU_Params(relu1a, 32, false);//nchw:1*32*126*126->1*32*126*126
 			Init_Conv_Params(conv1b, 32, 64, 1, 3, 1, 0, true);//nchw:1*32*126*126->1*64*124*124
 			Init_PReLU_Params(relu1b, 64, false);//nchw:1*64*124*124->1*64*124*124
@@ -439,6 +423,7 @@ namespace glasssix
 			Init_Eltwise_Params(res5_6, 0);//nchw:1*512*6*6->1*512*6*6
 			Init_Conv_Params(conv5, 512, 512, 1, 3, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_PReLU_Params(relu5, 512, false);//nchw:1*512*4*4->1*512*4*4
+			int8_quantization_ = false;// conv5_dw use float32 weights
 			Init_Conv_Params(conv5_dw, 512, 512, 512, 4, 1, 0, true);//nchw:1*512*6*6->1*512*4*4
 			Init_Normalize_Params(normalizer, 1, false);
 #endif //!__ARM_NEON
@@ -882,8 +867,17 @@ namespace glasssix
 			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
 			std::cout << "layer-conv5   :" << std::setw(5) << elapseTime << std::endl;
 			relu5->Forward_cpu(conv5_top_data);
-			pool5->Forward_cpu(conv5_top_data, pool5_top_data);
-			normalizer->Forward_cpu(pool5_top_data);//feature_top_data
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_dw->Forward(conv5_top_data, conv5_dw_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_dw:" << std::setw(5) << elapseTime << std::endl;
+
+			normalizer->Forward_cpu(conv5_dw_top_data);//feature_top_data
 		}
 #else
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
@@ -1160,7 +1154,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault));
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
@@ -1226,7 +1220,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-				cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);

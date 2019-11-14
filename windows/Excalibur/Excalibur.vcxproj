@@ -433,7 +433,7 @@
     <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
     <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\scale.hpp" />
     <ClInclude Include="tensor_io.hpp" />
     <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -492,6 +492,7 @@
     <ClCompile Include="..\..\src\Excalibur\pca.cpp" />
     <ClCompile Include="..\..\src\Excalibur\pooling.cpp" />
     <ClCompile Include="..\..\src\Excalibur\prelu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\scale.cpp" />
     <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp" />
     <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
@@ -616,6 +617,15 @@
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\prelu.cu">
       <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\scale.cu">
+	  <FileType>Document</FileType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'">false</ExcludedFromBuild>

@@ -233,7 +233,7 @@ namespace glasssix
 				const dim3 grid_size(width, height, num_);
 
 				float bottom_scale;
-				cudaMemcpy(&bottom_scale, scales_data, 1 * sizeof(float), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(&bottom_scale, scales_data, 1 * sizeof(float), cudaMemcpyDefault));
 				kernel_float32_to_int8 << <grid_size, block_size>> > (bottom_data, bottom_scale, bottom_int8_data);
 			}
 

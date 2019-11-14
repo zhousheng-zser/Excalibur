@@ -17,14 +17,17 @@ void type_converter_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::share
 	}
 
 	const DtypeSRC* src_data = src->cpu_data();
-	dst.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
-	DtypeDST* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<DtypeDST>> dst_temp;
+	dst_temp.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
+	DtypeDST* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 	for (int i = 0; i < length; i++)
 	{
 		dst_data[i] = DtypeDST(src_data[i]);
 	}
+
+	dst = std::make_shared<tensor<DtypeDST>>(dst_temp->clone());
 }
 
 
@@ -44,14 +47,16 @@ void type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 	}
 
 	const DtypeSRC* src_data = src.cpu_data();
-	dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-	DtypeDST* dst_data = dst.mutable_cpu_data();
+	tensor<DtypeDST> dst_temp = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
+	DtypeDST* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 	for (int i = 0; i < length; i++)
 	{
 		dst_data[i] = DtypeDST(src_data[i]);
 	}
+
+	dst = dst_temp.clone();
 }
 
 
@@ -83,12 +88,9 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 		return;
 	}
 
-	if (dst == nullptr || (dst->count() != src->count()))
-	{
-		dst.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
-	}
-
-	DtypeDST* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<DtypeDST>> dst_temp;
+	dst_temp.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
+	DtypeDST* dst_data = dst_temp->mutable_cpu_data();
 	const DtypeSRC* src_data = src->cpu_data();
 
 	if (channel == 3)
@@ -96,7 +98,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst->order() == NCHW)
+		if (src->order() == NCHW)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -116,7 +118,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 				}
 			}
 		}
-		else if (dst->order() == NHWC)
+		else if (src->order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -160,6 +162,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 			}
 		}
 	}
+
+	dst = std::make_shared<tensor<DtypeDST>>(dst_temp->clone());
 }
 
 
@@ -191,12 +195,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 		return;
 	}
 
-	if (dst.count() != src.count())
-	{
-		dst = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
-	}
-
-	DtypeDST* dst_data = dst.mutable_cpu_data();
+	tensor<DtypeDST> dst_temp = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
+	DtypeDST* dst_data = dst_temp.mutable_cpu_data();
 	const DtypeSRC* src_data = src.cpu_data();
 
 	if (channel == 3)
@@ -204,7 +204,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst.order() == NCHW)
+		if (src.order() == NCHW)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -224,7 +224,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 				}
 			}
 		}
-		else if (dst.order() == NHWC)
+		else if (src.order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -268,6 +268,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 			}
 		}
 	}
+
+	dst = dst_temp.clone();
 }
 
 
@@ -282,8 +284,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<float
 	}
 
 	const float* src_data = src->cpu_data();
-	dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
-	int* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<int>> dst_temp;
+	dst_temp.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+	int* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -309,6 +312,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<float
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<int>>(dst_temp->clone());
 }
 
 template<>
@@ -321,8 +326,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<float> &src, tensor<i
 	}
 
 	const float* src_data = src.cpu_data();
-	dst = tensor<int>(src.data_shape(), src.device(), src.order());
-	int* dst_data = dst.mutable_cpu_data();
+	tensor<int> dst_temp = tensor<int>(src.data_shape(), src.device(), src.order());
+	int* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -348,6 +353,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<float> &src, tensor<i
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -361,8 +368,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<int>>
 	}
 
 	const int* src_data = src->cpu_data();
-	dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -388,6 +396,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<int>>
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -400,8 +410,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<int> &src, tensor<flo
 	}
 
 	const int* src_data = src.cpu_data();
-	dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -427,6 +437,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<int> &src, tensor<flo
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -440,8 +452,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 	}
 
 	const unsigned char* src_data = src->cpu_data();
-	dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
-	int* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<int>> dst_temp;
+	dst_temp.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+	int* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -467,6 +480,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<int>>(dst_temp->clone());
 }
 
 template<>
@@ -479,8 +494,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 	}
 
 	const unsigned char* src_data = src.cpu_data();
-	dst = tensor<int>(src.data_shape(), src.device(), src.order());
-	int* dst_data = dst.mutable_cpu_data();
+	tensor<int> dst_temp = tensor<int>(src.data_shape(), src.device(), src.order());
+	int* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -506,6 +521,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -519,8 +536,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 	}
 
 	const unsigned char* src_data = src->cpu_data();
-	dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -548,6 +566,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -560,8 +580,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 	}
 
 	const unsigned char* src_data = src.cpu_data();
-	dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -589,6 +609,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -602,8 +624,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 	}
 
 	const signed char* src_data = src->cpu_data();
-	dst.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
-	int* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<int>> dst_temp;
+	dst_temp.reset(new tensor<int>(src->data_shape(), src->device(), src->order()));
+	int* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -629,6 +652,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<int>>(dst_temp->clone());
 }
 
 template<>
@@ -641,8 +666,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 	}
 
 	const signed char* src_data = src.cpu_data();
-	dst = tensor<int>(src.data_shape(), src.device(), src.order());
-	int* dst_data = dst.mutable_cpu_data();
+	tensor<int> dst_temp = tensor<int>(src.data_shape(), src.device(), src.order());
+	int* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -668,6 +693,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 		dst_data[i] = int(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -681,8 +708,9 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 	}
 
 	const signed char* src_data = src->cpu_data();
-	dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	int length = src->count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -710,6 +738,8 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -722,8 +752,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 	}
 
 	const signed char* src_data = src.cpu_data();
-	dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	int length = src.count();
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -751,6 +781,8 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 		dst_data[i] = float(src_data[i]);
 	}
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
+
+	dst = dst_temp.clone();
 }
 
 
@@ -776,12 +808,9 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 		return;
 	}
 
-	if (dst == nullptr || (dst->count() != src->count()))
-	{
-		dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	}
-
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	const float* src_data = src->cpu_data();
 
 	if (channel == 3)
@@ -789,7 +818,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst->order() == NCHW)
+		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			mm_type temp_float32;
@@ -841,7 +870,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst->order() == NHWC)
+		else if (src->order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -911,6 +940,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -935,12 +966,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 		return;
 	}
 
-	if (dst.count() != src.count())
-	{
-		dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	}
-
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	const float* src_data = src.cpu_data();
 
 	if (channel == 3)
@@ -948,7 +975,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst.order() == NCHW)
+		if (src.order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			mm_type temp_float32;
@@ -1000,7 +1027,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst.order() == NHWC)
+		else if (src.order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1070,6 +1097,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = dst_temp.clone();
 }
 
 
@@ -1095,12 +1124,9 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 		return;
 	}
 
-	if (dst == nullptr || (dst->count() != src->count()))
-	{
-		dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	}
-
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	const int* src_data = src->cpu_data();
 
 	if (channel == 3)
@@ -1108,7 +1134,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst->order() == NCHW)
+		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			mm_type temp_float32;
@@ -1162,7 +1188,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst->order() == NHWC)
+		else if (src->order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1234,6 +1260,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -1258,12 +1286,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 		return;
 	}
 
-	if (dst.count() != src.count())
-	{
-		dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	}
-
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	const int* src_data = src.cpu_data();
 
 	if (channel == 3)
@@ -1271,7 +1295,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst.order() == NCHW)
+		if (src.order() == NCHW)
 		{
 
 
@@ -1327,7 +1351,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst.order() == NHWC)
+		else if (src.order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1399,6 +1423,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = dst_temp.clone();
 }
 
 
@@ -1424,12 +1450,9 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 		return;
 	}
 
-	if (dst == nullptr || (dst->count() != src->count()))
-	{
-		dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	}
-
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	const unsigned char* src_data = src->cpu_data();
 
 	if (channel == 3)
@@ -1437,7 +1460,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst->order() == NCHW)
+		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			__m128i temp_uint8;
@@ -1493,7 +1516,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst->order() == NHWC)
+		else if (src->order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1567,6 +1590,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -1591,12 +1616,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 		return;
 	}
 
-	if (dst.count() != src.count())
-	{
-		dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	}
-
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	const unsigned char* src_data = src.cpu_data();
 
 	if (channel == 3)
@@ -1604,7 +1625,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst.order() == NCHW)
+		if (src.order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			__m128i temp_uint8;
@@ -1660,7 +1681,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst.order() == NHWC)
+		else if (src.order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1734,6 +1755,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = dst_temp.clone();
 }
 
 
@@ -1759,12 +1782,9 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 		return;
 	}
 
-	if (dst == nullptr || (dst->count() != src->count()))
-	{
-		dst.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
-	}
-
-	float* dst_data = dst->mutable_cpu_data();
+	std::shared_ptr<tensor<float>> dst_temp;
+	dst_temp.reset(new tensor<float>(src->data_shape(), src->device(), src->order()));
+	float* dst_data = dst_temp->mutable_cpu_data();
 	const signed char* src_data = src->cpu_data();
 
 	if (channel == 3)
@@ -1772,7 +1792,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst->order() == NCHW)
+		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			__m128i temp_int8;
@@ -1828,7 +1848,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst->order() == NHWC)
+		else if (src->order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -1902,6 +1922,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = std::make_shared<tensor<float>>(dst_temp->clone());
 }
 
 template<>
@@ -1926,12 +1948,8 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 		return;
 	}
 
-	if (dst.count() != src.count())
-	{
-		dst = tensor<float>(src.data_shape(), src.device(), src.order());
-	}
-
-	float* dst_data = dst.mutable_cpu_data();
+	tensor<float> dst_temp = tensor<float>(src.data_shape(), src.device(), src.order());
+	float* dst_data = dst_temp.mutable_cpu_data();
 	const signed char* src_data = src.cpu_data();
 
 	if (channel == 3)
@@ -1939,7 +1957,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
-		if (dst.order() == NCHW)
+		if (src.order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			__m128i temp_int8;
@@ -1995,7 +2013,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 		}
-		else if (dst.order() == NHWC)
+		else if (src.order() == NHWC)
 		{
 			for (int n = 0; n < num; n++)
 			{
@@ -2069,4 +2087,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 		}
 #endif//!SIMD_TYPE >= SIMDTYPE_SSE
 	}
+
+	dst = dst_temp.clone();
 }
