@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="CPlusG|Win32">
+      <Configuration>CPlusG</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="CPlusG|x64">
+      <Configuration>CPlusG</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{CE489C2C-F798-4771-A9CF-8A9E6B34B442}</ProjectGuid>
+    <RootNamespace>Longimila</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='CPlusG|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Longinus;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">
+    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <IncludePath>C:\Program Files\Java\jdk1.8.0_201\include\win32;C:\Program Files\Java\jdk1.8.0_201\include;$(CUDA_PATH)\include;$(SolutionDir)..\include\Longinus;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Romancia.lib;$(CUDA_PATH)\x64\lib\*lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <PreprocessorDefinitions>EXPORT_LONGINUS;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Excalibur.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Julius.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Damocles.lib;$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Romancia.lib;$(CUDA_PATH)\x64\lib\*lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CPlusG|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\include\Longinus\BaseLonginusCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\common.hpp" />
+    <ClInclude Include="..\..\include\Longinus\FrontalCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\FrontalReinforceCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\HardCode.hpp" />
+    <ClInclude Include="..\..\include\Longinus\ImageOperation.hpp" />
+    <ClInclude Include="..\..\include\Longinus\InternalLonginusCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\LeftProfileCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\LeftProfileReinforceCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\LonginusDetector.hpp" />
+    <ClInclude Include="..\..\include\Longinus\matcher.hpp" />
+    <ClInclude Include="..\..\include\Longinus\match_recter.hpp" />
+    <ClInclude Include="..\..\include\Longinus\RightProfileCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\RightProfileReinforceCascade.hpp" />
+    <ClInclude Include="..\..\include\Longinus\tinyxml2.h" />
+    <ClInclude Include="..\..\jni\jni\Longimila\Longimila-jni.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\jni\jni\Longimila\Longimila-jni.cpp" />
+    <ClCompile Include="..\..\src\Longinus\common.cpp" />
+    <ClCompile Include="..\..\src\Longinus\ImageOperation.cpp" />
+    <ClCompile Include="..\..\src\Longinus\InternalLonginusCascade.cpp" />
+    <ClCompile Include="..\..\src\Longinus\LonginusDetector.cpp" />
+    <ClCompile Include="..\..\src\Longinus\matcher.cpp" />
+    <ClCompile Include="..\..\src\Longinus\tinyxml2.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\src\Longinus\ImageOperation.cu" />
+    <None Include="..\..\src\Longinus\InternalLonginusCascade.cu" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
+  </ImportGroup>
+</Project>

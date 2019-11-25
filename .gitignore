@@ -1,0 +1,77 @@
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
+
+# Others
+*.tlog
+*.log
+*.ilk
+*.pdb
+*.cache
+*.sdf
+*.opensdf
+*.deps
+*.idb
+*.ico
+*.rc
+*.asm
+*.ipch
+*.metagen
+*.res
+*.exp
+*.ipdb
+*.iobj
+*.force
+*.manifest
+*.model
+*.caffemodel
+*.db
+*.opendb
+*.suo
+*_data.hpp
+*.pb.cc
+*.pb.h
+*.asv
+*_version.hpp
+*_halfdata.hpp
+*_int8data.hpp
+*_data_full.hpp
+*.docx
+*.xlsx
+*.vs
+*.CopyComplete
+*.bin
+jni/
+windows/
+examples/
+include/Excalibur/prune.hpp
+src/PersonalReality/main.cpp
+src/Reconstruct/deconv_net.cpp
+src/Reconstruct/main.cpp
+include/Reconstruct/deconv_net.hpp

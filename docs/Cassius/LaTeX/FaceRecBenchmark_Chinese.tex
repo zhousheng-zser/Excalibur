@@ -1,0 +1,972 @@
+\documentclass[a4paper, 11pt, UTF8]{ctexart}%{article}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{nips13submit_e,times}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{ulem}
+\usepackage{tikz}
+\usepackage{eso-pic}
+\usepackage{colortbl}
+\usepackage{supertabular}
+\definecolor{t_gary}{gray}{.9}
+\title{
+\begin{Large}
+Face Recognition Benchmark: internal release vs. commercial solutions
+\end{Large}\\
+人脸识别基准：内部版本 vs. 商业方案\\
+\begin{Large}
+  {\color{red} Internal Reference Only 仅供内部参阅}
+\end{Large}}
+\author{
+inlmouse\thanks{最后修改于--。} \\
+Glasssix Research\\
+成都，610051 \\
+\texttt{\href{mailto:inlmouse@glasssix.com}{inlmouse@glasssix.com}} \\
+\And
+边凯凯\thanks{最后修改于\today。} \\
+Glasssix Research \\
+成都，610051 \\
+\texttt{\href{mailto:bkk@glasssix.com}{bkk@glasssix.com}} \\
+%\AND
+%Coauthor \\
+%Affiliation \\
+%Address \\
+%\texttt{email} \\
+%\And
+%Coauthor \\
+%Affiliation \\
+%Address \\
+%\texttt{email} \\
+%\And
+%Coauthor \\
+%Affiliation \\
+%Address \\
+%\texttt{email} \\
+%(if needed)\\
+}
+%\date{编辑于\today}\\
+% The \author macro works with any number of authors. There are two commands
+% used to separate the names and addresses of multiple authors: \And and \AND.
+%
+% Using \And between authors leaves it to \LaTeX{} to determine where to break
+% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
+% puts 3 of 4 authors names on the first line, and the last on the second
+% line, try using \AND instead of \And before the third author name.
+
+\newcommand{\fix}{\marginpar{FIX}}
+\newcommand{\new}{\marginpar{NEW}}
+\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}
+\nipsfinalcopy % Uncomment for camera-ready version
+\newcommand\BackgroundPicture{%
+  \put(0,0){%
+    \parbox[b][\paperheight]{\paperwidth}{%
+      \vfill
+      \centering%
+\begin{tikzpicture}[remember picture,overlay]
+\node [rotate=45,scale=3,text opacity=0.2] at (current page.center) {CONFIDENTIAL GLASSSIX BENCHMARK};
+\end{tikzpicture}%
+      \vfill
+    }}}
+\begin{document}
+\AddToShipoutPicture{\BackgroundPicture}
+
+
+\maketitle
+
+\begin{abstract}
+    为了评价人脸识别算法的性能，我们建立此基准用于比较公司内部的模型版本，竞争对手的商用模型以及学术领域的开放模型.
+\end{abstract}
+
+\section{基准细节}
+这个部分总结了人脸识别在多个基准上评价的结果。注意 LFW 和 YTF 评价协议依照我们的设计原则而来，也就是说它们的结果不能和发表的相比较。
+
+
+\subsection{基础信息}
+为了标记简单，我们采用以下的记号：
+\begin{itemize}
+  \item D: 数码相机
+  \item W: 网络搜集
+  \item M: 手机摄像头
+  \item S: 监控摄像头
+  \item I: 身份证读卡器
+\end{itemize}
+
+\begin{table}[h]
+\caption{基准细节}
+\label{sample-table}
+\begin{center}
+\begin{tabular}{ccccccc}
+\multicolumn{1}{c}{\bf 基准}  &\multicolumn{1}{c}{\bf 人种} &\multicolumn{1}{c}{\bf 图片} &\multicolumn{1}{c}{\bf 大小 (P/N)} &\multicolumn{1}{c}{\bf 来源} &\multicolumn{1}{c}{\bf 姿势}&\multicolumn{1}{c}{\bf 光照}
+\\ \hline \\
+\multicolumn{7}{c}{\bf 弃用}\\
+\\
+LFW         &国际  &13233  &3000/3000  &W  &难 &易  \\ \\ %\hline
+YTF   &国际  &624209  &2500/2500  &D  &难 &易  \\ \\ \\ \hline \\
+\multicolumn{7}{c}{\bf Now Concerned}\\
+\\
+UOFW         &中国人  &8908  &2268/2185  &S&难 &难   \\ %\hline
+Bing    &中国人  &20021  &10000/10000  &M  &中 &中   \\ %\hline
+MSRMV   &中国人  &532  &784/10000  &D \& S  &难 &易   \\ %\hline
+1V1         &中国人  &1244  &797/5000  &D \& I  &易 &易 \\ %\hline
+SS         &中国人  &31525  &10000/10000  &D \& I  &中  &易 \\
+XKX         &中国人  &18249  &5000/5000  &D  &中  &中 \\
+KTP         &中国人  &17007  &100000/100000  &D\&I\&W  &中  &难 \\
+%\\ \hline \\
+\end{tabular}
+\end{center}
+\end{table}
+\subsection{细节}
+\begin{itemize}
+  \item \textbf{LFW(弃用):} 开放数据集；
+  \item \textbf{YTF(弃用):} 开放数据集； 每帧来源于 YouTube, 大约 20\% 的人脸非常模糊；
+  \item \textbf{UOFW:} 所有图片来源于户外拍摄的监控摄像头；
+  \item \textbf{Bing:} 所有图片来源于 Bing 直播画面；
+  \item \textbf{MSRMV:} 一个多视角的基准，每个人有 $1/2$ 的高清前脸图片，从视频中选取28帧，这样每个人在4个不同的距离,有7个不同的头部姿势；只在高清图片和28帧图像间进行配对；
+  \item \textbf{1V1:} UNCD\footnote{手持身份证拍照，既有真人的人脸也有身份证照片} ，BBXL\footnote{此数据集和 UNCD 数据集为不合法采集。数据来源受保护。} 和其它网络搜集数据的结合；在身份证和照片之间产生验证对；
+  \item \textbf{SS:} 社会安全场景；每人有一张身份证读取的照片，以及 2$\sim$5 张摄像头拍摄的照片， 10\% 拍摄的照片条件和质量都很差； 数据集中人的年纪均在55岁上下；
+  \item \textbf{XKX:} 智能手机直播场景；所有的数据来源于小咖秀 \footnote{\url{www.xiaokaxiu.com}}；由于该手机软件的特殊用途，每个人的照片偏差要远远大于 Bing 里的照片；
+  \item \textbf{KTP:} 所有的照片来源于户外拍摄，前脸。监控摄像头，USB 摄像头和身份证阅读器；
+\end{itemize}
+
+\section{模型总结}
+这一部分简要地讲解模型是如何被构建的。一个很重要的指标是 FLOPs(浮点运算) 的数量，它真实地反应 CNN 网络在特定设备（CPU 或 GPU）上前向的时间。为了计算 FLOPs，我们假设卷积操作是用一个滑动窗实现的，而且非线性函数的计算是零。对于卷积核，我们有
+\begin{equation}\label{Flops_conv}
+  FLOPs = 2HW(C_{in}K^2+1)C_{out}/G
+\end{equation}
+
+这里 $H$,$W$ 和 $C_{in}$ 代表了高度，宽度，以及输入特征图的通道个数，$G$ 是群组的个数， $K$ 是卷积核大小（假定为对称的），$C_{out}$ 是输出通道的个数。
+
+对于全连接层，我们计算 FLOPs 如下：
+\begin{equation}\label{Flops_ip}
+  FLOPs = (2I -1)O
+\end{equation}
+这里 $I$ 是输入的维度，$O$ 是输出的维度。
+
+和卷积层类似，池化层可被认为是一个无参数的卷积层。一次加法运算或比较运算消耗的计算量约为浮点加-乘的 $1/8$。所以我们计算 FLOPs （最大池化是比较运算的 $N$ 倍，平均池化是$N$ 倍的比较运算加1个除法运算，它可以近似看作 $N/8$ 倍的加-乘运算）如下：
+\begin{equation}\label{Flops_pool}
+  FLOPs = 2HW(C_{in}K^2+1)C_{out}/G/8
+\end{equation}
+这里，符号和卷积层计算中的一样。
+
+对于 (P)ReLU 或其它按元素的操作，我们都将之认为是特征图中逐个元素的乘法运算，所以 FLOPs 等于特征图的维度：
+\begin{equation}\label{Flops-eltwise}
+  FLOPs = I * N
+\end{equation}
+$I$ 是输入的维度，$N$ 是 Eltwise 层输入的个数减去1。 对于 (P)ReLU, $N=1$.
+
+注意一些开放模型的总结来源于其作者的描述，它们可能是不完备的或不正确的。
+
+\begin{table}[h]
+\caption{当前所使用模型的一些细节 }
+\label{table:SD}
+\begin{center}
+\begin{tabular}{ccccc}
+\multicolumn{1}{c}{\bf 模型(输入大小)}  &\multicolumn{1}{c}{\bf GFlops} &\multicolumn{1}{c}{\bf MParams} &\multicolumn{1}{c}{\bf 模型大小(MB)} &\multicolumn{1}{c}{\bf 特征大小(MB)}
+\\ \hline \\
+\multicolumn{5}{c}{\bf 目前预发布版本}\\
+mobile\_unicorn(128*128) &  0.58 & 12.96 & 3.99 & N/A \\
+unicorn(128*128) &  7.31 & 24.64 & 94.00 & N/A \\
+unicorn\_uc(128*128) &  18.58 & 38.21 & 154.00 & N/A \\
+unicorn\_se(128*128) &  8.72 & 24.79 & 94.60 & N/A \\
+unicorn\_li(128*128) &  1.97 & 6.43 & 25.70  & N/A\\
+unicorn\_fc(128*128) &  7.44 & 27.68 & 110.70 & N/A \\
+\\ \hline \\
+\multicolumn{5}{c}{\bf 供参考的开放模型}\\
+GoogleNet(224*224) &  2.0 & 12.75 & 51.0 & 26 \\
+Inception V3(224*224) &  5.00 & 23.20 & 92.8 & 89 \\
+AlexNet(227*227) &  0.72 & 60 & 240 & 3 \\
+SqueezeNet(224*224) &  0.36 & 0.75 & 3 & 17 \\
+VGG16(224*224) &  16 & 132 & 528 & 58 \\
+ResNet51(224*224) &  4 & 24.5 & 98 & 103 \\
+ResNet101(224*224) &  8 & 42.5 & 170 & 155 \\
+ResNet151(224*224) &  11 & 57.5 & 230 & 219 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+为了方便，我们将一些常用的 CPU 和 GPU 的算力放在下面展示：\footnote{所有的数据来源于 \url{https://asteroidsathome.net/boinc/cpu_list.php} 和 \url{https://www.techpowerup.com/gpudb/}.}:
+\begin{table}[h]
+\caption{一些常用的CPU和GPU的算力}
+\label{table:ca_gpu_cpu}
+\begin{center}
+\begin{tabular}{cccccc}
+\multicolumn{1}{c}{\bf 产品}  &\multicolumn{1}{c}{\bf 类别} &\multicolumn{1}{c}{\bf GFlops/s} &\tabincell{c}{\bf Boost \\\bf Clock(GHz)} &\tabincell{c}{\bf 储存\\ \bf 带宽(GB/s)}&\tabincell{c}{\bf 核\\ \bf 个数}
+\\ \hline \\
+Intel i7-6700K &  CPU & 113.53 & 4.2 & 34.1 & 4 \\
+Intel i7-7820X &  CPU & 178.13 & 4.5 & -- & 8 \\
+Nvidia TitanX(Maxwell) &  GPU & 6691 & 1.089 & 336.6 & 3072 \\
+S5P G6818 &  ARM & -- & 1.4 & -- & 8 \\
+Nvidia GTX-1060 &  GPU & 4375 & 1.709 & 192.2 & 1280 \\
+Nvidia GTX-1080 &  GPU & 8873 & 1.733 & 320.3 & 2560 \\
+AMD RX-Vega-56 &  GPU & 10556 & 1.474 & 409.6 & 3584 \\
+Nvidia GTX-1080Ti &  GPU & 11340 & 1.582 & 484.4 & 3584 \\
+Nvidia TitanX(Pascal) &  GPU & 10974 & 1.531 & 480.4 & 3584 \\
+Nvidia TitanV &  GPU & 14899 & 1.455 & 652.8 & 5120 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+技术上，理论前向时间等于模型 FLOPs / 设备 GFlops/s。但是，理论速度从未达到过。由于不同的时钟频率，带宽和未完全利用的核，实际速度只能达到 1/5 （这也是一个经验值）的理论速度。
+\section{通用测试协议}
+\subsection{验证基准： TAR@FAR (\%)}
+TAR@FAR 测试的细节可在 \url{https://en.wikipedia.org/wiki/Confusion_matrix} 上找到。
+
+一些符号在下面做介绍\footnote{*: 以 "F" 结尾的数据集的意思是，它是原来数据集中的子数据集，照片都是\textbf{仅有前脸}的。它们中的绝大多数都是 \textbf{严格的身份证照片和照相机拍摄的照片}。 %\\
+%\dag: Due to the number of the testing set, we only evaluate TAR@FAR1e-1. We do not adjudicate the model with this indicator, just list and show.
+}。 \\
+为了让基准更具有说服力，一些数据集中的样本对被人工微调了：如果一张照片包括身份证照片，我们就选取这张照片。没有随机选取负样本对，我们确定在不同样本对之间没有重复的照片。同时，我们必须承认商用的 SDK 可能不会达到它们最好的性能：因为所有的数据集都是用我们自己的检测器检测的，我们发现 $2-3\%$的照片没有识别到任何的人脸。这样的话，我们就将这一整个样本对看作假负样本对。这个操作可能造成商用 SDK 性能上的差异。
+
+\begin{table}[h]
+\caption{验证基准： TAR@FAR=1e-3}
+\label{table:VB_T@F1e-3}
+\begin{center}
+%\rowcolors{1}{green}{pink}
+\begin{tabular}{ccccccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf XKX} &\multicolumn{1}{c}{\bf 1V1F*} &\multicolumn{1}{c}{\bf SSF*} &\multicolumn{1}{c}{\bf UOFW} &\multicolumn{1}{c}{\bf Bing} &\multicolumn{1}{c}{\bf 1V1} &\multicolumn{1}{c}{\bf MSRMV} &\multicolumn{1}{c}{\bf SS}
+\\ \hline \\
+\multicolumn{9}{c}{\bf 目前发布的版本}\\
+\\
+mobile\_unicorn9230&  81.96 & 78.31 & 74.76 & 37.08 & 89.24 & 70.60 & 52.14 & 76.40 \\
+\rowcolor{t_gary}
+mobile\_unicorn9138&  78.60 & 74.40 & 77.64 & 38.07 & 86.04 & 75.66 & 46.00 & 72.55 \\
+mobile\_unicorn9040&  67.92 & 71.80 & 76.22 & 41.60 & 85.86 & 72.21 & 30.76 & 71.15 \\
+\rowcolor{t_gary}
+unicorn9734&  98.26 & {\color{red} \bf 97.40}& 96.41 & 40.25 & {\color{red} \bf 97.80} & {\color{red} \bf 95.45} & {\color{red} \bf 81.32} & {\color{red} \bf 94.21} \\
+unicorn9722&  {\color{red} \bf 98.54} & 96.53& {\color{red} \bf 96.63} & 34.06 & 97.68 & 95.38 & 77.68 & 94.20 \\
+\rowcolor{t_gary}
+unicorn9699&  98.42 & 96.53& 96.08 & 53.35 & 97.30 & 94.72 & 76.18 & 93.19 \\
+unicorn9691&  97.16 & 95.28& 94.54 & 57.15 & 97.06 & 94.65 & 80.56 & 92.62 \\
+\rowcolor{t_gary}
+unicorn9583&  97.96 & 94.42 & 92.86 & 56.79 & 97.16 & 93.03 & 70.26 & 92.64 \\
+unicorn9560&  91.46 & 91.85 & 90.38 & 53.15 & 96.42 & 92.37 & 79.42 & 89.80 \\
+\rowcolor{t_gary}
+unicorn9570&  89.78 & 92.06 & 89.20 & 54.23 & 96.16 & 93.33 & 66.30 & 89.38 \\
+unicorn9490\_pca &  N/A & 94.21 & 90.36 & N/A & 95.62 & 92.89 & 64.84 & 89.88 \\
+\rowcolor{t_gary}
+unicorn\_fc\_9275 &  N/A & 92.92 & 91.40 & N/A & 95.30 & 92.52 & 49.08 & 89.74 \\
+unicorn9490 &  86.48 & 94.85 & 90.12 & 46.65 & 95.68 & 92.74 & 63.82 & 90.40 \\
+\rowcolor{t_gary}
+unicorn\_se\_9199 &  85.26 & 90.77 & 84.54 & 22.03 & 95.44 & 90.54 & 68.60 & 86.26 \\
+unicorn9304\_pca &  N/A & 89.48 & 90.17 & N/A & 95.82 & 90.17 & 72.42 & 87.62\\
+\rowcolor{t_gary}
+unicorn\_uc\_9201 &  N/A & 73.82 & 45.40 & 18.06 & 95.20 & 74.05 & 72.28 & 58.08 \\
+unicorn9304 &  N/A & 88.41 & 87.36 & 54.60 & 95.76 & 89.88 & 71.64 & 87.34\\
+\rowcolor{t_gary}
+unicorn\_li\_9493 &  95.82 & 93.78 & 89.76 & {\color{red} \bf 64.69} & 95.32 & 88.56 & 63.40 & 89.04 \\
+unicorn9277 &  76.48 & 83.48 & 75.06 & 42.02 & 90.84 & 83.58 & 44.46 & 84.12 \\
+%\rowcolor{t_gary}
+%unicorn9217 &  N/A & 84.98 & 80.94 & 56.32 & 93.06 & 82.62 & 44.28 & 74.02 \\
+%unicorn8702 &  N/A & 73.61 & 50.24 & N/A & 84.52 & 68.84 & 43.98 & 52.74\\
+%\rowcolor{t_gary}
+%unicorn8012 &  N/A & 51.72 & 26.65 & N/A & 68.14 & 55.67 & 44.50 & 46.32 \\
+%unicorn7164 &  N/A & 42.27 & 15.40 & 17.49 & 67.06 & 40.18 & 35.72 & 29.24 \\
+\\ \hline \\
+\multicolumn{9}{c}{\bf 商用 SDKs}\\
+\\
+\rowcolor{t_gary}
+dilu &  N/A & N/A & N/A & 11.90 & 67.99 & 62.76 & 17.60 & 60.65 \\
+cloudwalk &  N/A & {\color{orange} \bf 96.78} & 91.78 & 16.44 & 89.62 & N/A & 46.12 & 87.92 \\
+\rowcolor{t_gary}
+face++ &  N/A & 90.99 & {\color{blue} \bf 92.34} & {\color{blue} \bf 20.34} & {\color{blue} \bf 96.26} & {\color{blue} \bf 94.06} & {\color{blue} \bf 52.29} & {\color{blue} \bf 91.72} \\
+youtu(2015) &  N/A & 50.72 & 37.64 & 18.36 & 46.46 & 46.41 & 16.76 & 37.76 \\
+\rowcolor{t_gary}
+baidu(2018) &  78.00 & 92.27 & 72.92 & 18.91 & 92.74 & 87.02 & 32.86 & 69.42 \\
+youtu(2017) &  63.25 & 70.39 & 47.96 & 16.76 & 84.78 & N/A & 37.22 & N/A \\
+\rowcolor{t_gary}
+arcsoft &  N/A & 87.55 & 67.32 & 21.68 & 83.04 & 83.94 & 12.00 & 68.46 \\
+%\\ \hline \\
+%\multicolumn{9}{c}{\bf Public Models}\\
+%\\
+%\rowcolor{t_gary}
+%dlib &  N/A & N/A & N/A & 13.43 & 34.23 & 27.93 & 35.65 & 27.65 \\
+%centerface &  N/A & 52.58 & 40.76 & 10.91 & 60.80 & 49.89 & 46.42 & 47.38 \\
+%\rowcolor{t_gary}
+%sphereface20 &  N/A & 64.81 & 48.79 & 14.10 & 59.36 & 61.88 & 54.60 & 51.50 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{珍爱网的 Mega 验证基准 TAR@FAR (\%)}
+为了在一个更严格的场景中评价我们的模型，我们从珍爱网\footnote{\url{www.zhenai.com}}. 上选取了大量的数据，选取了 110,448 个人和 340,542 张照片来作为一个 1:1的基准。 平均每个人有3.08张照片。正负样本的比例是 320,816 / 1,104,898.\\
+我们依据下面的原则来选择负样本：
+先建立一个名字列表，然后在它里面循环11次，间隔为2到12。随机选择每个人的一张照片作为负样本对中的一个。通过这个方法，我们几乎可以确保每个样本对中有2个不同的人。
+
+\begin{table}[h]
+\caption{珍爱网的 Mega 验证基准： TAR@FAR=1e-1$\sim$ 1e-6}
+\label{table:megabench}
+\begin{center}
+\begin{tabular}{ccccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4} &\multicolumn{1}{c}{\bf 1e-5} &\multicolumn{1}{c}{\bf 1e-6}
+\\ \hline \\
+\multicolumn{7}{c}{\bf 当前发布的版本}\\
+\\
+unicorn9722 &  98.74 & 97.96 & 96.36 & 92.92 & 87.09 & 75.58 \\
+unicorn9691 &  98.71 & 97.65 & 95.51 & 91.28 & 83.28 & 70.65 \\
+unicorn\_RX0\_9691 &  98.22 & 97.99 & 96.42 & 93.39 & 87.78 & 72.10 \\
+unicorn9583 &  98.66 & 97.53 & 94.75 & 89.66 & 83.07 & 75.47 \\
+unicorn9490 &  98.55 & 96.93 & 93.71 & 88.65 & 80.28 & 73.65 \\
+unicorn9304 &  98.62 & 97.12 & 94.23 & 89.65 & 80.51 & 73.97 \\
+unicorn9217 &  98.52 & 96.16 & 92.05 & 85.11 & 74.17 & 68.21 \\
+unicorn\_li\_9493 &  98.53 & 96.57 & 92.48 & 86.12 & 77.32 & 69.34\\
+unicorn7164 &  93.71 & 82.25 & 68.26 & 55.96 & 43.23 & 34.99 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+我们将数据在下方呈现：
+
+\begin{figure}[h]
+\begin{center}
+\label{fig:megabench}
+\includegraphics[width=12cm]{megabench.png}
+\end{center}
+\caption{人脸识别和验证性能。有趣的是，这些算法在用户测试的非标准库上都比较稳定，但在公认的标准库上算法的性能则会下降。}
+\end{figure}
+
+我们成功找到了错误样本对。大多数的假正样本多少都是由于图片模糊和图片太小。 注意所有的算法都在 LFW 上获得超过 99\% 的准确率，但是，不同模型间的差异会通过 1e-6 TAR@FAR 放大出来。 \textbf{一个简单小型的基准不可能通过准确而客观的评价标准来描述一个模型}。
+
+同时，我们发现 Probe-Gallery 测试方法，例如 MegaFace \footnote{\url{http://megaface.cs.washington.edu/index.html}}，无法反映模型或算法的真实情况。如果一个 Probe 数据集远远小于 Gallery 数据集，结果会被其它东西影响。 同一个模型如果使用了不同的人脸对齐方法，将产生无法忽视的影响。当然，这些小的 Probe set 很容易就会过拟合。同时，如果 Probe set 非常大，消耗的时间也是无法接受的。
+
+%\subsection{Identification Benchmarks: Rank 1 Accuracy (\%)}
+%{\color{red} \bf This benchmark needs to be TOTALLY rearrange.}
+%\begin{table}[h]
+%\caption{Identification Benchmarks}
+%\label{table:IB_R1A}
+%\begin{center}
+%%\rowcolors{1}{green}{pink}
+%\begin{tabular}{ccccccccc}
+%\multicolumn{1}{c}{\bf Models}  &\multicolumn{1}{c}{\bf Mega.} &\multicolumn{1}{c}{\bf 1V1F} &\multicolumn{1}{c}{\bf SSF} &\multicolumn{1}{c}{\bf UOFW} &\multicolumn{1}{c}{\bf Bing} &\multicolumn{1}{c}{\bf 1V1} &\multicolumn{1}{c}{\bf MSRMV} &\multicolumn{1}{c}{\bf SS}
+%\\ \hline \\
+%\multicolumn{9}{c}{\bf Current Released}\\
+%\\
+%\rowcolor{t_gary}
+%unicorn\_uc\_9201 &  N/A & {\color{red} \bf 88.81} & {\color{red} \bf 54.74} & N/A & {\color{red} \bf 95.75} & {\color{red} \bf 94.50} & 97.35 & {\color{red} \bf 73.45} \\
+%unicorn8012 &  65.05 & 63.77 & 34.97 & N/A & 77.88 & 79.49 & 94.97 & 51.37 \\
+%\rowcolor{t_gary}
+%unicorn8702 &  60.60 & 79.09 & 45.61 & N/A & 89.73 & 88.58 & 96.83 & 63.28\\
+%msrp0300 &  59.66 & 79.38 & 41.85 & N/A & 95.23 & 86.05 & {\color{red} \bf 98.41} & 61.47\\
+%\rowcolor{t_gary}
+%centerfacev11 &  {\color{red} \bf 65.50} & 70.99 & 42.20 & N/A & 79.40 & 80.13 & 97.88 & 59.36\\
+%\\ \hline \\
+%\multicolumn{9}{c}{\bf Public Models}\\
+%\\
+%\rowcolor{t_gary}
+%dlib &  N/A & N/A & N/A & N/A & 61.22 & 70.61 & 82.01 & 45.85 \\
+%centerface &  N/A & 69.22 & 38.46 & N/A & 74.74 & 79.28 & 97.88 & 53.08 \\
+%\rowcolor{t_gary}
+%sphereface20 &  {\color{orange} \bf 69.57} & 72.46 & 44.51 & N/A & 80.71 & 82.03 & 98.41 & 59.97 \\
+%\end{tabular}
+%\end{center}
+%\end{table}
+
+\section{特定条件下的测试协议}
+\subsection{跨年龄验证}
+为了进一步观察人脸识别中年龄变化的影响，我们在 AgeDB 上给出了识别的结果。我们在 AgeDB 最终版本的一个子集上进行的实验，AgeDB 在开放后又进一步被扩展了。\footnote{\url{https://ibug.doc.ic.ac.uk/resources/agedb/}}.
+
+\begin{figure}[h]
+\begin{center}
+\label{fig:AgeDB}
+\includegraphics[width=8cm]{AgeDB.png}
+\end{center}
+\caption{AgeDB 中年龄差距为30岁的正样本对。在这个时间跨度内面部样貌变化很大。}
+\end{figure}
+
+AgeDB 是一个 in-the-wild 数据集，在姿势，表情，光照，和年龄上有着很大的差异。AgeDB 包括 12,240 张照片，属于 440 个不同的人，如演员，作家，科学家，政客等。每张照片依据它的身份，年龄，以及性别属性进行标注。最小和最大的年龄分别为3岁和101岁。这些人的平均年龄为49岁。测试数据根据年龄差距分为4个组（5岁，10岁，20岁，和 30岁）。每个组有10小组人脸照片，每小组包含300个正样本以及300个负样本。人脸验证评价指标和 LFW 中的是一样的。在表 \ref{table:AgeDB_Best_Acc}, 我们将我们的模型版本和基线模型进行比较：Marginal Loss, VGG Face 和 Center Loss。随着年龄差距增大，所有的方法都能看到明显的性能下降，这表明年龄变化仍然是非常具有挑战难度的，尤其是当年龄的差距大于30岁。图 \ref{fig:AgeDB} 显示了子数据集中的一些正样本对，年龄差距在30岁。由于面部样貌巨大的变化，在这个数据集上进行人脸验证非常具有挑战性。
+
+
+\begin{table}[h]
+\caption{AgeDB 验证基准：准确率}
+\label{table:AgeDB_Best_Acc}
+\begin{center}
+%\rowcolors{1}{green}{pink}
+\begin{tabular}{ccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 5 岁差距} &\multicolumn{1}{c}{\bf 10 岁差距} &\multicolumn{1}{c}{\bf 20 岁差距} &\multicolumn{1}{c}{\bf 30 岁差距}
+\\ \hline \\
+\multicolumn{5}{c}{\bf 目前发布的版本}\\
+\\
+\rowcolor{t_gary}
+unicorn9722 &  98.14 & 98.15 & 97.34 & {\color{red} \bf 96.43}  \\
+unicorn9699 &  98.12 & 98.06 & 97.29 & 96.37  \\
+\rowcolor{t_gary}
+unicorn9691 &  97.96 & 97.98 & 97.17 & 95.85  \\
+unicorn9583 &  96.61 & 96.33 & 94.81 & 92.60  \\
+\rowcolor{t_gary}
+unicorn9490 &  96.34 & 96.05 & 94.92 & 91.75  \\
+unicorn\_uc\_9132 &  96.41 & 96.21 & 94.53 & 92.58  \\
+
+\\ \hline \\
+\multicolumn{5}{c}{\bf 开放模型}\\
+\\
+\rowcolor{t_gary}
+Marginal Loss &  98.12 & 97.95 & 97.15 & 95.75 \\
+Center Loss &  95.93 & 95.15 & 93.07 & 90.72 \\
+\rowcolor{t_gary}
+VGG Face &  93.15 & 92.18 & 89.15 & 85.08 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+同时，我们在表 \ref{table:AgeDB_TAR@FAR} 呈现了 TAR@FAR(\%) 为 1e-3 的情况。显然，准确率越接近，表明模型越稳定。
+
+\begin{table}[h]
+\caption{AgeDB 验证基准： TAR@FAR(\%)=1e-3}
+\label{table:AgeDB_TAR@FAR}
+\begin{center}
+\begin{tabular}{ccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 5 岁差距} &\multicolumn{1}{c}{\bf 10 岁差距} &\multicolumn{1}{c}{\bf 20 岁差距} &\multicolumn{1}{c}{\bf 30 岁差距}\\
+\hline \\
+\rowcolor{t_gary}
+unicorn9722 &  93.61 & 92.98 & 92.13 & 85.28  \\
+unicorn9699 &  94.54 & 92.55 & 90.33 & 83.83  \\
+\rowcolor{t_gary}
+unicorn9691 &  93.75 & 92.73 & 86.37 & 81.13  \\
+unicorn9583 &  85.71 & 83.96 & 61.81 & 47.31  \\
+\rowcolor{t_gary}
+unicorn9490 &  83.96 & 76.61 & 70.76 & 37.27  \\
+unicorn\_uc\_9132 &  77.17 & 72.94 & 69.83 & 38.43  \\
+\end{tabular}
+\end{center}
+\end{table}
+
+
+\subsection{复杂光照（照明）条件下的验证}
+在 Oriental Face Database Illumination Database(OFID)\footnote{\url{http://gr.xjtu.edu.cn/web/jianyi/english-version}} 数据集上，我们使用3个独立的光源（D0-D2，光源来自正前方，左边，右边）的开闭组合来产生8个不同的照明效果。单个摄像头（C9-1）被放置在人脸的正前方用于拍摄。一些样本照片在图 \ref{fig:Illumination} 中展示。
+\begin{figure}[h]
+\begin{center}
+\label{fig:Illumination}
+\includegraphics[width=12cm]{illu.jpg}
+\end{center}
+\caption{Illumination sample.}
+\end{figure}
+
+我们先从简单的开始，如表 \ref{table:lighting_condition} 所示，将光源（LS）工作状态设为 $D_i = 1$，否则为0。所以 $(D_2D_1D_0)_2 = (111)_2 = 7$ 可被视作锚定图像，因为它的照明条件是充分而均衡的。将余弦相似度和其它的条件进行比较，找出每种光源产生的影响。
+
+\begin{table}[h]
+\caption{照明条件的一些细节}
+\label{table:lighting_condition}
+\begin{center}
+\begin{tabular}{ccccccccc}
+\multicolumn{1}{c}{\bf $(D_2D_1D_0)_2$}  &\multicolumn{1}{c}{\bf 000} &\multicolumn{1}{c}{\bf 001} &\multicolumn{1}{c}{\bf 010} &\multicolumn{1}{c}{\bf 011} &\multicolumn{1}{c}{\bf 100} &\multicolumn{1}{c}{\bf 101} &\multicolumn{1}{c}{\bf 110} &\multicolumn{1}{c}{\bf 111}\\
+\hline \\
+LS 方向 &  N/A & 右边 & 正前方 & 半右方 & 左边 & 左-右 & 半左方 & 全部 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+在所有人的 $(111)_2$ 种照明情况之中，计算彼此的余弦相似度 $(000)_2\sim(110)_2$， 列出平均值(如表 \ref{table:lighting_ave})，以及相似度数组的标准方差。
+
+\begin{table}[h]
+\caption{每组相似度分数的平均值 (\%)}
+\label{table:lighting_ave}
+\begin{center}
+\begin{tabular}{cccccccc}
+\multicolumn{1}{c}{\bf 模型}   &\multicolumn{1}{c}{\bf 000} &\multicolumn{1}{c}{\bf 001} &\multicolumn{1}{c}{\bf 010} &\multicolumn{1}{c}{\bf 011} &\multicolumn{1}{c}{\bf 100} &\multicolumn{1}{c}{\bf 101} &\multicolumn{1}{c}{\bf 110}\\
+\hline \\
+unicorn9691 &  78.07 & 81.74 & 79.08 & 87.96 & 81.67 & 82.95 & 90.27  \\
+\rowcolor{t_gary}
+unicorn9583 &  76.71 & 80.96 & 77.78 & 87.71 & 80.61 & 82.14 & 89.97  \\
+unicorn9490 &  75.22 & 79.30 & 76.39 & 87.37 & 79.69 & 81.66 & 89.67  \\
+\rowcolor{t_gary}
+unicorn\_uc\_9132 &  81.18 & 84.55 & 83.75 & 91.27 & 84.83 & 85.95 & 93.14  \\
+\end{tabular}
+\end{center}
+\end{table}
+
+%An unexpected result is: \textbf{the deeper net is more robust on complex lighting condition}.
+和Megabench一样，我们在 \ref{table:OFID} 中列出 OFID 上的验证基准，来评价不同光照条件带来的影响。我们使用所有的 34,916 个正样本对，然后构建同样数量的负样本对。
+
+
+\begin{table}[!htbp]
+\caption{OFID上的验证基准： TAR@FAR=1e-1$\sim$ 1e-4}
+\label{table:OFID}
+\begin{center}
+\begin{tabular}{ccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4}
+\\ \hline \\
+unicorn9691 &  99.97 & 99.95 & 99.91 & 99.80 \\
+unicorn9583 &  99.97 & 99.94 & 99.83 & 99.39 \\
+unicorn9490 &  99.97 & 99.89 & 99.45 & 97.96 \\
+unicorn\_uc\_9132 &  99.98 & 99.93 & 99.75 & 99.20  \\
+\end{tabular}
+\end{center}
+\end{table}
+\subsection{多角度头部姿势验证}
+ 在 Oriental Face Database Viewpoint Database(OFVD)\footnote{\url{http://gr.xjtu.edu.cn/web/jianyi/english-version}} 数据集中， 每个人都被要求看向摄像头（C9）的中间位置，通过调节椅子保证每个人的眼睛高度是1.3米。19张照片是通过多角度 CCD/数码相机系统拍摄完成，每10度拍摄一张照片。角度子数据集中的一些例子可参考图 \ref{fig:viwepoint}。
+
+\begin{figure}[!htbp]
+\begin{center}
+\label{fig:viwepoint}
+\includegraphics[width=14cm]{viewpoint.jpg}
+\end{center}
+\caption{多角度示例}
+\end{figure}
+
+我们制作了12470个正样本对和12470个负样本对。样本都是随机选择的。为了评价不同头部姿势的影响，我们设定了3个基准：30，60，和90。它们代表了测试数据中，从 $\pm 30$ 度到  $\pm 90$ 度的人头部姿势。显然，这3个基准的性能表现不同。
+
+\begin{table}[!htbp]
+\caption{OFVD 的验证基准 (从 -90 到 90)： TAR@FAR=1e-1$\sim$ 1e-4 和准确率}
+\label{table:OFVD90}
+\begin{center}
+\begin{tabular}{cccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4}&\multicolumn{1}{c}{\bf Accuracy}
+\\ \hline \\
+unicorn9699 &  62.96 & 09.06 & 00.00 & 00.00 & N/A \\
+unicorn9691 &  63.58 & 09.36 & 00.00 & 00.00 & 79.82 \\
+unicorn9583 &  61.85 & 07.73 & 00.00 & 00.00 & 78.95 \\
+unicorn9490 &  53.81 & 09.21 & 00.00 & 00.00 & 76.25 \\
+unicorn\_uc\_9132 &  59.66 & 08.09 & 00.00 & 00.00 & N/A \\
+\end{tabular}
+\end{center}
+\end{table}
+
+
+\begin{table}[!htbp]
+\caption{OFVD 的验证基准 (从 -60 到 60)： TAR@FAR=1e-1$\sim$ 1e-4 和准确率}
+\label{table:OFVD60}
+\begin{center}
+\begin{tabular}{cccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4}&\multicolumn{1}{c}{\bf 准确率}
+\\ \hline \\
+unicorn9699 &  98.07 & 08.72 & 00.00 & 00.00 & 94.33 \\
+unicorn9691 &  97.87 & 09.20 & 00.00 & 00.00 & 94.29 \\
+unicorn9583 &  96.34 & 09.28 & 00.00 & 00.00 & 93.78 \\
+unicorn9490 &  93.77 & 09.37 & 00.00 & 00.00 & 93.01 \\
+unicorn\_uc\_9132 &  93.89 & 08.43 & 00.00 & 00.00 & 93.88 \\
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[!htbp]
+\caption{OFVD 的验证基准 (从 -30 到 30)： TAR@FAR=1e-1$\sim$ 1e-4 和准确率}
+\label{table:OFVD30}
+\begin{center}
+\begin{tabular}{cccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4}&\multicolumn{1}{c}{\bf 准确率}
+\\ \hline \\
+unicorn9699 &  -- & -- & -- & -- & -- \\
+unicorn9691 &  -- & -- & -- & -- & -- \\
+unicorn9583 &  -- & -- & -- & -- & -- \\
+unicorn9490 &  -- & -- & -- & -- & -- \\
+unicorn\_uc\_9132 &  -- & -- & -- & -- & -- \\
+\end{tabular}
+\end{center}
+\end{table}
+\subsection{正脸-侧脸 in-the-Wild 验证}
+我们搜集了一个新的人脸数据集，它可以促进从正脸到侧脸验证的研究。这个数据集的目的是剥离姿势变化的因素，包括极端的姿势如侧脸，许多的特征都会被遮挡起来。我们称这个数据集为 Celebrities in Frontal-Profile(CFP) 数据集。
+
+
+\section{特殊场景的测试协议}
+
+\subsection{建筑工地场景}
+
+这是我们从 KTP 中搜集的数据。 目前，有20个建筑工地部署了我们的系统。我们选择其中的2处，总共有922个人（只有一些标签为女性）。在一些例子中，它们中的几乎 1/9 都是身份证照片 \ref{fig:KTPdata}(a)。每个人都有一张通过 USB 摄像头拍摄而来的正脸照片 \ref{fig:KTPdata}(d) 。其余的数据是在真实场景中，在正门前通过 IP 摄像头拍摄而来。年龄跨度为18岁至60岁。在这种情况下，我们只需要1：1的验证。所以我们仅关心正脸。
+
+\begin{figure}[h]
+\begin{center}
+\label{fig:KTPdata}
+\includegraphics[width=10cm]{cs.jpg}
+\end{center}
+\caption{KTP 数据样本. (a) 是身份证照片； (b) 和 (c) 是从真实场景中记录的照片； (d) 是用 USB 摄像头采集得来。}
+\end{figure}
+
+由于 IP 摄像头数据是在户外很长的一个时间跨度内获取，在这类数据中测试就变得很有价值。所以我们在 KTP 数据集上建立了2个基准：全局样本对和局部样本对。在全局样本对中，我们使用所有的数据，建立了100000/100000 个正样本对和负样本对，涵盖所有的人，来评价户外正脸验证的能力。在局部样本对中，我们模拟
+
+\begin{table}[h]
+\caption{KTP 的验证基准(全局样本对): TAR@FAR=1e-1$\sim$ 1e-4 and Accuracy}
+\label{table:KTP-GP}
+\begin{center}
+\begin{tabular}{cccccc}
+\multicolumn{1}{c}{\bf 模型}  &\multicolumn{1}{c}{\bf 1e-1} &\multicolumn{1}{c}{\bf 1e-2} &\multicolumn{1}{c}{\bf 1e-3} &\multicolumn{1}{c}{\bf 1e-4}&\multicolumn{1}{c}{\bf 准确率}
+\\ \hline \\
+unicorn9722 &  96.53 & 91.92 & 81.71 & 53.09 & 96.07 \\
+%unicorn9691 &  97.87 & 09.20 & 00.00 & 00.00 & 94.29 \\
+%unicorn9583 &  96.34 & 09.28 & 00.00 & 00.00 & 93.78 \\
+%unicorn9490 &  93.77 & 09.37 & 00.00 & 00.00 & 93.01 \\
+%unicorn\_uc\_9132 &  93.89 & 08.43 & 00.00 & 00.00 & 93.88 \\
+\end{tabular}
+\end{center}
+\end{table}
+%Papers to be submitted to NIPS 2013 must be prepared according to the
+%instructions presented here. Papers may be only up to eight pages long,
+%including figures. Since 2009 an additional ninth page \textit{containing only
+%cited references} is allowed. Papers that exceed nine pages will not be
+%reviewed, or in any other way considered for presentation at the conference.
+%%This is a strict upper bound.
+%
+%Please note that this year we have introduced automatic line number generation
+%into the style file (for \LaTeXe and Word versions). This is to help reviewers
+%refer to specific lines of the paper when they make their comments. Please do
+%NOT refer to these line numbers in your paper as they will be removed from the
+%style file for the final version of accepted papers.
+%
+%The margins in 2013 are the same as since 2007, which allow for $\approx 15\%$
+%more words in the paper compared to earlier years. We are also again using
+%double-blind reviewing. Both of these require the use of new style files.
+%
+%Authors are required to use the NIPS \LaTeX{} style files obtainable at the
+%NIPS website as indicated below. Please make sure you use the current files and
+%not previous versions. Tweaking the style files may be grounds for rejection.
+%
+%%% \subsection{Double-blind reviewing}
+%
+%%% This year we are doing double-blind reviewing: the reviewers will not know
+%%% who the authors of the paper are. For submission, the NIPS style file will
+%%% automatically anonymize the author list at the beginning of the paper.
+%
+%%% Please write your paper in such a way to preserve anonymity. Refer to
+%%% previous work by the author(s) in the third person, rather than first
+%%% person. Do not provide Web links to supporting material at an identifiable
+%%% web site.
+%
+%%%\subsection{Electronic submission}
+%%%
+%%% \textbf{THE SUBMISSION DEADLINE IS MAY 31st, 2013. SUBMISSIONS MUST BE LOGGED BY
+%%% 23:00, MAY 31st, 2013, UNIVERSAL TIME}
+%
+%%% You must enter your submission in the electronic submission form available at
+%%% the NIPS website listed above. You will be asked to enter paper title, name of
+%%% all authors, keyword(s), and data about the contact
+%%% author (name, full address, telephone, fax, and email). You will need to
+%%% upload an electronic (postscript or pdf) version of your paper.
+%
+%%% You can upload more than one version of your paper, until the
+%%% submission deadline. We strongly recommended uploading your paper in
+%%% advance of the deadline, so you can avoid last-minute server congestion.
+%%%
+%%% Note that your submission is only valid if you get an e-mail
+%%% confirmation from the server. If you do not get such an e-mail, please
+%%% try uploading again.
+%
+%
+%\subsection{Retrieval of style files}
+%
+%The style files for NIPS and other conference information are available on the World Wide Web at
+%\begin{center}
+%   \url{http://www.nips.cc/}
+%\end{center}
+%The file \verb+nips2013.pdf+ contains these
+%instructions and illustrates the
+%various formatting requirements your NIPS paper must satisfy. \LaTeX{}
+%users can choose between two style files:
+%\verb+nips11submit_09.sty+ (to be used with \LaTeX{} version 2.09) and
+%\verb+nips11submit_e.sty+ (to be used with \LaTeX{}2e). The file
+%\verb+nips2013.tex+ may be used as a ``shell'' for writing your paper. All you
+%have to do is replace the author, title, abstract, and text of the paper with
+%your own. The file
+%\verb+nips2013.rtf+ is provided as a shell for MS Word users.
+%
+%The formatting instructions contained in these style files are summarized in
+%sections \ref{gen_inst}, \ref{headings}, and \ref{others} below.
+%
+%%% \subsection{Keywords for paper submission}
+%%% Your NIPS paper can be submitted with any of the following keywords (more than one keyword is possible for each paper):
+%
+%%% \begin{verbatim}
+%%% Bioinformatics
+%%% Biological Vision
+%%% Brain Imaging and Brain Computer Interfacing
+%%% Clustering
+%%% Cognitive Science
+%%% Control and Reinforcement Learning
+%%% Dimensionality Reduction and Manifolds
+%%% Feature Selection
+%%% Gaussian Processes
+%%% Graphical Models
+%%% Hardware Technologies
+%%% Kernels
+%%% Learning Theory
+%%% Machine Vision
+%%% Margins and Boosting
+%%% Neural Networks
+%%% Neuroscience
+%%% Other Algorithms and Architectures
+%%% Other Applications
+%%% Semi-supervised Learning
+%%% Speech and Signal Processing
+%%% Text and Language Applications
+%
+%%% \end{verbatim}
+%
+%\section{General formatting instructions}
+%\label{gen_inst}
+%
+%The text must be confined within a rectangle 5.5~inches (33~picas) wide and
+%9~inches (54~picas) long. The left margin is 1.5~inch (9~picas).
+%Use 10~point type with a vertical spacing of 11~points. Times New Roman is the
+%preferred typeface throughout. Paragraphs are separated by 1/2~line space,
+%with no indentation.
+%
+%Paper title is 17~point, initial caps/lower case, bold, centered between
+%2~horizontal rules. Top rule is 4~points thick and bottom rule is 1~point
+%thick. Allow 1/4~inch space above and below title to rules. All pages should
+%start at 1~inch (6~picas) from the top of the page.
+%
+%%The version of the paper submitted for review should have ``Anonymous Author(s)'' as the author of the paper.
+%
+%For the final version, authors' names are
+%set in boldface, and each name is centered above the corresponding
+%address. The lead author's name is to be listed first (left-most), and
+%the co-authors' names (if different address) are set to follow. If
+%there is only one co-author, list both author and co-author side by side.
+%
+%Please pay special attention to the instructions in section \ref{others}
+%regarding figures, tables, acknowledgments, and references.
+%
+%\section{Headings: first level}
+%\label{headings}
+%
+%First level headings are lower case (except for first word and proper nouns),
+%flush left, bold and in point size 12. One line space before the first level
+%heading and 1/2~line space after the first level heading.
+%
+%\subsection{Headings: second level}
+%
+%Second level headings are lower case (except for first word and proper nouns),
+%flush left, bold and in point size 10. One line space before the second level
+%heading and 1/2~line space after the second level heading.
+%
+%\subsubsection{Headings: third level}
+%
+%Third level headings are lower case (except for first word and proper nouns),
+%flush left, bold and in point size 10. One line space before the third level
+%heading and 1/2~line space after the third level heading.
+%
+%\section{Citations, figures, tables, references}
+%\label{others}
+%
+%These instructions apply to everyone, regardless of the formatter being used.
+%
+%\subsection{Citations within the text}
+%
+%Citations within the text should be numbered consecutively. The corresponding
+%number is to appear enclosed in square brackets, such as [1] or [2]-[5]. The
+%corresponding references are to be listed in the same order at the end of the
+%paper, in the \textbf{References} section. (Note: the standard
+%\textsc{Bib\TeX} style \texttt{unsrt} produces this.) As to the format of the
+%references themselves, any style is acceptable as long as it is used
+%consistently.
+%
+%As submission is double blind, refer to your own published work in the
+%third person. That is, use ``In the previous work of Jones et al.\ [4]'',
+%not ``In our previous work [4]''. If you cite your other papers that
+%are not widely available (e.g.\ a journal paper under review), use
+%anonymous author names in the citation, e.g.\ an author of the
+%form ``A.\ Anonymous''.
+%
+%
+%\subsection{Footnotes}
+%
+%Indicate footnotes with a number\footnote{Sample of the first footnote} in the
+%text. Place the footnotes at the bottom of the page on which they appear.
+%Precede the footnote with a horizontal rule of 2~inches
+%(12~picas).\footnote{Sample of the second footnote}
+%
+%\subsection{Figures}
+%
+%All artwork must be neat, clean, and legible. Lines should be dark
+%enough for purposes of reproduction; art work should not be
+%hand-drawn. The figure number and caption always appear after the
+%figure. Place one line space before the figure caption, and one line
+%space after the figure. The figure caption is lower case (except for
+%first word and proper nouns); figures are numbered consecutively.
+%
+%Make sure the figure caption does not get separated from the figure.
+%Leave sufficient space to avoid splitting the figure and figure caption.
+%
+%You may use color figures.
+%However, it is best for the
+%figure captions and the paper body to make sense if the paper is printed
+%either in black/white or in color.
+%\begin{figure}[h]
+%\begin{center}
+%%\framebox[4.0in]{$\;$}
+%%\fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+%\includegraphics[width=2in]{logo.png}
+%\end{center}
+%\caption{Sample figure caption.}
+%\end{figure}
+%
+%\subsection{Tables}
+%
+%All tables must be centered, neat, clean and legible. Do not use hand-drawn
+%tables. The table number and title always appear before the table. See
+%Table~\ref{sample-table}.
+%
+%Place one line space before the table title, one line space after the table
+%title, and one line space after the table. The table title must be lower case
+%(except for first word and proper nouns); tables are numbered consecutively.
+%
+%\begin{table}[t]
+%\caption{Sample table title}
+%\label{sample-table}
+%\begin{center}
+%\begin{tabular}{ll}
+%\multicolumn{1}{c}{\bf PART}  &\multicolumn{1}{c}{\bf DESCRIPTION}
+%\\ \hline \\
+%Dendrite         &Input terminal \\
+%Axon             &Output terminal \\
+%Soma             &Cell body (contains cell nucleus) \\
+%\end{tabular}
+%\end{center}
+%\end{table}
+%
+%\section{Final instructions}
+%Do not change any aspects of the formatting parameters in the style files.
+%In particular, do not modify the width or length of the rectangle the text
+%should fit into, and do not change font sizes (except perhaps in the
+%\textbf{References} section; see below). Please note that pages should be
+%numbered.
+%
+%\section{Preparing PostScript or PDF files}
+%
+%Please prepare PostScript or PDF files with paper size ``US Letter'', and
+%not, for example, ``A4''. The -t
+%letter option on dvips will produce US Letter files.
+%
+%Fonts were the main cause of problems in the past years. Your PDF file must
+%only contain Type 1 or Embedded TrueType fonts. Here are a few instructions
+%to achieve this.
+%
+%\begin{itemize}
+%
+%\item You can check which fonts a PDF files uses.  In Acrobat Reader,
+%select the menu Files$>$Document Properties$>$Fonts and select Show All Fonts. You can
+%also use the program \verb+pdffonts+ which comes with \verb+xpdf+ and is
+%available out-of-the-box on most Linux machines.
+%
+%\item The IEEE has recommendations for generating PDF files whose fonts
+%are also acceptable for NIPS. Please see
+%\url{http://www.emfield.org/icuwb2010/downloads/IEEE-PDF-SpecV32.pdf}
+%
+%\item LaTeX users:
+%
+%\begin{itemize}
+%
+%\item Consider directly generating PDF files using \verb+pdflatex+
+%(especially if you are a MiKTeX user).
+%PDF figures must be substituted for EPS figures, however.
+%
+%\item Otherwise, please generate your PostScript and PDF files with the following commands:
+%\begin{verbatim}
+%dvips mypaper.dvi -t letter -Ppdf -G0 -o mypaper.ps
+%ps2pdf mypaper.ps mypaper.pdf
+%\end{verbatim}
+%
+%Check that the PDF files only contains Type 1 fonts.
+%%For the final version, please send us both the Postscript file and
+%%the PDF file.
+%
+%\item xfig "patterned" shapes are implemented with
+%bitmap fonts.  Use "solid" shapes instead.
+%\item The \verb+\bbold+ package almost always uses bitmap
+%fonts.  You can try the equivalent AMS Fonts with command
+%\begin{verbatim}
+%\usepackage[psamsfonts]{amssymb}
+%\end{verbatim}
+% or use the following workaround for reals, natural and complex:
+%\begin{verbatim}
+%\newcommand{\RR}{I\!\!R} %real numbers
+%\newcommand{\Nat}{I\!\!N} %natural numbers
+%\newcommand{\CC}{I\!\!\!\!C} %complex numbers
+%\end{verbatim}
+%
+%\item Sometimes the problematic fonts are used in figures
+%included in LaTeX files. The ghostscript program \verb+eps2eps+ is the simplest
+%way to clean such figures. For black and white figures, slightly better
+%results can be achieved with program \verb+potrace+.
+%\end{itemize}
+%\item MSWord and Windows users (via PDF file):
+%\begin{itemize}
+%\item Install the Microsoft Save as PDF Office 2007 Add-in from
+%\url{http://www.microsoft.com/downloads/details.aspx?displaylang=en\&familyid=4d951911-3e7e-4ae6-b059-a2e79ed87041}
+%\item Select ``Save or Publish to PDF'' from the Office or File menu
+%\end{itemize}
+%\item MSWord and Mac OS X users (via PDF file):
+%\begin{itemize}
+%\item From the print menu, click the PDF drop-down box, and select ``Save
+%as PDF...''
+%\end{itemize}
+%\item MSWord and Windows users (via PS file):
+%\begin{itemize}
+%\item To create a new printer
+%on your computer, install the AdobePS printer driver and the Adobe Distiller PPD file from
+%\url{http://www.adobe.com/support/downloads/detail.jsp?ftpID=204} {\it Note:} You must reboot your PC after installing the
+%AdobePS driver for it to take effect.
+%\item To produce the ps file, select ``Print'' from the MS app, choose
+%the installed AdobePS printer, click on ``Properties'', click on ``Advanced.''
+%\item Set ``TrueType Font'' to be ``Download as Softfont''
+%\item Open the ``PostScript Options'' folder
+%\item Select ``PostScript Output Option'' to be ``Optimize for Portability''
+%\item Select ``TrueType Font Download Option'' to be ``Outline''
+%\item Select ``Send PostScript Error Handler'' to be ``No''
+%\item Click ``OK'' three times, print your file.
+%\item Now, use Adobe Acrobat Distiller or ps2pdf to create a PDF file from
+%the PS file. In Acrobat, check the option ``Embed all fonts'' if
+%applicable.
+%\end{itemize}
+%
+%\end{itemize}
+%If your file contains Type 3 fonts or non embedded TrueType fonts, we will
+%ask you to fix it.
+%
+%\subsection{Margins in LaTeX}
+%
+%Most of the margin problems come from figures positioned by hand using
+%\verb+\special+ or other commands. We suggest using the command
+%\verb+\includegraphics+
+%from the graphicx package. Always specify the figure width as a multiple of
+%the line width as in the example below using .eps graphics
+%\begin{verbatim}
+%   \usepackage[dvips]{graphicx} ...
+%   \includegraphics[width=0.8\linewidth]{myfile.eps}
+%\end{verbatim}
+%or % Apr 2009 addition
+%\begin{verbatim}
+%   \usepackage[pdftex]{graphicx} ...
+%   \includegraphics[width=0.8\linewidth]{myfile.pdf}
+%\end{verbatim}
+%for .pdf graphics.
+%See section 4.4 in the graphics bundle documentation (\url{http://www.ctan.org/tex-archive/macros/latex/required/graphics/grfguide.ps})
+%
+%A number of width problems arise when LaTeX cannot properly hyphenate a
+%line. Please give LaTeX hyphenation hints using the \verb+\-+ command.
+%
+%
+%\subsubsection*{Acknowledgments}
+%
+%Use unnumbered third level headings for the acknowledgments. All
+%acknowledgments go at the end of the paper. Do not include
+%acknowledgments in the anonymized submission, only in the
+%final paper.
+%
+%\subsubsection*{References}
+%
+%References follow the acknowledgments. Use unnumbered third level heading for
+%the references. Any choice of citation style is acceptable as long as you are
+%consistent. It is permissible to reduce the font size to `small' (9-point)
+%when listing the references. {\bf Remember that this year you can use
+%a ninth page as long as it contains \emph{only} cited references.}
+%
+%\small{
+%[1] Alexander, J.A. \& Mozer, M.C. (1995) Template-based algorithms
+%for connectionist rule extraction. In G. Tesauro, D. S. Touretzky
+%and T.K. Leen (eds.), {\it Advances in Neural Information Processing
+%Systems 7}, pp. 609-616. Cambridge, MA: MIT Press.
+%
+%[2] Bower, J.M. \& Beeman, D. (1995) {\it The Book of GENESIS: Exploring
+%Realistic Neural Models with the GEneral NEural SImulation System.}
+%New York: TELOS/Springer-Verlag.
+%
+%[3] Hasselmo, M.E., Schnell, E. \& Barkai, E. (1995) Dynamics of learning
+%and recall at excitatory recurrent synapses and cholinergic modulation
+%in rat hippocampal region CA3. {\it Journal of Neuroscience}
+%{\bf 15}(7):5249-5262.
+%}
+
+\end{document}
