@@ -22,7 +22,7 @@ namespace glasssix
 #endif
 			virtual void LoadCascade(LonginusCascadeType cascadeType, int device = -1);
 			void SingleScaleDetect(excalibur::tensor<int> &Integral, int winStep, int factor1024x, std::vector<CandidateRect> &rects, bool useMultiThreads = false, bool doEarlyReject = false);
-			std::vector<FaceRect> MultiScaleDetect(excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads = false, bool doEarlyReject = false);
+			std::vector<face_rect_basic> MultiScaleDetect(excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads = false, bool doEarlyReject = false);
 
 #ifndef RELEASE_SDK
 #ifdef HARDCODE_TRANSFORM

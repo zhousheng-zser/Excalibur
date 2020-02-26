@@ -1136,11 +1136,12 @@ namespace glasssix
 				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
 			}
 
+			float means[3] = { 104.0f, 117.0f, 124.0f };
 			if (device_ < 0)
 			{
 				float* tensor_data = tensor_float_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float));
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data, means);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -1155,7 +1156,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
 				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault));
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data, means);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
@@ -1202,11 +1203,12 @@ namespace glasssix
 				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
 			}
 
+			float means[3] = { 104.0f, 117.0f, 124.0f };
 			if (device_ < 0)
 			{
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char));
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data, means);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -1221,7 +1223,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
 				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data, means);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
