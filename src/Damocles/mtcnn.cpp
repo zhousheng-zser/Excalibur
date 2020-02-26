@@ -1,3 +1,12 @@
+//#define PROFILER
+//#define PROFILER_PNET
+//#define PROFILER_RNET
+//#define PROFILER_ONET
+#ifdef PROFILER
+#include <opencv2/opencv.hpp>
+#define USE_OPENCV
+#endif // PROFILER
+
 #include "mtcnn.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
@@ -11,7 +20,7 @@ namespace glasssix
 	{
 		bool CompareBBox(const FaceInfomation & a, const FaceInfomation & b)
 		{
-			return a.bbox.score > b.bbox.score;
+			return a.bbox.score < b.bbox.score;
 		}
 
 		MTCNN::MTCNN(int device_id) {
@@ -19,24 +28,6 @@ namespace glasssix
 			PNet_ = new mtcnn_pnet(device_id_);
 			RNet_ = new mtcnn_rnet(device_id_);
 			ONet_ = new mtcnn_onet(device_id_);
-		}
-
-		float MTCNN::IoU(float xmin, float ymin, float xmax, float ymax,
-			float xmin_, float ymin_, float xmax_, float ymax_, bool is_iom)
-		{
-			float iw = std::min(xmax, xmax_) - std::max(xmin, xmin_) + 1;
-			float ih = std::min(ymax, ymax_) - std::max(ymin, ymin_) + 1;
-			if (iw <= 0 || ih <= 0)
-				return 0;
-			float s = iw*ih;
-			if (is_iom) {
-				float ov = s / std::min((xmax - xmin + 1)*(ymax - ymin + 1), (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1));
-				return ov;
-			}
-			else {
-				float ov = s / ((xmax - xmin + 1)*(ymax - ymin + 1) + (xmax_ - xmin_ + 1)*(ymax_ - ymin_ + 1) - s);
-				return ov;
-			}
 		}
 
 		std::vector<FaceInfomation> MTCNN::NMS(std::vector<FaceInfomation>& bboxes,
@@ -47,113 +38,102 @@ namespace glasssix
 			}
 			std::sort(bboxes.begin(), bboxes.end(), CompareBBox);
 
-			int32_t select_idx = 0;
-			int32_t num_bbox = static_cast<int32_t>(bboxes.size());
-			std::vector<int32_t> mask_merged(num_bbox, 0);
-			bool all_merged = false;
+			float IOU = 0;
+			float maxX = 0;
+			float maxY = 0;
+			float minX = 0;
+			float minY = 0;
+			std::vector<int> vPick;
+			int nPick = 0;
+			std::multimap<float, int> vScores;
+			const int num_boxes = bboxes.size();
+			vPick.resize(num_boxes);
+			for (int i = 0; i < num_boxes; ++i) {
+				vScores.insert(std::pair<float, int>(bboxes[i].bbox.score, i));
+			}
 
-			while (!all_merged) {
-				while (select_idx < num_bbox && mask_merged[select_idx] == 1)
-					select_idx++;
-				if (select_idx == num_bbox) {
-					all_merged = true;
-					continue;
-				}
+			while (vScores.size() > 0) {
+				int last = vScores.rbegin()->second;
+				vPick[nPick] = last;
+				nPick += 1;
+				for (std::multimap<float, int>::iterator it = vScores.begin(); it != vScores.end();) {
+					int it_idx = it->second;
+					maxX = std::max(bboxes.at(it_idx).bbox.xmin, bboxes.at(last).bbox.xmin);
+					maxY = std::max(bboxes.at(it_idx).bbox.ymin, bboxes.at(last).bbox.ymin);
+					minX = std::min(bboxes.at(it_idx).bbox.xmax, bboxes.at(last).bbox.xmax);
+					minY = std::min(bboxes.at(it_idx).bbox.ymax, bboxes.at(last).bbox.ymax);
+					//maxX1 and maxY1 reuse 
+					maxX = ((minX - maxX + 1) > 0) ? (minX - maxX + 1) : 0;
+					maxY = ((minY - maxY + 1) > 0) ? (minY - maxY + 1) : 0;
+					//IOU reuse for the area of two bbox
+					IOU = maxX * maxY;
 
-				bboxes_nms.push_back(bboxes[select_idx]);
-				mask_merged[select_idx] = 1;
-
-				FaceBox select_bbox = bboxes[select_idx].bbox;
-				float area1 = static_cast<float>((select_bbox.xmax - select_bbox.xmin + 1) * (select_bbox.ymax - select_bbox.ymin + 1));
-				float x1 = static_cast<float>(select_bbox.xmin);
-				float y1 = static_cast<float>(select_bbox.ymin);
-				float x2 = static_cast<float>(select_bbox.xmax);
-				float y2 = static_cast<float>(select_bbox.ymax);
-
-				select_idx++;
-
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-				for (int32_t i = select_idx; i < num_bbox; i++) {
-					if (mask_merged[i] == 1)
-						continue;
-
-					FaceBox & bbox_i = bboxes[i].bbox;
-					float x = std::max<float>(x1, static_cast<float>(bbox_i.xmin));
-					float y = std::max<float>(y1, static_cast<float>(bbox_i.ymin));
-					float w = std::min<float>(x2, static_cast<float>(bbox_i.xmax)) - x + 1;
-					float h = std::min<float>(y2, static_cast<float>(bbox_i.ymax)) - y + 1;
-					if (w <= 0 || h <= 0)
-						continue;
-
-					float area2 = static_cast<float>((bbox_i.xmax - bbox_i.xmin + 1) * (bbox_i.ymax - bbox_i.ymin + 1));
-					float area_intersect = w * h;
-
+					float area_it_idx = static_cast<float>((bboxes.at(it_idx).bbox.xmax - bboxes.at(it_idx).bbox.xmin) * (bboxes.at(it_idx).bbox.ymax - bboxes.at(it_idx).bbox.ymin));
+					float area_last = static_cast<float>((bboxes.at(last).bbox.xmax - bboxes.at(last).bbox.xmin) * (bboxes.at(last).bbox.ymax - bboxes.at(last).bbox.ymin));
 					switch (methodType) {
 					case 'u':
-						if (static_cast<float>(area_intersect) / (area1 + area2 - area_intersect) > thresh)
-							mask_merged[i] = 1;
+						IOU = IOU / (area_it_idx + area_last - IOU);
 						break;
 					case 'm':
-						if (static_cast<float>(area_intersect) / std::min(area1, area2) > thresh)
-							mask_merged[i] = 1;
+						IOU = IOU / ((area_it_idx < area_last) ? area_it_idx : area_last);
 						break;
 					default:
 						break;
 					}
+
+					if (IOU > thresh) {
+						it = vScores.erase(it);
+					}
+					else {
+						it++;
+					}
 				}
 			}
+
+			vPick.resize(nPick);
+			bboxes_nms.resize(nPick);
+			for (int i = 0; i < nPick; i++) {
+				bboxes_nms[i] = bboxes[vPick[i]];
+			}
+
 			return bboxes_nms;
 		}
 
-		void MTCNN::BBoxRegression(std::vector<FaceInfomation>& bboxes)
-		{
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif // _OPENMP
-			for (int i = 0; i < bboxes.size(); ++i) {
-				FaceBox &bbox = bboxes[i].bbox;
-				float *bbox_reg = bboxes[i].bbox_reg;
-				float w = bbox.xmax - bbox.xmin + 1;
-				float h = bbox.ymax - bbox.ymin + 1;
-
-				bbox.xmin += bbox_reg[0] * w;
-				bbox.ymin += bbox_reg[1] * h;
-				bbox.xmax += bbox_reg[2] * w;
-				bbox.ymax += bbox_reg[3] * h;
+		void MTCNN::refine(std::vector<FaceInfomation> &vecFaceInfomation, const int &height, const int &width, bool square) {
+			if (vecFaceInfomation.empty()) {
+				//cout << "FaceInfomation is empty!!" << endl;
+				return;
 			}
-		}
+			float bbw = 0, bbh = 0, maxSide = 0;
+			float h = 0, w = 0;
+			float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+			for (vector<FaceInfomation>::iterator it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++) {
+				bbw = (*it).bbox.xmax - (*it).bbox.xmin/* + 1*/;
+				bbh = (*it).bbox.ymax - (*it).bbox.ymin/* + 1*/;
+				x1 = (*it).bbox.xmin + (*it).bbox_reg[0] * bbw;
+				y1 = (*it).bbox.ymin + (*it).bbox_reg[1] * bbh;
+				x2 = (*it).bbox.xmax + (*it).bbox_reg[2] * bbw;
+				y2 = (*it).bbox.ymax + (*it).bbox_reg[3] * bbh;
 
-		void MTCNN::BBoxPad(std::vector<FaceInfomation>& bboxes, int width, int height)
-		{
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-			for (int i = 0; i < bboxes.size(); ++i) {
-				FaceBox &bbox = bboxes[i].bbox;
-				bbox.xmin = round(std::max(bbox.xmin, 0.f));
-				bbox.ymin = round(std::max(bbox.ymin, 0.f));
-				bbox.xmax = round(std::min(bbox.xmax, width - 1.f));
-				bbox.ymax = round(std::min(bbox.ymax, height - 1.f));
-			}
-		}
 
-		void MTCNN::BBoxPadSquare(std::vector<FaceInfomation>& bboxes, int width, int height)
-		{
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-			for (int i = 0; i < bboxes.size(); ++i) {
-				FaceBox &bbox = bboxes[i].bbox;
-				float w = bbox.xmax - bbox.xmin + 1;
-				float h = bbox.ymax - bbox.ymin + 1;
-				float side = h>w ? h : w;
-				bbox.xmin = round(std::max(bbox.xmin + (w - side)*0.5f, 0.f));
 
-				bbox.ymin = round(std::max(bbox.ymin + (h - side)*0.5f, 0.f));
-				bbox.xmax = round(std::min(bbox.xmin + side - 1, width - 1.f));
-				bbox.ymax = round(std::min(bbox.ymin + side - 1, height - 1.f));
+				if (square) {
+					w = x2 - x1/* + 1*/;
+					h = y2 - y1/* + 1*/;
+					maxSide = (h > w) ? h : w;
+					x1 = x1 + w * 0.5 - maxSide * 0.5;
+					y1 = y1 + h * 0.5 - maxSide * 0.5;
+					(*it).bbox.xmax = round(x1 + maxSide/* - 1*/);
+					(*it).bbox.ymax = round(y1 + maxSide/* - 1*/);
+					(*it).bbox.xmin = round(x1);
+					(*it).bbox.ymin = round(y1);
+				}
+
+				//boundary check
+				if ((*it).bbox.xmin < 0)(*it).bbox.xmin = 0;
+				if ((*it).bbox.ymin < 0)(*it).bbox.ymin = 0;
+				if ((*it).bbox.xmax > width)(*it).bbox.xmax = width - 1;
+				if ((*it).bbox.ymax > height)(*it).bbox.ymax = height - 1;
 			}
 		}
 
@@ -163,27 +143,31 @@ namespace glasssix
 			int feature_map_w = confidence->width();
 			int feature_map_h = confidence->height();
 			int spatical_size = feature_map_w * feature_map_h;
+			int m2_spatical_size = 2 * spatical_size;
+			int m3_spatical_size = 3 * spatical_size;
 			const float* confidence_data = confidence->cpu_data() + spatical_size;
 			const float* reg_data = reg_box->cpu_data();
-
+			
 			candidate_boxes_.clear();
-			for (int i = 0; i<spatical_size; i++) {
+			for (int i = 0; i < spatical_size; i++) {
 				if (confidence_data[i] >= thresh) {
 
 					int y = i / feature_map_w;
-					int x = i - feature_map_w * y;
+					int x = i % feature_map_w;
 					FaceInfomation FaceInfomation;
 					FaceBox &faceBox = FaceInfomation.bbox;
 
-					faceBox.xmin = (float)(x * pnet_stride) / scale;
-					faceBox.ymin = (float)(y * pnet_stride) / scale;
-					faceBox.xmax = (float)(x * pnet_stride + pnet_cell_size - 1.f) / scale;
-					faceBox.ymax = (float)(y * pnet_stride + pnet_cell_size - 1.f) / scale;
+					int x_pnet_stride = x * pnet_stride + 1;
+					int y_pnet_stride = y * pnet_stride + 1;
+					faceBox.xmin = (int)(x_pnet_stride / scale + 0.5f);
+					faceBox.ymin = (int)(y_pnet_stride / scale + 0.5f);
+					faceBox.xmax = (int)((x_pnet_stride + pnet_cell_size) / scale + 0.5f);
+					faceBox.ymax = (int)((y_pnet_stride + pnet_cell_size) / scale + 0.5f);
 					
 					FaceInfomation.bbox_reg[0] = reg_data[i];
 					FaceInfomation.bbox_reg[1] = reg_data[i + spatical_size];
-					FaceInfomation.bbox_reg[2] = reg_data[i + 2 * spatical_size];
-					FaceInfomation.bbox_reg[3] = reg_data[i + 3 * spatical_size];
+					FaceInfomation.bbox_reg[2] = reg_data[i + m2_spatical_size];
+					FaceInfomation.bbox_reg[3] = reg_data[i + m3_spatical_size];
 
 					faceBox.score = confidence_data[i];
 					candidate_boxes_.push_back(FaceInfomation);
@@ -191,50 +175,11 @@ namespace glasssix
 			}
 		}
 
-		std::vector<FaceInfomation> MTCNN::ProposalNet(const unsigned char* image, const int channels, const int height, const int width, 
-			int minSize, float threshold, float factor, orderType order) 
+		std::vector<FaceInfomation> MTCNN::ProposalNet(const std::shared_ptr<tensor<float>> &image, int minSize, float threshold, float factor, orderType order) 
 		{
-			std::shared_ptr<tensor<unsigned char>> src_tensor, resized_tensor;
-			if (order == NHWC)
-			{
-				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
-				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
-				if (device_id_ < 0)
-				{
-					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
-				}
-				else
-				{
-#ifdef USE_CUDA
-					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
-					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
-#else
-					NO_GPU;
-#endif // USE_CUDA
-				}
-			}
-			else if (order == NCHW)
-			{
-				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
-				if (device_id_ < 0)
-				{
-					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-				}
-				else
-				{
-#ifdef USE_CUDA
-					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
-#else
-					NO_GPU;
-#endif // USE_CUDA
-				}
-			}
-			else
-			{
-				NOT_IMPLEMENTED;
-			}
-
+			int channels = image->channels();
+			int height = image->height();
+			int width = image->width();
 			float scale = 12.f / minSize;
 			float minWH = std::min(height, width) *scale;
 			std::vector<float> scales;
@@ -248,94 +193,72 @@ namespace glasssix
 
 			for (int i = 0; i < scales.size(); i++) {
 				float coef = scales[i];
-				float wsf = width * coef + 0.5;
-				float hsf = height * coef + 0.5;
 				int ws = static_cast<int>(width * coef + 0.5);
 				int hs = static_cast<int>(height * coef + 0.5);
 				input_layer.reset(new tensor<float>(std::vector<int>{ 1, channels, hs, ws }, device_id_));
 
 				if (device_id_ < 0)
 				{
-					tensor_operation_cpu::resize_cpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_cpu::preprocess_tensors_cpu(resized_tensor, input_layer);
+					tensor_operation_cpu::resize_cpu(image, input_layer, hs, ws);
 				}
 				else
 				{
 #ifdef USE_CUDA
-					tensor_operation_gpu::resize_gpu(src_tensor, resized_tensor, hs, ws);
-					tensor_operation_gpu::preprocess_tensors_gpu(resized_tensor, input_layer);
+					tensor_operation_gpu::resize_gpu(image, input_layer, hs, ws);
 #else
 					NO_GPU;
 #endif // USE_CUDA
 				}
 
-				PNet_->Forward(input_layer);
+#ifdef PROFILER_PNET
+				cv::Mat pic = cv::imread("D:/720_12.bmp");
+				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
+				std::shared_ptr<tensor<unsigned char>> nchw_uch;
+				std::shared_ptr<tensor<float>> nchw_float;
+				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
+				float means[3] = { 127.5f,127.5f,127.5f };
+				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
+
+				PNet_->Forward(nchw_float);
+
+				std::shared_ptr<tensor<float>> tt = PNet_->get_conv4_1();
+				std::cout << tt->cpu_data()[0] << "," << tt->cpu_data()[1] << std::endl;
+
 				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
 				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
+
+				const float* confidence_data = confidence->cpu_data();
+				const float* reg_data = reg->cpu_data();
+				std::cout << "pnet: score:" << confidence_data[0] << ", reg:" << reg_data[0] << "," << reg_data[1] << "," << reg_data[2] << "," << reg_data[3] << std::endl;
+				std::cout << std::endl;
+#else
+
+				PNet_->Forward(input_layer);
+
+				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
+				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
+#endif // PROFILER_PNET
+
 				GenerateBBox(confidence, reg, scales[i], threshold);
-				std::vector<FaceInfomation> bboxes_nms = NMS(candidate_boxes_, 0.5, 'u');
-				if (bboxes_nms.size()>0) {
-					total_boxes_.insert(total_boxes_.end(), bboxes_nms.begin(), bboxes_nms.end());
+
+				if (candidate_boxes_.size() > 0) {
+					total_boxes_.insert(total_boxes_.end(), candidate_boxes_.begin(), candidate_boxes_.end());
 				}
 			}
-			int num_box = (int)total_boxes_.size();
-			std::vector<FaceInfomation> res_boxes;
-			if (num_box != 0) {
-				res_boxes = NMS(total_boxes_, 0.7f, 'u');
-				BBoxRegression(res_boxes);
-				BBoxPadSquare(res_boxes, width, height);
-			}
-			return res_boxes;
+
+			return total_boxes_;
 		}
 
-		std::vector<FaceInfomation> MTCNN::NextStage(const unsigned char* image, const int channels, const int height, const int width, 
-			std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order)
+		std::vector<FaceInfomation> MTCNN::NextStage(const std::shared_ptr<tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order)
 		{
 			std::vector<FaceInfomation> res;
 			int batch_size = (int)pre_stage_res.size();
 			if (batch_size == 0)
 				return res;
 
-			std::shared_ptr<tensor<unsigned char>> src_tensor;
-			if (order == NHWC)
-			{
-				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
-				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
-				if (device_id_ < 0)
-				{
-					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
-				}
-				else
-				{
-#ifdef USE_CUDA
-					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
-					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
-#else
-					NO_GPU;
-#endif // USE_CUDA
-				}
-			}
-			else if (order == NCHW)
-			{
-				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
-				if (device_id_ < 0)
-				{
-					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-				}
-				else
-				{
-#ifdef USE_CUDA
-					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
-#else
-					NO_GPU;
-#endif // USE_CUDA
-				}
-			}
-			else
-			{
-				NOT_IMPLEMENTED;
-			}
+			int channels = image->channels();
+			int height = image->height();
+			int width = image->width();
 
 			std::shared_ptr<tensor<float>> input_layer;
 			std::shared_ptr<tensor<float>> confidence;
@@ -354,14 +277,18 @@ namespace glasssix
 				break;
 			}
 
-			float *input_data;
+			float *input_data = nullptr;
 			if (device_id_ < 0)
 			{
 				input_data = input_layer->mutable_cpu_data();
 			}
 			else
 			{
+#ifdef USE_CUDA
 				input_data = input_layer->mutable_gpu_data();
+#else
+				NO_GPU;
+#endif
 			}
 
 #ifdef _OPENMP
@@ -369,13 +296,11 @@ namespace glasssix
 #endif
 			for (int n = 0; n < batch_size; ++n)
 			{
-				std::shared_ptr<tensor<unsigned char>> roi_tensor, roi_resized_tensor;
-				std::shared_ptr<tensor<float>> roi_resized_float_tensor;
-				roi_resized_float_tensor.reset(new tensor<float>(std::vector<int>{1, channels, input_h, input_w}, device_id_));
-
+				std::shared_ptr<tensor<float>> roi_tensor, roi_resized_tensor;
+				
 				FaceBox &box = pre_stage_res[n].bbox;
-				int rect_h = (int)box.ymax - (int)box.ymin + 1;
-				int rect_w = (int)box.xmax - (int)box.xmin + 1;
+				int rect_h = (int)box.ymax - (int)box.ymin;
+				int rect_w = (int)box.xmax - (int)box.xmin;
 				glasssix::excalibur::rectangle<int> roi_rect((int)box.xmin, (int)box.ymin, rect_h, rect_w);
 				
 				if (device_id_ < 0)
@@ -383,10 +308,9 @@ namespace glasssix
 					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h > 0 && rect_w > 0)
 					{
-						tensor_operation_cpu::safty_cut_cpu(src_tensor, roi_tensor, &roi_rect);
+						tensor_operation_cpu::safty_cut_cpu(image, roi_tensor, &roi_rect);
 						tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor);
-						memcpy(input_data_n, roi_resized_float_tensor->cpu_data(), channels * input_h * input_w * sizeof(float));
+						memcpy(input_data_n, roi_resized_tensor->cpu_data(), channels * input_h * input_w * sizeof(float));
 					}
 					else
 					{
@@ -400,10 +324,9 @@ namespace glasssix
 					float *input_data_n = input_data + input_layer->offset(n);
 					if (rect_h > 0 && rect_w > 0)
 					{
-						tensor_operation_gpu::safty_cut_gpu(src_tensor, roi_tensor, &roi_rect);
+						tensor_operation_gpu::safty_cut_gpu(image, roi_tensor, &roi_rect);
 						tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, input_h, input_w);
-						tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-						CUDA_CHECK(cudaMemcpy(input_data_n, roi_resized_float_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault));
+						CUDA_CHECK(cudaMemcpy(input_data_n, roi_resized_tensor->gpu_data(), channels * input_h * input_w * sizeof(float), cudaMemcpyDefault));
 					}
 					else
 					{
@@ -417,15 +340,59 @@ namespace glasssix
 
 			switch (stage_num) {
 			case 2: {
+#ifdef PROFILER_RNET
+				cv::Mat pic = cv::imread("D:/720_24.bmp");
+				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
+				std::shared_ptr<tensor<unsigned char>> nchw_uch;
+				std::shared_ptr<tensor<float>> nchw_float;
+				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
+				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
+
+				RNet_->Forward(nchw_float);
+
+				confidence = RNet_->get_prob1();
+				reg_box = RNet_->get_conv5_2();
+
+				const float *confidence_data = confidence->cpu_data();
+				const float *reg_box_data = reg_box->cpu_data();
+				std::cout << "rnet: score:" << confidence_data[0] << ",reg:" << reg_box_data[0] << "," << reg_box_data[1] << "," << reg_box_data[2] << "," << reg_box_data[3] << std::endl;
+				std::cout << std::endl;
+#else
 				RNet_->Forward(input_layer);
 				confidence = RNet_->get_prob1();
 				reg_box = RNet_->get_conv5_2();
+#endif // PROFILER_RNET
 			}break;
 			case 3: {
+#ifdef PROFILER_ONET
+				cv::Mat pic = cv::imread("D:/720_48.bmp");
+				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
+				std::shared_ptr<tensor<unsigned char>> nchw_uch;
+				std::shared_ptr<tensor<float>> nchw_float;
+				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
+				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
+
+				ONet_->Forward(nchw_float);
+
+				confidence = ONet_->get_prob1();
+				reg_box = ONet_->get_conv6_2();
+				reg_landmark = ONet_->get_conv6_3();
+
+				const float *confidence_data = confidence->cpu_data();
+				const float *reg_box_data = reg_box->cpu_data();
+				const float *reg_landmark_data = reg_landmark->cpu_data();
+				std::cout << "onet: score:" << confidence_data[0] << ",reg:" << reg_box_data[0] << "," << reg_box_data[1] << "," << reg_box_data[2] << "," << reg_box_data[3] << std::endl;
+				for (int i = 0; i < 10; i++)
+				{
+					std::cout << reg_landmark_data[i] << ",";
+				}
+				std::cout << std::endl;
+#else
 				ONet_->Forward(input_layer);
 				confidence = ONet_->get_prob1();
 				reg_box = ONet_->get_conv6_2();
 				reg_landmark = ONet_->get_conv6_3();
+#endif // PROFILER_ONET
 			}break;
 			}
 			const float* confidence_data = confidence->cpu_data();
@@ -447,11 +414,11 @@ namespace glasssix
 						info.bbox_reg[i] = reg_data[4 * k + i];
 					}
 					if (reg_landmark) {
-						float w = info.bbox.xmax - info.bbox.xmin + 1.f;
-						float h = info.bbox.ymax - info.bbox.ymin + 1.f;
+						float w = info.bbox.xmax - info.bbox.xmin;
+						float h = info.bbox.ymax - info.bbox.ymin;
 						for (int i = 0; i < 5; ++i) {
-							info.landmark[2 * i] = landmark_data[10 * k + 2 * i] * w + info.bbox.xmin;
-							info.landmark[2 * i + 1] = landmark_data[10 * k + 2 * i + 1] * h + info.bbox.ymin;
+							info.landmark[2 * i] = landmark_data[10 * k + i] * w + info.bbox.xmin;
+							info.landmark[2 * i + 1] = landmark_data[10 * k + i + 5] * h + info.bbox.ymin;
 						}
 					}
 					res.push_back(info);
@@ -471,9 +438,59 @@ namespace glasssix
 				return onet_res;
 			}
 			orderType order_ = (orderType)order;
+
+			std::shared_ptr<tensor<unsigned char>> src_tensor;
+			std::shared_ptr<tensor<float>> src_float_tensor;
+			float means[3] = { 127.5f, 127.5f, 127.5f };
+			if (order == NHWC)
+			{
+				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
+				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
+				if (device_id_ < 0)
+				{
+					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
+					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means);
+				}
+				else
+				{
+#ifdef USE_CUDA
+					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
+					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
+					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
+			}
+			else if (order == NCHW)
+			{
+				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
+				if (device_id_ < 0)
+				{
+					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
+					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means);
+				}
+				else
+				{
+#ifdef USE_CUDA
+					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
+					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means);
+#else
+					NO_GPU;
+#endif // USE_CUDA
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+
 			if (stage >= 1)
 			{
-				pnet_res = ProposalNet(image, channels, height, width, minSize, threshold[0], factor, order_);
+				pnet_res = ProposalNet(src_float_tensor, minSize, threshold[0], factor, order_);
+				pnet_res = NMS(pnet_res, 0.5, 'u');
+				refine(pnet_res, height, width, true);
 			}
 
 			if (stage >= 2 && pnet_res.size()>0) {
@@ -486,12 +503,11 @@ namespace glasssix
 					int start = iter*step_size;
 					int end = std::min(start + step_size, num);
 					std::vector<FaceInfomation> input(pnet_res.begin() + start, pnet_res.begin() + end);
-					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 24, 24, 2, threshold[1], order_);
+					std::vector<FaceInfomation> res = NextStage(src_float_tensor, input, 24, 24, 2, threshold[1], order_);
 					rnet_res.insert(rnet_res.end(), res.begin(), res.end());
 				}
 				rnet_res = NMS(rnet_res, 0.7f, 'u');
-				BBoxRegression(rnet_res);
-				BBoxPadSquare(rnet_res, width, height);
+				refine(rnet_res, height, width, true);
 			}
 			
 			if (stage >= 3 && rnet_res.size()>0) {
@@ -501,12 +517,12 @@ namespace glasssix
 					int start = iter*step_size;
 					int end = std::min(start + step_size, num);
 					std::vector<FaceInfomation> input(rnet_res.begin() + start, rnet_res.begin() + end);
-					std::vector<FaceInfomation> res = NextStage(image, channels, height, width, input, 48, 48, 3, threshold[2], order_);
+					std::vector<FaceInfomation> res = NextStage(src_float_tensor, input, 48, 48, 3, threshold[2], order_);
 					onet_res.insert(onet_res.end(), res.begin(), res.end());
 				}
-				BBoxRegression(onet_res);
+
 				onet_res = NMS(onet_res, 0.7f, 'm');
-				BBoxPad(onet_res, width, height);
+				refine(onet_res, height, width, true);				
 			}
 			if (stage == 1) {
 				return pnet_res;

@@ -12,6 +12,9 @@ using namespace glasssix::longinus;
 glasssix::longinus::mtcnn_mobile::mtcnn_mobile(int device_id, bool handle_big_face) : vDamocles(device_id)
 {
 	device_id_ = device_id;
+#ifdef _OPENMP
+	omp_set_num_threads(threads_num);
+#endif
 	PNet_ = new pnet_mobile(device_id_);
 	RNet_ = new rnet_mobile(device_id_);
 	ONet_ = new onet_mobile(device_id_);
@@ -180,6 +183,7 @@ bool glasssix::longinus::mtcnn_mobile::PNet_Process(std::shared_ptr<tensor<unsig
 		maps[i].resize(mapH[i] * mapW[i]);
 	}
 
+	float means[3] = { 104.0f, 117.0f, 124.0f };
 	for (int i = 0; i < scale_num; i++)
 	{
 		int changedh = changedH[i];
@@ -192,13 +196,13 @@ bool glasssix::longinus::mtcnn_mobile::PNet_Process(std::shared_ptr<tensor<unsig
 		if (device_id_ < 0)
 		{
 			tensor_operation_cpu::resize_cpu(bgr_8uc3, resized, changedh, changedw);
-			tensor_operation_cpu::preprocess_tensors_cpu(resized, bgr_32fc3);
+			tensor_operation_cpu::preprocess_tensors_cpu(resized, bgr_32fc3, means);
 		}
 		else
 		{
 #ifdef USE_CUDA
 			tensor_operation_gpu::resize_gpu(bgr_8uc3, resized, changedh, changedw);
-			tensor_operation_gpu::preprocess_tensors_gpu(resized, bgr_32fc3);
+			tensor_operation_gpu::preprocess_tensors_gpu(resized, bgr_32fc3, means);
 #else
 			NO_GPU;
 #endif
@@ -305,7 +309,8 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 		}
 		else
 		{
-#pragma omp parallel for
+			int chunk_size = ceil(box_num / thread_num);
+#pragma omp parallel for schedule(static, chunk_size) num_threads(thread_num)
 			for (int num = 0; num < box_num; num++)
 			{
 				if (boundingBox.at(num).exist)
@@ -652,7 +657,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 	std::vector<std::vector<int> > task_src_rect_h(need_thread_num);
 	std::vector<std::vector<Longinus_CNN_BBox> > task_secondBbox(need_thread_num);
 
-
+	float means[3] = { 104.0f, 117.0f, 124.0f };
 	for (int i = 0; i < need_thread_num; i++)
 	{
 		int st_id = per_num * i;
@@ -724,7 +729,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_cpu::safty_cut_cpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
-					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor);
+					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means);
 					memcpy(input_data_i, roi_resized_float_tensor->cpu_data(), channels * rnet_size * rnet_size * sizeof(float));
 				}
 				else
@@ -739,12 +744,12 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
-					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-					CUDA_CHECK(cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * rnet_size * rnet_size * sizeof(float), cudaMemcpyDefault));
+					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * rnet_size * rnet_size * sizeof(float), cudaMemcpyDefault);
 				}
 				else
 				{
-					CUDA_CHECK(cudaMemset(input_data_i, 0, channels * rnet_size * rnet_size * sizeof(float)));
+					cudaMemset(input_data_i, 0, channels * rnet_size * rnet_size * sizeof(float));
 				}
 #else
 				NO_GPU;
@@ -930,6 +935,8 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 #endif
 		}
 
+		float means[3] = { 104.0f, 117.0f, 124.0f };
+
 		for (int i = 0; i < task_thirdBbox[pp].size(); i++)
 		{
 			int rect_h = (int)regressed_pading_[i].ymax - (int)regressed_pading_[i].ymin + 1;
@@ -943,7 +950,7 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_cpu::safty_cut_cpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
-					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor);
+					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means);
 					memcpy(input_data_i, roi_resized_float_tensor->cpu_data(), channels * onet_size * onet_size * sizeof(float));
 				}
 				else
@@ -958,12 +965,12 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
-					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor);
-					CUDA_CHECK(cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * onet_size * onet_size * sizeof(float), cudaMemcpyDefault));
+					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * onet_size * onet_size * sizeof(float), cudaMemcpyDefault);
 				}
 				else
 				{
-					CUDA_CHECK(cudaMemset(input_data_i, 0, channels * onet_size * onet_size * sizeof(float)));
+					cudaMemset(input_data_i, 0, channels * onet_size * onet_size * sizeof(float));
 				}
 #else
 				NO_GPU;
@@ -1055,4 +1062,3 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 
 	return true;
 }
-

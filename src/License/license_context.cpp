@@ -36,7 +36,7 @@ namespace glasssix
 		/// <summary>
 		/// Check if the license is valid.
 		/// </summary>
-		/// <returns>The cipher text</returns>
+		/// <returns>>The cipher text</returns>
 		std::string license_context::check(bool readonly)
 		{
 			// Get the cipher text and decrypt it.

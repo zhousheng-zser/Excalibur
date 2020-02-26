@@ -21,18 +21,23 @@ namespace glasssix
 
 		void conv_1x1s1_cpu::Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
+			CHECK_EQ(kernelSize_, 1);
+			CHECK_EQ(stride_, 1);
+
 			int num = bottom->num();
 			int w = bottom->width();
 			int h = bottom->height();
 			int inch = bottom->channels();
 			int bottom_cstep = w * h;
 			const int size = w * h;
+			const float* bottom_data = bottom->cpu_data();
 
 			int outch = output_Channel_;
 			int outh = (h + 2 * pad_ - kernelSize_) / stride_ + 1;
 			int outw = (w + 2 * pad_ - kernelSize_) / stride_ + 1;
 			top.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
 			int top_cstep = outw * outh;
+			float* top_data = top->mutable_cpu_data();
 
 			int kernel_cstep = weights1x1_->width() * weights1x1_->height();
 
@@ -41,10 +46,24 @@ namespace glasssix
 			float *tmp_data = tmp.mutable_cpu_data();
 			int tmp_cstep = tmp.width() * tmp.height();
 
+			std::shared_ptr<tensor<float>> bottom_bordered;
+			if (pad_ > 0)
+			{
+				tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_, pad_, pad_);
+				if (bottom->order() == NHWC)
+				{
+					tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
+				}
+				h = bottom_bordered->height();
+				w = bottom_bordered->width();
+				bottom_cstep = w * h;
+				bottom_data = bottom_bordered->cpu_data();
+			}
+
 			for (int num_i = 0; num_i < num; num_i++)
 			{
-				const float *bottom_data = bottom->cpu_data() + num_i * inch * bottom_cstep;
-				float *top_data = top->mutable_cpu_data() + num_i * outch * top_cstep;
+				const float *bottom_data_num = bottom_data + num_i * inch * bottom_cstep;
+				float *top_data_num = top_data + num_i * outch * top_cstep;
 
 				{
 					int nn_size = size >> 3;
@@ -57,7 +76,7 @@ namespace glasssix
 					{
 						int i = ii * 8;
 
-						const float* img0 = bottom_data;
+						const float* img0 = bottom_data_num;
 						img0 += i;
 
 						float* tmpptr = tmp_data + (i / 8) * tmp_cstep;
@@ -96,7 +115,7 @@ namespace glasssix
 					{
 						int i = remain_size_start + ii * 4;
 
-						const float* img0 = bottom_data;
+						const float* img0 = bottom_data_num;
 						img0 += i;
 
 						float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4) * tmp_cstep;
@@ -124,7 +143,7 @@ namespace glasssix
 #endif
 					for (int i = remain_size_start; i < size; i++)
 					{
-						const float* img0 = bottom_data;
+						const float* img0 = bottom_data_num;
 						img0 += i;
 
 						float* tmpptr = tmp_data + (i / 8 + (i % 8) / 4 + i % 4) * tmp_cstep;
@@ -150,13 +169,13 @@ namespace glasssix
 				{
 					int p = remain_outch_start + pp * 4;
 
-					float* outptr0 = top_data + (p + 0) * top_cstep;
-					float* outptr1 = top_data + (p + 1) * top_cstep;
-					float* outptr2 = top_data + (p + 2) * top_cstep;
-					float* outptr3 = top_data + (p + 3) * top_cstep;
+					float* outptr0 = top_data_num + (p + 0) * top_cstep;
+					float* outptr1 = top_data_num + (p + 1) * top_cstep;
+					float* outptr2 = top_data_num + (p + 2) * top_cstep;
+					float* outptr3 = top_data_num + (p + 3) * top_cstep;
 
 					const float zeros[4] = { 0.f, 0.f, 0.f, 0.f };
-					const float* biasptr = bias_data + p;
+					const float* biasptr = bias_term_ ? bias_data + p : nullptr;
 
 					int i = 0;
 
@@ -166,10 +185,21 @@ namespace glasssix
 						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-						mm_type sum0 = mm_set1_ps(biasptr[0]);
-						mm_type sum1 = mm_set1_ps(biasptr[1]);
-						mm_type sum2 = mm_set1_ps(biasptr[2]);
-						mm_type sum3 = mm_set1_ps(biasptr[3]);
+						mm_type sum0, sum1, sum2, sum3;
+						if (bias_term_)
+						{
+							sum0 = mm_set1_ps(biasptr[0]);
+							sum1 = mm_set1_ps(biasptr[1]);
+							sum2 = mm_set1_ps(biasptr[2]);
+							sum3 = mm_set1_ps(biasptr[3]);
+						}
+						else
+						{
+							sum0 = mm_setzero_ps();
+							sum1 = mm_setzero_ps();
+							sum2 = mm_setzero_ps();
+							sum3 = mm_setzero_ps();
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -199,14 +229,29 @@ namespace glasssix
 						outptr2 += 8;
 						outptr3 += 8;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-						mm_type sum0_0 = mm_set1_ps(biasptr[0]);
-						mm_type sum0_4 = mm_set1_ps(biasptr[0]);
-						mm_type sum1_0 = mm_set1_ps(biasptr[1]);
-						mm_type sum1_4 = mm_set1_ps(biasptr[1]);
-						mm_type sum2_0 = mm_set1_ps(biasptr[2]);
-						mm_type sum2_4 = mm_set1_ps(biasptr[2]);
-						mm_type sum3_0 = mm_set1_ps(biasptr[3]);
-						mm_type sum3_4 = mm_set1_ps(biasptr[3]);
+						mm_type sum0_0, sum0_4, sum1_0, sum1_4, sum2_0, sum2_4, sum3_0, sum3_4;
+						if (bias_term_)
+						{
+							sum0_0 = mm_set1_ps(biasptr[0]);
+							sum0_4 = mm_set1_ps(biasptr[0]);
+							sum1_0 = mm_set1_ps(biasptr[1]);
+							sum1_4 = mm_set1_ps(biasptr[1]);
+							sum2_0 = mm_set1_ps(biasptr[2]);
+							sum2_4 = mm_set1_ps(biasptr[2]);
+							sum3_0 = mm_set1_ps(biasptr[3]);
+							sum3_4 = mm_set1_ps(biasptr[3]);
+						}
+						else
+						{
+							sum0_0 = mm_setzero_ps();
+							sum0_4 = mm_setzero_ps();
+							sum1_0 = mm_setzero_ps();
+							sum1_4 = mm_setzero_ps();
+							sum2_0 = mm_setzero_ps();
+							sum2_4 = mm_setzero_ps();
+							sum3_0 = mm_setzero_ps();
+							sum3_4 = mm_setzero_ps();
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -245,41 +290,88 @@ namespace glasssix
 						outptr2 += 8;
 						outptr3 += 8;
 #else
-						float sum0_0 = biasptr[0];
-						float sum0_1 = biasptr[0];
-						float sum0_2 = biasptr[0];
-						float sum0_3 = biasptr[0];
-						float sum0_4 = biasptr[0];
-						float sum0_5 = biasptr[0];
-						float sum0_6 = biasptr[0];
-						float sum0_7 = biasptr[0];
 
-						float sum1_0 = biasptr[1];
-						float sum1_1 = biasptr[1];
-						float sum1_2 = biasptr[1];
-						float sum1_3 = biasptr[1];
-						float sum1_4 = biasptr[1];
-						float sum1_5 = biasptr[1];
-						float sum1_6 = biasptr[1];
-						float sum1_7 = biasptr[1];
+                        float sum0_0, sum0_1, sum0_2, sum0_3, sum0_4, sum0_5, sum0_6, sum0_7;
+						float sum1_0, sum1_1, sum1_2, sum1_3, sum1_4, sum1_5, sum1_6, sum1_7;
+						float sum2_0, sum2_1, sum2_2, sum2_3, sum2_4, sum2_5, sum2_6, sum2_7;
+						float sum3_0, sum3_1, sum3_2, sum3_3, sum3_4, sum3_5, sum3_6, sum3_7;
 
-						float sum2_0 = biasptr[2];
-						float sum2_1 = biasptr[2];
-						float sum2_2 = biasptr[2];
-						float sum2_3 = biasptr[2];
-						float sum2_4 = biasptr[2];
-						float sum2_5 = biasptr[2];
-						float sum2_6 = biasptr[2];
-						float sum2_7 = biasptr[2];
+						if (bias_term_)
+						{
+							sum0_0 = biasptr[0];
+							sum0_1 = biasptr[0];
+							sum0_2 = biasptr[0];
+							sum0_3 = biasptr[0];
+							sum0_4 = biasptr[0];
+							sum0_5 = biasptr[0];
+							sum0_6 = biasptr[0];
+							sum0_7 = biasptr[0];
 
-						float sum3_0 = biasptr[3];
-						float sum3_1 = biasptr[3];
-						float sum3_2 = biasptr[3];
-						float sum3_3 = biasptr[3];
-						float sum3_4 = biasptr[3];
-						float sum3_5 = biasptr[3];
-						float sum3_6 = biasptr[3];
-						float sum3_7 = biasptr[3];
+							sum1_0 = biasptr[1];
+							sum1_1 = biasptr[1];
+							sum1_2 = biasptr[1];
+							sum1_3 = biasptr[1];
+							sum1_4 = biasptr[1];
+							sum1_5 = biasptr[1];
+							sum1_6 = biasptr[1];
+							sum1_7 = biasptr[1];
+
+							sum2_0 = biasptr[2];
+							sum2_1 = biasptr[2];
+							sum2_2 = biasptr[2];
+							sum2_3 = biasptr[2];
+							sum2_4 = biasptr[2];
+							sum2_5 = biasptr[2];
+							sum2_6 = biasptr[2];
+							sum2_7 = biasptr[2];
+
+							sum3_0 = biasptr[3];
+							sum3_1 = biasptr[3];
+							sum3_2 = biasptr[3];
+							sum3_3 = biasptr[3];
+							sum3_4 = biasptr[3];
+							sum3_5 = biasptr[3];
+							sum3_6 = biasptr[3];
+							sum3_7 = biasptr[3];
+						}
+						else
+						{
+							sum0_0 = 0;
+							sum0_1 = 0;
+							sum0_2 = 0;
+							sum0_3 = 0;
+							sum0_4 = 0;
+							sum0_5 = 0;
+							sum0_6 = 0;
+							sum0_7 = 0;
+									 
+							sum1_0 = 0;
+							sum1_1 = 0;
+							sum1_2 = 0;
+							sum1_3 = 0;
+							sum1_4 = 0;
+							sum1_5 = 0;
+							sum1_6 = 0;
+							sum1_7 = 0;
+									 
+							sum2_0 = 0;
+							sum2_1 = 0;
+							sum2_2 = 0;
+							sum2_3 = 0;
+							sum2_4 = 0;
+							sum2_5 = 0;
+							sum2_6 = 0;
+							sum2_7 = 0;
+									 
+							sum3_0 = 0;
+							sum3_1 = 0;
+							sum3_2 = 0;
+							sum3_3 = 0;
+							sum3_4 = 0;
+							sum3_5 = 0;
+							sum3_6 = 0;
+							sum3_7 = 0;
+						}						
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -372,10 +464,21 @@ namespace glasssix
 						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-						__m128 sum0 = _mm_set1_ps(biasptr[0]);
-						__m128 sum1 = _mm_set1_ps(biasptr[1]);
-						__m128 sum2 = _mm_set1_ps(biasptr[2]);
-						__m128 sum3 = _mm_set1_ps(biasptr[3]);
+						__m128 sum0, sum1, sum2, sum3;
+						if (bias_term_)
+						{
+							sum0 = _mm_set1_ps(biasptr[0]);
+							sum1 = _mm_set1_ps(biasptr[1]);
+							sum2 = _mm_set1_ps(biasptr[2]);
+							sum3 = _mm_set1_ps(biasptr[3]);
+						}
+						else
+						{
+							sum0 = _mm_setzero_ps();
+							sum1 = _mm_setzero_ps();
+							sum2 = _mm_setzero_ps();
+							sum3 = _mm_setzero_ps();
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -411,25 +514,55 @@ namespace glasssix
 						outptr3 += 4;
 
 #else
-						float sum0_0 = biasptr[0];
-						float sum0_1 = biasptr[0];
-						float sum0_2 = biasptr[0];
-						float sum0_3 = biasptr[0];
+						float sum0_0, sum0_1, sum0_2, sum0_3;
+						float sum1_0, sum1_1, sum1_2, sum1_3;
+						float sum2_0, sum2_1, sum2_2, sum2_3;
+						float sum3_0, sum3_1, sum3_2, sum3_3;
 
-						float sum1_0 = biasptr[1];
-						float sum1_1 = biasptr[1];
-						float sum1_2 = biasptr[1];
-						float sum1_3 = biasptr[1];
+						if (bias_term_)
+						{
+							sum0_0 = biasptr[0];
+							sum0_1 = biasptr[0];
+							sum0_2 = biasptr[0];
+							sum0_3 = biasptr[0];
 
-						float sum2_0 = biasptr[2];
-						float sum2_1 = biasptr[2];
-						float sum2_2 = biasptr[2];
-						float sum2_3 = biasptr[2];
+							sum1_0 = biasptr[1];
+							sum1_1 = biasptr[1];
+							sum1_2 = biasptr[1];
+							sum1_3 = biasptr[1];
 
-						float sum3_0 = biasptr[3];
-						float sum3_1 = biasptr[3];
-						float sum3_2 = biasptr[3];
-						float sum3_3 = biasptr[3];
+							sum2_0 = biasptr[2];
+							sum2_1 = biasptr[2];
+							sum2_2 = biasptr[2];
+							sum2_3 = biasptr[2];
+
+							sum3_0 = biasptr[3];
+							sum3_1 = biasptr[3];
+							sum3_2 = biasptr[3];
+							sum3_3 = biasptr[3];
+						}
+						else
+						{
+							sum0_0 = 0;
+							sum0_1 = 0;
+							sum0_2 = 0;
+							sum0_3 = 0;
+									 
+							sum1_0 = 0;
+							sum1_1 = 0;
+							sum1_2 = 0;
+							sum1_3 = 0;
+									 
+							sum2_0 = 0;
+							sum2_1 = 0;
+							sum2_2 = 0;
+							sum2_3 = 0;
+									 
+							sum3_0 = 0;
+							sum3_1 = 0;
+							sum3_2 = 0;
+							sum3_3 = 0;
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -490,7 +623,7 @@ namespace glasssix
 						const float* kptr = weights1x1_data + (p / 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-						__m128 sum = _mm_loadu_ps(biasptr);
+						__m128 sum = bias_term_ ? _mm_loadu_ps(biasptr) : _mm_setzero_ps();
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -521,10 +654,21 @@ namespace glasssix
 						outptr2++;
 						outptr3++;
 #else
-						float sum0 = biasptr[0];
-						float sum1 = biasptr[1];
-						float sum2 = biasptr[2];
-						float sum3 = biasptr[3];
+						float sum0, sum1, sum2, sum3;
+						if (bias_term_)
+						{
+							sum0 = biasptr[0];
+							sum1 = biasptr[1];
+							sum2 = biasptr[2];
+							sum3 = biasptr[3];
+						}
+						else
+						{
+							sum0 = 0;
+							sum1 = 0;
+							sum2 = 0;
+							sum3 = 0;
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -557,9 +701,9 @@ namespace glasssix
 #endif
 				for (int p = remain_outch_start; p < outch; p++)
 				{
-					float* outptr0 = top_data + (p)* top_cstep;
+					float* outptr0 = top_data_num + (p)* top_cstep;
 
-					const float bias0 = bias_data[p];
+					const float bias0 = bias_term_ ? bias_data[p] : 0;
 
 					int i = 0;
 
@@ -569,7 +713,7 @@ namespace glasssix
 						const float* kptr = weights1x1_data + (p / 4 + p % 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-						mm_type sum = mm_set1_ps(bias0);
+						mm_type sum = bias_term_ ? mm_set1_ps(bias0) : mm_setzero_ps();
 						for (int q = 0; q < inch; q++)
 						{
 							mm_type tmpptr0 = mm_load_ps(tmpptr);
@@ -582,8 +726,18 @@ namespace glasssix
 						mm_store_ps(outptr0, sum);
 						outptr0 += 8;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-						mm_type sum0 = mm_set1_ps(bias0);
-						mm_type sum1 = mm_set1_ps(bias0);
+						mm_type sum0, sum1;
+						if (bias_term_)
+						{
+							sum0 = mm_set1_ps(bias0);
+							sum1 = mm_set1_ps(bias0);
+						}
+						else
+						{
+							sum0 = mm_setzero_ps();
+							sum1 = mm_setzero_ps();
+						}
+
 						for (int q = 0; q < inch; q++)
 						{
 							mm_type tmpptr0 = mm_load_ps(tmpptr);
@@ -599,14 +753,29 @@ namespace glasssix
 						mm_store_ps(outptr0 + 4, sum1);
 						outptr0 += 8;
 #else
-						float sum0 = bias0;
-						float sum1 = bias0;
-						float sum2 = bias0;
-						float sum3 = bias0;
-						float sum4 = bias0;
-						float sum5 = bias0;
-						float sum6 = bias0;
-						float sum7 = bias0;
+						float sum0, sum1, sum2, sum3, sum4, sum5, sum6, sum7;
+						if (bias_term_)
+						{
+							sum0 = bias0;
+							sum1 = bias0;
+							sum2 = bias0;
+							sum3 = bias0;
+							sum4 = bias0;
+							sum5 = bias0;
+							sum6 = bias0;
+							sum7 = bias0;
+						}
+						else
+						{
+							sum0 = 0;
+							sum1 = 0;
+							sum2 = 0;
+							sum3 = 0;
+							sum4 = 0;
+							sum5 = 0;
+							sum6 = 0;
+							sum7 = 0;
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -642,7 +811,7 @@ namespace glasssix
 						const float* kptr = weights1x1_data + (p / 4 + p % 4) * kernel_cstep;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-						__m128 sum = _mm_set1_ps(bias0);
+						__m128 sum = bias_term_ ? _mm_set1_ps(bias0) : _mm_setzero_ps();
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -662,10 +831,21 @@ namespace glasssix
 						_mm_storeu_ps(outptr0, sum);
 						outptr0 += 4;
 #else
-						float sum0 = bias0;
-						float sum1 = bias0;
-						float sum2 = bias0;
-						float sum3 = bias0;
+						float sum0, sum1, sum2, sum3;
+						if (bias_term_)
+						{
+							sum0 = bias0;
+							sum1 = bias0;
+							sum2 = bias0;
+							sum3 = bias0;
+						}
+						else
+						{
+							sum0 = 0;
+							sum1 = 0;
+							sum2 = 0;
+							sum3 = 0;
+						}
 
 						for (int q = 0; q < inch; q++)
 						{
@@ -694,7 +874,7 @@ namespace glasssix
 
 						int q = 0;
 
-						float sum0 = bias0;
+						float sum0 = bias_term_ ? bias0 : 0;
 
 						for (; q < inch; q++)
 						{

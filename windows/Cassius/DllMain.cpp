@@ -6,23 +6,33 @@
 
 BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, void* reserved)
 {
-    switch (reason)
-    {
-    case DLL_PROCESS_ATTACH:
-    {
-        DisableThreadLibraryCalls(instance);
-        glasssix::hippogriff::check_license_fatal_exit_sync();
-        break;
-    }
-    case DLL_THREAD_ATTACH:
-        break;
-    case DLL_THREAD_DETACH:
-        break;
-    case DLL_PROCESS_DETACH:
-        break;
-    }
+	switch (reason)
+	{
+	case DLL_PROCESS_ATTACH:
+	{
+		DisableThreadLibraryCalls(instance);
 
-    return TRUE;
+		auto handler = CreateThread(nullptr, 0, [](void*)->DWORD
+		{
+			Sleep(500);
+			glasssix::hippogriff::check_license_fatal_exit_sync();
+
+			return 0;
+		}, nullptr, 0, nullptr);
+
+		CloseHandle(handler);
+
+		break;
+	}
+	case DLL_THREAD_ATTACH:
+		break;
+	case DLL_THREAD_DETACH:
+		break;
+	case DLL_PROCESS_DETACH:
+		break;
+	}
+
+	return TRUE;
 }
 
 #endif
