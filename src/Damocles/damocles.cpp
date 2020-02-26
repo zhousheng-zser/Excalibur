@@ -6,10 +6,10 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		Damocles::Damocles(int device)
-		{
-			diodorus_.reset(new MTCNN(device));
-		}
+		//Damocles::Damocles(int device)
+		//{
+		//	diodorus_.reset(new MTCNN(device));
+		//}
 
 		Damocles::~Damocles()
 		{

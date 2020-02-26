@@ -1,3 +1,7 @@
+if(USE_CUDA)
+	remove_definitions(-DUSE_CUDA)
+endif()
+
 if(WITH_JNI)
 include_directories(../../include/Irisviel 
 			${JNI_INCLUDE})
@@ -5,7 +9,7 @@ else()
 include_directories(../../include/Irisviel)
 endif()
 
-file(GLOB Irisviel_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cpp)
+file(GLOB Irisviel_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cxx)
 
 if(WITH_JNI)
 	file(GLOB Irisviel_jni_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../jni/jni/Irisvika/*.cpp)

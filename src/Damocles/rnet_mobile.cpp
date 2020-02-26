@@ -46,10 +46,15 @@ namespace glasssix
 			Copy_Params(conv5_2_sc_bias, RNet_mobile, quantize_level);
 
 			//
+
 #ifdef USE_CUDA
-			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
+				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
+			}
 #ifdef USE_CUDNN
-			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
+				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
+			}
 			cudnn_ready_ = true;
 #endif
 #endif
@@ -246,5 +251,3 @@ namespace glasssix
 		}
 	}
 }
-
-

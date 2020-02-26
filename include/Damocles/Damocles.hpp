@@ -13,7 +13,7 @@ namespace glasssix
 
 			Damocles() {}
 
-			Damocles(int device);
+			Damocles(int device) {};
 
 			~Damocles();
 

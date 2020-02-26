@@ -27,16 +27,46 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Excalibur\axpy.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\base_conv.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\bn.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\concat.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\convdw_3x3s1_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\convdw_3x3s2_cpu.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\cudnn.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\deconv.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\eltwise.hpp">
@@ -52,6 +82,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\inner_product.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\io.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\math_functions.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp">
@@ -75,6 +111,12 @@
     <ClInclude Include="..\..\include\Excalibur\prelu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\scale.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -96,30 +138,6 @@
     <ClInclude Include="..\..\include\Excalibur\utensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\io.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\math_functions.hpp">
-      <Filter>Header Files\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\deconv.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\axpy.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="tensor_io.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp">
       <Filter>Header Files\arm</Filter>
     </ClInclude>
@@ -127,6 +145,9 @@
       <Filter>Header Files\arm</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\arm\conv_arm_func.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp">
       <Filter>Header Files\arm</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\arm\inner_product_arm.hpp">
@@ -153,21 +174,39 @@
     <ClInclude Include="..\..\include\Excalibur\arm\softmax_arm.hpp">
       <Filter>Header Files\arm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\scale.hpp">
+    <ClInclude Include="..\..\include\Excalibur\upsample.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Excalibur\axpy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\bn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\concat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\convdw_3x3s1_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\convdw_3x3s2_cpu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\cudnn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\deconv.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\eltwise.cpp">
@@ -203,6 +242,9 @@
     <ClCompile Include="..\..\src\Excalibur\prelu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\scale.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -212,15 +254,6 @@
     <ClCompile Include="..\..\src\Excalibur\softmax.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\deconv.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\axpy.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -228,6 +261,9 @@
       <Filter>Source Files\arm</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\arm\conv_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\eltwise_arm.cpp">
       <Filter>Source Files\arm</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\arm\inner_product_arm.cpp">
@@ -248,14 +284,17 @@
     <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp">
       <Filter>Source Files\arm</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Excalibur\scale.cpp">
+    <ClCompile Include="..\..\src\Excalibur\upsample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\bn.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\concat.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
@@ -295,6 +334,9 @@
     <CudaCompile Include="..\..\src\Excalibur\prelu.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\scale.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
@@ -307,13 +349,7 @@
     <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
-    <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
-      <Filter>Source Files\cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh">
-      <Filter>Source Files\cu</Filter>
-    </CudaCompile>
-    <CudaCompile Include="..\..\src\Excalibur\scale.cu">
+    <CudaCompile Include="..\..\src\Excalibur\upsample.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

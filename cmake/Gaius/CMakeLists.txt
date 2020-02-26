@@ -8,7 +8,7 @@ include_directories(../../include/Gaius
 endif()
 
 
-file(GLOB Gaius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cpp)
+file(GLOB Gaius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Gaius/*.cxx)
 
 if(WITH_JNI)
 	file(GLOB Gaius_jni_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../jni/jni/Gaiulinya/*.cpp)
