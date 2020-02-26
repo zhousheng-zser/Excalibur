@@ -1,5 +1,4 @@
 #include "mtcnn_rnet.hpp"
-
 namespace glasssix
 {
 	namespace longinus
@@ -21,60 +20,70 @@ namespace glasssix
 
 			if (int8_quantization_)
 			{
-				Copy_Int8_Params(conv1, RNet);
-				Copy_Params(prelu1_weights, RNet, quantize_level);
-				Copy_Int8_Params(conv2, RNet);
-				Copy_Params(prelu2_weights, RNet, quantize_level);
-				Copy_Int8_Params(conv3, RNet);
-				Copy_Params(prelu3_weights, RNet, quantize_level);
-				Copy_Params(conv4_weights, RNet, quantize_level);
-				Copy_Params(conv4_bias, RNet, quantize_level);
-				Copy_Params(prelu4_weights, RNet, quantize_level);
-				Copy_Params(conv5_1_weights, RNet, quantize_level);
-				Copy_Params(conv5_1_bias, RNet, quantize_level);
-				Copy_Params(conv5_2_weights, RNet, quantize_level);
-				Copy_Params(conv5_2_bias, RNet, quantize_level);
-				/*Copy_Params(conv5_3_weights, RNet, quantize_level);
-				Copy_Params(conv5_3_bias, RNet, quantize_level);*/
+				Copy_Int8_Params(conv1, mtcnn_rnet);
+				Copy_Params(prelu1_weights, mtcnn_rnet, quantize_level);
+				Copy_Int8_Params(conv2, mtcnn_rnet);
+				Copy_Params(prelu2_weights, mtcnn_rnet, quantize_level);
+				Copy_Int8_Params(conv3, mtcnn_rnet);
+				Copy_Params(prelu3_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv4_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv4_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(prelu4_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_1_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_1_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_2_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_2_bias, mtcnn_rnet, quantize_level);
+				/*Copy_Params(conv5_3_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_3_bias, mtcnn_rnet, quantize_level);*/
 			}
 			else
 			{
-				Copy_Params(conv1_weights, RNet, quantize_level);
-				Copy_Params(conv1_bias, RNet, quantize_level);
-				Copy_Params(prelu1_weights, RNet, quantize_level);
-				Copy_Params(conv2_weights, RNet, quantize_level);
-				Copy_Params(conv2_bias, RNet, quantize_level);
-				Copy_Params(prelu2_weights, RNet, quantize_level);
-				Copy_Params(conv3_weights, RNet, quantize_level);
-				Copy_Params(conv3_bias, RNet, quantize_level);
-				Copy_Params(prelu3_weights, RNet, quantize_level);
-				Copy_Params(conv4_weights, RNet, quantize_level);
-				Copy_Params(conv4_bias, RNet, quantize_level);
-				Copy_Params(prelu4_weights, RNet, quantize_level);
-				Copy_Params(conv5_1_weights, RNet, quantize_level);
-				Copy_Params(conv5_1_bias, RNet, quantize_level);
-				Copy_Params(conv5_2_weights, RNet, quantize_level);
-				Copy_Params(conv5_2_bias, RNet, quantize_level);
+				Copy_Params(conv1_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv1_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(prelu1_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv2_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv2_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(prelu2_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv3_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv3_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(prelu3_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv4_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv4_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(prelu4_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_1_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_1_bias, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_2_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_2_bias, mtcnn_rnet, quantize_level);
 
 
-				/*Copy_Params(conv5_3_weights, RNet, quantize_level);
-				Copy_Params(conv5_3_bias, RNet, quantize_level);*/
+				/*Copy_Params(conv5_3_weights, mtcnn_rnet, quantize_level);
+				Copy_Params(conv5_3_bias, mtcnn_rnet, quantize_level);*/
 			}
 			
 			//
-			
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS) {
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS) {
-			LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
 #endif
 #endif
 			//
+#ifdef __ARM_NEON
+			Init_Conv_arm_Params(conv1, 3, 28, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu1, 28, false, false);
+			Init_Pooling_arm_Params(pool1, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv2, 28, 48, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu2, 48, false, false);
+			Init_Pooling_arm_Params(pool2, 3, 2, 0, 0);
+			Init_Conv_arm_Params(conv3, 48, 64, 1, 2, 1, 0, true);
+			Init_PReLU_arm_Params(prelu3, 64, false, false);
+			Init_InnerProduct_arm_Params(conv4, 64, 3, 3, 128, true);
+			Init_PReLU_arm_Params(prelu4, 128, false, false);
+			Init_InnerProduct_arm_Params(conv5_1, 128, 1, 1, 2, true);
+			Init_InnerProduct_arm_Params(conv5_2, 128, 1, 1, 4, true);
+			Init_Softmax_arm_Params(prob1, 2);
+#else
 			Init_Conv_Params(conv1, 3, 28, 1, 3, 1, 0, true);
 			Init_PReLU_Params(prelu1, 28, false);
 			Init_Pooling_Params(pool1, 3, 2, 0, 0);
@@ -88,6 +97,7 @@ namespace glasssix
 			Init_InnerProduct_Params(conv5_1, 128, 1, 1, 2, true);
 			Init_InnerProduct_Params(conv5_2, 128, 1, 1, 4, true);
 			Init_Softmax_Params(prob1, 2);
+#endif
 		}
 
 
@@ -126,6 +136,112 @@ namespace glasssix
 #endif
 		}
 
+//#define CALC_LAYERS
+
+#ifdef CALC_LAYERS
+#include <glasssix/timer.hpp>
+		void mtcnn_rnet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		{
+			std::cout << "rnet:" << std::endl << std::endl;
+			int loop = 1000;
+			glasssix::Timer calcTime;
+			double elapseTime;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1->Forward(input_data, conv1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu1->Forward_cpu(conv1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				pool1->Forward_cpu(conv1_top_data, pool1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-pool1  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2->Forward(pool1_top_data, conv2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu2->Forward_cpu(conv2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				pool2->Forward_cpu(conv2_top_data, pool2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-pool2  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3->Forward(pool2_top_data, conv3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu3->Forward_cpu(conv3_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4->Forward_cpu(conv3_top_data, conv4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu4->Forward_cpu(conv4_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_1->Forward_cpu(conv4_top_data, conv5_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_1  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5_2->Forward_cpu(conv4_top_data, conv5_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5_2  :" << std::setw(5) << elapseTime << std::endl;
+			
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				prob1->Forward_cpu(conv5_1_top_data, prob1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-prob1  :" << std::setw(5) << elapseTime << std::endl;
+			
+		}
+#else
 		void mtcnn_rnet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
@@ -142,6 +258,7 @@ namespace glasssix
 			conv5_2->Forward_cpu(conv4_top_data, conv5_2_top_data);
 			prob1->Forward_cpu(conv5_1_top_data, prob1_top_data);
 		}
+#endif
 
 #ifdef USE_CUDA
 		void mtcnn_rnet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)

@@ -1,327 +1,390 @@
 #include "search.hpp"
+
+#include <cstring>
+#include <fstream>
+#include <iostream>
+
 #include <glasssix/accelerator.hpp>
-#if defined( _OPENMP) && !defined(TRIAL)
+
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
-using namespace std;
-using namespace boost;
 using namespace glasssix::excalibur;
 
 namespace glasssix
 {
 	namespace irisviel
 	{
-		Search::Search(const std::vector<const float*> *baseData, int dimension)
-			: dimension_(dimension)
+		irisviel_search_internal::irisviel_search_internal(const std::vector<const float*>& base_data, int dimension) : base_data{ &base_data }, base_num_{ static_cast<uint32_t>(base_data.size()) }, dimension_{ static_cast<uint32_t>(dimension) }
 		{
-			baseData_ = baseData;
-			baseNum_ = (*baseData).size();
 		}
 
-		Search::Search(int dimension)
-			: dimension_(dimension){}
-
-		Search::~Search(){}
-
-		void Search::loadGraph(const char *graphPath)
+		irisviel_search_internal::irisviel_search_internal(int dimension) : base_data{}, base_num_{}, dimension_{ static_cast<uint32_t>(dimension) }
 		{
-			ngraph.clear();
-			std::ifstream in(graphPath, std::ios::binary);
-			in.read((char *)&isNormalized, sizeof(bool));
-			in.read((char *)&width, sizeof(unsigned));
-			in.read((char *)&navigateNode, sizeof(unsigned));
-			while (!in.eof()) {
-				unsigned k;
-				in.read((char *)&k, sizeof(unsigned));
-				if (in.eof())break;
-				std::vector<unsigned> tmp(k);
-				in.read((char *)tmp.data(), k * sizeof(unsigned));
-				ngraph.push_back(tmp);
-			}
 		}
 
-		void Search::loadGraph(const char *graphPath, const char *basedataPath)
+		irisviel_search_internal::~irisviel_search_internal()
+		{
+		}
+
+		bool irisviel_search_internal::load_graph(const char* graphPath)
 		{
 			//load graph
 			ngraph.clear();
-			std::ifstream inGraph(graphPath, std::ios::binary);
-			if (!inGraph.is_open())
+			std::ifstream in_graph{ graphPath, std::ios::binary };
+
+			if (!in_graph.is_open())
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error("open ngraph file error");
 			}
 
-			inGraph.read((char *)&isNormalized, sizeof(bool));
-			inGraph.read((char *)&width, sizeof(unsigned));
-			inGraph.read((char *)&navigateNode, sizeof(unsigned));
-			while (!inGraph.eof()) 
+			if (in_graph.eof())
 			{
-				unsigned k;
-				inGraph.read((char *)&k, sizeof(unsigned));
-				if (inGraph.eof())break;
-				std::vector<unsigned> tmp(k);
-				inGraph.read((char *)tmp.data(), k * sizeof(unsigned));
-				ngraph.push_back(tmp);
+				throw nsg_calculate_error("empty ngraph file");
 			}
 
-			//load basedata
-			baseDataPtr.clear();
-			std::ifstream inBaseData(basedataPath, std::ios::binary);
-			if (!inBaseData.is_open())
+			constexpr size_t header_size = sizeof(bool) + sizeof(uint32_t) + sizeof(uint32_t);
+
+			// Get the file size.
+			in_graph.seekg(0, std::ios::end);
+			std::streamoff file_size = in_graph.tellg();
+			in_graph.seekg(0, std::ios::beg);
+
+			// Check the file size alignment.
+			if (file_size < header_size || file_size % sizeof(uint32_t) != 1 || (file_size - header_size) % sizeof(uint32_t) != 0)
 			{
-				std::cout << "open file error" << std::endl; exit(-1);
+				throw nsg_calculate_error{ "Invalid file size alignment." };
 			}
 
-			while (!inBaseData.eof()) 
+			in_graph >> normalized;
+			in_graph >> width;
+			in_graph >> navigate_node;
+
+			while (!in_graph.eof())
 			{
-				float *temp_data = (float*)malloc(dimension_ * sizeof(float));
-				inBaseData.read((char*)(temp_data), dimension_ * sizeof(float));
-				baseDataPtr.push_back(const_cast<const float*>(temp_data));
+				uint32_t k = 0;
+				in_graph >> k;
+				//inGraph.read((char*)&k, sizeof(uint32_t));
+
+				if (in_graph.eof())
+				{
+					break;
+				}
+
+				std::vector<uint32_t> tmp;
+
+				// Tranverse the allocation exception.
+				try
+				{
+					tmp.resize(k);
+				}
+				catch (std::bad_alloc&)
+				{
+					throw nsg_calculate_error{ "Failed to allocate the data segment." };
+				}
+
+				in_graph.read((char*)tmp.data(), k * sizeof(uint32_t));
+
+				// Check the size.
+				if (in_graph.gcount() < k * sizeof(uint32_t))
+				{
+					throw nsg_calculate_error{ "Invalid data segment size." };
+				}
+
+				ngraph.emplace_back(std::move(tmp));
 			}
-			
-			baseData_ = &baseDataPtr;
-			baseNum_ = baseDataPtr.size() - 1;
+
+			return true;
 		}
 
-		const std::vector<const float*>* Search::getBasedata()
+		bool irisviel_search_internal::load_graph(const char* graph_path, const char* base_data_path)
 		{
-			return baseData_;
+			load_graph(graph_path);
+
+			base_data_cache_.clear();
+			std::ifstream in_base_data{ base_data_path, std::ios::binary };
+			if (!in_base_data.is_open())
+			{
+				throw nsg_calculate_error{ "open basedata file error" };
+			}
+
+			if (in_base_data.eof())
+			{
+				throw nsg_calculate_error{ "empty basedata file" };
+			}
+
+			while (!in_base_data.eof())
+			{
+				float* temp_data = (float*)malloc(dimension_ * sizeof(float));
+				in_base_data.read((char*)(temp_data), dimension_ * sizeof(float));
+				base_data_cache_.push_back(const_cast<const float*>(temp_data));
+			}
+
+			base_data = &base_data_cache_;
+			base_num_ = base_data_cache_.size() - 1;
+			if ((base_data_cache_.size() - 1) <= 0)
+			{
+				throw nsg_calculate_error{ "empty basedata file" };
+			}
+
+			return true;
 		}
 
-		void Search::optimizeGraph() 
+		const std::vector<const float*>* irisviel_search_internal::get_base_data()
+		{
+			return base_data;
+		}
+
+		void irisviel_search_internal::optimize_graph()
 		{
 			//use after build or load
-			if (baseNum_ <= 50000) {
-				neighborsMaxLength = 200;
+			if (base_num_ <= 50000) {
+				neighbors_max_length = 200;
 			}
-			else if (baseNum_ <= 100000) {
-				neighborsMaxLength = 200;
+			else if (base_num_ <= 100000) {
+				neighbors_max_length = 200;
 			}
-			else if (baseNum_ <= 200000) {
-				neighborsMaxLength = 240;
+			else if (base_num_ <= 200000) {
+				neighbors_max_length = 240;
 			}
-			else if (baseNum_ <= 500000) {
-				neighborsMaxLength = 280;
+			else if (base_num_ <= 500000) {
+				neighbors_max_length = 280;
 			}
 			else {
-				neighborsMaxLength = 300;
+				neighbors_max_length = 300;
 			}
 
-			if (baseNum_ <= neighborsMaxLength)
+			if (base_num_ <= neighbors_max_length)
 			{
-				cerr << "Warning: small dataset, shrinking neighborsMaxLength to " << baseNum_ << "." << endl;
-				neighborsMaxLength = baseNum_;
+				std::cerr << "Warning: small dataset, shrinking neighborsMaxLength to " << base_num_ << "." << std::endl;
+				neighbors_max_length = base_num_;
 			}
 
-			dataLen = (dimension_ + 1) * sizeof(float);
-			neighborLen = (width + 1) * sizeof(unsigned);
-			nodeSize = dataLen + neighborLen;
-			optGraph_tensor_.reset(new tensor<char>(nodeSize * baseNum_));
-			optGraph_ = optGraph_tensor_->mutable_cpu_data();
-			for (unsigned i = 0; i<baseNum_; i++) {
-				char* curNodeOffset = optGraph_ + i * nodeSize;
+			data_len_ = (dimension_ + 1) * sizeof(float);
+			neighbor_len_ = (width + 1) * sizeof(uint32_t);
+			node_size_ = data_len_ + neighbor_len_;
+			opt_graph_tensor_.reset(new tensor<char>(node_size_ * base_num_));
+			opt_graph_ = opt_graph_tensor_->mutable_cpu_data();
+			if (opt_graph_ == nullptr)
+			{
+				throw nsg_calculate_error("optGraph_ nullptr");
+			}
+
+			for (uint32_t i = 0; i < base_num_; i++) {
+				char* curNodeOffset = opt_graph_ + i * node_size_;
 
 				float cur_norm = 0;
-				if (isNormalized)
+				if (normalized)
 				{
 					cur_norm = 1;
 				}
 				else
 				{
 #ifdef COSINE_DISTANCE
-					cur_norm = DistanceCosine::norm((*baseData_).at(i), dimension_);
+					cur_norm = distance_cosine::norm((*base_data)[i], dimension_);
 #else
-					cur_norm = DistanceFastL2::norm((*baseData_).at(i), dimension_);
+					cur_norm = distance_fast_l2::norm((*base_data)[i], dimension);
 #endif // COSINE_DISTANCE
 				}
 
 				memcpy(curNodeOffset, &cur_norm, sizeof(float));
-				memcpy(curNodeOffset + sizeof(float), (*baseData_).at(i), dataLen - sizeof(float));
+				memcpy(curNodeOffset + sizeof(float), (*base_data)[i], data_len_ - sizeof(float));
 
-				curNodeOffset += dataLen;
-				unsigned k = ngraph[i].size();
-				memcpy(curNodeOffset, &k, sizeof(unsigned));
-				memcpy(curNodeOffset + sizeof(unsigned), ngraph[i].data(), k * sizeof(unsigned));
-				std::vector<unsigned>().swap(ngraph[i]);
+				curNodeOffset += data_len_;
+				uint32_t k = ngraph[i].size();
+				if (k > neighbor_len_)
+				{
+					throw nsg_calculate_error("ngraph has a huge k");
+				}
+
+				memcpy(curNodeOffset, &k, sizeof(uint32_t));
+				memcpy(curNodeOffset + sizeof(uint32_t), ngraph[i].data(), k * sizeof(uint32_t));
+				std::vector<uint32_t>().swap(ngraph[i]);
 			}
-			CompactGraph().swap(ngraph);
+
+			compact_graph_type{}.swap(ngraph);
 		}
 
-		void Search::searchVector(const vector<const float*>* queryData, unsigned topK, std::vector<std::vector<unsigned>> &returnIDs,
-			std::vector<std::vector<float>> &returnSimilarities)
+		std::tuple<vector2d<uint32_t>, vector2d<float>> irisviel_search_internal::search_vector(const std::vector<const float*>& query_data, uint32_t top_k)
 		{
-			queryData_ = queryData;
-			queryNum_ = (*queryData).size();
+			vector2d<uint32_t> ids;
+			vector2d<float> similarities;
 
-			returnIDs.resize(queryNum_);
-			returnSimilarities.resize(queryNum_);
+			query_data_ = &query_data;
+			query_num_ = query_data.size();
 
-			if (baseNum_ != 1)
+			ids.resize(query_num_);
+			similarities.resize(query_num_);
+
+			if (base_num_ != 1)
 			{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
-				for (int i = 0; i < queryNum_; ++i)
+				for (int i = 0; i < query_num_; ++i)
 				{
-					searchWithOptGraph((*queryData_).at(i), topK, returnIDs[i], returnSimilarities[i]);
+					search_with_opt_graph((*query_data_)[i], top_k, ids[i], similarities[i]);
 				}
 			}
 			else
 			{
-				for (int i = 0; i < queryNum_; ++i)
+				for (int i = 0; i < query_num_; ++i)
 				{
-					returnIDs[i].resize(1);
-					returnSimilarities[i].resize(1);
+					ids[i].resize(1);
+					similarities[i].resize(1);
 
 					//return 0 when there is only one picture in database
-					returnIDs[i][0] = 0;
+					ids[i][0] = 0;
 
 #ifdef COSINE_DISTANCE
-					float normBase = DistanceCosine::norm((*baseData_).at(0), dimension_);
-					float normQuery = DistanceCosine::norm((*queryData_).at(i), dimension_);
-					float dist = DistanceCosine::compare((*baseData_).at(0), normBase, (*queryData_).at(i), normQuery, dimension_);
-					returnSimilarities[i][0] = 1.0f - dist;
+					float norm_base = distance_cosine::norm((*base_data)[0], dimension_);
+					float norm_query = distance_cosine::norm((*query_data_)[i], dimension_);
+					float dist = distance_cosine::compare((*base_data)[0], norm_base, (*query_data_)[i], norm_query, dimension_);
+
+					similarities[i][0] = 1.0f - dist;
 #else
-					float normQuery = DistanceFastL2::norm((*queryData_).at(i), dimension_);
-					float dist = DistanceL2::compare((*baseData_).at(0), (*queryData_).at(i), dimension_);
-					returnSimilarities[i][0] = 1.0f - 1.0f * dist / normQuery;
+					float norm_query = distance_fast_l2::norm((*query_data_)[i], dimension);
+					float dist = distance_l2::compare((*base_data)[0], (*queryData_)[i], dimension);
+					return_similarities[i][0] = 1.0f - 1.0f * dist / norm_query;
 #endif // COSINE_DISTANCE
 				}
 			}
+
+			return { ids, similarities };
 		}
 
-		void Search::searchWithOptGraph(const float *singleQueryData, unsigned topK,
-			std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities)
+		void irisviel_search_internal::search_with_opt_graph(const float* single_query_data, uint32_t top_k, std::vector<uint32_t>& return_ids, std::vector<float>& return_similarities)
 		{
-			if (topK > neighborsMaxLength || topK > baseNum_)
+			if (top_k > neighbors_max_length || top_k > base_num_)
 			{
-				cerr << "error, topK is bigger than " << neighborsMaxLength << ", or bigger than " << baseNum_;
+				std::cerr << "error, topK is bigger than " << neighbors_max_length << ", or bigger than " << base_num_;
 				return;
 			}
 
-			std::vector <Neighbor> returnNeighbors;
-			returnNeighbors.resize(neighborsMaxLength + 1);
-			returnIDs.resize(topK);
-			returnSimilarities.resize(topK);
-			std::vector<unsigned> initIds(neighborsMaxLength);
+			std::vector <neighbor> return_neighbors;
+			return_neighbors.resize(neighbors_max_length + 1);
+			return_ids.resize(top_k);
+			return_similarities.resize(top_k);
+			std::vector<uint32_t> init_ids(neighbors_max_length);
 
-			boost::dynamic_bitset<> flags{ baseNum_, 0 };
-			unsigned count = 0;
-			unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * navigateNode + dataLen);
-			unsigned MaxM_ep = *neighbors;
+			boost::dynamic_bitset<> flags{ base_num_, 0 };
+			uint32_t count = 0;
+			uint32_t* neighbors = (uint32_t*)(opt_graph_ + node_size_ * navigate_node + data_len_);
+			uint32_t max_m_ep = *neighbors;
 			neighbors++;
 
-			for (; count < neighborsMaxLength && count < MaxM_ep; count++)
+			for (; count < neighbors_max_length && count < max_m_ep; count++)
 			{
-				initIds[count] = neighbors[count];
-				flags[initIds[count]] = true;
+				init_ids[count] = neighbors[count];
+				flags[init_ids[count]] = true;
 			}
 
-			while (count < neighborsMaxLength)
+			while (count < neighbors_max_length)
 			{
-				unsigned id = rand() % baseNum_;
+				uint32_t id = rand() % base_num_;
 				if (flags[id])continue;
 				flags[id] = true;
-				initIds[count] = id;
+				init_ids[count] = id;
 				count++;
 			}
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-			for (unsigned i = 0; i < initIds.size(); i++)
+			for (uint32_t i = 0; i < init_ids.size(); i++)
 			{
-				unsigned id = initIds[i];
-				if (id >= baseNum_)continue;
-				_mm_prefetch(optGraph_ + nodeSize * id, _MM_HINT_T0);
+				uint32_t id = init_ids[i];
+				if (id >= base_num_)continue;
+				_mm_prefetch(opt_graph_ + node_size_ * id, _MM_HINT_T0);
 			}
 #endif
 
-			float normQuery = 0.0f;
-			if (isNormalized)
+			float norm_query = 0.0f;
+			if (normalized)
 			{
-				normQuery = 1.0f;
+				norm_query = 1.0f;
 			}
 			else
 			{
 #ifdef COSINE_DISTANCE
-				normQuery = DistanceCosine::norm(singleQueryData, dimension_);
+				norm_query = distance_cosine::norm(single_query_data, dimension_);
 #else
-				normQuery = DistanceFastL2::norm(singleQueryData, dimension_);
+				norm_query = distance_fast_l2::norm(single_query_data, dimension);
 #endif // COSINE_DISTANCE
 			}
 
-			for (unsigned i = 0; i < initIds.size(); i++)
+			for (uint32_t i = 0; i < init_ids.size(); i++)
 			{
-				unsigned id = initIds[i];
-				float *x = (float*)(optGraph_ + nodeSize * id);
+				uint32_t id = init_ids[i];
+				float* x = (float*)(opt_graph_ + node_size_ * id);
 				float norm_x = *x; x++;
 
 #ifdef COSINE_DISTANCE
-				float dist = DistanceCosine::compare(x, norm_x, singleQueryData, normQuery, dimension_);
+				float dist = distance_cosine::compare(x, norm_x, single_query_data, norm_query, dimension_);
 #else
-				float dist = DistanceFastL2::compare(x, norm_x, singleQueryData, normQuery, dimension_);
+				float dist = distance_fast_l2::compare(x, norm_x, single_query_data, norm_query, dimension);
 #endif // COSINE_DISTANCE
 
-				returnNeighbors[i] = Neighbor(id, dist, true);
+				return_neighbors[i] = neighbor(id, dist, true);
 				flags[id] = true;
 
 			}
 
-			std::sort(returnNeighbors.begin(), returnNeighbors.begin() + neighborsMaxLength);
+			std::sort(return_neighbors.begin(), return_neighbors.begin() + neighbors_max_length);
 			int i = 0;
-			while (i < (int)neighborsMaxLength)
+			while (i < (int)neighbors_max_length)
 			{
-				int minPos = neighborsMaxLength;
-				if (returnNeighbors[i].flag)
+				int min_pos = neighbors_max_length;
+				if (return_neighbors[i].flag)
 				{
-					returnNeighbors[i].flag = false;
-					unsigned n = returnNeighbors[i].id;
+					return_neighbors[i].flag = false;
+					uint32_t n = return_neighbors[i].id;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-					_mm_prefetch(optGraph_ + nodeSize * n + dataLen, _MM_HINT_T0);
+					_mm_prefetch(opt_graph_ + node_size_ * n + data_len_, _MM_HINT_T0);
 #endif
 
-					unsigned *neighbors = (unsigned*)(optGraph_ + nodeSize * n + dataLen);
-					unsigned MaxM = *neighbors;
+					uint32_t* neighbors = (uint32_t*)(opt_graph_ + node_size_ * n + data_len_);
+					uint32_t MaxM = *neighbors;
 					neighbors++;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-					for (unsigned m = 0; m < MaxM; ++m)
-						_mm_prefetch(optGraph_ + nodeSize * neighbors[m], _MM_HINT_T0);
+					for (uint32_t m = 0; m < MaxM; ++m)
+						_mm_prefetch(opt_graph_ + node_size_ * neighbors[m], _MM_HINT_T0);
 #endif
 
-					for (unsigned m = 0; m < MaxM; ++m)
+					for (uint32_t m = 0; m < MaxM; ++m)
 					{
-						unsigned id = neighbors[m];
+						uint32_t id = neighbors[m];
 						if (flags[id])continue;
 						flags[id] = 1;
-						float *data = (float*)(optGraph_ + nodeSize * id);
-						float normID = *data; data++;
+						float* data = (float*)(opt_graph_ + node_size_ * id);
+						float norm_id = *data; data++;
 
 #ifdef COSINE_DISTANCE
-						float dist = DistanceCosine::compare(data, normID, singleQueryData, normQuery, dimension_);
+						float dist = distance_cosine::compare(data, norm_id, single_query_data, norm_query, dimension_);
 #else
-						float dist = DistanceFastL2::compare(data, normID, singleQueryData, normQuery, dimension_);
+						float dist = distance_fast_l2::compare(data, norm_id, single_query_data, norm_query, dimension);
 #endif // COSINE_DISTANCE
 
-						if (dist >= returnNeighbors[neighborsMaxLength - 1].distance)continue;
-						Neighbor nn(id, dist, true);
+						if (dist >= return_neighbors[neighbors_max_length - 1].distance)continue;
+						neighbor nn(id, dist, true);
 
-						int insertPos = insertIntoPool(&returnNeighbors[0], neighborsMaxLength, nn);
-						if (returnNeighbors.size() > neighborsMaxLength + 1)
+						int insert_pos = insert_into_pool(&return_neighbors[0], neighbors_max_length, nn);
+						if (return_neighbors.size() > neighbors_max_length + 1)
 						{
-							returnNeighbors.pop_back();
+							return_neighbors.pop_back();
 						}
 
-						if (insertPos < minPos)
+						if (insert_pos < min_pos)
 						{
-							minPos = insertPos;
+							min_pos = insert_pos;
 						}
 					}
 				}
 
-				if (minPos <= i)
+				if (min_pos <= i)
 				{
-					i = minPos;
+					i = min_pos;
 				}
 				else
 				{
@@ -329,28 +392,29 @@ namespace glasssix
 				}
 			}
 
-			for (size_t i = 0; i < topK; i++)
+			for (size_t i = 0; i < top_k; i++)
 			{
-				returnIDs[i] = returnNeighbors[i].id;
+				return_ids[i] = return_neighbors[i].id;
 
 #ifdef COSINE_DISTANCE
-				returnSimilarities[i] = 1.0f - returnNeighbors[i].distance;
+				return_similarities[i] = 1.0f - return_neighbors[i].distance;
 
 #else
-				returnSimilarities[i] = 1.0f - 1.0f * DistanceL2::compare(singleQueryData, (*baseData_).at(returnIDs[i]),
-					(unsigned)dimension_) / normQuery;
+				return_similarities[i] = 1.0f - 1.0f * distance_l2::compare(single_query_data, (*base_data).at(return_ids[i]),
+					(uint32_t)dimension) / norm_query;
 #endif // COSINE_DISTANCE
 
 			}
 		}
 
-		void Search::saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) {
-			std::ofstream out(resultPath, std::ios::binary | std::ios::out);
+		void irisviel_search_internal::save_result(const char* path, const std::vector<std::vector<uint32_t> >& return_ids)
+		{
+			std::ofstream out(path, std::ios::binary | std::ios::out);
 
-			for (unsigned i = 0; i < returnIDs.size(); i++) {
-				unsigned GK = (unsigned)returnIDs[i].size();
-				out.write((char *)&GK, sizeof(unsigned));
-				out.write((char *)returnIDs[i].data(), GK * sizeof(unsigned));
+			for (uint32_t i = 0; i < return_ids.size(); i++) {
+				uint32_t GK = (uint32_t)return_ids[i].size();
+				out.write((char*)&GK, sizeof(uint32_t));
+				out.write((char*)return_ids[i].data(), GK * sizeof(uint32_t));
 				if (i % 100 == 0)
 				{
 					out.flush();

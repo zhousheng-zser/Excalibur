@@ -21,32 +21,63 @@
 #endif
 #endif
 
-#include "vunicorn.hpp"
 #include <string>
+#include <vector>
 
 namespace glasssix
 {
 	namespace cassius
 	{
+		/// <summary>
+		/// A common component supporting feature extraction. 
+		/// </summary>
 		class EXPORT_CASSIUS CassiusFeature
 		{
 		public:
+			class impl;
 
-			CassiusFeature() {}
+			/// <summary>
+			/// Creates an instance with the default CPU.
+			/// </summary>
+			CassiusFeature();
 
+			/// <summary>
+			/// Creates an instance with a specified GPU core or the default CPU.
+			/// </summary>
+			/// <param name="device">The device ID; -1 for CPU or a non-negative number for a GPU core</param>
 			CassiusFeature(int device);
 
-			~CassiusFeature();
+			/// <summary>
+			/// The copy constructor must be disabled in PImpl pattern.
+			/// </summary>
+			CassiusFeature(const CassiusFeature&) = delete;
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
+			/// <summary>
+			/// Destroys the instance.
+			/// </summary>
+			virtual ~CassiusFeature();
 
-			static std::string getVersion();
+			/// <summary>
+			/// The copy assignment operator must be disabled in PImpl pattern.
+			/// </summary>
+			CassiusFeature& operator=(const CassiusFeature&) = delete;
 
+			/// <summary>
+			/// Forwards the input data and gets the result.
+			/// </summary>
+			/// <param name="input_data">The input data arranged in specified order</param>
+			/// <param name="num">The number of bitmaps within the input data</param>
+			/// <param name="order">The order that the input data are arranged in</param>
+			/// <returns>The feature vectors</returns>
+			std::vector<std::vector<float>> Forward(const unsigned char* input_data, int num, int order = 0) const;
+
+			/// <summary>
+			/// Gets the version of the component.
+			/// </summary>
+			/// <returns>The version</returns>
+			static const char* getVersion();
 		private:
-
-			vUnicorn* unicornia_;
-
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;
+			impl* impl_;
 		};
 	}
 }

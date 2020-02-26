@@ -5,7 +5,7 @@
 #include <fstream>
 #include <random>
 #include "distance.hpp"
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 
@@ -54,7 +54,7 @@ namespace glasssix
 						cerr << ' ' << p.id << ':' << p.distance;
 					}
 					cerr << endl;
-					throw runtime_error("distance is unstable");
+					throw nsg_calculate_error("distance is unstable");
 				}
 			}
 			return float(found) / accurateResults.size();
@@ -107,7 +107,7 @@ namespace glasssix
 				std::mt19937 random_device{ std::random_device{}() };
 				shuffle(index.begin(), index.end(), random_device);
 
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 				for (int i = 0; i < numControls; ++i) {
@@ -314,7 +314,7 @@ namespace glasssix
 			unsigned seed = 1998;
 			mt19937 rng(seed);
 
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 			for (int n = 0; n < N; n++)
@@ -326,7 +326,7 @@ namespace glasssix
 				nhood->radius = numeric_limits<float>::max();
 			}
 
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel
 #endif
 			{
@@ -337,7 +337,7 @@ namespace glasssix
 #endif
 
 				vector<unsigned> random(params.K + 1);
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp for
 #endif
 				for (int n = 0; n < N; ++n)
@@ -371,7 +371,7 @@ namespace glasssix
 
 		void KGraph::join()
 		{
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for default(shared) schedule(dynamic, 100)
 #endif
 			for (int n = 0; n < baseNum_; ++n)
@@ -403,7 +403,7 @@ namespace glasssix
 			std::mt19937 rng(rd());
 			unsigned N = baseNum_;
 
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 			for (int n = 0; n < N; ++n)
@@ -431,7 +431,7 @@ namespace glasssix
 				BOOST_VERIFY(nhood->M > 0);
 				nhood->radiusM = nhood->pool[nhood->M - 1].distance;
 			}
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 			for (int n = 0; n < N; ++n)
@@ -467,7 +467,7 @@ namespace glasssix
 				}
 			}
 
-#if defined( _OPENMP) && !defined(TRIAL)
+#ifdef _OPENMP
 #pragma omp parallel for
 #endif
 			for (int n = 0; n < N; ++n)

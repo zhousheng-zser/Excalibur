@@ -1,7 +1,6 @@
 #ifndef _Lindburg_HPP_
 #define _Lindburg_HPP_
 
-#include "vbanshee.hpp"
 #include "../Excalibur/support_layers.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
@@ -12,7 +11,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		class Banshee : public vBanshee
+		class Banshee
 		{
 			Declear_Params(conv1);
 			Declear_Params(prelu1);
@@ -94,7 +93,7 @@ namespace glasssix
 			Banshee(int device);
 			virtual ~Banshee();
 
-			void Forward(const float* input_data, unsigned num, int order = 0) override
+			void Forward(const float* input_data, int num, int order = 0)
 			{
 				if (order == 0)//NCHW
 				{
@@ -105,19 +104,26 @@ namespace glasssix
 					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
 				}
 
+				float means[3] = { 104.0f, 117.0f, 124.0f };
 				if (device_<0)
 				{
 					float* tensor_data = tensor_float_data->mutable_cpu_data();
 					memcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float));
-					tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
-					Forward_cpu(tensor_float_data);
+					tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data, means);
+
+					std::shared_ptr<tensor<float>> src_tensor = tensor_float_data;
+#ifdef __ARM_NEON
+					if (order == 1)
+						tensor_operation_cpu::nhwc2nchw_cpu(tensor_float_data, src_tensor);
+#endif
+					Forward_cpu(src_tensor);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					float* tensor_data = tensor_float_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault);
-					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
+					CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float), cudaMemcpyDefault));
+					tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data, means);
 #ifdef USE_CUDNN
 					Forward_gpu_cudnn(tensor_float_data);
 					return;
@@ -130,7 +136,7 @@ namespace glasssix
 				}
 			}
 
-			void Forward(const unsigned char* input_data, unsigned num, int order = 0) override
+			void Forward(const unsigned char* input_data, int num, int order = 0)
 			{
 				if (order == 0)//NCHW
 				{
@@ -143,19 +149,20 @@ namespace glasssix
 					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
 				}
 
+				float means[3] = { 104.0f, 117.0f, 124.0f };
 				if (device_<0)
 				{
 					unsigned char* tensor_data = tensor_unsigned_char_data->mutable_cpu_data();
 					memcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char));
-					tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data);
+					tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data, means);
 					Forward_cpu(tensor_float_data);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
-					cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault);
-					tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
+					CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(unsigned char), cudaMemcpyDefault));
+					tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data, means);
 #ifdef USE_CUDNN
 					Forward_gpu_cudnn(tensor_float_data);
 					return;
@@ -168,11 +175,12 @@ namespace glasssix
 				}
 			}
 
-			void getParam(std::vector<std::vector<float> > &keypointParam, unsigned num) override;
+			void getParam(std::vector<std::vector<float> > &keypointParam, int num);
 
-			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) override;
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
+				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks);
 
-			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) override;
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width);
 
 		};
 	}

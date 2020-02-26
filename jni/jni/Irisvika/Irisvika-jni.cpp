@@ -1,62 +1,13 @@
 #include "Irisvika-jni.hpp"
 #include <vector>
-#include "IrisvielSearchWrapper.hpp"
+#include <cstring>
+#include <cstdlib>
+#include "knn_service.hpp"
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_initwithData(JNIEnv *env, jobject thiz, jobjectArray baseDataArray)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	
-	jsize baseDataArraySize = env->GetArrayLength(baseDataArray);
-	std::vector<const float *> baseData(baseDataArraySize, nullptr);
-	
-	jfloatArray array0 = (jfloatArray)env->GetObjectArrayElement(baseDataArray, 0);
-	jsize dimension = env->GetArrayLength(array0);
-	env->DeleteLocalRef(array0);
-	
-	for(size_t i = 0; i < baseDataArraySize; i++)
-	{
-		float *data = new float[dimension];
-		jfloatArray array = (jfloatArray)env->GetObjectArrayElement(baseDataArray, i);
-		env->GetFloatArrayRegion(array, 0, dimension, data);
-		baseData[i] = data;
-		env->DeleteLocalRef(array);
-	}
-	
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = new glasssix::irisviel::IrisvielSearchWrapper(&baseData, dimension);
-	env->SetLongField(thiz, fid_mObject, (jlong)pIrisvianSearchWrapper);
-	
-	env->DeleteLocalRef(clazz);
-}
+static const char *knn_search_result_path = "com/glasssix/Irisvika/knn_search_result";
+static const char *knn_mapping_data_path = "com/glasssix/Irisvika/knn_mapping_data";
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *env, jobject thiz, jint dimension)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = new glasssix::irisviel::IrisvielSearchWrapper(dimension);
-	env->SetLongField(thiz, fid_mObject, (jlong)pIrisvianSearchWrapper);
-	
-	env->DeleteLocalRef(clazz);
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_finalize(JNIEnv *env, jobject thiz)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	if(pIrisvianSearchWrapper != nullptr)
-	{
-		delete pIrisvianSearchWrapper;
-		pIrisvianSearchWrapper = nullptr;
-		env->SetLongField(thiz, fid_mObject, (jlong)pIrisvianSearchWrapper);
-	}
-	
-	env->DeleteLocalRef(clazz);
-}
-
-std::string jstring2string(JNIEnv *env, jstring jstr)
+static std::string jstring2string(JNIEnv *env, jstring jstr)
 {
 	char *rtn = nullptr;
 	jclass strClazz = env->FindClass("java/lang/String");
@@ -83,112 +34,7 @@ std::string jstring2string(JNIEnv *env, jstring jstr)
 	return str;
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *env, jobject thiz, jstring graphPath)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	pIrisvianSearchWrapper->loadGraph(jstring2string(env, graphPath).c_str());
-	
-	env->DeleteLocalRef(clazz);
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNIEnv *env, jobject thiz, jstring graphPath, jstring basedataPath)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	pIrisvianSearchWrapper->loadGraph(jstring2string(env, graphPath).c_str(), jstring2string(env, basedataPath).c_str());
-	
-	env->DeleteLocalRef(clazz);
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_optimizeGraph(JNIEnv *env, jobject thiz)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	pIrisvianSearchWrapper->optimizeGraph();
-	
-	env->DeleteLocalRef(clazz);
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_searchVector(JNIEnv *env, jobject thiz, jobjectArray queryData, jint topK, jobjectArray returnIDsArray, jobjectArray returnSimilaritiesArray)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	jsize querySize = env->GetArrayLength(queryData);
-	std::vector<const float *> query_vec(querySize, nullptr);
-	
-	jfloatArray array0 = (jfloatArray)env->GetObjectArrayElement(queryData, 0);
-	jsize dimension = env->GetArrayLength(array0);
-	env->DeleteLocalRef(array0);
-	
-	for(size_t i = 0; i < querySize; i++)
-	{
-		jfloatArray array = (jfloatArray)env->GetObjectArrayElement(queryData, i);
-		float *data = new float[dimension];
-		env->GetFloatArrayRegion(array, 0, dimension, data);
-		
-		query_vec[i] = data;
-		env->DeleteLocalRef(array);
-	}
-	
-	std::vector<std::vector<unsigned>> returnIDs;
-	std::vector<std::vector<float>> returnSimilarities;
-	pIrisvianSearchWrapper->searchVector(&query_vec, topK, returnIDs, returnSimilarities);
-	
-	for(size_t i = 0; i < querySize; i++)
-	{
-		jintArray arrayID = (jintArray)env->GetObjectArrayElement(returnIDsArray, i);
-		env->SetIntArrayRegion(arrayID, 0, topK, (jint *)&(returnIDs[i][0]));
-		env->DeleteLocalRef(arrayID);
-		
-		jfloatArray arraySimilarity = (jfloatArray)env->GetObjectArrayElement(returnSimilaritiesArray, i);
-		env->SetFloatArrayRegion(arraySimilarity, 0, topK, (jfloat *)&(returnSimilarities[i][0]));
-		env->DeleteLocalRef(arraySimilarity);
-	}
-	
-	env->DeleteLocalRef(clazz);
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveResult(JNIEnv *env, jobject thiz, jstring resultPath, jobjectArray returnIDsArray)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	jsize IDSize = env->GetArrayLength(returnIDsArray);	
-	jintArray array0 = (jintArray)env->GetObjectArrayElement(returnIDsArray, 0);
-	jsize dimension = env->GetArrayLength(array0);
-	env->DeleteLocalRef(array0);
-	
-	std::vector<std::vector<unsigned> > returnIDs(IDSize, std::vector<unsigned>(IDSize));
-	
-	for(size_t i = 0; i < IDSize; i++)
-	{
-		jintArray array = (jintArray)env->GetObjectArrayElement(returnIDsArray, i);
-		env->GetIntArrayRegion(array, 0, dimension, (jint *)&(returnIDs[i][0]));
-		
-		env->DeleteLocalRef(array);
-	}
-	
-	pIrisvianSearchWrapper->saveResult(jstring2string(env, resultPath).c_str(), returnIDs);
-	
-	env->DeleteLocalRef(clazz);
-}
-
-jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
+static jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 {
 	jclass strClazz = env->FindClass("java/lang/String");
 	jmethodID mid_String_constructor = env->GetMethodID(strClazz, "<init>", "([BLjava/lang/String;)V");
@@ -205,105 +51,329 @@ jstring char2Jstring(JNIEnv *env, const char *pat, size_t len)
 	return jstr;
 }
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_getVersion(JNIEnv *env, jobject thiz)
-{
-	std::string version = glasssix::irisviel::IrisvielSearch::getVersion();
-	return char2Jstring(env, version.c_str(), version.length());
-}
-
-JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraph(JNIEnv *env, jobject thiz)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *env, jobject thiz, jint max_items, jstring new_save_path, jstring tmp_path)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
 	
-	int ret = pIrisvianSearchWrapper->buildGraph();
+	std::string new_save_path_ = jstring2string(env, new_save_path);
+	std::string tmp_path_ = jstring2string(env, tmp_path);
+	
+	glasssix::irisviel::knn_service *pknn_service = new glasssix::irisviel::knn_service(max_items, new_save_path_, tmp_path_);
+	env->SetLongField(thiz, fid_mObject, (jlong)pknn_service);
 	
 	env->DeleteLocalRef(clazz);
-	
-	return ret;
 }
 
-JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraphwithData(JNIEnv *env, jobject thiz, jobjectArray baseData)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_finalize(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	jsize dataSize = env->GetArrayLength(baseData);
-	std::vector<const float *> data_vec(dataSize, nullptr);
-	
-	jfloatArray array0 = (jfloatArray)env->GetObjectArrayElement(baseData, 0);
-	jsize dimension = env->GetArrayLength(array0);
-	env->DeleteLocalRef(array0);
-	
-	for(size_t i = 0; i < dataSize; i++)
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	if(pknn_service != nullptr)
 	{
-		jfloatArray array = (jfloatArray)env->GetObjectArrayElement(baseData, i);
-		float *data = new float[dimension];
-		env->GetFloatArrayRegion(array, 0, dimension, data);
-		
-		data_vec[i] = data;
-		env->DeleteLocalRef(array);
+		delete pknn_service;
+		pknn_service = nullptr;
+		env->SetLongField(thiz, fid_mObject, (jlong)pknn_service);
 	}
-	int ret = pIrisvianSearchWrapper->buildGraph(&data_vec);
-	
-	env->DeleteLocalRef(clazz);
-	
-	return ret;
-}
-
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraph(JNIEnv *env, jobject thiz, jstring graphPath)
-{
-	jclass clazz = env->GetObjectClass(thiz);
-	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
-	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
-	
-	pIrisvianSearchWrapper->saveGraph(jstring2string(env, graphPath).c_str());
 	
 	env->DeleteLocalRef(clazz);
 }
 
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraphwithData(JNIEnv *env, jobject thiz, jstring graphPath, jstring baseDataPath)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_save_path(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
 	
-	pIrisvianSearchWrapper->saveGraph(jstring2string(env, graphPath).c_str(), jstring2string(env, baseDataPath).c_str());
+	std::string path = pknn_service->save_path();
 	
 	env->DeleteLocalRef(clazz);
+	return char2Jstring(env, path.c_str(), path.length());
 }
 
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_getBaseData(JNIEnv *env, jobject thiz)
+JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_tmp_path(JNIEnv *env, jobject thiz)
 {
 	jclass clazz = env->GetObjectClass(thiz);
 	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
 	jlong p = env->GetLongField(thiz, fid_mObject);
-	glasssix::irisviel::IrisvielSearchWrapper *pIrisvianSearchWrapper = (glasssix::irisviel::IrisvielSearchWrapper *)p;
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
 	
-	const std::vector<const float *> *baseDataPtr = pIrisvianSearchWrapper->getBasedata();
-	int dimension = pIrisvianSearchWrapper->getDimension();
-	jsize dataSize = baseDataPtr->size();
+	std::string path = pknn_service->tmp_path();
 	
-	jclass floatArrayClazz = env->FindClass("[F");
-	jobjectArray baseDataArray = env->NewObjectArray(dataSize, floatArrayClazz, nullptr);
+	env->DeleteLocalRef(clazz);
+	return char2Jstring(env, path.c_str(), path.length());
+}
 
-	for (size_t i = 0; i < dataSize; i++)
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_build(JNIEnv *env, jobject thiz, jobjectArray files)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	std::vector<std::string> files_vec;
+	jsize files_num = env->GetArrayLength(files);
+	for(int i = 0; i < files_num; i++)
 	{
-		jfloatArray data = env->NewFloatArray(dimension);
+		jstring file = (jstring)env->GetObjectArrayElement(files, i);
+		files_vec.push_back(jstring2string(env, file));
+		env->DeleteLocalRef(file);
+	}
+	
+	if(files_num)
+		pknn_service->build(files_vec);
+	
+	env->DeleteLocalRef(clazz);
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_search(JNIEnv *env, jobject thiz, jfloatArray query_feature, jint top)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jsize feature_size = env->GetArrayLength(query_feature);
+	std::vector<const float> feature_vec(feature_size);
+	
+	env->GetFloatArrayRegion(query_feature, 0, feature_size, &feature_vec[0]);
+	
+	std::vector<glasssix::irisviel::knn_search_result> result_vec = pknn_service->search(feature_vec, top);
+	size_t result_size = result_vec.size();
+	
+	jclass knn_search_result_clazz = env->FindClass(knn_search_result_path);
+	std::string func_type = "(L" + knn_mapping_data_path + ";F)V";
+	jmethodID mid_knn_search_result_constructor = env->GetMethodID(knn_search_result_clazz, "<init>", func_type.c_str());
+	jobjectArray result_array = env->NewObjectArray(result_size, knn_search_result_clazz, nullptr);
+	
+	jclass knn_mapping_data_clazz = env->FindClass(knn_mapping_data_path);
+	jmethodID mid_knn_mapping_data_constructor = env->GetMethodID(knn_mapping_data_clazz, "<init>", "()V");
+	jfieldID fid_feature = env->GetFieldID(knn_mapping_data_clazz, "feature", "[F");
+	jfieldID fid_key = env->GetFieldID(knn_mapping_data_clazz, "key", "[B");
+	for(size_t i = 0; i < result_size; i++)
+	{
+		jobject data = env->NewObject(knn_mapping_data_clazz, mid_knn_mapping_data_constructor);
+		jfloatArray found_feature = env->NewFloatArray(Feature_Size);
+		jbyteArray key = env->NewByteArray(33);
+		env->SetFloatArrayRegion(found_feature, 0, Feature_Size, result_vec[i].data.feature);
+		env->SetByteArrayRegion(key, 0, 33, result_vec[i].data.key);
+		env->SetObjectField(data, fid_feature, found_feature);
+		env->SetObjectField(data, fid_key, key);
 		
-		env->SetFloatArrayRegion(data, 0, dimension, (*baseDataPtr)[i]);
-		env->SetObjectArrayElement(baseDataArray, i, data);
+		jobject result = env->NewObject(knn_search_result_clazz, mid_knn_search_result_constructor, data, result_vec[i].distance_in_percentage);
+		env->SetObjectArrayElement(result_array, i, result);
+		
+		env->DeleteLocalRef(result);
+		env->DeleteLocalRef(key);
+		env->DeleteLocalRef(found_feature);
 		env->DeleteLocalRef(data);
 	}
 	
-	env->DeleteLocalRef(floatArrayClazz);
+	env->DeleteLocalRef(knn_mapping_data_clazz);
+	env->DeleteLocalRef(knn_search_result_clazz);
 	env->DeleteLocalRef(clazz);
 	
-	return baseDataArray;
+	return result_array;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_delete_features(JNIEnv *env, jobject thiz, jobjectArray keys)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jsize keys_num = env->GetArrayLength(keys);
+	std::vector<std::string> keys_vec;
+	
+	for(size_t i = 0; i < keys_num; i++)
+	{
+		jstring key = (jstring)env->GetObjectArrayElement(keys, i);
+		keys_vec.push_back(jstring2string(env, key));
+		env->DeleteLocalRef(key);
+	}
+	
+	jclass strClazz = env->FindClass("java/lang/String");
+	
+	std::vector<std::string> needs_delete_files_vec = pknn_service->delete_features(keys_vec);
+	size_t needs_delete_files_num = needs_delete_files.size();
+	jobjectArray needs_delete_files_array = env->NewObjectArray(needs_delete_files_num, strClazz, nullptr);
+	for(size_t i = 0; i < needs_delete_files_num; i++)
+	{
+		jstring file = char2Jstring(env, needs_delete_files_vec[i].c_str(), needs_delete_files_vec[i].length());
+		env->SetObjectArrayElement(needs_delete_files_array, i, file);
+		env->DeleteLocalRef(file);
+	}
+	
+	env->DeleteLocalRef(strClazz);
+	env->DeleteLocalRef(clazz);
+	return needs_delete_files_array;
+}
+
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_delete_feature(JNIEnv *env, jobject thiz, jstring key)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	std::vector<std::string> needs_delete_files_vec = pknn_service->delete_features(jstring2string(env, key));
+	
+	jclass strClazz = env->FindClass("java/lang/String");
+	
+	size_t needs_delete_files_num = needs_delete_files.size();
+	jobjectArray needs_delete_files_array = env->NewObjectArray(needs_delete_files_num, strClazz, nullptr);
+	for(size_t i = 0; i < needs_delete_files_num; i++)
+	{
+		jstring file = char2Jstring(env, needs_delete_files_vec[i].c_str(), needs_delete_files_vec[i].length());
+		env->SetObjectArrayElement(needs_delete_files_array, i, file);
+		env->DeleteLocalRef(file);
+	}
+	
+	env->DeleteLocalRef(strClazz);
+	env->DeleteLocalRef(clazz);
+	return needs_delete_files_array;
+}
+
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_add_features(JNIEnv *env, jobject thiz, jobjectArray dataObjArray)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jclass knn_mapping_data_clazz = jclass knn_mapping_data_clazz = env->FindClass(knn_mapping_data_path);
+	jfieldID fid_feature = env->GetFieldID(knn_mapping_data_clazz, "feature", "[F");
+	jfieldID fid_key = env->GetFieldID(knn_mapping_data_clazz, "key", "[B");
+	
+	jsize data_num = env->GetArrayLength(dataObjArray);
+	std::vector<glasssix::irisviel::knn_mapping_data> data_vec;
+	for(size_t i = 0; i < data_num; i++)
+	{
+		knn_mapping_data data;
+		
+		jobject dataObj = env->GetObjectArrayElement(dataObjArray, i);
+		
+		jfloatArray feature_array = (jfloatArray)env->GetObjectField(dataObj, fid_feature);
+		jsize feature_size = env->GetArrayLength(feature_array);
+		env->GetFloatArrayRegion(feature_array, 0, feature_size, data.feature);
+		
+		jbyteArray key_array = (jbyteArray)env->GetObjectField(dataObj, fid_key);
+		jsize key_size = env->GetArrayLength(key_array);
+		env->GetByteArrayRegion(key_array, 0, key_size, data.key);
+		
+		data_vec.push_back(data);
+		
+		env->DeleteLocalRef(key_array);
+		env->DeleteLocalRef(feature_array);
+		env->DeleteLocalRef(dataObj);
+	}
+	
+	pknn_service->add_features(data_vec);
+	
+	env->DeleteLocalRef(knn_mapping_data_clazz);
+	env->DeleteLocalRef(clazz);
+}
+
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_add_feature(JNIEnv *env, jobject thiz, jobject dataObj)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jclass knn_mapping_data_clazz = jclass knn_mapping_data_clazz = env->FindClass(knn_mapping_data_path);
+	jfieldID fid_feature = env->GetFieldID(knn_mapping_data_clazz, "feature", "[F");
+	jfieldID fid_key = env->GetFieldID(knn_mapping_data_clazz, "key", "[B");
+	
+	knn_mapping_data data;
+	
+	jfloatArray feature_array = env->GetObjectField(dataObj, fid_feature);
+	jsize feature_size = env->GetArrayLength(feature_array);
+	env->GetFloatArrayRegion(feature_array, 0, feature_size, data.feature);
+	
+	jbyteArray key_array = (jbyteArray)env->GetObjectField(dataObj, fid_key);
+	jsize key_size = env->GetArrayLength(key_array);
+	env->GetByteArrayRegion(key_array, 0, key_size, data.key);
+	
+	pknn_service->add_feature(data);
+	
+	env->DeleteLocalRef(key_array);
+	env->DeleteLocalRef(feature_array);
+	
+	env->DeleteLocalRef(knn_mapping_data_clazz);
+	env->DeleteLocalRef(clazz);
+}
+
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_update(JNIEnv *env, jobject thiz, jobject dataObj)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jclass knn_mapping_data_clazz = jclass knn_mapping_data_clazz = env->FindClass(knn_mapping_data_path);
+	jfieldID fid_feature = env->GetFieldID(knn_mapping_data_clazz, "feature", "[F");
+	jfieldID fid_key = env->GetFieldID(knn_mapping_data_clazz, "key", "[B");
+	
+	knn_mapping_data data;
+	
+	jfloatArray feature_array = env->GetObjectField(dataObj, fid_feature);
+	jsize feature_size = env->GetArrayLength(feature_array);
+	env->GetFloatArrayRegion(feature_array, 0, feature_size, data_.feature);
+	
+	jbyteArray key_array = (jbyteArray)env->GetObjectField(dataObj, fid_key);
+	jsize key_size = env->GetArrayLength(key_array);
+	env->GetByteArrayRegion(key_array, 0, key_size, data_.key);
+	
+	pknn_service->update(data);
+	
+	env->DeleteLocalRef(key_array);
+	env->DeleteLocalRef(feature_array);
+	
+	env->DeleteLocalRef(knn_mapping_data_clazz);
+	env->DeleteLocalRef(clazz);
+}
+
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_update_more(JNIEnv *env, jobject thiz, jobjectArray dataObjArray)
+{
+	jclass clazz = env->GetObjectClass(thiz);
+	jfieldID fid_mObject = env->GetFieldID(clazz, "mObject", "J");
+	jlong p = env->GetLongField(thiz, fid_mObject);
+	glasssix::irisviel::knn_service *pknn_service = (glasssix::irisviel::knn_service *)p;
+	
+	jclass knn_mapping_data_clazz = jclass knn_mapping_data_clazz = env->FindClass(knn_mapping_data_path);
+	jfieldID fid_feature = env->GetFieldID(knn_mapping_data_clazz, "feature", "[F");
+	jfieldID fid_key = env->GetFieldID(knn_mapping_data_clazz, "key", "[B");
+	
+	jsize data_num = env->GetArrayLength(dataObjArray);
+	std::vector<glasssix::irisviel::knn_mapping_data> data_vec;
+	for(size_t i = 0; i < data_num; i++)
+	{
+		knn_mapping_data data;
+		
+		jobject dataObj = env->GetObjectArrayElement(dataObjArray, i);
+		
+		jfloatArray feature_array = env->GetObjectField(dataObj, fid_feature);
+		jsize feature_size = env->GetArrayLength(feature_array);
+		env->GetFloatArrayRegion(feature_array, 0, feature_size, data.feature);
+		
+		jbyteArray key_array = (jbyteArray)env->GetObjectField(dataObj, fid_key);
+		jsize key_size = env->GetArrayLength(key_array);
+		env->GetByteArrayRegion(key_array, 0, key_size, data.key);
+		
+		data_vec.push_back(data);
+		
+		env->DeleteLocalRef(key_array);
+		env->DeleteLocalRef(feature_array);
+		env->DeleteLocalRef(dataObj);
+	}
+	
+	pknn_service->update_more(data_vec);
+	
+	env->DeleteLocalRef(knn_mapping_data_clazz);
+	env->DeleteLocalRef(clazz);
 }

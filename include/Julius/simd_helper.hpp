@@ -24,6 +24,7 @@ namespace glasssix
 #define mm_cvtepu8_epi32 _mm_cvtepu8_epi32
 #define mm_cvtepi8_epi32 _mm_cvtepi8_epi32
 #define mm_cvtepi16_epi32 _mm_cvtepi16_epi32
+#define	mm_mullo_epi16 _mm_mullo_epi16
 #define mm_mullo_epi32 _mm_mullo_epi32
 #define mm_store_si _mm_store_si128
 #define mm_setzero_si _mm_setzero_si128
@@ -83,6 +84,34 @@ namespace glasssix
 #else
 #define mm_fmadd_ps(A, B, C) _mm_add_ps(_mm_mul_ps(A, B), C)
 #endif
+
+	static float mul_add_3x3_simd(__m128 r0_data, __m128 r1_data, __m128 r2_data, __m128 k0_data, __m128 k1_data, __m128 k2_data, float bias)
+	{
+		float sum_sum = bias;
+		__m128 sum = _mm_setzero_ps();
+
+#if USE_FMADD128
+		sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+		sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+		sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+#else
+		sum = _mm_add_ps(_mm_mul_ps(r0_data, k0_data), sum);
+		sum = _mm_add_ps(_mm_mul_ps(r1_data, k1_data), sum);
+		sum = _mm_add_ps(_mm_mul_ps(r2_data, k2_data), sum);
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+#endif
+
+		float temp[4];
+		_mm_storeu_ps(temp, sum);
+		for (int i = 0; i < 3; i++)
+		{
+			sum_sum += temp[i];
+		}
+
+		return sum_sum;
+	}
+
 #endif
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
@@ -102,6 +131,7 @@ namespace glasssix
 #define mm_cvtepu8_epi32 _mm256_cvtepu8_epi32
 #define mm_cvtepi8_epi32 _mm256_cvtepi8_epi32
 #define mm_cvtepi16_epi32 _mm256_cvtepi16_epi32
+#define	mm_mullo_epi16 _mm256_mullo_epi16
 #define mm_mullo_epi32 _mm256_mullo_epi32
 #define mm_store_si _mm256_store_si256
 #define mm_setzero_si _mm256_setzero_si256
@@ -426,5 +456,22 @@ namespace glasssix
 			}			
 		}
 	}
+
+	static float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias)
+	{
+		float sum = bias;
+		sum += r0[0] * k0[0];
+		sum += r0[1] * k0[1];
+		sum += r0[2] * k0[2];
+		sum += r1[0] * k1[0];
+		sum += r1[1] * k1[1];
+		sum += r1[2] * k1[2];
+		sum += r2[0] * k2[0];
+		sum += r2[1] * k2[1];
+		sum += r2[2] * k2[2];
+
+		return sum;
+	}
+
 }
 #endif // !_SIMD_HELPER_HPP_

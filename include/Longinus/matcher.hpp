@@ -19,8 +19,8 @@ namespace glasssix
 			Matcher();
 			~Matcher();
 
-			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect,
-				const int frame_extract_frequency);
+			std::vector<Match_Retval> match(std::vector<face_rect_basic> &faceRect,
+				const int frame_extract_frequency, float distance_fractor = 1.0f);
 
 		};
 	}

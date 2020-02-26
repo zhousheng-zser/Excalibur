@@ -11,6 +11,7 @@ namespace glasssix
 	{
 		class inner_product
 		{
+		protected:
 			bool bias_term_;
 			int num_output_;
 			std::shared_ptr<tensor<float>> weights_;
@@ -25,13 +26,13 @@ namespace glasssix
 		public:
 			inner_product(std::vector<int> input_shape_withpout_num, int num_output, bool bias_term, int device);
 
-			~inner_product();
+			virtual ~inner_product();
 
 			void set_weights(float* weights);
 
 			void set_bias(float* bias);
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #ifdef USE_CUDA
 			void Forward_gpu_native(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 #endif
