@@ -51,7 +51,7 @@ namespace glasssix
 		  // params:
 		  // - output: stores the face rects and their corresponding id
 		  // - rects: a vector of face rects
-		void assign_id(std::vector<Match_Retval> &output, const std::vector<FaceRect> &rects) {
+		void assign_id(std::vector<Match_Retval> &output, const std::vector<face_rect_basic> &rects) {
 
 			for (size_t i = 0; i < rects.size(); i++) {
 				Match_Retval t(rects[i], get_guid_string(), true);
@@ -78,7 +78,7 @@ namespace glasssix
 			while (it != matcher_map.end())
 			{
 				int start_index = it->second.index;
-				FaceRect temp_rect = it->second.rect;
+				face_rect_basic temp_rect = it->second.rect;
 
 				if (matcher_map.size() > 1 && (abs(curr_index - start_index) > FRAME_INTERVAL)) {
 
@@ -101,14 +101,14 @@ namespace glasssix
 		  //			 if it's not greater than 3, increase the distance constraint between faces.
 		  // - rect: current face rect
 		std::string check_distance(const Match_Retval &rect, std::map<std::string, Map_Val> &matcher_map, const float dense_) {
-			FaceRect temp_rect = rect.rect; // fetch face rect 
+			face_rect_basic temp_rect = rect.rect; // fetch face rect 
 			std::map<std::string, Map_Val>::iterator it; // go through all the elements in the map
 			it = matcher_map.begin();
 			double smaller = DBL_MAX; // max value of double precision
 			std::string retval = "";
 			while (it != matcher_map.end())
 			{
-				FaceRect temp_matcher = it->second.rect;
+				face_rect_basic temp_matcher = it->second.rect;
 
 				// if the distance between the rect and any matcher is greater than a threshold, return the matcher's string id
 				Point rect_center = Point(temp_rect.x + temp_rect.width / 2, temp_rect.y + temp_rect.height / 2);
@@ -139,8 +139,8 @@ namespace glasssix
 		  // - resize_factor: to resize each frame
 		  // - frame_extract_frequency: how frequently to extract one frame
 		  // - i: the current frame index
-		std::vector<Match_Retval> Matcher::match(std::vector<FaceRect> &faceRect,
-			const int frame_extract_frequency) {
+		std::vector<Match_Retval> Matcher::match(std::vector<face_rect_basic> &faceRect,
+			const int frame_extract_frequency, float distance_fractor) {
 			// resize the faceRect to match the new size of frame
 			for (size_t j = 0; j < faceRect.size(); j++)
 			{
@@ -195,9 +195,9 @@ namespace glasssix
 					// if more than 3 faces appear in current frame, increase the distance constraint between faces;
 					// otherwise, decrease the distance requirement.
 					if (output.size() > 3)
-						map_str_id = check_distance(output[j], matcher_map, 0.2f * frame_extract_frequency); // check if current rect and any rect are close in the map
+						map_str_id = check_distance(output[j], matcher_map, 0.2f * frame_extract_frequency * distance_fractor); // check if current rect and any rect are close in the map
 					else
-						map_str_id = check_distance(output[j], matcher_map, 0.5f * frame_extract_frequency); // check if current rect and any rect are close in the map
+						map_str_id = check_distance(output[j], matcher_map, 0.5f * frame_extract_frequency * distance_fractor); // check if current rect and any rect are close in the map
 
 																											 // if current rect is very close to a rect in the map, update matcher in the map
 					if (map_str_id != "") {
@@ -236,6 +236,7 @@ namespace glasssix
 
 			return output;
 		} // end-match
+
 
 	}
 } // end-namespace

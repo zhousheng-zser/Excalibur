@@ -86,20 +86,34 @@ namespace glasssix
 
 			//			
 #ifdef USE_CUDA
-			if (cublasCreate(&cublas_handle_) != CUBLAS_STATUS_SUCCESS)
-			{
-				LOG(ERROR) << "Cannot create Cublas handle. Cublas won't be available.";
-			}
-
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
 #ifdef USE_CUDNN
-			if (cudnnCreate(&cudnn_handle_) != CUDNN_STATUS_SUCCESS)
-			{
-				LOG(ERROR) << "Cannot create Cudnn handle. Cudnn won't be available.";
-			}
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
-#endif // USE_CUDNN
 #endif
-                        
+#endif
+
+#ifdef __ARM_NEON
+			Init_Conv_arm_Params(conv1, 1, 16, 1, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
+			Init_PReLU_arm_Params(prelu1, 16, false, false);//nchw:1*16*24*24->1*16*24*24
+			Init_Conv_arm_Params(conv1_dw, 16, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
+			Init_PReLU_arm_Params(prelu1_dw, 16, false, false);//nchw:1*16*24*24->1*16*24*24
+			Init_Conv_arm_Params(conv2, 16, 32, 1, 1, 1, 0, true);//nchw:1*16*24*24->1*32*24*24
+			Init_Conv_arm_Params(conv2_dw, 32, 32, 32, 3, 2, 1, true);//nchw:1*32*24*24->1*32*12*12
+			Init_PReLU_arm_Params(prelu2_dw, 32, false, false);//nchw:1*32*12*12->1*32*12*12
+			Init_Conv_arm_Params(conv3, 32, 32, 1, 1, 1, 0, true);//nchw:1*32*12*12->1*32*12*12
+			Init_Conv_arm_Params(conv3_dw, 32, 32, 32, 3, 2, 1, true);//nchw:1*32*12*12->1*32*6*6
+			Init_PReLU_arm_Params(prelu3_dw, 32, false, false);//nchw:1*32*6*6->1*32*6*6
+			Init_Conv_arm_Params(conv4, 32, 64, 1, 1, 1, 0, true);//nchw:1*32*6*6->1*64*6*6
+			Init_Conv_arm_Params(conv4_dw, 64, 64, 64, 3, 2, 1, true);//nchw:1*64*6*6->1*64*3*3
+			Init_PReLU_arm_Params(prelu4_dw, 64, false, false);//nchw:1*64*3*3->1*64*3*3
+			Init_InnerProduct_arm_Params(conv5, 64, 3, 3, 256, true);//nchw:1*64*3*3->1*256*1*1
+			Init_PReLU_arm_Params(prelu5, 256, false, false);//nchw:1*256*1*1->1*256*1*1
+			Init_InnerProduct_arm_Params(conv6_1, 256, 1, 1, 1, true);//nchw:1*256*1*1->1*1*1*1
+			Init_Sigmoid_arm_Params(sigmoid1);
+			Init_InnerProduct_arm_Params(conv6_2, 256, 1, 1, 3, true);//nchw:1*256*1*1->1*3*1*1
+			Init_InnerProduct_arm_Params(conv6_3, 256, 1, 1, 10, true);//nchw:1*256*1*1->1*10*1*1
+#else
 			Init_Conv_Params(conv1, 1, 16, 1, 3, 2, 1, true);//nchw:1*1*48*48->1*16*24*24
 			Init_PReLU_Params(prelu1, 16, false);//nchw:1*16*24*24->1*16*24*24
 			Init_Conv_Params(conv1_dw, 16, 16, 16, 3, 1, 1, true);//nchw:1*16*24*24->1*16*24*24
@@ -119,6 +133,7 @@ namespace glasssix
 			Init_Sigmoid_Params(sigmoid1);
 			Init_InnerProduct_Params(conv6_2, 256, 1, 1, 3, true);//nchw:1*256*1*1->1*3*1*1
 			Init_InnerProduct_Params(conv6_3, 256, 1, 1, 10, true);//nchw:1*256*1*1->1*10*1*1
+#endif
 		}
 
 
@@ -254,7 +269,7 @@ namespace glasssix
 #endif 
 #endif
 
-		void Banshee::getParam(std::vector<std::vector<float> > &keypointParam, unsigned num)
+		void Banshee::getParam(std::vector<std::vector<float> > &keypointParam, int num)
 		{
 			if (device_ < 0)
 			{
@@ -286,9 +301,9 @@ namespace glasssix
 				{
 					std::vector<float> temp;
 					std::vector<float> conv_6_1(1), conv_6_2(3), conv_6_3(10);
-					cudaMemcpy(conv_6_1.data(), get_conv6_1()->gpu_data(), 1 * sizeof(float), cudaMemcpyDefault);
-					cudaMemcpy(conv_6_2.data(), get_conv6_2()->gpu_data(), 3 * sizeof(float), cudaMemcpyDefault);
-					cudaMemcpy(conv_6_3.data(), get_conv6_3()->gpu_data(), 10 * sizeof(float), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(conv_6_1.data(), get_conv6_1()->gpu_data(), 1 * sizeof(float), cudaMemcpyDefault));
+					CUDA_CHECK(cudaMemcpy(conv_6_2.data(), get_conv6_2()->gpu_data(), 3 * sizeof(float), cudaMemcpyDefault));
+					CUDA_CHECK(cudaMemcpy(conv_6_3.data(), get_conv6_3()->gpu_data(), 10 * sizeof(float), cudaMemcpyDefault));
 
 					for (size_t j = 0; j < 1; j++)
 					{
@@ -385,7 +400,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
-				cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				rectangle<int> MarginRect = rectangle<int>((float)width / 7,
 					(float)height / 7,
@@ -434,7 +449,7 @@ namespace glasssix
 				tensor_operation_gpu::merge_channel_gpu(src_vector, color_img);
 				tensor_operation_gpu::resize_gpu(color_img, resized_color_img, 128, 128);
 
-				cudaMemcpy(res.data(), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(res.data(), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 
 #else
 				NO_GPU;
@@ -479,6 +494,9 @@ namespace glasssix
 						bbox[i][2] * 1.4f);
 
 					tensor_operation_cpu::safty_cut_cpu(ori_image, ROI, &MarginRect);
+					//std::vector<cv::Mat> rr;
+					//tensor_operation_cpu::tensor2mat_cpu(ROI, rr);
+					//cv::imwrite("D:/rr.jpg", rr[0]);
 
 					point<float> ldmk5[5];
 					for (size_t j = 0; j < landmarks[i].size() / 2; j++)
@@ -519,7 +537,7 @@ namespace glasssix
 			{
 #ifdef USE_CUDA
 				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
-				cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault);
+				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				for (size_t i = 0; i < landmarks.size(); i++)
 				{
@@ -564,7 +582,7 @@ namespace glasssix
 					tensor_operation_gpu::merge_channel_gpu(src_vector, color_img);
 					tensor_operation_gpu::resize_gpu(color_img, resized_color_img, 128, 128);
 
-					cudaMemcpy(&(res[0]) + i * 3 * 128 * 128 * sizeof(unsigned char), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault);
+					CUDA_CHECK(cudaMemcpy(&(res[0]) + i * 3 * 128 * 128 * sizeof(unsigned char), resized_color_img->gpu_data(), 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
 				}
 
 #else
@@ -574,6 +592,5 @@ namespace glasssix
 			}
 			return res;
 		}
-
 	}
 }

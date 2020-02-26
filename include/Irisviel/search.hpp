@@ -1,62 +1,57 @@
 #ifndef _SEARCH_HPP_
 #define _SEARCH_HPP_
 
-#include <cstring>
-#include <iostream>
-#include <fstream>
-#include "nGraph.hpp"
-#include "kGraph.hpp"
+#include "ngraph_internal.hpp"
+#include "kgraph_internal.hpp"
 #include "distance.hpp"
-#include "baseSearch.hpp"
+#include "irisviel_types.hpp"
+
+#include <tuple>
+#include <cstdint>
+
 #include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
-	namespace irisviel 
+	namespace irisviel
 	{
+		class irisviel_search_internal
+		{
+		public:
+			irisviel_search_internal(const std::vector<const float*>& base_data, int dimension);
+			irisviel_search_internal(int dimension);
+			virtual ~irisviel_search_internal();
 
-			class Search : public BaseSearch
-			{
-			public:
-				Search(const std::vector<const float*> *baseData, int dimension);
+			bool load_graph(const char* graph_path);
+			bool load_graph(const char* graph_path, const char* base_data_path);
+			const std::vector<const float*>* get_base_data();
+			void optimize_graph();
+			std::tuple<vector2d<uint32_t>, vector2d<float>> search_vector(const std::vector<const float*>& query_data, uint32_t top_k);
+			void save_result(const char* path, const std::vector<std::vector<uint32_t> >& return_ids);
 
-				Search(int dimension);
+			uint32_t navigate_node = 0;
+			uint32_t width = 0;
+			bool normalized = false;
+			std::vector<std::vector<uint32_t>> ngraph;
+			const std::vector<const float*>* base_data;
+			uint32_t base_num_;
+		private:
+			uint32_t dimension_;
+			uint32_t query_num_;
+			std::vector<const float*> base_data_cache_;
+			const std::vector<const float*>* query_data_;
+			std::shared_ptr<glasssix::excalibur::tensor<char>> opt_graph_tensor_;
 
-				virtual ~Search();
+			char* opt_graph_ = nullptr;
 
-				void loadGraph(const char* graphPath) override;
+			size_t node_size_;
+			size_t data_len_;
+			size_t neighbor_len_;
 
-				void loadGraph(const char* graphPath, const char *basedataPath) override;
-
-				const std::vector<const float*>* getBasedata() override;
-
-				void optimizeGraph() override;
-
-				void searchVector(const std::vector<const float*>* queryData, unsigned topK,
-					std::vector<std::vector<unsigned>> &returnIDs, std::vector<std::vector<float>> &returnSimilarities) override;
-
-				void saveResult(const char* resultPath, std::vector<std::vector<unsigned> > &returnIDs) override;
-
-			private:
-				unsigned dimension_;
-				const std::vector<const float*>* queryData_;
-				unsigned queryNum_;
-				std::vector<const float*> baseDataPtr;
-
-				std::shared_ptr<glasssix::excalibur::tensor<char>> optGraph_tensor_;
-				char* optGraph_;
-
-				size_t nodeSize;
-				size_t dataLen;
-				size_t neighborLen;
-
-				unsigned neighborsMaxLength = 0;
-				typedef std::vector<std::vector<unsigned > > CompactGraph;
-
-				void searchWithOptGraph(const float *singleQueryData, unsigned topK,
-					std::vector<unsigned> &returnIDs, std::vector<float> &returnSimilarities);
-
-			};
+			uint32_t neighbors_max_length = 0;
+			using compact_graph_type = std::vector<std::vector<uint32_t>>;
+			void search_with_opt_graph(const float* single_query_data, uint32_t top_k, std::vector<uint32_t>& return_ids, std::vector<float>& return_similarities);
+		};
 	}
 }
 

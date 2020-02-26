@@ -1,37 +1,74 @@
 #include "CassiusFeature.hpp"
 #include "unicorn.hpp"
 
+#include <memory>
+
 namespace glasssix
 {
 	namespace cassius
 	{
-		CassiusFeature::CassiusFeature(int device)
+		class CassiusFeature::impl
 		{
-			unicornia_ = new Unicorn(device);
+
+		public:
+
+			impl() :impl{ -1 }
+			{
+			}
+
+			impl(int device) : unicornia_{ std::make_shared<Unicorn>(device) }
+			{
+			}
+
+			virtual ~impl() = default;
+
+			std::vector<std::vector<float>> Forward(const std::uint8_t* input_data, int num, int order = 0) const
+			{
+				return unicornia_->Forward(input_data, num, order);
+			}
+
+			static const char* getVersion()
+			{
+#ifdef TRIAL
+				return "Glasssix Trial FaceSDK";
+#else
+				return "Glasssix";
+#endif
+			}
+		private:
+			std::vector<std::vector<float>> Forward(const float* input_data, int num, int order = 0) const
+			{
+				return unicornia_->Forward(input_data, num, order);
+			}
+
+			std::shared_ptr<Unicorn> unicornia_;
+		};
+
+		CassiusFeature::CassiusFeature() : impl_{ new impl }
+		{
+		}
+
+		CassiusFeature::CassiusFeature(int device) : impl_{ new impl{device} }
+		{
 		}
 
 		CassiusFeature::~CassiusFeature()
 		{
-			delete unicornia_;
+			if (impl_ != nullptr)
+			{
+				delete  impl_;
+				impl_ = nullptr;
+			}
 		}
 
-		std::vector<std::vector<float> > CassiusFeature::Forward(const float* input_data, unsigned num, int order) const
+		std::vector<std::vector<float> > CassiusFeature::Forward(const unsigned char* input_data, int num, int order) const
 		{
-			return unicornia_->Forward(input_data, num, order);
+			return impl_->Forward(input_data, num, order);
 		}
 
-		std::vector<std::vector<float> > CassiusFeature::Forward(const unsigned char* input_data, unsigned num, int order) const
+		const char* CassiusFeature::getVersion()
 		{
-			return unicornia_->Forward(input_data, num, order);
-		}
-
-		std::string CassiusFeature::getVersion()
-		{
-#ifdef TRIAL
-			return std::string("Glasssix Trial FaceSDK");
-#else
-			return std::string("Glasssix");
-#endif // TRIAL	
+			return impl::getVersion();
 		}
 	}
 }

@@ -1,5 +1,8 @@
 #include "conv_winograd_cpu.hpp"
+#include "../../include/Excalibur/tensor_operation_cpu.hpp"
 #include <iostream>
+#include <fstream>
+
 namespace glasssix
 {
 	namespace excalibur
@@ -7,23 +10,6 @@ namespace glasssix
 		conv_winograd_cpu::conv_winograd_cpu(int input_Channel, int output_Channel, int group, int kernelSize, int stride, int pad, bool bias_term, int device, bool int8_quantization)
 			: baseconv(input_Channel, output_Channel, group, kernelSize, stride, pad, bias_term, device, int8_quantization)
 		{
-			tile_size_ = m_ + kernelSize_ - 1;//m+r-1
-			tile_length_ = tile_size_ * tile_size_;
-			kernel_length_ = kernelSize_ * kernelSize_;
-			m_length_ = m_ * m_;
-			U_num_ = output_Channel_ * input_Channel_ / group_;
-
-			//U=G*g*GT,so U has the same number as kernel g, there are tile_size_ * tile_size_ elements in single U
-			if (int8_quantization)
-			{
-				U_int16.reset(new tensor<short>(std::vector<int>{U_num_ * tile_length_}));
-				U_int16_data = U_int16->mutable_cpu_data();
-			}
-			else
-			{
-				U_.reset(new tensor<float>(std::vector<int>{U_num_ * tile_length_}));
-				U_data = U_->mutable_cpu_data();
-			}
 		}
 
 		void conv_winograd_cpu::forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col) {}
@@ -52,17 +38,63 @@ namespace glasssix
 
 		void conv_winograd_cpu::Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
+			Forward_F23(bottom, top);
+			//Forward_F43(bottom, top);//modify m_=4,calculate_GgGT43, only AVX supported
+		}
+
+//#define HW_FIRST
+#ifdef HW_FIRST
+		void conv_winograd_cpu::Forward_F23(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		{
 			CHECK_EQ(kernelSize_, 3);
 			CHECK_EQ(stride_, 1);
 			order_ = bottom->order();
-			num_ = bottom->data_shape()[0];
-			bottom_data = bottom->cpu_data();
-			intput_shape_.clear();
-			intput_shape_ = bottom->data_shape();
-			bottom_dim_ = bottom->count(1, 4);
+			num_ = bottom->num();
+			input_dim_h_ = bottom->height();
+			input_dim_w_ = bottom->width();
+			output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+			output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+
+			int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
+			int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
+			h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+			w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+			int total_tile_num = h_tile_num_ * w_tile_num_;
+			int w_tile_stride = w_tile_num_ * tile_length_;
+			int h_w_tile_stride = h_tile_num_ * w_tile_stride;
+			int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
+			int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
+			int add_h = h_aligned - h_subtract_tilesize;
+			int add_w = w_aligned - w_subtract_tilesize;
+
+			input_dim_w_ += 2 * pad_ + add_w;
+			input_dim_h_ += 2 * pad_ + add_h;
+			output_dim_w_ += add_w;
+			output_dim_h_ += add_h;
+			input_spatial_dim_ = input_dim_w_ * input_dim_h_;
+			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
+
+			std::shared_ptr<tensor<float>> bottom_bordered;
+			tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_ + add_h, pad_, pad_ + add_w);
+			if (order_ == NHWC)
+			{
+				tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
+			}
+			bottom_data = bottom_bordered->cpu_data();
+			bottom_dim_ = bottom_bordered->count(1, 4);
+
+			top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, NCHW));
+			top_data = top->mutable_cpu_data();
+			top_dim_ = top->count(1, 4);
 
 			if (int8_quantization_)
 			{
+				bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
+				bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
+
+				top_int32_.reset(new tensor<int>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
+				top_int32_data = top_int32_->mutable_cpu_data();
+
 				bottom_int8_.reset(new tensor<signed char>(std::vector<int>{num_ * bottom_dim_}));
 				bottom_int8_data = bottom_int8_->mutable_cpu_data();
 
@@ -108,1243 +140,2068 @@ namespace glasssix
 					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
 				}
 #endif
+				//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
+				//V_int16.reset(new tensor<short>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+				//V_int16_data = V_int16->mutable_cpu_data();
+				V_int16_data = new short[input_Channel_ * total_tile_num * tile_length_];
 
-				if (order_ == NCHW)
+				if ((order_ == NCHW) || (order_ == NHWC))
 				{
-					input_dim_h_ = bottom->data_shape()[2];
-					input_dim_w_ = bottom->data_shape()[3];
-					input_spatial_dim_ = input_dim_h_ * input_dim_w_;
-
-					output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_spatial_dim_ = output_dim_w_ * output_dim_h_;
-					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
-					bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
-					top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
-					top_data = top->mutable_cpu_data();
-					top_dim_ = top->count(1, 4);
-
-					top_int32_.reset(new tensor<int>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
-					top_int32_data = top_int32_->mutable_cpu_data();
-
-					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
-					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
-					int total_tile_num = h_tile_num_ * w_tile_num_;
-					int w_tile_stride = w_tile_num_ * tile_length_;
-					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
-					int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
-					int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
-					int add_h = h_aligned - h_subtract_tilesize;
-					int add_w = w_aligned - w_subtract_tilesize;
-
 					if (group_ > 1)
 					{
-						bool is_U_calculated = false;
-
 						for (int n = 0; n < num_; n++)
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<int>> M_, RESULT_;
-								std::shared_ptr<tensor<signed char>> TILE_;
-								std::shared_ptr<tensor<short>> v_;
-								M_.reset(new tensor<int>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<int>(std::vector<int>{m_length_}));
-								TILE_.reset(new tensor<signed char>(std::vector<int>{tile_length_}));
-								v_.reset(new tensor<short>(std::vector<int>{tile_length_}));
-								int *m_data = M_->mutable_cpu_data();
-								int *result = RESULT_->mutable_cpu_data();
-								signed char *tile_data = TILE_->mutable_cpu_data();
-								short *v_data = v_->mutable_cpu_data();
-
-								int U_offset_och = och * tile_length_;
-								int top_offset_num_channel = top_offset_num + och * output_spatial_dim_;
-								int bottom_offset_num_channel = bottom_offset_num + och * input_spatial_dim_;
-
-								if (!is_U_calculated)
+								for (int nn = 0; nn < nn_inch; nn++)
 								{
-									calculate_GgGT(weights_int8_data + kernel_length_ * och, U_int16_data + U_offset_och);//calculate U
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+
+										const signed char *row_data2_1 = bottom_int8_data + bottom_offset_num_ich_row_col_2;
+										const signed char *row_data2_2 = row_data2_1 + input_dim_w_;
+										const signed char *row_data2_3 = row_data2_2 + input_dim_w_;
+										const signed char *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_int16_data + V_offset_ich_row_col_2);
+
+										const signed char *row_data3_1 = bottom_int8_data + bottom_offset_num_ich_row_col_3;
+										const signed char *row_data3_2 = row_data3_1 + input_dim_w_;
+										const signed char *row_data3_3 = row_data3_2 + input_dim_w_;
+										const signed char *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_int16_data + V_offset_ich_row_col_3);
+
+										const signed char *row_data4_1 = bottom_int8_data + bottom_offset_num_ich_row_col_4;
+										const signed char *row_data4_2 = row_data4_1 + input_dim_w_;
+										const signed char *row_data4_3 = row_data4_2 + input_dim_w_;
+										const signed char *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_int16_data + V_offset_ich_row_col_4);
+									}
 								}
 
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_channel_row;
-								int top_offset_num_channel_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_channel_row_col;
-								int top_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int tile_offset_row_col;
-								int row;
-								int col;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								__m128i u_1_int16;
-								__m128i u_2_int16;
-								__m128i v_1_int16;
-								__m128i v_2_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_typei u_1_int16;
-								mm_typei u_2_int16;
-								mm_typei u_3_int16;
-								mm_typei u_4_int16;
-								mm_typei v_1_int16;
-								mm_typei v_2_int16;
-								mm_typei v_3_int16;
-								mm_typei v_4_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei u_3_int32;
-								mm_typei u_4_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei v_3_int32;
-								mm_typei v_4_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-								mm_typei sum_3;
-								mm_typei sum_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
 								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_dim_w_;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
 									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
 
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											real_row = row_in_input_data + row_in_tile;
-											if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-											{
-												memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(signed char));
-											}
-											else
-											{
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													real_col = col_in_input_data + col_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-													{
-														tile_data[tile_offset_row + col_in_tile] = 0;
-													}
-													else
-													{
-														tile_data[tile_offset_row + col_in_tile] = bottom_int8_data[bottom_offset_num_channel_row_col + col_in_tile];
-													}
-												}
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
 
-											}
-											bottom_offset_num_channel_row_col += input_dim_w_;
-										}
-
-										calculate_BTdB(tile_data, v_data);//calculate V
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										u_1_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och));
-										u_2_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och + 8));
-										v_1_int16 = _mm_load_si128((__m128i*)(v_data));
-										v_2_int16 = _mm_load_si128((__m128i*)(v_data + 8));
-										u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-										u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-										v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-										v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-										sum_1 = mm_mullo_epi32(u_1_int32, v_1_int32);
-										sum_2 = mm_mullo_epi32(u_2_int32, v_2_int32);
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)(m_data + 8), sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och));
-										u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 4));
-										u_3_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 8));
-										u_4_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 12));
-										v_1_int16 = _mm_load_si128((mm_typei*)(v_data));
-										v_2_int16 = _mm_load_si128((mm_typei*)(v_data + 4));
-										v_3_int16 = _mm_load_si128((mm_typei*)(v_data + 8));
-										v_4_int16 = _mm_load_si128((mm_typei*)(v_data + 12));
-										u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-										u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-										u_3_int32 = mm_cvtepi16_epi32(u_3_int16);
-										u_4_int32 = mm_cvtepi16_epi32(u_4_int16);
-										v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-										v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-										v_3_int32 = mm_cvtepi16_epi32(v_3_int16);
-										v_4_int32 = mm_cvtepi16_epi32(v_4_int16);
-										sum_1 = mm_mullo_epi32(u_1_int32, v_1_int32);
-										sum_2 = mm_mullo_epi32(u_2_int32, v_2_int32);
-										sum_3 = mm_mullo_epi32(u_3_int32, v_3_int32);
-										sum_4 = mm_mullo_epi32(u_4_int32, v_4_int32);
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)m_data + 4, sum_2);
-										mm_store_si((mm_typei*)m_data + 8, sum_3);
-										mm_store_si((mm_typei*)m_data + 12, sum_4);
-#else
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-											{
-												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] = U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
-											}
-										}
-#endif
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
 									}
 								}
 							}
 
-							int offset = top_dim_ / group_;
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei sum_2_0;
+									mm_typei sum_2_8;
+									mm_typei sum_3_0;
+									mm_typei sum_3_8;
+									mm_typei sum_4_0;
+									mm_typei sum_4_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_2_0;
+									mm_typei u_2_8;
+									mm_typei u_3_0;
+									mm_typei u_3_8;
+									mm_typei u_4_0;
+									mm_typei u_4_8;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_2_0_int16;
+									__m128i u_2_8_int16;
+									__m128i u_3_0_int16;
+									__m128i u_3_8_int16;
+									__m128i u_4_0_int16;
+									__m128i u_4_8_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei sum_2_0;
+									mm_typei sum_2_4;
+									mm_typei sum_2_8;
+									mm_typei sum_2_12;
+									mm_typei sum_3_0;
+									mm_typei sum_3_4;
+									mm_typei sum_3_8;
+									mm_typei sum_3_12;
+									mm_typei sum_4_0;
+									mm_typei sum_4_4;
+									mm_typei sum_4_8;
+									mm_typei sum_4_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_2_0;
+									mm_typei u_2_4;
+									mm_typei u_2_8;
+									mm_typei u_2_12;
+									mm_typei u_3_0;
+									mm_typei u_3_4;
+									mm_typei u_3_8;
+									mm_typei u_3_12;
+									mm_typei u_4_0;
+									mm_typei u_4_4;
+									mm_typei u_4_8;
+									mm_typei u_4_12;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_2_0_int16;
+									mm_typei u_2_4_int16;
+									mm_typei u_2_8_int16;
+									mm_typei u_2_12_int16;
+									mm_typei u_3_0_int16;
+									mm_typei u_3_4_int16;
+									mm_typei u_3_8_int16;
+									mm_typei u_3_12_int16;
+									mm_typei u_4_0_int16;
+									mm_typei u_4_4_int16;
+									mm_typei u_4_8_int16;
+									mm_typei u_4_12_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * tile_length_;
+									int U_offset_och_2 = U_offset_och_1 + tile_length_;
+									int U_offset_och_3 = U_offset_och_2 + tile_length_;
+									int U_offset_och_4 = U_offset_och_3 + tile_length_;
+
+									int V_offset_och_1 = och * h_w_tile_stride;
+									int V_offset_och_2 = V_offset_och_1 + h_w_tile_stride;
+									int V_offset_och_3 = V_offset_och_2 + h_w_tile_stride;
+									int V_offset_och_4 = V_offset_och_3 + h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									int result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int mult_data_2[16] = { 0 };
+										int mult_data_3[16] = { 0 };
+										int mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+										int V_offset_och_row_col_2 = V_offset_och_2 + V_offset_row_col;
+										int V_offset_och_row_col_3 = V_offset_och_3 + V_offset_row_col;
+										int V_offset_och_row_col_4 = V_offset_och_4 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2));
+										u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 8));
+										u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3));
+										u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 8));
+										u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4));
+										u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 8));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+										u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+										u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+										u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+										u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+										u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2));
+										v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 8));
+										v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3));
+										v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 8));
+										v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4));
+										v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 8));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+										v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+										v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+										v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+										v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+										v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_2_0 = mm_mullo_epi32(v_2_0, u_2_0);
+										sum_2_8 = mm_mullo_epi32(v_2_8, u_2_8);
+										sum_3_0 = mm_mullo_epi32(v_3_0, u_3_0);
+										sum_3_8 = mm_mullo_epi32(v_3_8, u_3_8);
+										sum_4_0 = mm_mullo_epi32(v_4_0, u_4_0);
+										sum_4_8 = mm_mullo_epi32(v_4_8, u_4_8);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 4));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 12));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+										u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2));
+										u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 4));
+										u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 8));
+										u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 12));
+										u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+										u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+										u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+										u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+
+										u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3));
+										u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 4));
+										u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 8));
+										u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 12));
+										u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+										u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+										u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+										u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+
+										u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4));
+										u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 4));
+										u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 8));
+										u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 12));
+										u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+										u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+										u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+										u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 4));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 12));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+										v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2));
+										v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 4));
+										v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 8));
+										v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 12));
+										v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+										v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+										v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+										v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+
+										v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3));
+										v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 4));
+										v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 8));
+										v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 12));
+										v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+										v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+										v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+										v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+
+										v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4));
+										v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 4));
+										v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 8));
+										v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 12));
+										v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+										v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+										v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+										v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_4 = mm_mullo_epi32(v_1_4, u_1_4);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_1_12 = mm_mullo_epi32(v_1_12, u_1_12);
+
+										sum_2_0 = mm_mullo_epi32(v_2_0, u_2_0);
+										sum_2_4 = mm_mullo_epi32(v_2_4, u_2_4);
+										sum_2_8 = mm_mullo_epi32(v_2_8, u_2_8);
+										sum_2_12 = mm_mullo_epi32(v_2_12, u_2_12);
+
+										sum_3_0 = mm_mullo_epi32(v_3_0, u_3_0);
+										sum_3_4 = mm_mullo_epi32(v_3_4, u_3_4);
+										sum_3_8 = mm_mullo_epi32(v_3_8, u_3_8);
+										sum_3_12 = mm_mullo_epi32(v_3_12, u_3_12);
+
+										sum_4_0 = mm_mullo_epi32(v_4_0, u_4_0);
+										sum_4_4 = mm_mullo_epi32(v_4_4, u_4_4);
+										sum_4_8 = mm_mullo_epi32(v_4_8, u_4_8);
+										sum_4_12 = mm_mullo_epi32(v_4_12, u_4_12);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 4), sum_2_4);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)(mult_data_2 + 12), sum_2_12);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 4), sum_3_4);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)(mult_data_3 + 12), sum_3_12);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 4), sum_4_4);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+										mm_store_si((mm_typei*)(mult_data_4 + 12), sum_4_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_int16_data[U_offset_och_1 + i] * V_int16_data[V_offset_och_row_col_1 + i];
+											mult_data_2[i] = U_int16_data[U_offset_och_2 + i] * V_int16_data[V_offset_och_row_col_2 + i];
+											mult_data_3[i] = U_int16_data[U_offset_och_3 + i] * V_int16_data[V_offset_och_row_col_3 + i];
+											mult_data_4[i] = U_int16_data[U_offset_och_4 + i] * V_int16_data[V_offset_och_row_col_4 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+#endif
+
+									int U_offset_och_1 = och * tile_length_;
+									int V_offset_och_1 = och * h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									int result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 4));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 12));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 4));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 12));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_4 = mm_mullo_epi32(v_1_4, u_1_4);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_1_12 = mm_mullo_epi32(v_1_12, u_1_12);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_int16_data[U_offset_och_1 + i] * V_int16_data[V_offset_och_row_col_1 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+
+								int offset = top_dim_ / group_;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-							int circle_num = offset / mm_align_size;
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
-								mm_type scale = mm_set1_ps(1.0f / total_scale);
-
-								int index = 0;
-								for (; index < circle_num; index++)
+								int circle_num = offset / mm_align_size;
+								for (int j = 0; j < group_; j++)
 								{
-									int index_offset = index * mm_align_size;
-									mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
-									mm_type temp2 = mm_cvtepi32_ps(temp1);
-									mm_type res = mm_mul_ps(temp2, scale);
-									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
-								}
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									mm_type scale = mm_set1_ps(1.0f / total_scale);
 
-								for (index = index * mm_align_size; index < offset; index++)
-								{
-									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									int index = 0;
+									for (; index < circle_num; index++)
+									{
+										int index_offset = index * mm_align_size;
+										mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
+										mm_type temp2 = mm_cvtepi32_ps(temp1);
+										mm_type res = mm_mul_ps(temp2, scale);
+										mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
+									}
+
+									for (index = index * mm_align_size; index < offset; index++)
+									{
+										top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									}
 								}
-							}
 #else
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
-								for (int index = 0; index < offset; index++)
+								for (int j = 0; j < group_; j++)
 								{
-									top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									for (int index = 0; index < offset; index++)
+									{
+										top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
+									}
 								}
-							}
 #endif
 
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
+								math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
+								if (bias_term_)
+								{
+									forward_bias(top_data + top_offset_num, bias_data);
+								}
 							}
-
-							is_U_calculated = true;
 						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else if (group_ == 1)
 					{
-						//calculate U_
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-						for (int n = 0; n < U_num_; ++n)
-						{
-							calculate_GgGT(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
-						}
-
-						//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
-						V_num_ = input_Channel_ * total_tile_num;
-						V_int16.reset(new tensor<short>(std::vector<int>{V_num_ * tile_length_}));
-						V_int16_data = V_int16->mutable_cpu_data();
 						int U_offset_single_och = input_Channel_ * tile_length_;
 
 						for (int n = 0; n < num_; n++)
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
 
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<int>> M_, RESULT_;
-								std::shared_ptr<tensor<signed char>> TILE_;
-								M_.reset(new tensor<int>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<int>(std::vector<int>{m_length_}));
-								TILE_.reset(new tensor<signed char>(std::vector<int>{tile_length_}));
-								int *m_data = M_->mutable_cpu_data();
-								int *result = RESULT_->mutable_cpu_data();
-								signed char *tile_data = TILE_->mutable_cpu_data();
-
-								int U_offset_och = och * U_offset_single_och;
-								int top_offset_num_channel = top_offset_num + och * output_spatial_dim_;
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int top_offset_num_channel_row;
-								int bottom_offset_num_row;
-								int V_offset_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int top_offset_num_channel_row_col;
-								int bottom_offset_num_row_col;
-								int V_offset_row_col;
-								int ich;
-								int bottom_offset_num_channel_row_col;
-								int V_offset_channel_row_col;
-								int U_offset_och_ich;
-								int row_in_tile;
-								int tile_offset_row;
-								int tile_offset_row_col;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int row;
-								int col;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								__m128i u_1_int16;
-								__m128i u_2_int16;
-								__m128i v_1_int16;
-								__m128i v_2_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								__m128i res_mul_1_int16;
-								__m128i res_mul_2_int16;
-								mm_typei res_mul_1_int32;
-								mm_typei res_mul_2_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_typei u_1_int16;
-								mm_typei u_2_int16;
-								mm_typei u_3_int16;
-								mm_typei u_4_int16;
-								mm_typei v_1_int16;
-								mm_typei v_2_int16;
-								mm_typei v_3_int16;
-								mm_typei v_4_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei u_3_int32;
-								mm_typei u_4_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei v_3_int32;
-								mm_typei v_4_int32;
-								mm_typei res_mul_1_int32;
-								mm_typei res_mul_2_int32;
-								mm_typei res_mul_3_int32;
-								mm_typei res_mul_4_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-								mm_typei sum_3;
-								mm_typei sum_4;
-#endif
-
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
+								for (int nn = 0; nn < nn_inch; nn++)
 								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
-									bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_dim_w_;
-									V_offset_row = num_h * w_tile_stride;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
 									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
-										bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data;
-										V_offset_row_col = V_offset_row + num_w * tile_length_;
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
 
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+
+										const signed char *row_data2_1 = bottom_int8_data + bottom_offset_num_ich_row_col_2;
+										const signed char *row_data2_2 = row_data2_1 + input_dim_w_;
+										const signed char *row_data2_3 = row_data2_2 + input_dim_w_;
+										const signed char *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_int16_data + V_offset_ich_row_col_2);
+
+										const signed char *row_data3_1 = bottom_int8_data + bottom_offset_num_ich_row_col_3;
+										const signed char *row_data3_2 = row_data3_1 + input_dim_w_;
+										const signed char *row_data3_3 = row_data3_2 + input_dim_w_;
+										const signed char *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_int16_data + V_offset_ich_row_col_3);
+
+										const signed char *row_data4_1 = bottom_int8_data + bottom_offset_num_ich_row_col_4;
+										const signed char *row_data4_2 = row_data4_1 + input_dim_w_;
+										const signed char *row_data4_3 = row_data4_2 + input_dim_w_;
+										const signed char *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_int16_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
 #if SIMD_TYPE >= SIMDTYPE_AVX
-										sum_1 = mm_setzero_si();
-										sum_2 = mm_setzero_si();
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei sum_2_0;
+									mm_typei sum_2_8;
+									mm_typei sum_3_0;
+									mm_typei sum_3_8;
+									mm_typei sum_4_0;
+									mm_typei sum_4_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_1_16;
+									mm_typei u_1_24;
+									mm_typei u_1_32;
+									mm_typei u_1_40;
+									mm_typei u_1_48;
+									mm_typei u_1_56;
+									mm_typei u_2_0;
+									mm_typei u_2_8;
+									mm_typei u_2_16;
+									mm_typei u_2_24;
+									mm_typei u_2_32;
+									mm_typei u_2_40;
+									mm_typei u_2_48;
+									mm_typei u_2_56;
+									mm_typei u_3_0;
+									mm_typei u_3_8;
+									mm_typei u_3_16;
+									mm_typei u_3_24;
+									mm_typei u_3_32;
+									mm_typei u_3_40;
+									mm_typei u_3_48;
+									mm_typei u_3_56;
+									mm_typei u_4_0;
+									mm_typei u_4_8;
+									mm_typei u_4_16;
+									mm_typei u_4_24;
+									mm_typei u_4_32;
+									mm_typei u_4_40;
+									mm_typei u_4_48;
+									mm_typei u_4_56;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_1_16_int16;
+									__m128i u_1_24_int16;
+									__m128i u_1_32_int16;
+									__m128i u_1_40_int16;
+									__m128i u_1_48_int16;
+									__m128i u_1_56_int16;
+									__m128i u_2_0_int16;
+									__m128i u_2_8_int16;
+									__m128i u_2_16_int16;
+									__m128i u_2_24_int16;
+									__m128i u_2_32_int16;
+									__m128i u_2_40_int16;
+									__m128i u_2_48_int16;
+									__m128i u_2_56_int16;
+									__m128i u_3_0_int16;
+									__m128i u_3_8_int16;
+									__m128i u_3_16_int16;
+									__m128i u_3_24_int16;
+									__m128i u_3_32_int16;
+									__m128i u_3_40_int16;
+									__m128i u_3_48_int16;
+									__m128i u_3_56_int16;
+									__m128i u_4_0_int16;
+									__m128i u_4_8_int16;
+									__m128i u_4_16_int16;
+									__m128i u_4_24_int16;
+									__m128i u_4_32_int16;
+									__m128i u_4_40_int16;
+									__m128i u_4_48_int16;
+									__m128i u_4_56_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-										sum_1 = mm_setzero_si();
-										sum_2 = mm_setzero_si();
-										sum_3 = mm_setzero_si();
-										sum_4 = mm_setzero_si();
-#else 
-										memset(m_data, 0, tile_length_ * sizeof(int));
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei sum_2_0;
+									mm_typei sum_2_4;
+									mm_typei sum_2_8;
+									mm_typei sum_2_12;
+									mm_typei sum_3_0;
+									mm_typei sum_3_4;
+									mm_typei sum_3_8;
+									mm_typei sum_3_12;
+									mm_typei sum_4_0;
+									mm_typei sum_4_4;
+									mm_typei sum_4_8;
+									mm_typei sum_4_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_16;
+									mm_typei u_1_20;
+									mm_typei u_1_24;
+									mm_typei u_1_28;
+									mm_typei u_1_32;
+									mm_typei u_1_36;
+									mm_typei u_1_40;
+									mm_typei u_1_44;
+									mm_typei u_1_48;
+									mm_typei u_1_52;
+									mm_typei u_1_56;
+									mm_typei u_1_60;
+									mm_typei u_2_0;
+									mm_typei u_2_4;
+									mm_typei u_2_8;
+									mm_typei u_2_12;
+									mm_typei u_2_16;
+									mm_typei u_2_20;
+									mm_typei u_2_24;
+									mm_typei u_2_28;
+									mm_typei u_2_32;
+									mm_typei u_2_36;
+									mm_typei u_2_40;
+									mm_typei u_2_44;
+									mm_typei u_2_48;
+									mm_typei u_2_52;
+									mm_typei u_2_56;
+									mm_typei u_2_60;
+									mm_typei u_3_0;
+									mm_typei u_3_4;
+									mm_typei u_3_8;
+									mm_typei u_3_12;
+									mm_typei u_3_16;
+									mm_typei u_3_20;
+									mm_typei u_3_24;
+									mm_typei u_3_28;
+									mm_typei u_3_32;
+									mm_typei u_3_36;
+									mm_typei u_3_40;
+									mm_typei u_3_44;
+									mm_typei u_3_48;
+									mm_typei u_3_52;
+									mm_typei u_3_56;
+									mm_typei u_3_60;
+									mm_typei u_4_0;
+									mm_typei u_4_4;
+									mm_typei u_4_8;
+									mm_typei u_4_12;
+									mm_typei u_4_16;
+									mm_typei u_4_20;
+									mm_typei u_4_24;
+									mm_typei u_4_28;
+									mm_typei u_4_32;
+									mm_typei u_4_36;
+									mm_typei u_4_40;
+									mm_typei u_4_44;
+									mm_typei u_4_48;
+									mm_typei u_4_52;
+									mm_typei u_4_56;
+									mm_typei u_4_60;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_1_16_int16;
+									mm_typei u_1_20_int16;
+									mm_typei u_1_24_int16;
+									mm_typei u_1_28_int16;
+									mm_typei u_1_32_int16;
+									mm_typei u_1_36_int16;
+									mm_typei u_1_40_int16;
+									mm_typei u_1_44_int16;
+									mm_typei u_1_48_int16;
+									mm_typei u_1_52_int16;
+									mm_typei u_1_56_int16;
+									mm_typei u_1_60_int16;
+									mm_typei u_2_0_int16;
+									mm_typei u_2_4_int16;
+									mm_typei u_2_8_int16;
+									mm_typei u_2_12_int16;
+									mm_typei u_2_16_int16;
+									mm_typei u_2_20_int16;
+									mm_typei u_2_24_int16;
+									mm_typei u_2_28_int16;
+									mm_typei u_2_32_int16;
+									mm_typei u_2_36_int16;
+									mm_typei u_2_40_int16;
+									mm_typei u_2_44_int16;
+									mm_typei u_2_48_int16;
+									mm_typei u_2_52_int16;
+									mm_typei u_2_56_int16;
+									mm_typei u_2_60_int16;
+									mm_typei u_3_0_int16;
+									mm_typei u_3_4_int16;
+									mm_typei u_3_8_int16;
+									mm_typei u_3_12_int16;
+									mm_typei u_3_16_int16;
+									mm_typei u_3_20_int16;
+									mm_typei u_3_24_int16;
+									mm_typei u_3_28_int16;
+									mm_typei u_3_32_int16;
+									mm_typei u_3_36_int16;
+									mm_typei u_3_40_int16;
+									mm_typei u_3_44_int16;
+									mm_typei u_3_48_int16;
+									mm_typei u_3_52_int16;
+									mm_typei u_3_56_int16;
+									mm_typei u_3_60_int16;
+									mm_typei u_4_0_int16;
+									mm_typei u_4_4_int16;
+									mm_typei u_4_8_int16;
+									mm_typei u_4_12_int16;
+									mm_typei u_4_16_int16;
+									mm_typei u_4_20_int16;
+									mm_typei u_4_24_int16;
+									mm_typei u_4_28_int16;
+									mm_typei u_4_32_int16;
+									mm_typei u_4_36_int16;
+									mm_typei u_4_40_int16;
+									mm_typei u_4_44_int16;
+									mm_typei u_4_48_int16;
+									mm_typei u_4_52_int16;
+									mm_typei u_4_56_int16;
+									mm_typei u_4_60_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
 #endif
 
-										for (ich = 0; ich < input_Channel_; ich++)
-										{
-											bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich * input_spatial_dim_;
-											V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
-											U_offset_och_ich = U_offset_och + ich * tile_length_;
+									int och = nn * 4;
+									int U_offset_och_1 = och * U_offset_single_och;
+									int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+									int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+									int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
 
-											//calculate V when is_V_calculated==false
-											if (!is_V_calculated)
-											{
-												for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-												{
-													tile_offset_row = row_in_tile * tile_size_;
-													real_row = row_in_input_data + row_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-													{
-														memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(signed char));
-													}
-													else
-													{
-														if (is_a_ge_zero_and_a_lt_b(col_in_input_data, input_dim_w_) && is_a_ge_zero_and_a_lt_b(col_in_input_data + tile_size_, input_dim_w_))
-														{
-															memcpy(tile_data + tile_offset_row, bottom_int8_data + bottom_offset_num_channel_row_col, tile_size_ * sizeof(signed char));
-														}
-														else
-														{
-															for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-															{
-																real_col = col_in_input_data + col_in_tile;
-																if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-																{
-																	tile_data[tile_offset_row + col_in_tile] = (signed char)0;
-																}
-																else
-																{
-																	tile_data[tile_offset_row + col_in_tile] = bottom_int8_data[bottom_offset_num_channel_row_col + col_in_tile];
-																}
-															}
-														}
-													}
-													bottom_offset_num_channel_row_col += input_dim_w_;
-												}
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									int result_1[4], result_2[4], result_3[4], result_4[4];
 
-												calculate_BTdB(tile_data, V_int16_data + V_offset_channel_row_col);
-											}
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int mult_data_2[16] = { 0 };
+										int mult_data_3[16] = { 0 };
+										int mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-											u_1_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich));
-											u_2_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich + 8));
-											v_1_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_channel_row_col));
-											v_2_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_channel_row_col + 8));
-											u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-											u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-											v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-											v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-											res_mul_1_int32 = mm_mullo_epi32(u_1_int32, v_1_int32);
-											res_mul_2_int32 = mm_mullo_epi32(u_2_int32, v_2_int32);
-											sum_1 = mm_add_epi32(res_mul_1_int32, sum_1);
-											sum_2 = mm_add_epi32(res_mul_2_int32, sum_2);
+										sum_1_0 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_2_0 = mm_setzero_si();
+										sum_2_8 = mm_setzero_si();
+										sum_3_0 = mm_setzero_si();
+										sum_3_8 = mm_setzero_si();
+										sum_4_0 = mm_setzero_si();
+										sum_4_8 = mm_setzero_si();
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-											u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich));
-											u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 4));
-											u_3_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 8));
-											u_4_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 12));
-											v_1_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col));
-											v_2_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 4));
-											v_3_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 8));
-											v_4_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 12));
-											u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-											u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-											u_3_int32 = mm_cvtepi16_epi32(u_3_int16);
-											u_4_int32 = mm_cvtepi16_epi32(u_4_int16);
-											v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-											v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-											v_3_int32 = mm_cvtepi16_epi32(v_3_int16);
-											v_4_int32 = mm_cvtepi16_epi32(v_4_int16);
-											res_mul_1_int32 = mm_mullo_epi32(u_1_int32, v_1_int32);
-											res_mul_2_int32 = mm_mullo_epi32(u_2_int32, v_2_int32);
-											res_mul_3_int32 = mm_mullo_epi32(u_3_int32, v_3_int32);
-											res_mul_4_int32 = mm_mullo_epi32(u_4_int32, v_4_int32);
-											sum_1 = mm_add_epi32(res_mul_1_int32, sum_1);
-											sum_2 = mm_add_epi32(res_mul_2_int32, sum_2);
-											sum_3 = mm_add_epi32(res_mul_3_int32, sum_3);
-											sum_4 = mm_add_epi32(res_mul_4_int32, sum_4);
+										sum_1_0 = mm_setzero_si();
+										sum_1_4 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_1_12 = mm_setzero_si();
+										sum_2_0 = mm_setzero_si();
+										sum_2_4 = mm_setzero_si();
+										sum_2_8 = mm_setzero_si();
+										sum_2_12 = mm_setzero_si();
+										sum_3_0 = mm_setzero_si();
+										sum_3_4 = mm_setzero_si();
+										sum_3_8 = mm_setzero_si();
+										sum_3_12 = mm_setzero_si();
+										sum_4_0 = mm_setzero_si();
+										sum_4_4 = mm_setzero_si();
+										sum_4_8 = mm_setzero_si();
+										sum_4_12 = mm_setzero_si();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 16));
+											u_2_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 24));
+											u_2_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 32));
+											u_2_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 40));
+											u_2_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 48));
+											u_2_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 56));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_16 = mm_cvtepi16_epi32(u_2_16_int16);
+											u_2_24 = mm_cvtepi16_epi32(u_2_24_int16);
+											u_2_32 = mm_cvtepi16_epi32(u_2_32_int16);
+											u_2_40 = mm_cvtepi16_epi32(u_2_40_int16);
+											u_2_48 = mm_cvtepi16_epi32(u_2_48_int16);
+											u_2_56 = mm_cvtepi16_epi32(u_2_56_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 16));
+											u_3_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 24));
+											u_3_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 32));
+											u_3_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 40));
+											u_3_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 48));
+											u_3_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 56));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_16 = mm_cvtepi16_epi32(u_3_16_int16);
+											u_3_24 = mm_cvtepi16_epi32(u_3_24_int16);
+											u_3_32 = mm_cvtepi16_epi32(u_3_32_int16);
+											u_3_40 = mm_cvtepi16_epi32(u_3_40_int16);
+											u_3_48 = mm_cvtepi16_epi32(u_3_48_int16);
+											u_3_56 = mm_cvtepi16_epi32(u_3_56_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 16));
+											u_4_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 24));
+											u_4_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 32));
+											u_4_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 40));
+											u_4_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 48));
+											u_4_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 56));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_16 = mm_cvtepi16_epi32(u_4_16_int16);
+											u_4_24 = mm_cvtepi16_epi32(u_4_24_int16);
+											u_4_32 = mm_cvtepi16_epi32(u_4_32_int16);
+											u_4_40 = mm_cvtepi16_epi32(u_4_40_int16);
+											u_4_48 = mm_cvtepi16_epi32(u_4_48_int16);
+											u_4_56 = mm_cvtepi16_epi32(u_4_56_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_0, v_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_8, v_1_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_16, v_2_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_24, v_2_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_32, v_3_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_40, v_3_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_48, v_4_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_56, v_4_8), sum_1_8);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_0, v_1_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_8, v_1_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_16, v_2_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_24, v_2_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_32, v_3_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_40, v_3_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_48, v_4_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_56, v_4_8), sum_2_8);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_0, v_1_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_8, v_1_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_16, v_2_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_24, v_2_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_32, v_3_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_40, v_3_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_48, v_4_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_56, v_4_8), sum_3_8);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_0, v_1_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_8, v_1_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_16, v_2_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_24, v_2_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_32, v_3_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_40, v_3_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_48, v_4_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_56, v_4_8), sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 20));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 28));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 36));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 44));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 52));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 60));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_20 = mm_cvtepi16_epi32(u_1_20_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_28 = mm_cvtepi16_epi32(u_1_28_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_36 = mm_cvtepi16_epi32(u_1_36_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_44 = mm_cvtepi16_epi32(u_1_44_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_52 = mm_cvtepi16_epi32(u_1_52_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+											u_1_60 = mm_cvtepi16_epi32(u_1_60_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 4));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 12));
+											u_2_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 16));
+											u_2_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 20));
+											u_2_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 24));
+											u_2_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 28));
+											u_2_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 32));
+											u_2_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 36));
+											u_2_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 40));
+											u_2_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 44));
+											u_2_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 48));
+											u_2_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 52));
+											u_2_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 56));
+											u_2_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 60));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+											u_2_16 = mm_cvtepi16_epi32(u_2_16_int16);
+											u_2_20 = mm_cvtepi16_epi32(u_2_20_int16);
+											u_2_24 = mm_cvtepi16_epi32(u_2_24_int16);
+											u_2_28 = mm_cvtepi16_epi32(u_2_28_int16);
+											u_2_32 = mm_cvtepi16_epi32(u_2_32_int16);
+											u_2_36 = mm_cvtepi16_epi32(u_2_36_int16);
+											u_2_40 = mm_cvtepi16_epi32(u_2_40_int16);
+											u_2_44 = mm_cvtepi16_epi32(u_2_44_int16);
+											u_2_48 = mm_cvtepi16_epi32(u_2_48_int16);
+											u_2_52 = mm_cvtepi16_epi32(u_2_52_int16);
+											u_2_56 = mm_cvtepi16_epi32(u_2_56_int16);
+											u_2_60 = mm_cvtepi16_epi32(u_2_60_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 4));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 12));
+											u_3_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 16));
+											u_3_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 20));
+											u_3_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 24));
+											u_3_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 28));
+											u_3_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 32));
+											u_3_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 36));
+											u_3_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 40));
+											u_3_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 44));
+											u_3_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 48));
+											u_3_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 52));
+											u_3_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 56));
+											u_3_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 60));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+											u_3_16 = mm_cvtepi16_epi32(u_3_16_int16);
+											u_3_20 = mm_cvtepi16_epi32(u_3_20_int16);
+											u_3_24 = mm_cvtepi16_epi32(u_3_24_int16);
+											u_3_28 = mm_cvtepi16_epi32(u_3_28_int16);
+											u_3_32 = mm_cvtepi16_epi32(u_3_32_int16);
+											u_3_36 = mm_cvtepi16_epi32(u_3_36_int16);
+											u_3_40 = mm_cvtepi16_epi32(u_3_40_int16);
+											u_3_44 = mm_cvtepi16_epi32(u_3_44_int16);
+											u_3_48 = mm_cvtepi16_epi32(u_3_48_int16);
+											u_3_52 = mm_cvtepi16_epi32(u_3_52_int16);
+											u_3_56 = mm_cvtepi16_epi32(u_3_56_int16);
+											u_3_60 = mm_cvtepi16_epi32(u_3_60_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 12));
+											u_4_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 16));
+											u_4_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 20));
+											u_4_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 24));
+											u_4_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 28));
+											u_4_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 32));
+											u_4_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 36));
+											u_4_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 40));
+											u_4_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 44));
+											u_4_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 48));
+											u_4_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 52));
+											u_4_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 56));
+											u_4_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 60));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+											u_4_16 = mm_cvtepi16_epi32(u_4_16_int16);
+											u_4_20 = mm_cvtepi16_epi32(u_4_20_int16);
+											u_4_24 = mm_cvtepi16_epi32(u_4_24_int16);
+											u_4_28 = mm_cvtepi16_epi32(u_4_28_int16);
+											u_4_32 = mm_cvtepi16_epi32(u_4_32_int16);
+											u_4_36 = mm_cvtepi16_epi32(u_4_36_int16);
+											u_4_40 = mm_cvtepi16_epi32(u_4_40_int16);
+											u_4_44 = mm_cvtepi16_epi32(u_4_44_int16);
+											u_4_48 = mm_cvtepi16_epi32(u_4_48_int16);
+											u_4_52 = mm_cvtepi16_epi32(u_4_52_int16);
+											u_4_56 = mm_cvtepi16_epi32(u_4_56_int16);
+											u_4_60 = mm_cvtepi16_epi32(u_4_60_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 4));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 12));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 4));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 12));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 12));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+											v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_1_20), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_1_28), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_1_36), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_1_44), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_1_52), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_1_60), sum_1_12);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_2_4), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_2_12), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_2_16), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_2_20), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_2_24), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_2_28), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_2_32), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_2_36), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_2_40), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_2_44), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_2_48), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_2_52), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_2_56), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_2_60), sum_2_12);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_3_4), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_3_12), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_3_16), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_3_20), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_3_24), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_3_28), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_3_32), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_3_36), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_3_40), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_3_44), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_3_48), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_3_52), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_3_56), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_3_60), sum_3_12);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_4_4), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_4_12), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_4_16), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_4_20), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_4_24), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_4_28), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_4_32), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_4_36), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_4_40), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_4_44), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_4_48), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_4_52), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_4_56), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_4_60), sum_4_12);
 #else
-											for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
+											for (int i = 0; i < tile_length_; i++)
 											{
-												tile_offset_row = row_in_tile * tile_size_;
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													tile_offset_row_col = tile_offset_row + col_in_tile;
-													m_data[tile_offset_row_col] += U_int16_data[U_offset_och_ich + tile_offset_row_col] * V_int16_data[V_offset_channel_row_col + tile_offset_row_col];
-												}
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 4));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 12));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 4));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 12));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 12));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_2_4), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_2_12), sum_2_12);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_3_4), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_3_12), sum_3_12);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_4_4), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_4_12), sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
 											}
 #endif
 										}
 
 #if SIMD_TYPE >= SIMDTYPE_AVX
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)(m_data + 8), sum_2);
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)(m_data + 4), sum_2);
-										mm_store_si((mm_typei*)(m_data + 8), sum_3);
-										mm_store_si((mm_typei*)(m_data + 12), sum_4);
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 4), sum_2_4);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)(mult_data_2 + 12), sum_2_12);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 4), sum_3_4);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)(mult_data_3 + 12), sum_3_12);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 4), sum_4_4);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+										mm_store_si((mm_typei*)(mult_data_4 + 12), sum_4_12);
 #endif
 
-										calculate_ATmA(m_data, result);
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
 
-										if (num_h == h_tile_num_ - 1)
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
 										{
-											for (row = 0; row < m_ - add_h; row++)
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
 											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col];
 											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
 										}
 									}
 								}
 
-								is_V_calculated = true;
-							}
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_1_16;
+									mm_typei u_1_24;
+									mm_typei u_1_32;
+									mm_typei u_1_40;
+									mm_typei u_1_48;
+									mm_typei u_1_56;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_1_16_int16;
+									__m128i u_1_24_int16;
+									__m128i u_1_32_int16;
+									__m128i u_1_40_int16;
+									__m128i u_1_48_int16;
+									__m128i u_1_56_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_16;
+									mm_typei u_1_20;
+									mm_typei u_1_24;
+									mm_typei u_1_28;
+									mm_typei u_1_32;
+									mm_typei u_1_36;
+									mm_typei u_1_40;
+									mm_typei u_1_44;
+									mm_typei u_1_48;
+									mm_typei u_1_52;
+									mm_typei u_1_56;
+									mm_typei u_1_60;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_1_16_int16;
+									mm_typei u_1_20_int16;
+									mm_typei u_1_24_int16;
+									mm_typei u_1_28_int16;
+									mm_typei u_1_32_int16;
+									mm_typei u_1_36_int16;
+									mm_typei u_1_40_int16;
+									mm_typei u_1_44_int16;
+									mm_typei u_1_48_int16;
+									mm_typei u_1_52_int16;
+									mm_typei u_1_56_int16;
+									mm_typei u_1_60_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
+#endif
 
-							int offset = top_dim_ / group_;
+									int U_offset_och_1 = och * U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									int result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_si();
+										sum_1_4 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_1_12 = mm_setzero_si();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 20));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 28));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 36));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 44));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 52));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 60));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_20 = mm_cvtepi16_epi32(u_1_20_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_28 = mm_cvtepi16_epi32(u_1_28_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_36 = mm_cvtepi16_epi32(u_1_36_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_44 = mm_cvtepi16_epi32(u_1_44_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_52 = mm_cvtepi16_epi32(u_1_52_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+											u_1_60 = mm_cvtepi16_epi32(u_1_60_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 4));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 12));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 4));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 12));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 12));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+											v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_1_20), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_1_28), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_1_36), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_1_44), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_1_52), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_1_60), sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+
+								int offset = top_dim_ / group_;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-							int circle_num = offset / mm_align_size;
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
-								mm_type scale = mm_set1_ps(1.0f / total_scale);
-								int index = 0;
-
-								for (; index < circle_num; index++)
+								int circle_num = offset / mm_align_size;
+								for (int j = 0; j < group_; j++)
 								{
-									int index_offset = index * mm_align_size;
-									mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
-									mm_type temp2 = mm_cvtepi32_ps(temp1);
-									mm_type res = mm_mul_ps(temp2, scale);
-									mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
-								}
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									mm_type scale = mm_set1_ps(1.0f / total_scale);
 
-								for (index = index * mm_align_size; index < offset; index++)
-								{
-									top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
-								}
-							}
-#else
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
-								for (int index = 0; index < offset; index++)
-								{
-									top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
-								}
-							}
-#endif
-
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
-						}
-					}
-					else
-					{
-						LOG(FATAL) << "group wrong!!!";
-					}
-				}
-				else if (order_ == NHWC)
-				{
-					input_dim_h_ = bottom->data_shape()[1];
-					input_dim_w_ = bottom->data_shape()[2];
-					input_spatial_dim_ = input_dim_h_ * input_dim_w_;
-					int input_w_stride = input_dim_w_ * input_Channel_;
-					bottom_dim_ = bottom->count(1, 4);
-
-					output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_spatial_dim_ = output_dim_h_ * output_dim_w_;
-					int output_w_stride = output_dim_w_ * output_Channel_;
-					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
-					bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
-					top.reset(new tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_Channel_}, device_, order_));
-					top_dim_ = (top)->count(1, 4);
-					float* top_data = top->mutable_cpu_data();
-
-					top_int32_.reset(new tensor<int>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
-					top_int32_data = top_int32_->mutable_cpu_data();
-
-					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
-					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
-					int total_tile_num = h_tile_num_ * w_tile_num_;
-					int w_tile_stride = w_tile_num_ * tile_length_;
-					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
-					int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
-					int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
-					int add_h = h_aligned - h_subtract_tilesize;
-					int add_w = w_aligned - w_subtract_tilesize;
-
-					if (group_ > 1)
-					{
-						bool is_U_calculated = false;
-
-						for (int n = 0; n < num_; n++)
-						{
-							int bottom_offset_num = n * bottom_dim_;
-							int top_offset_num = n * top_dim_;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<int>> M_, RESULT_;
-								std::shared_ptr<tensor<signed char>> TILE_;
-								std::shared_ptr<tensor<short>> v_;
-								M_.reset(new tensor<int>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<int>(std::vector<int>{m_length_}));
-								TILE_.reset(new tensor<signed char>(std::vector<int>{tile_length_}));
-								v_.reset(new tensor<short>(std::vector<int>{tile_length_}));
-								int *m_data = M_->mutable_cpu_data();
-								int *result = RESULT_->mutable_cpu_data();
-								signed char *tile_data = TILE_->mutable_cpu_data();
-								short *v_data = v_->mutable_cpu_data();
-
-								int bottom_offset_num_channel = bottom_offset_num + och;
-								int top_offset_num_channel = top_offset_num + och;
-								int U_offset_och = och * tile_length_;
-
-								if (!is_U_calculated)
-								{
-									calculate_GgGT(weights_int8_data + kernel_length_ * och, U_int16_data + U_offset_och);//calculate U
-								}
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_channel_row;
-								int top_offset_num_channel_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_channel_row_col;
-								int top_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int tile_offset_row_col;
-								int row;
-								int result_offset_row;
-								int col;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								__m128i u_1_int16;
-								__m128i u_2_int16;
-								__m128i v_1_int16;
-								__m128i v_2_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_typei u_1_int16;
-								mm_typei u_2_int16;
-								mm_typei u_3_int16;
-								mm_typei u_4_int16;
-								mm_typei v_1_int16;
-								mm_typei v_2_int16;
-								mm_typei v_3_int16;
-								mm_typei v_4_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei u_3_int32;
-								mm_typei u_4_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei v_3_int32;
-								mm_typei v_4_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-								mm_typei sum_3;
-								mm_typei sum_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
-								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_w_stride;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
+									int index = 0;
+									for (; index < circle_num; index++)
 									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data * input_Channel_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
+										int index_offset = index * mm_align_size;
+										mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
+										mm_type temp2 = mm_cvtepi32_ps(temp1);
+										mm_type res = mm_mul_ps(temp2, scale);
+										mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
+									}
 
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											real_row = row_in_input_data + row_in_tile;
-											if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-											{
-												memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(signed char));
-											}
-											else
-											{
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													real_col = col_in_input_data + col_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-													{
-														tile_data[tile_offset_row + col_in_tile] = 0;
-													}
-													else
-													{
-														//output_Channel_ and input_Channel_ has the same value, so we use output_Channel_ instead
-														tile_data[tile_offset_row + col_in_tile] = bottom_int8_data[bottom_offset_num_channel_row_col + col_in_tile * input_Channel_];
-													}
-												}
-											}
-											bottom_offset_num_channel_row_col += input_w_stride;
-										}
-
-										calculate_BTdB(tile_data, v_data);//calculate V
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										u_1_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och));
-										u_2_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och + 8));
-										v_1_int16 = _mm_load_si128((__m128i*)(v_data));
-										v_2_int16 = _mm_load_si128((__m128i*)(v_data + 8));
-										u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-										u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-										v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-										v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-										sum_1 = _mm256_mullo_epi32(u_1_int32, v_1_int32);
-										sum_2 = _mm256_mullo_epi32(u_2_int32, v_2_int32);
-										_mm256_store_si256((mm_typei*)m_data, sum_1);
-										_mm256_store_si256((mm_typei*)(m_data + 8), sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och));
-										u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 4));
-										u_3_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 8));
-										u_4_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och + 12));
-										v_1_int16 = _mm_load_si128((mm_typei*)(v_data));
-										v_2_int16 = _mm_load_si128((mm_typei*)(v_data + 4));
-										v_3_int16 = _mm_load_si128((mm_typei*)(v_data + 8));
-										v_4_int16 = _mm_load_si128((mm_typei*)(v_data + 12));
-										u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-										u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-										u_3_int32 = mm_cvtepi16_epi32(u_3_int16);
-										u_4_int32 = mm_cvtepi16_epi32(u_4_int16);
-										v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-										v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-										v_3_int32 = mm_cvtepi16_epi32(v_3_int16);
-										v_4_int32 = mm_cvtepi16_epi32(v_4_int16);
-										sum_1 = mm_mullo_epi32(u_1_int32, v_1_int32);
-										sum_2 = mm_mullo_epi32(u_2_int32, v_2_int32);
-										sum_3 = mm_mullo_epi32(u_3_int32, v_3_int32);
-										sum_4 = mm_mullo_epi32(u_4_int32, v_4_int32);
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)m_data + 4, sum_2);
-										mm_store_si((mm_typei*)m_data + 8, sum_3);
-										mm_store_si((mm_typei*)m_data + 12, sum_4);
-#else
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-											{
-												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] = U_int16_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
-											}
-										}
-#endif
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
+									for (index = index * mm_align_size; index < offset; index++)
+									{
+										top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
 									}
 								}
-							}
-
-							int offset = top_dim_ / group_;
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
-								for (int index = 0; index < offset; index++)
-								{
-									top_data[index * group_ + n * top_dim_ + j] = top_int32_data[index * group_ + n * top_dim_ + j] / total_scale;
-								}
-							}
-
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
-
-							is_U_calculated = true;
-						}
-					}
-					else if (group_ == 1)
-					{
-						//calculate U_
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-						for (int n = 0; n < U_num_; ++n)
-						{
-							calculate_GgGT(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
-						}
-
-						//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
-						V_num_ = input_Channel_ * total_tile_num;
-						V_int16.reset(new tensor<short>(std::vector<int>{V_num_ * tile_length_}));
-						V_int16_data = V_int16->mutable_cpu_data();
-						int U_offset_single_och = input_Channel_ * tile_length_;
-
-						for (int n = 0; n < num_; n++)
-						{
-							int bottom_offset_num = n * bottom_dim_;
-							int top_offset_num = n * top_dim_;
-							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
-
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<int>> M_, RESULT_;
-								std::shared_ptr<tensor<signed char>> TILE_;
-								M_.reset(new tensor<int>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<int>(std::vector<int>{m_length_}));
-								TILE_.reset(new tensor<signed char>(std::vector<int>{tile_length_}));
-								int *m_data = M_->mutable_cpu_data();
-								int *result = RESULT_->mutable_cpu_data();
-								signed char *tile_data = TILE_->mutable_cpu_data();
-
-								int U_offset_och = och * U_offset_single_och;
-								int top_offset_num_channel = top_offset_num + och;
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_row;
-								int top_offset_num_channel_row;
-								int V_offset_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_row_col;
-								int top_offset_num_channel_row_col;
-								int V_offset_row_col;
-								int ich;
-								int V_offset_channel_row_col;
-								int U_offset_och_ich;
-								int bottom_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int row;
-								int col;
-								int tile_offset_row_col;
-								int U_offset_och_ich_row;
-								int V_offset_channel_row_col_rowt;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								__m128i u_1_int16;
-								__m128i u_2_int16;
-								__m128i v_1_int16;
-								__m128i v_2_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei res_mul_1_int32;
-								mm_typei res_mul_2_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_typei u_1_int16;
-								mm_typei u_2_int16;
-								mm_typei u_3_int16;
-								mm_typei u_4_int16;
-								mm_typei v_1_int16;
-								mm_typei v_2_int16;
-								mm_typei v_3_int16;
-								mm_typei v_4_int16;
-								mm_typei u_1_int32;
-								mm_typei u_2_int32;
-								mm_typei u_3_int32;
-								mm_typei u_4_int32;
-								mm_typei v_1_int32;
-								mm_typei v_2_int32;
-								mm_typei v_3_int32;
-								mm_typei v_4_int32;
-								mm_typei res_mul_1_int32;
-								mm_typei res_mul_2_int32;
-								mm_typei res_mul_3_int32;
-								mm_typei res_mul_4_int32;
-								mm_typei sum_1;
-								mm_typei sum_2;
-								mm_typei sum_3;
-								mm_typei sum_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
-								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_w_stride;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-									V_offset_row = num_h * w_tile_stride;
-
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
-									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data * input_Channel_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
-										V_offset_row_col = V_offset_row + num_w * tile_length_;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										sum_1 = _mm256_setzero_si256();
-										sum_2 = _mm256_setzero_si256();
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										sum_1 = mm_setzero_si();
-										sum_2 = mm_setzero_si();
-										sum_3 = mm_setzero_si();
-										sum_4 = mm_setzero_si();
-#else 
-										memset(m_data, 0, tile_length_ * sizeof(int));
-#endif
-
-										for (ich = 0; ich < input_Channel_; ich++)
-										{
-											V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
-											U_offset_och_ich = U_offset_och + ich * tile_length_;
-											bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich;
-
-											//calculate V when is_first==true
-											if (!is_V_calculated)
-											{
-												for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-												{
-													tile_offset_row = row_in_tile * tile_size_;
-													real_row = row_in_input_data + row_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-													{
-														memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(signed char));
-													}
-													else
-													{
-														for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-														{
-															real_col = col_in_input_data + col_in_tile;
-															if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-															{
-																tile_data[tile_offset_row + col_in_tile] = 0;
-															}
-															else
-															{
-																tile_data[tile_offset_row + col_in_tile] = bottom_int8_data[bottom_offset_num_channel_row_col + col_in_tile * input_Channel_];
-															}
-														}
-													}
-													bottom_offset_num_channel_row_col += input_w_stride;
-												}
-
-												calculate_BTdB(tile_data, V_int16_data + V_offset_channel_row_col);//calculate v
-											}
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-											u_1_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich));
-											u_2_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich + 8));
-											v_1_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_channel_row_col));
-											v_2_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_channel_row_col + 8));
-											u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-											u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-											v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-											v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-											res_mul_1_int32 = _mm256_mullo_epi32(u_1_int32, v_1_int32);
-											res_mul_2_int32 = _mm256_mullo_epi32(u_2_int32, v_2_int32);
-											sum_1 = _mm256_add_epi32(res_mul_1_int32, sum_1);
-											sum_2 = _mm256_add_epi32(res_mul_2_int32, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-											u_1_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich));
-											u_2_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 4));
-											u_3_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 8));
-											u_4_int16 = _mm_load_si128((mm_typei*)(U_int16_data + U_offset_och_ich + 12));
-											v_1_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col));
-											v_2_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 4));
-											v_3_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 8));
-											v_4_int16 = _mm_load_si128((mm_typei*)(V_int16_data + V_offset_channel_row_col + 12));
-											u_1_int32 = mm_cvtepi16_epi32(u_1_int16);
-											u_2_int32 = mm_cvtepi16_epi32(u_2_int16);
-											u_3_int32 = mm_cvtepi16_epi32(u_3_int16);
-											u_4_int32 = mm_cvtepi16_epi32(u_4_int16);
-											v_1_int32 = mm_cvtepi16_epi32(v_1_int16);
-											v_2_int32 = mm_cvtepi16_epi32(v_2_int16);
-											v_3_int32 = mm_cvtepi16_epi32(v_3_int16);
-											v_4_int32 = mm_cvtepi16_epi32(v_4_int16);
-											res_mul_1_int32 = mm_mullo_epi32(u_1_int32, v_1_int32);
-											res_mul_2_int32 = mm_mullo_epi32(u_2_int32, v_2_int32);
-											res_mul_3_int32 = mm_mullo_epi32(u_3_int32, v_3_int32);
-											res_mul_4_int32 = mm_mullo_epi32(u_4_int32, v_4_int32);
-											sum_1 = mm_add_epi32(res_mul_1_int32, sum_1);
-											sum_2 = mm_add_epi32(res_mul_2_int32, sum_2);
-											sum_3 = mm_add_epi32(res_mul_3_int32, sum_3);
-											sum_4 = mm_add_epi32(res_mul_4_int32, sum_4);
 #else
-											for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-											{
-												tile_offset_row = row_in_tile * tile_size_;
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													tile_offset_row_col = tile_offset_row + col_in_tile;
-													m_data[tile_offset_row_col] += U_int16_data[U_offset_och_ich + tile_offset_row_col] * V_int16_data[V_offset_channel_row_col + tile_offset_row_col];
-												}
-											}
+#ifdef _OPENMP
+#pragma omp parallel for
 #endif
-										}
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)(m_data + 8), sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										mm_store_si((mm_typei*)m_data, sum_1);
-										mm_store_si((mm_typei*)(m_data + 4), sum_2);
-										mm_store_si((mm_typei*)(m_data + 8), sum_3);
-										mm_store_si((mm_typei*)(m_data + 12), sum_4);
-#endif
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_int32_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
+								for (int j = 0; j < group_; j++)
+								{
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									for (int index = 0; index < offset; index++)
+									{
+										top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
 									}
 								}
+#endif
 
-								is_V_calculated = true;
-							}
-
-							int offset = top_dim_ / group_;
-							for (int j = 0; j < group_; j++)
-							{
-								float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have mutiply 4 in function: calculate_GgGT
-								for (int index = 0; index < offset; index++)
+								math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
+								if (bias_term_)
 								{
-									top_data[index * group_ + n * top_dim_ + j] = top_int32_data[index * group_ + n * top_dim_ + j] / total_scale;
+									forward_bias(top_data + top_offset_num, bias_data);
 								}
 							}
-
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
 						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
 					}
 					else
 					{
@@ -1355,508 +2212,7671 @@ namespace glasssix
 				{
 					NOT_IMPLEMENTED;
 				}
+
+				delete V_int16_data;
 			}
 			else
 			{
-				if (order_ == NCHW)
+				//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
+				//V_.reset(new tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+				//V_data = V_->mutable_cpu_data();
+				V_data = new float[input_Channel_ * total_tile_num * tile_length_];
+
+				if ((order_ == NCHW) || (order_ == NHWC))
 				{
-					input_dim_h_ = bottom->data_shape()[2];
-					input_dim_w_ = bottom->data_shape()[3];
-					input_spatial_dim_ = input_dim_h_ * input_dim_w_;
-					bottom_dim_ = bottom->count(1, 4);
-
-					output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_spatial_dim_ = output_dim_w_ * output_dim_h_;
-					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
-					bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
-					top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
-					top_data = top->mutable_cpu_data();
-					top_dim_ = top->count(1, 4);
-
-					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
-					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
-					int total_tile_num = h_tile_num_ * w_tile_num_;
-					int w_tile_stride = w_tile_num_ * tile_length_;
-					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
-					int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
-					int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
-					int add_h = h_aligned - h_subtract_tilesize;
-					int add_w = w_aligned - w_subtract_tilesize;
-
 					if (group_ > 1)
 					{
-						bool is_U_calculated = false;
-
 						for (int n = 0; n < num_; n++)
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_, v_;
-								TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								M_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
-								v_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								float *tile_data = TILE_->mutable_cpu_data();
-								float *m_data = M_->mutable_cpu_data();
-								float *result = RESULT_->mutable_cpu_data();
-								float *v_data = v_->mutable_cpu_data();
-
-								int U_offset_och = och * tile_length_;
-								int top_offset_num_channel = top_offset_num + och * output_spatial_dim_;
-								int bottom_offset_num_channel = bottom_offset_num + och * input_spatial_dim_;
-
-								if (!is_U_calculated)
+								for (int nn = 0; nn < nn_inch; nn++)
 								{
-									calculate_GgGT(weights_data + kernel_length_ * och, U_data + U_offset_och);//calculate U
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										const float *row_data2_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										const float *row_data2_2 = row_data2_1 + input_dim_w_;
+										const float *row_data2_3 = row_data2_2 + input_dim_w_;
+										const float *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_data + V_offset_ich_row_col_2);
+
+										const float *row_data3_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										const float *row_data3_2 = row_data3_1 + input_dim_w_;
+										const float *row_data3_3 = row_data3_2 + input_dim_w_;
+										const float *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_data + V_offset_ich_row_col_3);
+
+										const float *row_data4_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										const float *row_data4_2 = row_data4_1 + input_dim_w_;
+										const float *row_data4_3 = row_data4_2 + input_dim_w_;
+										const float *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_data + V_offset_ich_row_col_4);
+									}
 								}
 
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_channel_row;
-								int top_offset_num_channel_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_channel_row_col;
-								int top_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int tile_offset_row_col;
-								int row;
-								int col;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type v_1;
-								mm_type v_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type sum_3;
-								mm_type sum_4;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type u_3;
-								mm_type u_4;
-								mm_type v_1;
-								mm_type v_2;
-								mm_type v_3;
-								mm_type v_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
 								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_dim_w_;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
 									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
 
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											real_row = row_in_input_data + row_in_tile;
-											if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-											{
-												memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
-											}
-											else
-											{
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													real_col = col_in_input_data + col_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-													{
-														tile_data[tile_offset_row + col_in_tile] = 0;
-													}
-													else
-													{
-														tile_data[tile_offset_row + col_in_tile] = bottom_data[bottom_offset_num_channel_row_col + col_in_tile];
-													}
-												}
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
 
-											}
-											bottom_offset_num_channel_row_col += input_dim_w_;
-										}
-
-										calculate_BTdB(tile_data, v_data);//calculate V
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										u_1 = mm_load_ps(U_data + U_offset_och);
-										u_2 = mm_load_ps(U_data + U_offset_och + 8);
-										v_1 = mm_load_ps(v_data);
-										v_2 = mm_load_ps(v_data + 8);
-										sum_1 = mm_mul_ps(u_1, v_1);
-										sum_2 = mm_mul_ps(u_2, v_2);
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 8, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										u_1 = mm_load_ps(U_data + U_offset_och);
-										u_2 = mm_load_ps(U_data + U_offset_och + 4);
-										u_3 = mm_load_ps(U_data + U_offset_och + 8);
-										u_4 = mm_load_ps(U_data + U_offset_och + 12);
-										v_1 = mm_load_ps(v_data);
-										v_2 = mm_load_ps(v_data + 4);
-										v_3 = mm_load_ps(v_data + 8);
-										v_4 = mm_load_ps(v_data + 12);
-										sum_1 = mm_mul_ps(u_1, v_1);
-										sum_2 = mm_mul_ps(u_2, v_2);
-										sum_3 = mm_mul_ps(u_3, v_3);
-										sum_4 = mm_mul_ps(u_4, v_4);
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 4, sum_2);
-										mm_store_ps(m_data + 8, sum_3);
-										mm_store_ps(m_data + 12, sum_4);
-#else
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-											{
-												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] = U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
-											}
-										}
-#endif
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
-										}
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
 									}
 								}
 							}
 
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
 
-							is_U_calculated = true;
-						}
-					}
-					else if (group_ == 1)
-					{
-						//calculate U_
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-						for (int n = 0; n < U_num_; ++n)
-						{
-							calculate_GgGT(weights_data + kernel_length_ * n, U_data + tile_length_ * n);//calculate U
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_2_0;
+									mm_type u_2_8;
+									mm_type u_3_0;
+									mm_type u_3_8;
+									mm_type u_4_0;
+									mm_type u_4_8;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type sum_2_0;
+									mm_type sum_2_4;
+									mm_type sum_2_8;
+									mm_type sum_2_12;
+									mm_type sum_3_0;
+									mm_type sum_3_4;
+									mm_type sum_3_8;
+									mm_type sum_3_12;
+									mm_type sum_4_0;
+									mm_type sum_4_4;
+									mm_type sum_4_8;
+									mm_type sum_4_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_2_0;
+									mm_type u_2_4;
+									mm_type u_2_8;
+									mm_type u_2_12;
+									mm_type u_3_0;
+									mm_type u_3_4;
+									mm_type u_3_8;
+									mm_type u_3_12;
+									mm_type u_4_0;
+									mm_type u_4_4;
+									mm_type u_4_8;
+									mm_type u_4_12;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * tile_length_;
+									int U_offset_och_2 = U_offset_och_1 + tile_length_;
+									int U_offset_och_3 = U_offset_och_2 + tile_length_;
+									int U_offset_och_4 = U_offset_och_3 + tile_length_;
+
+									int V_offset_och_1 = och * h_w_tile_stride;
+									int V_offset_och_2 = V_offset_och_1 + h_w_tile_stride;
+									int V_offset_och_3 = V_offset_och_2 + h_w_tile_stride;
+									int V_offset_och_4 = V_offset_och_3 + h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									float result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										float mult_data_2[16] = { 0 };
+										float mult_data_3[16] = { 0 };
+										float mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+										int V_offset_och_row_col_2 = V_offset_och_2 + V_offset_row_col;
+										int V_offset_och_row_col_3 = V_offset_och_3 + V_offset_row_col;
+										int V_offset_och_row_col_4 = V_offset_och_4 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_2_0 = mm_load_ps(U_data + U_offset_och_2);
+										u_2_8 = mm_load_ps(U_data + U_offset_och_2 + 8);
+										u_3_0 = mm_load_ps(U_data + U_offset_och_3);
+										u_3_8 = mm_load_ps(U_data + U_offset_och_3 + 8);
+										u_4_0 = mm_load_ps(U_data + U_offset_och_4);
+										u_4_8 = mm_load_ps(U_data + U_offset_och_4 + 8);
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_2_0 = mm_load_ps(V_data + V_offset_och_row_col_2);
+										v_2_8 = mm_load_ps(V_data + V_offset_och_row_col_2 + 8);
+										v_3_0 = mm_load_ps(V_data + V_offset_och_row_col_3);
+										v_3_8 = mm_load_ps(V_data + V_offset_och_row_col_3 + 8);
+										v_4_0 = mm_load_ps(V_data + V_offset_och_row_col_4);
+										v_4_8 = mm_load_ps(V_data + V_offset_och_row_col_4 + 8);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_2_0 = mm_mul_ps(v_2_0, u_2_0);
+										sum_2_8 = mm_mul_ps(v_2_8, u_2_8);
+										sum_3_0 = mm_mul_ps(v_3_0, u_3_0);
+										sum_3_8 = mm_mul_ps(v_3_8, u_3_8);
+										sum_4_0 = mm_mul_ps(v_4_0, u_4_0);
+										sum_4_8 = mm_mul_ps(v_4_8, u_4_8);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_4 = mm_load_ps(U_data + U_offset_och_1 + 4);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_1_12 = mm_load_ps(U_data + U_offset_och_1 + 12);
+
+										u_2_0 = mm_load_ps(U_data + U_offset_och_2);
+										u_2_4 = mm_load_ps(U_data + U_offset_och_2 + 4);
+										u_2_8 = mm_load_ps(U_data + U_offset_och_2 + 8);
+										u_2_12 = mm_load_ps(U_data + U_offset_och_2 + 12);
+
+										u_3_0 = mm_load_ps(U_data + U_offset_och_3);
+										u_3_4 = mm_load_ps(U_data + U_offset_och_3 + 4);
+										u_3_8 = mm_load_ps(U_data + U_offset_och_3 + 8);
+										u_3_12 = mm_load_ps(U_data + U_offset_och_3 + 12);
+
+										u_4_0 = mm_load_ps(U_data + U_offset_och_4);
+										u_4_4 = mm_load_ps(U_data + U_offset_och_4 + 4);
+										u_4_8 = mm_load_ps(U_data + U_offset_och_4 + 8);
+										u_4_12 = mm_load_ps(U_data + U_offset_och_4 + 12);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_4 = mm_load_ps(V_data + V_offset_och_row_col_1 + 4);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_1_12 = mm_load_ps(V_data + V_offset_och_row_col_1 + 12);
+
+										v_2_0 = mm_load_ps(V_data + V_offset_och_row_col_2);
+										v_2_4 = mm_load_ps(V_data + V_offset_och_row_col_2 + 4);
+										v_2_8 = mm_load_ps(V_data + V_offset_och_row_col_2 + 8);
+										v_2_12 = mm_load_ps(V_data + V_offset_och_row_col_2 + 12);
+
+										v_3_0 = mm_load_ps(V_data + V_offset_och_row_col_3);
+										v_3_4 = mm_load_ps(V_data + V_offset_och_row_col_3 + 4);
+										v_3_8 = mm_load_ps(V_data + V_offset_och_row_col_3 + 8);
+										v_3_12 = mm_load_ps(V_data + V_offset_och_row_col_3 + 12);
+
+										v_4_0 = mm_load_ps(V_data + V_offset_och_row_col_4);
+										v_4_4 = mm_load_ps(V_data + V_offset_och_row_col_4 + 4);
+										v_4_8 = mm_load_ps(V_data + V_offset_och_row_col_4 + 8);
+										v_4_12 = mm_load_ps(V_data + V_offset_och_row_col_4 + 12);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_4 = mm_mul_ps(v_1_4, u_1_4);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_1_12 = mm_mul_ps(v_1_12, u_1_12);
+
+										sum_2_0 = mm_mul_ps(v_2_0, u_2_0);
+										sum_2_4 = mm_mul_ps(v_2_4, u_2_4);
+										sum_2_8 = mm_mul_ps(v_2_8, u_2_8);
+										sum_2_12 = mm_mul_ps(v_2_12, u_2_12);
+
+										sum_3_0 = mm_mul_ps(v_3_0, u_3_0);
+										sum_3_4 = mm_mul_ps(v_3_4, u_3_4);
+										sum_3_8 = mm_mul_ps(v_3_8, u_3_8);
+										sum_3_12 = mm_mul_ps(v_3_12, u_3_12);
+
+										sum_4_0 = mm_mul_ps(v_4_0, u_4_0);
+										sum_4_4 = mm_mul_ps(v_4_4, u_4_4);
+										sum_4_8 = mm_mul_ps(v_4_8, u_4_8);
+										sum_4_12 = mm_mul_ps(v_4_12, u_4_12);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 4, sum_2_4);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_2 + 12, sum_2_12);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 4, sum_3_4);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_3 + 12, sum_3_12);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 4, sum_4_4);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+										mm_store_ps(mult_data_4 + 12, sum_4_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_data[U_offset_och_1 + i] * V_data[V_offset_och_row_col_1 + i];
+											mult_data_2[i] = U_data[U_offset_och_2 + i] * V_data[V_offset_och_row_col_2 + i];
+											mult_data_3[i] = U_data[U_offset_och_3 + i] * V_data[V_offset_och_row_col_3 + i];
+											mult_data_4[i] = U_data[U_offset_och_4 + i] * V_data[V_offset_och_row_col_4 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias_4;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type v_1_0;
+									mm_type v_1_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+#endif
+
+									int U_offset_och_1 = och * tile_length_;
+									int V_offset_och_1 = och * h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_4 = mm_load_ps(U_data + U_offset_och_1 + 4);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_1_12 = mm_load_ps(U_data + U_offset_och_1 + 12);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_4 = mm_load_ps(V_data + V_offset_och_row_col_1 + 4);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_1_12 = mm_load_ps(V_data + V_offset_och_row_col_1 + 12);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_4 = mm_mul_ps(v_1_4, u_1_4);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_1_12 = mm_mul_ps(v_1_12, u_1_12);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_data[U_offset_och_1 + i] * V_data[V_offset_och_row_col_1 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+							}
 						}
 
-						//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
-						V_num_ = input_Channel_ * total_tile_num;
-						V_.reset(new tensor<float>(std::vector<int>{V_num_ * tile_length_}));
-						V_data = V_->mutable_cpu_data();
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else if (group_ == 1)
+					{
 						int U_offset_single_och = input_Channel_ * tile_length_;
 
 						for (int n = 0; n < num_; n++)
 						{
 							int bottom_offset_num = n * bottom_dim_;
 							int top_offset_num = n * top_dim_;
-							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int och = 0; och < output_Channel_; och++)
+
+							//get transformed bottom_data: V
 							{
-								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_;
-								TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								M_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
-								float *tile_data = TILE_->mutable_cpu_data();
-								float *m_data = M_->mutable_cpu_data();
-								float *result = RESULT_->mutable_cpu_data();
+								int nn_tile = total_tile_num >> 2;
+								int remain_tile_start = nn_tile << 2;
 
-								int U_offset_och = och * U_offset_single_och;
-								int top_offset_num_channel = top_offset_num + och * output_spatial_dim_;
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int top_offset_num_channel_row;
-								int bottom_offset_num_row;
-								int V_offset_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int top_offset_num_channel_row_col;
-								int bottom_offset_num_row_col;
-								int V_offset_row_col;
-								int ich;
-								int bottom_offset_num_channel_row_col;
-								int V_offset_channel_row_col;
-								int U_offset_och_ich;
-								int row_in_tile;
-								int tile_offset_row;
-								int tile_offset_row_col;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int row;
-								int col;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type v_1;
-								mm_type v_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type sum_3;
-								mm_type sum_4;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type u_3;
-								mm_type u_4;
-								mm_type v_1;
-								mm_type v_2;
-								mm_type v_3;
-								mm_type v_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
+#pragma omp parallel for
+								for (int mm = 0; mm < nn_tile; mm++)
 								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_dim_w_;
-									bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_dim_w_;
-									V_offset_row = num_h * w_tile_stride;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
+									int i = mm * 4;
+
+									int row_in_input_data_1 = (i / w_tile_num_) * m_;
+									int col_in_input_data_1 = (i % w_tile_num_) * m_;
+									int tile_offset_1 = i++ * tile_length_;
+									int bottom_offset_num_row_col_1 = bottom_offset_num + row_in_input_data_1 * input_dim_w_ + col_in_input_data_1;
+
+									int row_in_input_data_2 = (i / w_tile_num_) * m_;
+									int col_in_input_data_2 = (i % w_tile_num_) * m_;
+									int tile_offset_2 = i++ * tile_length_;
+									int bottom_offset_num_row_col_2 = bottom_offset_num + row_in_input_data_2 * input_dim_w_ + col_in_input_data_2;
+
+									int row_in_input_data_3 = (i / w_tile_num_) * m_;
+									int col_in_input_data_3 = (i % w_tile_num_) * m_;
+									int tile_offset_3 = i++ * tile_length_;
+									int bottom_offset_num_row_col_3 = bottom_offset_num + row_in_input_data_3 * input_dim_w_ + col_in_input_data_3;
+
+									int row_in_input_data_4 = (i / w_tile_num_) * m_;
+									int col_in_input_data_4 = (i % w_tile_num_) * m_;
+									int tile_offset_4 = i++ * tile_length_;
+									int bottom_offset_num_row_col_4 = bottom_offset_num + row_in_input_data_4 * input_dim_w_ + col_in_input_data_4;
+
+									int nn_ich = input_Channel_ >> 2;
+									int remain_ich_start = nn_ich << 2;
+
+									for (int nn = 0; nn < nn_ich; nn++)
 									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data;
-										bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data;
-										V_offset_row_col = V_offset_row + num_w * tile_length_;
+										int ich = nn * 4;
+										//ich_1
+										int bottom_offset_ich = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_ich + bottom_offset_num_row_col_1;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_ich + bottom_offset_num_row_col_2;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_ich + bottom_offset_num_row_col_3;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_ich + bottom_offset_num_row_col_4;
 
+										int V_offset_ich = ich * h_w_tile_stride;
+										int V_offset_ich_row_col_1 = V_offset_ich + tile_offset_1;
+										int V_offset_ich_row_col_2 = V_offset_ich + tile_offset_2;
+										int V_offset_ich_row_col_3 = V_offset_ich + tile_offset_3;
+										int V_offset_ich_row_col_4 = V_offset_ich + tile_offset_4;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+
+										//ich_2
+										bottom_offset_num_ich_row_col_1 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_2 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_3 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_4 += input_spatial_dim_;
+
+										V_offset_ich_row_col_1 += h_w_tile_stride;
+										V_offset_ich_row_col_2 += h_w_tile_stride;
+										V_offset_ich_row_col_3 += h_w_tile_stride;
+										V_offset_ich_row_col_4 += h_w_tile_stride;
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+
+										//ich_3
+										bottom_offset_num_ich_row_col_1 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_2 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_3 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_4 += input_spatial_dim_;
+
+										V_offset_ich_row_col_1 += h_w_tile_stride;
+										V_offset_ich_row_col_2 += h_w_tile_stride;
+										V_offset_ich_row_col_3 += h_w_tile_stride;
+										V_offset_ich_row_col_4 += h_w_tile_stride;
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+
+										//ich_4
+										bottom_offset_num_ich_row_col_1 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_2 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_3 += input_spatial_dim_;
+										bottom_offset_num_ich_row_col_4 += input_spatial_dim_;
+
+										V_offset_ich_row_col_1 += h_w_tile_stride;
+										V_offset_ich_row_col_2 += h_w_tile_stride;
+										V_offset_ich_row_col_3 += h_w_tile_stride;
+										V_offset_ich_row_col_4 += h_w_tile_stride;
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+									}
+
+									for (int ich = remain_ich_start; ich < input_Channel_; ich++)
+									{
+										int bottom_offset_ich = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_ich + bottom_offset_num_row_col_1;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_ich + bottom_offset_num_row_col_2;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_ich + bottom_offset_num_row_col_3;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_ich + bottom_offset_num_row_col_4;
+
+										int V_offset_ich = ich * h_w_tile_stride;
+										int V_offset_ich_row_col_1 = V_offset_ich + tile_offset_1;
+										int V_offset_ich_row_col_2 = V_offset_ich + tile_offset_2;
+										int V_offset_ich_row_col_3 = V_offset_ich + tile_offset_3;
+										int V_offset_ich_row_col_4 = V_offset_ich + tile_offset_4;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int i = remain_tile_start; i < total_tile_num; i++)
+								{
+									int row_in_input_data = (i / w_tile_num_) * m_;
+									int col_in_input_data = (i % w_tile_num_) * m_;
+									int bottom_offset_num_row_col = bottom_offset_num + row_in_input_data * input_dim_w_ + col_in_input_data;
+
+									int tile_offset = i * tile_length_;									
+
+									int nn_ich = input_Channel_ >> 2;
+									int remain_ich_start = nn_ich << 2;
+
+									for (int nn = 0; nn < nn_ich; nn++)
+									{
+										int ich = nn * 4;
+
+										int bottom_offset_ich_1 = ich * input_spatial_dim_;									
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_ich_1 + bottom_offset_num_row_col;
+										int V_offset_ich_1 = ich++ * h_w_tile_stride;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										int bottom_offset_ich_2 = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_ich_2 + bottom_offset_num_row_col;
+										int V_offset_ich_2 = ich++ * h_w_tile_stride;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+
+										int bottom_offset_ich_3 = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_ich_3 + bottom_offset_num_row_col;
+										int V_offset_ich_3 = ich++ * h_w_tile_stride;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+
+										int bottom_offset_ich_4 = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_ich_4 + bottom_offset_num_row_col;
+										int V_offset_ich_4 = ich++ * h_w_tile_stride;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_2);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_3);
+
+										row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										row_data1_2 = row_data1_1 + input_dim_w_;
+										row_data1_3 = row_data1_2 + input_dim_w_;
+										row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_4);
+									}
+
+									for (int ich = remain_ich_start; ich < input_Channel_; ich++)
+									{
+										int bottom_offset_ich_1 = ich * input_spatial_dim_;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_ich_1 + bottom_offset_num_row_col;
+
+										int V_offset_ich_1 = ich * h_w_tile_stride;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+							//multiply
+							{
+								int nn_tile = total_tile_num >> 2;
+								int remain_tile_start = nn_tile << 2;
+
+#pragma omp parallel for
+								for (int mm = 0; mm < nn_tile; mm++)
+								{
 #if SIMD_TYPE >= SIMDTYPE_AVX
-										sum_1 = mm_setzero_ps();
-										sum_2 = mm_setzero_ps();
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type sum_1_1_0;
+									mm_type sum_1_1_8;
+									mm_type sum_1_2_0;
+									mm_type sum_1_2_8;
+									mm_type sum_1_3_0;
+									mm_type sum_1_3_8;
+									mm_type sum_1_4_0;
+									mm_type sum_1_4_8;
+									mm_type sum_2_1_0;
+									mm_type sum_2_1_8;
+									mm_type sum_2_2_0;
+									mm_type sum_2_2_8;
+									mm_type sum_2_3_0;
+									mm_type sum_2_3_8;
+									mm_type sum_2_4_0;
+									mm_type sum_2_4_8;
+									mm_type sum_3_1_0;
+									mm_type sum_3_1_8;
+									mm_type sum_3_2_0;
+									mm_type sum_3_2_8;
+									mm_type sum_3_3_0;
+									mm_type sum_3_3_8;
+									mm_type sum_3_4_0;
+									mm_type sum_3_4_8;
+									mm_type sum_4_1_0;
+									mm_type sum_4_1_8;
+									mm_type sum_4_2_0;
+									mm_type sum_4_2_8;
+									mm_type sum_4_3_0;
+									mm_type sum_4_3_8;
+									mm_type sum_4_4_0;
+									mm_type sum_4_4_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									mm_type u_1_32;
+									mm_type u_1_40;
+									mm_type u_1_48;
+									mm_type u_1_56;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+									mm_type v_1_1_0;
+									mm_type v_1_1_8;
+									mm_type v_1_2_0;
+									mm_type v_1_2_8;
+									mm_type v_1_3_0;
+									mm_type v_1_3_8;
+									mm_type v_1_4_0;
+									mm_type v_1_4_8;
+									mm_type v_2_1_0;
+									mm_type v_2_1_8;
+									mm_type v_2_2_0;
+									mm_type v_2_2_8;
+									mm_type v_2_3_0;
+									mm_type v_2_3_8;
+									mm_type v_2_4_0;
+									mm_type v_2_4_8;
+									mm_type v_3_1_0;
+									mm_type v_3_1_8;
+									mm_type v_3_2_0;
+									mm_type v_3_2_8;
+									mm_type v_3_3_0;
+									mm_type v_3_3_8;
+									mm_type v_3_4_0;
+									mm_type v_3_4_8;
+									mm_type v_4_1_0;
+									mm_type v_4_1_8;
+									mm_type v_4_2_0;
+									mm_type v_4_2_8;
+									mm_type v_4_3_0;
+									mm_type v_4_3_8;
+									mm_type v_4_4_0;
+									mm_type v_4_4_8;
 #elif SIMD_TYPE >= SIMDTYPE_SSE
-										sum_1 = mm_setzero_ps();
-										sum_2 = mm_setzero_ps();
-										sum_3 = mm_setzero_ps();
-										sum_4 = mm_setzero_ps();
-#else
-										memset(m_data, 0, tile_length_ * sizeof(float));
-#endif // SIMD_TYPE >= SIMDTYPE_AVX
-
-										for (ich = 0; ich < input_Channel_; ich++)
-										{
-											bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich * input_spatial_dim_;
-											V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
-											U_offset_och_ich = U_offset_och + ich * tile_length_;
-
-											//calculate V when is_V_calculated==false
-											if (!is_V_calculated)
-											{
-												for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-												{
-													tile_offset_row = row_in_tile * tile_size_;
-													real_row = row_in_input_data + row_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-													{
-														memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
-													}
-													else
-													{
-														if (is_a_ge_zero_and_a_lt_b(col_in_input_data, input_dim_w_) && is_a_ge_zero_and_a_lt_b(col_in_input_data + tile_size_, input_dim_w_))
-														{
-															memcpy(tile_data + tile_offset_row, bottom_data + bottom_offset_num_channel_row_col, tile_size_ * sizeof(float));
-														}
-														else
-														{
-															for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-															{
-																real_col = col_in_input_data + col_in_tile;
-																if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-																{
-																	tile_data[tile_offset_row + col_in_tile] = 0;
-																}
-																else
-																{
-																	tile_data[tile_offset_row + col_in_tile] = bottom_data[bottom_offset_num_channel_row_col + col_in_tile];
-																}
-															}
-														}
-													}
-													bottom_offset_num_channel_row_col += input_dim_w_;
-												}
-
-												calculate_BTdB(tile_data, V_data + V_offset_channel_row_col);
-											}
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-											u_1 = mm_load_ps(U_data + U_offset_och_ich);
-											u_2 = mm_load_ps(U_data + U_offset_och_ich + 8);
-											v_1 = mm_load_ps(V_data + V_offset_channel_row_col);
-											v_2 = mm_load_ps(V_data + V_offset_channel_row_col + 8);
-											sum_1 = mm_fmadd_ps(v_1, u_1, sum_1);
-											sum_2 = mm_fmadd_ps(v_2, u_2, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-											u_1 = mm_load_ps(U_data + U_offset_och_ich);
-											u_2 = mm_load_ps(U_data + U_offset_och_ich + 4);
-											u_3 = mm_load_ps(U_data + U_offset_och_ich + 8);
-											u_4 = mm_load_ps(U_data + U_offset_och_ich + 12);
-											v_1 = mm_load_ps(V_data + V_offset_channel_row_col);
-											v_2 = mm_load_ps(V_data + V_offset_channel_row_col + 4);
-											v_3 = mm_load_ps(V_data + V_offset_channel_row_col + 8);
-											v_4 = mm_load_ps(V_data + V_offset_channel_row_col + 12);
-											sum_1 = mm_fmadd_ps(v_1, u_1, sum_1);
-											sum_2 = mm_fmadd_ps(v_2, u_2, sum_2);
-											sum_3 = mm_fmadd_ps(v_3, u_3, sum_3);
-											sum_4 = mm_fmadd_ps(v_4, u_4, sum_4);
-#else
-											for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-											{
-												tile_offset_row = row_in_tile * tile_size_;
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													tile_offset_row_col = tile_offset_row + col_in_tile;
-													m_data[tile_offset_row_col] += U_data[U_offset_och_ich + tile_offset_row_col] * V_data[V_offset_channel_row_col + tile_offset_row_col];
-												}
-											}
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
 #endif
-										}
+									int i = mm * 4;
 
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 8, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 4, sum_2);
-										mm_store_ps(m_data + 8, sum_3);
-										mm_store_ps(m_data + 12, sum_4);
-#endif // SIMD_TYPE >= SIMDTYPE_AVX
+									int V_offset_row_col_1 = i * tile_length_;
+									int row_in_output_data_1 = i / w_tile_num_ * m_;
+									int col_in_output_data_1 = i++ % w_tile_num_* m_;
+									int top_offset_num_row_col_1 = top_offset_num + row_in_output_data_1 * output_dim_w_ + col_in_output_data_1;
 
-										calculate_ATmA(m_data, result);
+									int V_offset_row_col_2 = i * tile_length_;
+									int row_in_output_data_2 = i / w_tile_num_ * m_;
+									int col_in_output_data_2 = i++ % w_tile_num_* m_;
+									int top_offset_num_row_col_2 = top_offset_num + row_in_output_data_2 * output_dim_w_ + col_in_output_data_2;
 
-										if (num_h == h_tile_num_ - 1)
+									int V_offset_row_col_3 = i * tile_length_;
+									int row_in_output_data_3 = i / w_tile_num_ * m_;
+									int col_in_output_data_3 = i++ % w_tile_num_* m_;
+									int top_offset_num_row_col_3 = top_offset_num + row_in_output_data_3 * output_dim_w_ + col_in_output_data_3;
+
+									int V_offset_row_col_4 = i * tile_length_;
+									int row_in_output_data_4 = i / w_tile_num_ * m_;
+									int col_in_output_data_4 = i++ % w_tile_num_* m_;
+									int top_offset_num_row_col_4 = top_offset_num + row_in_output_data_4 * output_dim_w_ + col_in_output_data_4;
+
+									int nn_och = output_Channel_ >> 2;
+									int remain_och_start = nn_och << 2;
+
+									for (int nn = 0; nn < nn_och; nn++)
+									{
+										int och = nn * 4;
+										
+										int U_offset_och_1 = och * U_offset_single_och;
+										int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+										int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+										int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
+
+										int top_offset_och_1 = och * output_spatial_dim_;
+										int top_offset_num_och_row_col_1_1 = top_offset_och_1 + top_offset_num_row_col_1;
+										int top_offset_num_och_row_col_1_2 = top_offset_och_1 + top_offset_num_row_col_2;
+										int top_offset_num_och_row_col_1_3 = top_offset_och_1 + top_offset_num_row_col_3;
+										int top_offset_num_och_row_col_1_4 = top_offset_och_1 + top_offset_num_row_col_4;										
+										
+										int top_offset_och_2 = top_offset_och_1 + output_spatial_dim_;
+										int top_offset_num_och_row_col_2_1 = top_offset_och_2 + top_offset_num_row_col_1;
+										int top_offset_num_och_row_col_2_2 = top_offset_och_2 + top_offset_num_row_col_2;
+										int top_offset_num_och_row_col_2_3 = top_offset_och_2 + top_offset_num_row_col_3;
+										int top_offset_num_och_row_col_2_4 = top_offset_och_2 + top_offset_num_row_col_4;
+
+										int top_offset_och_3 = top_offset_och_2 + output_spatial_dim_;
+										int top_offset_num_och_row_col_3_1 = top_offset_och_3 + top_offset_num_row_col_1;
+										int top_offset_num_och_row_col_3_2 = top_offset_och_3 + top_offset_num_row_col_2;
+										int top_offset_num_och_row_col_3_3 = top_offset_och_3 + top_offset_num_row_col_3;
+										int top_offset_num_och_row_col_3_4 = top_offset_och_3 + top_offset_num_row_col_4;
+
+										int top_offset_och_4 = top_offset_och_3 + output_spatial_dim_;
+										int top_offset_num_och_row_col_4_1 = top_offset_och_4 + top_offset_num_row_col_1;
+										int top_offset_num_och_row_col_4_2 = top_offset_och_4 + top_offset_num_row_col_2;
+										int top_offset_num_och_row_col_4_3 = top_offset_och_4 + top_offset_num_row_col_3;
+										int top_offset_num_och_row_col_4_4 = top_offset_och_4 + top_offset_num_row_col_4;
+
+										float bias_1, bias_2, bias_3, bias_4;
+										if (bias_term_)
 										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
-											}
+											bias_1 = bias_data[och++];
+											bias_2 = bias_data[och++];
+											bias_3 = bias_data[och++];
+											bias_4 = bias_data[och];
 										}
 										else
 										{
-											for (row = 0; row < m_; row++)
+											bias_1 = 0;
+											bias_2 = 0;
+											bias_3 = 0;
+											bias_4 = 0;
+										}
+
+										float result_1_1[4], result_1_2[4], result_1_3[4], result_1_4[4];
+										float result_2_1[4], result_2_2[4], result_2_3[4], result_2_4[4];
+										float result_3_1[4], result_3_2[4], result_3_3[4], result_3_4[4];
+										float result_4_1[4], result_4_2[4], result_4_3[4], result_4_4[4];
+										float mult_data_1_1[16] = { 0 };
+										float mult_data_1_2[16] = { 0 };
+										float mult_data_1_3[16] = { 0 };
+										float mult_data_1_4[16] = { 0 };
+										float mult_data_2_1[16] = { 0 };
+										float mult_data_2_2[16] = { 0 };
+										float mult_data_2_3[16] = { 0 };
+										float mult_data_2_4[16] = { 0 };
+										float mult_data_3_1[16] = { 0 };
+										float mult_data_3_2[16] = { 0 };
+										float mult_data_3_3[16] = { 0 };
+										float mult_data_3_4[16] = { 0 };
+										float mult_data_4_1[16] = { 0 };
+										float mult_data_4_2[16] = { 0 };
+										float mult_data_4_3[16] = { 0 };
+										float mult_data_4_4[16] = { 0 };
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_1_0 = mm_setzero_ps();
+										sum_1_1_8 = mm_setzero_ps();
+										sum_1_2_0 = mm_setzero_ps();
+										sum_1_2_8 = mm_setzero_ps();
+										sum_1_3_0 = mm_setzero_ps();
+										sum_1_3_8 = mm_setzero_ps();
+										sum_1_4_0 = mm_setzero_ps();
+										sum_1_4_8 = mm_setzero_ps();
+										sum_2_1_0 = mm_setzero_ps();
+										sum_2_1_8 = mm_setzero_ps();
+										sum_2_2_0 = mm_setzero_ps();
+										sum_2_2_8 = mm_setzero_ps();
+										sum_2_3_0 = mm_setzero_ps();
+										sum_2_3_8 = mm_setzero_ps();
+										sum_2_4_0 = mm_setzero_ps();
+										sum_2_4_8 = mm_setzero_ps();
+										sum_3_1_0 = mm_setzero_ps();
+										sum_3_1_8 = mm_setzero_ps();
+										sum_3_2_0 = mm_setzero_ps();
+										sum_3_2_8 = mm_setzero_ps();
+										sum_3_3_0 = mm_setzero_ps();
+										sum_3_3_8 = mm_setzero_ps();
+										sum_3_4_0 = mm_setzero_ps();
+										sum_3_4_8 = mm_setzero_ps();
+										sum_4_1_0 = mm_setzero_ps();
+										sum_4_1_8 = mm_setzero_ps();
+										sum_4_2_0 = mm_setzero_ps();
+										sum_4_2_8 = mm_setzero_ps();
+										sum_4_3_0 = mm_setzero_ps();
+										sum_4_3_8 = mm_setzero_ps();
+										sum_4_4_0 = mm_setzero_ps();
+										sum_4_4_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int ich_tile_length = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + ich_tile_length;
+											int U_offset_och_ich_2 = U_offset_och_2 + ich_tile_length;
+											int U_offset_och_ich_3 = U_offset_och_3 + ich_tile_length;
+											int U_offset_och_ich_4 = U_offset_och_4 + ich_tile_length;
+
+											int ich_h_w_tile_stride = ich * h_w_tile_stride;
+											int V_offset_ich_row_col_1_1 = V_offset_row_col_1 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_1_2 = V_offset_ich_row_col_1_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_1_3 = V_offset_ich_row_col_1_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_1_4 = V_offset_ich_row_col_1_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_2_1 = V_offset_row_col_2 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_2_2 = V_offset_ich_row_col_2_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_2_3 = V_offset_ich_row_col_2_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_2_4 = V_offset_ich_row_col_2_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_3_1 = V_offset_row_col_3 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_3_2 = V_offset_ich_row_col_3_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3_3 = V_offset_ich_row_col_3_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_3_4 = V_offset_ich_row_col_3_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_4_1 = V_offset_row_col_4 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_4_2 = V_offset_ich_row_col_4_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_4_3 = V_offset_ich_row_col_4_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4_4 = V_offset_ich_row_col_4_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											//1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+
+											v_1_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_1);
+											v_1_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_1 + 8);
+											v_1_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_2);
+											v_1_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_2 + 8);
+											v_1_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_3);
+											v_1_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_3 + 8);
+											v_1_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_4);
+											v_1_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_4 + 8);
+
+											sum_1_1_0 = mm_fmadd_ps(v_1_1_0, u_1_0, sum_1_1_0);
+											sum_1_1_8 = mm_fmadd_ps(v_1_1_8, u_1_8, sum_1_1_8);
+											sum_1_1_0 = mm_fmadd_ps(v_1_2_0, u_1_16, sum_1_1_0);
+											sum_1_1_8 = mm_fmadd_ps(v_1_2_8, u_1_24, sum_1_1_8);
+											sum_1_1_0 = mm_fmadd_ps(v_1_3_0, u_1_32, sum_1_1_0);
+											sum_1_1_8 = mm_fmadd_ps(v_1_3_8, u_1_40, sum_1_1_8);
+											sum_1_1_0 = mm_fmadd_ps(v_1_4_0, u_1_48, sum_1_1_0);
+											sum_1_1_8 = mm_fmadd_ps(v_1_4_8, u_1_56, sum_1_1_8);
+
+											v_2_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_1);
+											v_2_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_1 + 8);
+											v_2_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_2);
+											v_2_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_2 + 8);
+											v_2_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_3);
+											v_2_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_3 + 8);
+											v_2_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_4);
+											v_2_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_4 + 8);
+
+											sum_1_2_0 = mm_fmadd_ps(v_2_1_0, u_1_0, sum_1_2_0);
+											sum_1_2_8 = mm_fmadd_ps(v_2_1_8, u_1_8, sum_1_2_8);
+											sum_1_2_0 = mm_fmadd_ps(v_2_2_0, u_1_16, sum_1_2_0);
+											sum_1_2_8 = mm_fmadd_ps(v_2_2_8, u_1_24, sum_1_2_8);
+											sum_1_2_0 = mm_fmadd_ps(v_2_3_0, u_1_32, sum_1_2_0);
+											sum_1_2_8 = mm_fmadd_ps(v_2_3_8, u_1_40, sum_1_2_8);
+											sum_1_2_0 = mm_fmadd_ps(v_2_4_0, u_1_48, sum_1_2_0);
+											sum_1_2_8 = mm_fmadd_ps(v_2_4_8, u_1_56, sum_1_2_8);
+
+											v_3_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_1);
+											v_3_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_1 + 8);
+											v_3_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_2);
+											v_3_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_2 + 8);
+											v_3_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_3);
+											v_3_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_3 + 8);
+											v_3_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_4);
+											v_3_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_4 + 8);
+
+											sum_1_3_0 = mm_fmadd_ps(v_3_1_0, u_1_0, sum_1_3_0);
+											sum_1_3_8 = mm_fmadd_ps(v_3_1_8, u_1_8, sum_1_3_8);
+											sum_1_3_0 = mm_fmadd_ps(v_3_2_0, u_1_16, sum_1_3_0);
+											sum_1_3_8 = mm_fmadd_ps(v_3_2_8, u_1_24, sum_1_3_8);
+											sum_1_3_0 = mm_fmadd_ps(v_3_3_0, u_1_32, sum_1_3_0);
+											sum_1_3_8 = mm_fmadd_ps(v_3_3_8, u_1_40, sum_1_3_8);
+											sum_1_3_0 = mm_fmadd_ps(v_3_4_0, u_1_48, sum_1_3_0);
+											sum_1_3_8 = mm_fmadd_ps(v_3_4_8, u_1_56, sum_1_3_8);
+
+											v_4_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_1);
+											v_4_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_1 + 8);
+											v_4_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_2);
+											v_4_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_2 + 8);
+											v_4_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_3);
+											v_4_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_3 + 8);
+											v_4_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_4);
+											v_4_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_4 + 8);
+
+											sum_1_4_0 = mm_fmadd_ps(v_4_1_0, u_1_0, sum_1_4_0);
+											sum_1_4_8 = mm_fmadd_ps(v_4_1_8, u_1_8, sum_1_4_8);
+											sum_1_4_0 = mm_fmadd_ps(v_4_2_0, u_1_16, sum_1_4_0);
+											sum_1_4_8 = mm_fmadd_ps(v_4_2_8, u_1_24, sum_1_4_8);
+											sum_1_4_0 = mm_fmadd_ps(v_4_3_0, u_1_32, sum_1_4_0);
+											sum_1_4_8 = mm_fmadd_ps(v_4_3_8, u_1_40, sum_1_4_8);
+											sum_1_4_0 = mm_fmadd_ps(v_4_4_0, u_1_48, sum_1_4_0);
+											sum_1_4_8 = mm_fmadd_ps(v_4_4_8, u_1_56, sum_1_4_8);
+
+											//2
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_2 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_2 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_2 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_2 + 56);
+
+											sum_2_1_0 = mm_fmadd_ps(v_1_1_0, u_1_0, sum_2_1_0);
+											sum_2_1_8 = mm_fmadd_ps(v_1_1_8, u_1_8, sum_2_1_8);
+											sum_2_1_0 = mm_fmadd_ps(v_1_2_0, u_1_16, sum_2_1_0);
+											sum_2_1_8 = mm_fmadd_ps(v_1_2_8, u_1_24, sum_2_1_8);
+											sum_2_1_0 = mm_fmadd_ps(v_1_3_0, u_1_32, sum_2_1_0);
+											sum_2_1_8 = mm_fmadd_ps(v_1_3_8, u_1_40, sum_2_1_8);
+											sum_2_1_0 = mm_fmadd_ps(v_1_4_0, u_1_48, sum_2_1_0);
+											sum_2_1_8 = mm_fmadd_ps(v_1_4_8, u_1_56, sum_2_1_8);
+
+											sum_2_2_0 = mm_fmadd_ps(v_2_1_0, u_1_0, sum_2_2_0);
+											sum_2_2_8 = mm_fmadd_ps(v_2_1_8, u_1_8, sum_2_2_8);
+											sum_2_2_0 = mm_fmadd_ps(v_2_2_0, u_1_16, sum_2_2_0);
+											sum_2_2_8 = mm_fmadd_ps(v_2_2_8, u_1_24, sum_2_2_8);
+											sum_2_2_0 = mm_fmadd_ps(v_2_3_0, u_1_32, sum_2_2_0);
+											sum_2_2_8 = mm_fmadd_ps(v_2_3_8, u_1_40, sum_2_2_8);
+											sum_2_2_0 = mm_fmadd_ps(v_2_4_0, u_1_48, sum_2_2_0);
+											sum_2_2_8 = mm_fmadd_ps(v_2_4_8, u_1_56, sum_2_2_8);
+
+											sum_2_3_0 = mm_fmadd_ps(v_3_1_0, u_1_0, sum_2_3_0);
+											sum_2_3_8 = mm_fmadd_ps(v_3_1_8, u_1_8, sum_2_3_8);
+											sum_2_3_0 = mm_fmadd_ps(v_3_2_0, u_1_16, sum_2_3_0);
+											sum_2_3_8 = mm_fmadd_ps(v_3_2_8, u_1_24, sum_2_3_8);
+											sum_2_3_0 = mm_fmadd_ps(v_3_3_0, u_1_32, sum_2_3_0);
+											sum_2_3_8 = mm_fmadd_ps(v_3_3_8, u_1_40, sum_2_3_8);
+											sum_2_3_0 = mm_fmadd_ps(v_3_4_0, u_1_48, sum_2_3_0);
+											sum_2_3_8 = mm_fmadd_ps(v_3_4_8, u_1_56, sum_2_3_8);
+
+											sum_2_4_0 = mm_fmadd_ps(v_4_1_0, u_1_0, sum_2_4_0);
+											sum_2_4_8 = mm_fmadd_ps(v_4_1_8, u_1_8, sum_2_4_8);
+											sum_2_4_0 = mm_fmadd_ps(v_4_2_0, u_1_16, sum_2_4_0);
+											sum_2_4_8 = mm_fmadd_ps(v_4_2_8, u_1_24, sum_2_4_8);
+											sum_2_4_0 = mm_fmadd_ps(v_4_3_0, u_1_32, sum_2_4_0);
+											sum_2_4_8 = mm_fmadd_ps(v_4_3_8, u_1_40, sum_2_4_8);
+											sum_2_4_0 = mm_fmadd_ps(v_4_4_0, u_1_48, sum_2_4_0);
+											sum_2_4_8 = mm_fmadd_ps(v_4_4_8, u_1_56, sum_2_4_8);
+
+											//3
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_3 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_3 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_3 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_3 + 56);
+
+											sum_3_1_0 = mm_fmadd_ps(v_1_1_0, u_1_0, sum_3_1_0);
+											sum_3_1_8 = mm_fmadd_ps(v_1_1_8, u_1_8, sum_3_1_8);
+											sum_3_1_0 = mm_fmadd_ps(v_1_2_0, u_1_16, sum_3_1_0);
+											sum_3_1_8 = mm_fmadd_ps(v_1_2_8, u_1_24, sum_3_1_8);
+											sum_3_1_0 = mm_fmadd_ps(v_1_3_0, u_1_32, sum_3_1_0);
+											sum_3_1_8 = mm_fmadd_ps(v_1_3_8, u_1_40, sum_3_1_8);
+											sum_3_1_0 = mm_fmadd_ps(v_1_4_0, u_1_48, sum_3_1_0);
+											sum_3_1_8 = mm_fmadd_ps(v_1_4_8, u_1_56, sum_3_1_8);
+
+											sum_3_2_0 = mm_fmadd_ps(v_2_1_0, u_1_0, sum_3_2_0);
+											sum_3_2_8 = mm_fmadd_ps(v_2_1_8, u_1_8, sum_3_2_8);
+											sum_3_2_0 = mm_fmadd_ps(v_2_2_0, u_1_16, sum_3_2_0);
+											sum_3_2_8 = mm_fmadd_ps(v_2_2_8, u_1_24, sum_3_2_8);
+											sum_3_2_0 = mm_fmadd_ps(v_2_3_0, u_1_32, sum_3_2_0);
+											sum_3_2_8 = mm_fmadd_ps(v_2_3_8, u_1_40, sum_3_2_8);
+											sum_3_2_0 = mm_fmadd_ps(v_2_4_0, u_1_48, sum_3_2_0);
+											sum_3_2_8 = mm_fmadd_ps(v_2_4_8, u_1_56, sum_3_2_8);
+
+											sum_3_3_0 = mm_fmadd_ps(v_3_1_0, u_1_0, sum_3_3_0);
+											sum_3_3_8 = mm_fmadd_ps(v_3_1_8, u_1_8, sum_3_3_8);
+											sum_3_3_0 = mm_fmadd_ps(v_3_2_0, u_1_16, sum_3_3_0);
+											sum_3_3_8 = mm_fmadd_ps(v_3_2_8, u_1_24, sum_3_3_8);
+											sum_3_3_0 = mm_fmadd_ps(v_3_3_0, u_1_32, sum_3_3_0);
+											sum_3_3_8 = mm_fmadd_ps(v_3_3_8, u_1_40, sum_3_3_8);
+											sum_3_3_0 = mm_fmadd_ps(v_3_4_0, u_1_48, sum_3_3_0);
+											sum_3_3_8 = mm_fmadd_ps(v_3_4_8, u_1_56, sum_3_3_8);
+
+											sum_3_4_0 = mm_fmadd_ps(v_4_1_0, u_1_0, sum_3_4_0);
+											sum_3_4_8 = mm_fmadd_ps(v_4_1_8, u_1_8, sum_3_4_8);
+											sum_3_4_0 = mm_fmadd_ps(v_4_2_0, u_1_16, sum_3_4_0);
+											sum_3_4_8 = mm_fmadd_ps(v_4_2_8, u_1_24, sum_3_4_8);
+											sum_3_4_0 = mm_fmadd_ps(v_4_3_0, u_1_32, sum_3_4_0);
+											sum_3_4_8 = mm_fmadd_ps(v_4_3_8, u_1_40, sum_3_4_8);
+											sum_3_4_0 = mm_fmadd_ps(v_4_4_0, u_1_48, sum_3_4_0);
+											sum_3_4_8 = mm_fmadd_ps(v_4_4_8, u_1_56, sum_3_4_8);
+
+											//4
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_4 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_4 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_4 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_4 + 56);
+
+											sum_4_1_0 = mm_fmadd_ps(v_1_1_0, u_1_0, sum_4_1_0);
+											sum_4_1_8 = mm_fmadd_ps(v_1_1_8, u_1_8, sum_4_1_8);
+											sum_4_1_0 = mm_fmadd_ps(v_1_2_0, u_1_16, sum_4_1_0);
+											sum_4_1_8 = mm_fmadd_ps(v_1_2_8, u_1_24, sum_4_1_8);
+											sum_4_1_0 = mm_fmadd_ps(v_1_3_0, u_1_32, sum_4_1_0);
+											sum_4_1_8 = mm_fmadd_ps(v_1_3_8, u_1_40, sum_4_1_8);
+											sum_4_1_0 = mm_fmadd_ps(v_1_4_0, u_1_48, sum_4_1_0);
+											sum_4_1_8 = mm_fmadd_ps(v_1_4_8, u_1_56, sum_4_1_8);
+
+											sum_4_2_0 = mm_fmadd_ps(v_2_1_0, u_1_0, sum_4_2_0);
+											sum_4_2_8 = mm_fmadd_ps(v_2_1_8, u_1_8, sum_4_2_8);
+											sum_4_2_0 = mm_fmadd_ps(v_2_2_0, u_1_16, sum_4_2_0);
+											sum_4_2_8 = mm_fmadd_ps(v_2_2_8, u_1_24, sum_4_2_8);
+											sum_4_2_0 = mm_fmadd_ps(v_2_3_0, u_1_32, sum_4_2_0);
+											sum_4_2_8 = mm_fmadd_ps(v_2_3_8, u_1_40, sum_4_2_8);
+											sum_4_2_0 = mm_fmadd_ps(v_2_4_0, u_1_48, sum_4_2_0);
+											sum_4_2_8 = mm_fmadd_ps(v_2_4_8, u_1_56, sum_4_2_8);
+
+											sum_4_3_0 = mm_fmadd_ps(v_3_1_0, u_1_0, sum_4_3_0);
+											sum_4_3_8 = mm_fmadd_ps(v_3_1_8, u_1_8, sum_4_3_8);
+											sum_4_3_0 = mm_fmadd_ps(v_3_2_0, u_1_16, sum_4_3_0);
+											sum_4_3_8 = mm_fmadd_ps(v_3_2_8, u_1_24, sum_4_3_8);
+											sum_4_3_0 = mm_fmadd_ps(v_3_3_0, u_1_32, sum_4_3_0);
+											sum_4_3_8 = mm_fmadd_ps(v_3_3_8, u_1_40, sum_4_3_8);
+											sum_4_3_0 = mm_fmadd_ps(v_3_4_0, u_1_48, sum_4_3_0);
+											sum_4_3_8 = mm_fmadd_ps(v_3_4_8, u_1_56, sum_4_3_8);
+
+											sum_4_4_0 = mm_fmadd_ps(v_4_1_0, u_1_0, sum_4_4_0);
+											sum_4_4_8 = mm_fmadd_ps(v_4_1_8, u_1_8, sum_4_4_8);
+											sum_4_4_0 = mm_fmadd_ps(v_4_2_0, u_1_16, sum_4_4_0);
+											sum_4_4_8 = mm_fmadd_ps(v_4_2_8, u_1_24, sum_4_4_8);
+											sum_4_4_0 = mm_fmadd_ps(v_4_3_0, u_1_32, sum_4_4_0);
+											sum_4_4_8 = mm_fmadd_ps(v_4_3_8, u_1_40, sum_4_4_8);
+											sum_4_4_0 = mm_fmadd_ps(v_4_4_0, u_1_48, sum_4_4_0);
+											sum_4_4_8 = mm_fmadd_ps(v_4_4_8, u_1_56, sum_4_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
 											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_dim_w_;
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
 											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{						
+											int ich_tile_length = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + ich_tile_length;
+											int U_offset_och_ich_2 = U_offset_och_2 + ich_tile_length;
+											int U_offset_och_ich_3 = U_offset_och_3 + ich_tile_length;
+											int U_offset_och_ich_4 = U_offset_och_4 + ich_tile_length;
+
+											int ich_h_w_tile_stride = ich * h_w_tile_stride;
+											int V_offset_ich_row_col_1 = V_offset_row_col_1 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_row_col_2 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_row_col_3 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_row_col_4 + ich_h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											//1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											sum_1_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_1_0);
+											sum_1_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_1_8);
+
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+
+											sum_1_2_0 = mm_fmadd_ps(v_2_0, u_1_0, sum_1_2_0);
+											sum_1_2_8 = mm_fmadd_ps(v_2_8, u_1_8, sum_1_2_8);
+
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+
+											sum_1_3_0 = mm_fmadd_ps(v_3_0, u_1_0, sum_1_3_0);
+											sum_1_3_8 = mm_fmadd_ps(v_3_8, u_1_8, sum_1_3_8);
+
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											sum_1_4_0 = mm_fmadd_ps(v_4_0, u_1_0, sum_1_4_0);
+											sum_1_4_8 = mm_fmadd_ps(v_4_8, u_1_8, sum_1_4_8);
+
+											//2
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+
+											sum_2_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_2_1_0);
+											sum_2_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_2_1_8);
+											sum_2_2_0 = mm_fmadd_ps(v_2_0, u_1_0, sum_2_2_0);
+											sum_2_2_8 = mm_fmadd_ps(v_2_8, u_1_8, sum_2_2_8);
+											sum_2_3_0 = mm_fmadd_ps(v_3_0, u_1_0, sum_2_3_0);
+											sum_2_3_8 = mm_fmadd_ps(v_3_8, u_1_8, sum_2_3_8);
+											sum_2_4_0 = mm_fmadd_ps(v_4_0, u_1_0, sum_2_4_0);
+											sum_2_4_8 = mm_fmadd_ps(v_4_8, u_1_8, sum_2_4_8);
+
+											//3
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+
+											sum_3_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_3_1_0);
+											sum_3_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_3_1_8);
+											sum_3_2_0 = mm_fmadd_ps(v_2_0, u_1_0, sum_3_2_0);
+											sum_3_2_8 = mm_fmadd_ps(v_2_8, u_1_8, sum_3_2_8);
+											sum_3_3_0 = mm_fmadd_ps(v_3_0, u_1_0, sum_3_3_0);
+											sum_3_3_8 = mm_fmadd_ps(v_3_8, u_1_8, sum_3_3_8);
+											sum_3_4_0 = mm_fmadd_ps(v_4_0, u_1_0, sum_3_4_0);
+											sum_3_4_8 = mm_fmadd_ps(v_4_8, u_1_8, sum_3_4_8);
+
+											//4
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+
+											sum_4_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_4_1_0);
+											sum_4_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_4_1_8);
+											sum_4_2_0 = mm_fmadd_ps(v_2_0, u_1_0, sum_4_2_0);
+											sum_4_2_8 = mm_fmadd_ps(v_2_8, u_1_8, sum_4_2_8);
+											sum_4_3_0 = mm_fmadd_ps(v_3_0, u_1_0, sum_4_3_0);
+											sum_4_3_8 = mm_fmadd_ps(v_3_8, u_1_8, sum_4_3_8);
+											sum_4_4_0 = mm_fmadd_ps(v_4_0, u_1_0, sum_4_4_0);
+											sum_4_4_8 = mm_fmadd_ps(v_4_8, u_1_8, sum_4_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										//1
+										mm_store_ps(mult_data_1_1, sum_1_1_0);
+										mm_store_ps(mult_data_1_1 + 8, sum_1_1_8);
+										mm_store_ps(mult_data_1_2, sum_1_2_0);
+										mm_store_ps(mult_data_1_2 + 8, sum_1_2_8);
+										mm_store_ps(mult_data_1_3, sum_1_3_0);
+										mm_store_ps(mult_data_1_3 + 8, sum_1_3_8);
+										mm_store_ps(mult_data_1_4, sum_1_4_0);
+										mm_store_ps(mult_data_1_4 + 8, sum_1_4_8);
+
+										//2
+										mm_store_ps(mult_data_2_1, sum_2_1_0);
+										mm_store_ps(mult_data_2_1 + 8, sum_2_1_8);
+										mm_store_ps(mult_data_2_2, sum_2_2_0);
+										mm_store_ps(mult_data_2_2 + 8, sum_2_2_8);
+										mm_store_ps(mult_data_2_3, sum_2_3_0);
+										mm_store_ps(mult_data_2_3 + 8, sum_2_3_8);
+										mm_store_ps(mult_data_2_4, sum_2_4_0);
+										mm_store_ps(mult_data_2_4 + 8, sum_2_4_8);
+
+										//3
+										mm_store_ps(mult_data_3_1, sum_3_1_0);
+										mm_store_ps(mult_data_3_1 + 8, sum_3_1_8);
+										mm_store_ps(mult_data_3_2, sum_3_2_0);
+										mm_store_ps(mult_data_3_2 + 8, sum_3_2_8);
+										mm_store_ps(mult_data_3_3, sum_3_3_0);
+										mm_store_ps(mult_data_3_3 + 8, sum_3_3_8);
+										mm_store_ps(mult_data_3_4, sum_3_4_0);
+										mm_store_ps(mult_data_3_4 + 8, sum_3_4_8);
+
+										//4
+										mm_store_ps(mult_data_4_1, sum_4_1_0);
+										mm_store_ps(mult_data_4_1 + 8, sum_4_1_8);
+										mm_store_ps(mult_data_4_2, sum_4_2_0);
+										mm_store_ps(mult_data_4_2 + 8, sum_4_2_8);
+										mm_store_ps(mult_data_4_3, sum_4_3_0);
+										mm_store_ps(mult_data_4_3 + 8, sum_4_3_8);
+										mm_store_ps(mult_data_4_4, sum_4_4_0);
+										mm_store_ps(mult_data_4_4 + 8, sum_4_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										//1
+										calculate_ATmA23(mult_data_1_1, result_1_1);
+										calculate_ATmA23(mult_data_1_2, result_1_2);
+										calculate_ATmA23(mult_data_1_3, result_1_3);
+										calculate_ATmA23(mult_data_1_4, result_1_4);
+										//2
+										calculate_ATmA23(mult_data_2_1, result_2_1);
+										calculate_ATmA23(mult_data_2_2, result_2_2);
+										calculate_ATmA23(mult_data_2_3, result_2_3);
+										calculate_ATmA23(mult_data_2_4, result_2_4);
+										//3
+										calculate_ATmA23(mult_data_3_1, result_3_1);
+										calculate_ATmA23(mult_data_3_2, result_3_2);
+										calculate_ATmA23(mult_data_3_3, result_3_3);
+										calculate_ATmA23(mult_data_3_4, result_3_4);
+										//4
+										calculate_ATmA23(mult_data_4_1, result_4_1);
+										calculate_ATmA23(mult_data_4_2, result_4_2);
+										calculate_ATmA23(mult_data_4_3, result_4_3);
+										calculate_ATmA23(mult_data_4_4, result_4_4);
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												//1
+												top_data[top_offset_num_och_row_col_1_1 + col] = result_1_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_1_2 + col] = result_1_2[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_1_3 + col] = result_1_3[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_1_4 + col] = result_1_4[result_offset_row + col] + bias_1;
+												//2
+												top_data[top_offset_num_och_row_col_2_1 + col] = result_2_1[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_2_2 + col] = result_2_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_2_3 + col] = result_2_3[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_2_4 + col] = result_2_4[result_offset_row + col] + bias_2;
+												//3
+												top_data[top_offset_num_och_row_col_3_1 + col] = result_3_1[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_3_2 + col] = result_3_2[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_3_3 + col] = result_3_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_3_4 + col] = result_3_4[result_offset_row + col] + bias_3;
+												//4
+												top_data[top_offset_num_och_row_col_4_1 + col] = result_4_1[result_offset_row + col] + bias_4;
+												top_data[top_offset_num_och_row_col_4_2 + col] = result_4_2[result_offset_row + col] + bias_4;
+												top_data[top_offset_num_och_row_col_4_3 + col] = result_4_3[result_offset_row + col] + bias_4;
+												top_data[top_offset_num_och_row_col_4_4 + col] = result_4_4[result_offset_row + col] + bias_4;
+											}
+											//1
+											top_offset_num_och_row_col_1_1 += output_dim_w_;
+											top_offset_num_och_row_col_1_2 += output_dim_w_;
+											top_offset_num_och_row_col_1_3 += output_dim_w_;
+											top_offset_num_och_row_col_1_4 += output_dim_w_;
+											//2
+											top_offset_num_och_row_col_2_1 += output_dim_w_;
+											top_offset_num_och_row_col_2_2 += output_dim_w_;
+											top_offset_num_och_row_col_2_3 += output_dim_w_;
+											top_offset_num_och_row_col_2_4 += output_dim_w_;
+											//3
+											top_offset_num_och_row_col_3_1 += output_dim_w_;
+											top_offset_num_och_row_col_3_2 += output_dim_w_;
+											top_offset_num_och_row_col_3_3 += output_dim_w_;
+											top_offset_num_och_row_col_3_4 += output_dim_w_;
+											//4
+											top_offset_num_och_row_col_4_1 += output_dim_w_;
+											top_offset_num_och_row_col_4_2 += output_dim_w_;
+											top_offset_num_och_row_col_4_3 += output_dim_w_;
+											top_offset_num_och_row_col_4_4 += output_dim_w_;
+										}
+									}
+
+									for (int och = remain_och_start; och < output_Channel_; och++)
+									{
+										float bias = bias_term_ ? bias_data[och] : 0;
+										int U_offset_och = och * U_offset_single_och;
+
+										int top_offset_och = och * output_spatial_dim_;
+										int top_offset_num_och_row_col_1 = top_offset_och + top_offset_num_row_col_1;
+										int top_offset_num_och_row_col_2 = top_offset_och + top_offset_num_row_col_2;
+										int top_offset_num_och_row_col_3 = top_offset_och + top_offset_num_row_col_3;
+										int top_offset_num_och_row_col_4 = top_offset_och + top_offset_num_row_col_4;
+
+										float result_1[4], result_2[4], result_3[4], result_4[4];
+										float mult_data_1[16] = { 0 };
+										float mult_data_2[16] = { 0 };
+										float mult_data_3[16] = { 0 };
+										float mult_data_4[16] = { 0 };
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_2_0 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_3_0 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_4_0 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich = U_offset_och + ich * tile_length_;
+
+											int ich_h_w_tile_stride = ich * h_w_tile_stride;
+											int V_offset_ich_row_col_1_1 = V_offset_row_col_1 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_1_2 = V_offset_ich_row_col_1_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_1_3 = V_offset_ich_row_col_1_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_1_4 = V_offset_ich_row_col_1_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_2_1 = V_offset_row_col_2 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_2_2 = V_offset_ich_row_col_2_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_2_3 = V_offset_ich_row_col_2_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_2_4 = V_offset_ich_row_col_2_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_3_1 = V_offset_row_col_3 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_3_2 = V_offset_ich_row_col_3_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3_3 = V_offset_ich_row_col_3_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_3_4 = V_offset_ich_row_col_3_3 + h_w_tile_stride;
+
+											int V_offset_ich_row_col_4_1 = V_offset_row_col_4 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_4_2 = V_offset_ich_row_col_4_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_4_3 = V_offset_ich_row_col_4_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4_4 = V_offset_ich_row_col_4_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich + 56);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_1_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_1_4 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_2_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_2_4 + 8);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_2_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_3_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_3_4 + 8);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_3_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4_4 + 8);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich = U_offset_och + ich * tile_length_;
+
+											int ich_h_w_tile_stride = ich * h_w_tile_stride;
+											int V_offset_ich_row_col_1 = V_offset_row_col_1 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_row_col_2 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_row_col_3 + ich_h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_row_col_4 + ich_h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich + 8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_2_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_3_8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
 										}
 									}
 								}
 
-								is_V_calculated = true;
+								for (int i = remain_tile_start; i < total_tile_num; i++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type sum_1_1_0;
+									mm_type sum_1_1_8;
+									mm_type sum_1_2_0;
+									mm_type sum_1_2_8;
+									mm_type sum_1_3_0;
+									mm_type sum_1_3_8;
+									mm_type sum_1_4_0;
+									mm_type sum_1_4_8;
+									mm_type sum_2_1_0;
+									mm_type sum_2_1_8;
+									mm_type sum_2_2_0;
+									mm_type sum_2_2_8;
+									mm_type sum_2_3_0;
+									mm_type sum_2_3_8;
+									mm_type sum_2_4_0;
+									mm_type sum_2_4_8;
+									mm_type sum_3_1_0;
+									mm_type sum_3_1_8;
+									mm_type sum_3_2_0;
+									mm_type sum_3_2_8;
+									mm_type sum_3_3_0;
+									mm_type sum_3_3_8;
+									mm_type sum_3_4_0;
+									mm_type sum_3_4_8;
+									mm_type sum_4_1_0;
+									mm_type sum_4_1_8;
+									mm_type sum_4_2_0;
+									mm_type sum_4_2_8;
+									mm_type sum_4_3_0;
+									mm_type sum_4_3_8;
+									mm_type sum_4_4_0;
+									mm_type sum_4_4_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									mm_type u_1_32;
+									mm_type u_1_40;
+									mm_type u_1_48;
+									mm_type u_1_56;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+									mm_type v_1_1_0;
+									mm_type v_1_1_8;
+									mm_type v_1_2_0;
+									mm_type v_1_2_8;
+									mm_type v_1_3_0;
+									mm_type v_1_3_8;
+									mm_type v_1_4_0;
+									mm_type v_1_4_8;
+									mm_type v_2_1_0;
+									mm_type v_2_1_8;
+									mm_type v_2_2_0;
+									mm_type v_2_2_8;
+									mm_type v_2_3_0;
+									mm_type v_2_3_8;
+									mm_type v_2_4_0;
+									mm_type v_2_4_8;
+									mm_type v_3_1_0;
+									mm_type v_3_1_8;
+									mm_type v_3_2_0;
+									mm_type v_3_2_8;
+									mm_type v_3_3_0;
+									mm_type v_3_3_8;
+									mm_type v_3_4_0;
+									mm_type v_3_4_8;
+									mm_type v_4_1_0;
+									mm_type v_4_1_8;
+									mm_type v_4_2_0;
+									mm_type v_4_2_8;
+									mm_type v_4_3_0;
+									mm_type v_4_3_8;
+									mm_type v_4_4_0;
+									mm_type v_4_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+									int V_offset_row_col = i * tile_length_;
+									int row_in_output_data = i / w_tile_num_ * m_;
+									int col_in_output_data = i % w_tile_num_* m_;
+									int top_offset_num_row_col = top_offset_num + row_in_output_data * output_dim_w_ + col_in_output_data;
+									
+									int nn_och = output_Channel_ >> 2;
+									int remain_och_start = nn_och << 2;
+
+									for (int nn = 0; nn < nn_och; nn++)
+									{
+										int och = nn * 4;
+
+										int top_offset_och_1 = och * output_spatial_dim_;
+										int top_offset_num_och_row_col_1 = top_offset_och_1 + top_offset_num_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_row_col_1 + output_spatial_dim_;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_row_col_2 + output_spatial_dim_;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_row_col_3 + output_spatial_dim_;
+
+										int U_offset_och_1 = och * U_offset_single_och;
+										int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+										int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+										int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
+
+										float bias_1, bias_2, bias_3, bias_4;
+										if (bias_term_)
+										{
+											bias_1 = bias_data[och++];
+											bias_2 = bias_data[och++];
+											bias_3 = bias_data[och++];
+											bias_4 = bias_data[och];
+										}
+										else
+										{
+											bias_1 = 0;
+											bias_2 = 0;
+											bias_3 = 0;
+											bias_4 = 0;
+										}
+
+										float result_1[4], result_2[4], result_3[4], result_4[4];
+										float mult_data_1[16] = { 0 };
+										float mult_data_2[16] = { 0 };
+										float mult_data_3[16] = { 0 };
+										float mult_data_4[16] = { 0 };
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_2_0 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_3_0 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_4_0 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int ich_tile_length = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + ich_tile_length;
+											int U_offset_och_ich_2 = U_offset_och_2 + ich_tile_length;
+											int U_offset_och_ich_3 = U_offset_och_3 + ich_tile_length;
+											int U_offset_och_ich_4 = U_offset_och_4 + ich_tile_length;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											//1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+											//2
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_2 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_2 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_2 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_2 + 56);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_2_8);
+
+											//3
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_3 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_3 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_3 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_3 + 56);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_3_8);
+
+											//4
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_4 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_4 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_4 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_4 + 56);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int ich_tile_length = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + ich_tile_length;
+											int U_offset_och_ich_2 = U_offset_och_2 + ich_tile_length;
+											int U_offset_och_ich_3 = U_offset_och_3 + ich_tile_length;
+											int U_offset_och_ich_4 = U_offset_och_4 + ich_tile_length;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											//1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+
+											//2
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_2_8);
+
+											//3
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_3_8);
+
+											//4
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias_4;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+
+									for (int och = remain_och_start; och < output_Channel_; och++)
+									{
+										int top_offset_och_1 = och * output_spatial_dim_;
+										int top_offset_num_och_row_col_1 = top_offset_och_1 + top_offset_num_row_col;
+
+										int U_offset_och_1 = och * U_offset_single_och;
+										float bias_1 = bias_term_ ? bias_data[och] : 0;
+										float result_1[4];
+										float mult_data_1[16] = { 0 };
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+							}
+						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else
+					{
+						LOG(FATAL) << "group wrong!!!";
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+
+				delete V_data;
+			}
+		}
+#else
+		void conv_winograd_cpu::Forward_F23(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		{
+			CHECK_EQ(kernelSize_, 3);
+			CHECK_EQ(stride_, 1);
+			order_ = bottom->order();
+			num_ = bottom->num();
+			input_dim_h_ = bottom->height();
+			input_dim_w_ = bottom->width();
+			output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+			output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+
+			int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
+			int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
+			h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+			w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+			int total_tile_num = h_tile_num_ * w_tile_num_;
+			int w_tile_stride = w_tile_num_ * tile_length_;
+			int h_w_tile_stride = h_tile_num_ * w_tile_stride;
+			int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
+			int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
+			int add_h = h_aligned - h_subtract_tilesize;
+			int add_w = w_aligned - w_subtract_tilesize;
+
+			input_dim_w_ += 2 * pad_ + add_w;
+			input_dim_h_ += 2 * pad_ + add_h;
+			output_dim_w_ += add_w;
+			output_dim_h_ += add_h;
+			input_spatial_dim_ = input_dim_w_ * input_dim_h_;
+			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
+
+			std::shared_ptr<tensor<float>> bottom_bordered;
+			tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_ + add_h, pad_, pad_ + add_w);
+			if (order_ == NHWC)
+			{
+				tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
+			}
+			bottom_data = bottom_bordered->cpu_data();
+			bottom_dim_ = bottom_bordered->count(1, 4);
+
+			top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, NCHW));
+			top_data = top->mutable_cpu_data();
+			top_dim_ = top->count(1, 4);
+
+			if (int8_quantization_)
+			{
+				bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
+				bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
+
+				top_int32_.reset(new tensor<int>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
+				top_int32_data = top_int32_->mutable_cpu_data();
+
+				bottom_int8_.reset(new tensor<signed char>(std::vector<int>{num_ * bottom_dim_}));
+				bottom_int8_data = bottom_int8_->mutable_cpu_data();
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				int circle_num = num_ * bottom_dim_ / mm_align_size;
+				int index = 0;
+				mm_type scale = mm_set1_ps(scales_data[0]);
+
+				for (; index < circle_num; index++)
+				{
+					int index_offset = index * mm_align_size;
+					mm_type data = mm_load_ps(bottom_data + index_offset);
+					mm_type res_mul = mm_mul_ps(data, scale);
+					mm_type res_round = mm_round_ps(res_mul, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+					mm_store_ps(bottom_round_data_, res_round);
+					for (int i = 0; i < mm_align_size; i++)
+					{
+						if (bottom_round_data_[i] > 127)
+						{
+							bottom_int8_data[index_offset + i] = (signed char)(127);
+						}
+						else if (bottom_round_data_[i] < -128)
+						{
+							bottom_int8_data[index_offset + i] = (signed char)(-128);
+						}
+						else
+						{
+							bottom_int8_data[index_offset + i] = (signed char)(bottom_round_data_[i]);
+						}
+					}
+				}
+
+				for (index = mm_align_size * index; index < num_ * bottom_dim_; index++)
+				{
+					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
+				}
+#else
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+				for (int index = 0; index < num_ * bottom_dim_; index++)
+				{
+					bottom_int8_data[index] = float32_to_int8(bottom_data[index] * scales_data[0]);
+				}
+#endif
+				//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
+				//V_int16.reset(new tensor<short>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+				//V_int16_data = V_int16->mutable_cpu_data();
+				V_int16_data = new short[input_Channel_ * total_tile_num * tile_length_];
+
+				if ((order_ == NCHW) || (order_ == NHWC))
+				{
+					if (group_ > 1)
+					{
+						for (int n = 0; n < num_; n++)
+						{
+							int bottom_offset_num = n * bottom_dim_;
+							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_inch; nn++)
+								{
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+
+										const signed char *row_data2_1 = bottom_int8_data + bottom_offset_num_ich_row_col_2;
+										const signed char *row_data2_2 = row_data2_1 + input_dim_w_;
+										const signed char *row_data2_3 = row_data2_2 + input_dim_w_;
+										const signed char *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_int16_data + V_offset_ich_row_col_2);
+
+										const signed char *row_data3_1 = bottom_int8_data + bottom_offset_num_ich_row_col_3;
+										const signed char *row_data3_2 = row_data3_1 + input_dim_w_;
+										const signed char *row_data3_3 = row_data3_2 + input_dim_w_;
+										const signed char *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_int16_data + V_offset_ich_row_col_3);
+
+										const signed char *row_data4_1 = bottom_int8_data + bottom_offset_num_ich_row_col_4;
+										const signed char *row_data4_2 = row_data4_1 + input_dim_w_;
+										const signed char *row_data4_3 = row_data4_2 + input_dim_w_;
+										const signed char *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_int16_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+									}
+								}
 							}
 
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
+							//multiply
 							{
-								forward_bias(top_data + top_offset_num, bias_data);
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei sum_2_0;
+									mm_typei sum_2_8;
+									mm_typei sum_3_0;
+									mm_typei sum_3_8;
+									mm_typei sum_4_0;
+									mm_typei sum_4_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_2_0;
+									mm_typei u_2_8;
+									mm_typei u_3_0;
+									mm_typei u_3_8;
+									mm_typei u_4_0;
+									mm_typei u_4_8;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_2_0_int16;
+									__m128i u_2_8_int16;
+									__m128i u_3_0_int16;
+									__m128i u_3_8_int16;
+									__m128i u_4_0_int16;
+									__m128i u_4_8_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei sum_2_0;
+									mm_typei sum_2_4;
+									mm_typei sum_2_8;
+									mm_typei sum_2_12;
+									mm_typei sum_3_0;
+									mm_typei sum_3_4;
+									mm_typei sum_3_8;
+									mm_typei sum_3_12;
+									mm_typei sum_4_0;
+									mm_typei sum_4_4;
+									mm_typei sum_4_8;
+									mm_typei sum_4_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_2_0;
+									mm_typei u_2_4;
+									mm_typei u_2_8;
+									mm_typei u_2_12;
+									mm_typei u_3_0;
+									mm_typei u_3_4;
+									mm_typei u_3_8;
+									mm_typei u_3_12;
+									mm_typei u_4_0;
+									mm_typei u_4_4;
+									mm_typei u_4_8;
+									mm_typei u_4_12;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_2_0_int16;
+									mm_typei u_2_4_int16;
+									mm_typei u_2_8_int16;
+									mm_typei u_2_12_int16;
+									mm_typei u_3_0_int16;
+									mm_typei u_3_4_int16;
+									mm_typei u_3_8_int16;
+									mm_typei u_3_12_int16;
+									mm_typei u_4_0_int16;
+									mm_typei u_4_4_int16;
+									mm_typei u_4_8_int16;
+									mm_typei u_4_12_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * tile_length_;
+									int U_offset_och_2 = U_offset_och_1 + tile_length_;
+									int U_offset_och_3 = U_offset_och_2 + tile_length_;
+									int U_offset_och_4 = U_offset_och_3 + tile_length_;
+
+									int V_offset_och_1 = och * h_w_tile_stride;
+									int V_offset_och_2 = V_offset_och_1 + h_w_tile_stride;
+									int V_offset_och_3 = V_offset_och_2 + h_w_tile_stride;
+									int V_offset_och_4 = V_offset_och_3 + h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									int result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int mult_data_2[16] = { 0 };
+										int mult_data_3[16] = { 0 };
+										int mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+										int V_offset_och_row_col_2 = V_offset_och_2 + V_offset_row_col;
+										int V_offset_och_row_col_3 = V_offset_och_3 + V_offset_row_col;
+										int V_offset_och_row_col_4 = V_offset_och_4 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2));
+										u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 8));
+										u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3));
+										u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 8));
+										u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4));
+										u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 8));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+										u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+										u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+										u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+										u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+										u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2));
+										v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 8));
+										v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3));
+										v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 8));
+										v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4));
+										v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 8));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+										v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+										v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+										v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+										v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+										v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_2_0 = mm_mullo_epi32(v_2_0, u_2_0);
+										sum_2_8 = mm_mullo_epi32(v_2_8, u_2_8);
+										sum_3_0 = mm_mullo_epi32(v_3_0, u_3_0);
+										sum_3_8 = mm_mullo_epi32(v_3_8, u_3_8);
+										sum_4_0 = mm_mullo_epi32(v_4_0, u_4_0);
+										sum_4_8 = mm_mullo_epi32(v_4_8, u_4_8);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 4));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 12));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+										u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2));
+										u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 4));
+										u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 8));
+										u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_2 + 12));
+										u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+										u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+										u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+										u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+
+										u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3));
+										u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 4));
+										u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 8));
+										u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_3 + 12));
+										u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+										u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+										u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+										u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+
+										u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4));
+										u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 4));
+										u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 8));
+										u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_4 + 12));
+										u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+										u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+										u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+										u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 4));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 12));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+										v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2));
+										v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 4));
+										v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 8));
+										v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_2 + 12));
+										v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+										v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+										v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+										v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+
+										v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3));
+										v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 4));
+										v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 8));
+										v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_3 + 12));
+										v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+										v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+										v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+										v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+
+										v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4));
+										v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 4));
+										v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 8));
+										v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_4 + 12));
+										v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+										v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+										v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+										v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_4 = mm_mullo_epi32(v_1_4, u_1_4);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_1_12 = mm_mullo_epi32(v_1_12, u_1_12);
+
+										sum_2_0 = mm_mullo_epi32(v_2_0, u_2_0);
+										sum_2_4 = mm_mullo_epi32(v_2_4, u_2_4);
+										sum_2_8 = mm_mullo_epi32(v_2_8, u_2_8);
+										sum_2_12 = mm_mullo_epi32(v_2_12, u_2_12);
+
+										sum_3_0 = mm_mullo_epi32(v_3_0, u_3_0);
+										sum_3_4 = mm_mullo_epi32(v_3_4, u_3_4);
+										sum_3_8 = mm_mullo_epi32(v_3_8, u_3_8);
+										sum_3_12 = mm_mullo_epi32(v_3_12, u_3_12);
+
+										sum_4_0 = mm_mullo_epi32(v_4_0, u_4_0);
+										sum_4_4 = mm_mullo_epi32(v_4_4, u_4_4);
+										sum_4_8 = mm_mullo_epi32(v_4_8, u_4_8);
+										sum_4_12 = mm_mullo_epi32(v_4_12, u_4_12);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 4), sum_2_4);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)(mult_data_2 + 12), sum_2_12);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 4), sum_3_4);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)(mult_data_3 + 12), sum_3_12);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 4), sum_4_4);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+										mm_store_si((mm_typei*)(mult_data_4 + 12), sum_4_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_int16_data[U_offset_och_1 + i] * V_int16_data[V_offset_och_row_col_1 + i];
+											mult_data_2[i] = U_int16_data[U_offset_och_2 + i] * V_int16_data[V_offset_och_row_col_2 + i];
+											mult_data_3[i] = U_int16_data[U_offset_och_3 + i] * V_int16_data[V_offset_och_row_col_3 + i];
+											mult_data_4[i] = U_int16_data[U_offset_och_4 + i] * V_int16_data[V_offset_och_row_col_4 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+#endif
+
+									int U_offset_och_1 = och * tile_length_;
+									int V_offset_och_1 = och * h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									int result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1));
+										u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 4));
+										u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 8));
+										u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_1 + 12));
+										u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+										u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+										u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+										u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+										v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1));
+										v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 4));
+										v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 8));
+										v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_och_row_col_1 + 12));
+										v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+										v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+										v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+										v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+										sum_1_0 = mm_mullo_epi32(v_1_0, u_1_0);
+										sum_1_4 = mm_mullo_epi32(v_1_4, u_1_4);
+										sum_1_8 = mm_mullo_epi32(v_1_8, u_1_8);
+										sum_1_12 = mm_mullo_epi32(v_1_12, u_1_12);
+
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_int16_data[U_offset_och_1 + i] * V_int16_data[V_offset_och_row_col_1 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+
+								int offset = top_dim_ / group_;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								int circle_num = offset / mm_align_size;
+								for (int j = 0; j < group_; j++)
+								{
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									mm_type scale = mm_set1_ps(1.0f / total_scale);
+
+									int index = 0;
+									for (; index < circle_num; index++)
+									{
+										int index_offset = index * mm_align_size;
+										mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
+										mm_type temp2 = mm_cvtepi32_ps(temp1);
+										mm_type res = mm_mul_ps(temp2, scale);
+										mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
+									}
+
+									for (index = index * mm_align_size; index < offset; index++)
+									{
+										top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									}
+								}
+#else
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int j = 0; j < group_; j++)
+								{
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									for (int index = 0; index < offset; index++)
+									{
+										top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
+									}
+								}
+#endif
+
+								math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
+								if (bias_term_)
+								{
+									forward_bias(top_data + top_offset_num, bias_data);
+								}
 							}
+						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else if (group_ == 1)
+					{
+						int U_offset_single_och = input_Channel_ * tile_length_;
+
+						for (int n = 0; n < num_; n++)
+						{
+							int bottom_offset_num = n * bottom_dim_;
+							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_inch; nn++)
+								{
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+
+										const signed char *row_data2_1 = bottom_int8_data + bottom_offset_num_ich_row_col_2;
+										const signed char *row_data2_2 = row_data2_1 + input_dim_w_;
+										const signed char *row_data2_3 = row_data2_2 + input_dim_w_;
+										const signed char *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_int16_data + V_offset_ich_row_col_2);
+
+										const signed char *row_data3_1 = bottom_int8_data + bottom_offset_num_ich_row_col_3;
+										const signed char *row_data3_2 = row_data3_1 + input_dim_w_;
+										const signed char *row_data3_3 = row_data3_2 + input_dim_w_;
+										const signed char *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_int16_data + V_offset_ich_row_col_3);
+
+										const signed char *row_data4_1 = bottom_int8_data + bottom_offset_num_ich_row_col_4;
+										const signed char *row_data4_2 = row_data4_1 + input_dim_w_;
+										const signed char *row_data4_3 = row_data4_2 + input_dim_w_;
+										const signed char *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_int16_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const signed char *row_data1_1 = bottom_int8_data + bottom_offset_num_ich_row_col_1;
+										const signed char *row_data1_2 = row_data1_1 + input_dim_w_;
+										const signed char *row_data1_3 = row_data1_2 + input_dim_w_;
+										const signed char *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_int16_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei sum_2_0;
+									mm_typei sum_2_8;
+									mm_typei sum_3_0;
+									mm_typei sum_3_8;
+									mm_typei sum_4_0;
+									mm_typei sum_4_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_1_16;
+									mm_typei u_1_24;
+									mm_typei u_1_32;
+									mm_typei u_1_40;
+									mm_typei u_1_48;
+									mm_typei u_1_56;
+									mm_typei u_2_0;
+									mm_typei u_2_8;
+									mm_typei u_2_16;
+									mm_typei u_2_24;
+									mm_typei u_2_32;
+									mm_typei u_2_40;
+									mm_typei u_2_48;
+									mm_typei u_2_56;
+									mm_typei u_3_0;
+									mm_typei u_3_8;
+									mm_typei u_3_16;
+									mm_typei u_3_24;
+									mm_typei u_3_32;
+									mm_typei u_3_40;
+									mm_typei u_3_48;
+									mm_typei u_3_56;
+									mm_typei u_4_0;
+									mm_typei u_4_8;
+									mm_typei u_4_16;
+									mm_typei u_4_24;
+									mm_typei u_4_32;
+									mm_typei u_4_40;
+									mm_typei u_4_48;
+									mm_typei u_4_56;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_1_16_int16;
+									__m128i u_1_24_int16;
+									__m128i u_1_32_int16;
+									__m128i u_1_40_int16;
+									__m128i u_1_48_int16;
+									__m128i u_1_56_int16;
+									__m128i u_2_0_int16;
+									__m128i u_2_8_int16;
+									__m128i u_2_16_int16;
+									__m128i u_2_24_int16;
+									__m128i u_2_32_int16;
+									__m128i u_2_40_int16;
+									__m128i u_2_48_int16;
+									__m128i u_2_56_int16;
+									__m128i u_3_0_int16;
+									__m128i u_3_8_int16;
+									__m128i u_3_16_int16;
+									__m128i u_3_24_int16;
+									__m128i u_3_32_int16;
+									__m128i u_3_40_int16;
+									__m128i u_3_48_int16;
+									__m128i u_3_56_int16;
+									__m128i u_4_0_int16;
+									__m128i u_4_8_int16;
+									__m128i u_4_16_int16;
+									__m128i u_4_24_int16;
+									__m128i u_4_32_int16;
+									__m128i u_4_40_int16;
+									__m128i u_4_48_int16;
+									__m128i u_4_56_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei sum_2_0;
+									mm_typei sum_2_4;
+									mm_typei sum_2_8;
+									mm_typei sum_2_12;
+									mm_typei sum_3_0;
+									mm_typei sum_3_4;
+									mm_typei sum_3_8;
+									mm_typei sum_3_12;
+									mm_typei sum_4_0;
+									mm_typei sum_4_4;
+									mm_typei sum_4_8;
+									mm_typei sum_4_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_16;
+									mm_typei u_1_20;
+									mm_typei u_1_24;
+									mm_typei u_1_28;
+									mm_typei u_1_32;
+									mm_typei u_1_36;
+									mm_typei u_1_40;
+									mm_typei u_1_44;
+									mm_typei u_1_48;
+									mm_typei u_1_52;
+									mm_typei u_1_56;
+									mm_typei u_1_60;
+									mm_typei u_2_0;
+									mm_typei u_2_4;
+									mm_typei u_2_8;
+									mm_typei u_2_12;
+									mm_typei u_2_16;
+									mm_typei u_2_20;
+									mm_typei u_2_24;
+									mm_typei u_2_28;
+									mm_typei u_2_32;
+									mm_typei u_2_36;
+									mm_typei u_2_40;
+									mm_typei u_2_44;
+									mm_typei u_2_48;
+									mm_typei u_2_52;
+									mm_typei u_2_56;
+									mm_typei u_2_60;
+									mm_typei u_3_0;
+									mm_typei u_3_4;
+									mm_typei u_3_8;
+									mm_typei u_3_12;
+									mm_typei u_3_16;
+									mm_typei u_3_20;
+									mm_typei u_3_24;
+									mm_typei u_3_28;
+									mm_typei u_3_32;
+									mm_typei u_3_36;
+									mm_typei u_3_40;
+									mm_typei u_3_44;
+									mm_typei u_3_48;
+									mm_typei u_3_52;
+									mm_typei u_3_56;
+									mm_typei u_3_60;
+									mm_typei u_4_0;
+									mm_typei u_4_4;
+									mm_typei u_4_8;
+									mm_typei u_4_12;
+									mm_typei u_4_16;
+									mm_typei u_4_20;
+									mm_typei u_4_24;
+									mm_typei u_4_28;
+									mm_typei u_4_32;
+									mm_typei u_4_36;
+									mm_typei u_4_40;
+									mm_typei u_4_44;
+									mm_typei u_4_48;
+									mm_typei u_4_52;
+									mm_typei u_4_56;
+									mm_typei u_4_60;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_1_16_int16;
+									mm_typei u_1_20_int16;
+									mm_typei u_1_24_int16;
+									mm_typei u_1_28_int16;
+									mm_typei u_1_32_int16;
+									mm_typei u_1_36_int16;
+									mm_typei u_1_40_int16;
+									mm_typei u_1_44_int16;
+									mm_typei u_1_48_int16;
+									mm_typei u_1_52_int16;
+									mm_typei u_1_56_int16;
+									mm_typei u_1_60_int16;
+									mm_typei u_2_0_int16;
+									mm_typei u_2_4_int16;
+									mm_typei u_2_8_int16;
+									mm_typei u_2_12_int16;
+									mm_typei u_2_16_int16;
+									mm_typei u_2_20_int16;
+									mm_typei u_2_24_int16;
+									mm_typei u_2_28_int16;
+									mm_typei u_2_32_int16;
+									mm_typei u_2_36_int16;
+									mm_typei u_2_40_int16;
+									mm_typei u_2_44_int16;
+									mm_typei u_2_48_int16;
+									mm_typei u_2_52_int16;
+									mm_typei u_2_56_int16;
+									mm_typei u_2_60_int16;
+									mm_typei u_3_0_int16;
+									mm_typei u_3_4_int16;
+									mm_typei u_3_8_int16;
+									mm_typei u_3_12_int16;
+									mm_typei u_3_16_int16;
+									mm_typei u_3_20_int16;
+									mm_typei u_3_24_int16;
+									mm_typei u_3_28_int16;
+									mm_typei u_3_32_int16;
+									mm_typei u_3_36_int16;
+									mm_typei u_3_40_int16;
+									mm_typei u_3_44_int16;
+									mm_typei u_3_48_int16;
+									mm_typei u_3_52_int16;
+									mm_typei u_3_56_int16;
+									mm_typei u_3_60_int16;
+									mm_typei u_4_0_int16;
+									mm_typei u_4_4_int16;
+									mm_typei u_4_8_int16;
+									mm_typei u_4_12_int16;
+									mm_typei u_4_16_int16;
+									mm_typei u_4_20_int16;
+									mm_typei u_4_24_int16;
+									mm_typei u_4_28_int16;
+									mm_typei u_4_32_int16;
+									mm_typei u_4_36_int16;
+									mm_typei u_4_40_int16;
+									mm_typei u_4_44_int16;
+									mm_typei u_4_48_int16;
+									mm_typei u_4_52_int16;
+									mm_typei u_4_56_int16;
+									mm_typei u_4_60_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * U_offset_single_och;
+									int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+									int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+									int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									int result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int mult_data_2[16] = { 0 };
+										int mult_data_3[16] = { 0 };
+										int mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_2_0 = mm_setzero_si();
+										sum_2_8 = mm_setzero_si();
+										sum_3_0 = mm_setzero_si();
+										sum_3_8 = mm_setzero_si();
+										sum_4_0 = mm_setzero_si();
+										sum_4_8 = mm_setzero_si();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_si();
+										sum_1_4 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_1_12 = mm_setzero_si();
+										sum_2_0 = mm_setzero_si();
+										sum_2_4 = mm_setzero_si();
+										sum_2_8 = mm_setzero_si();
+										sum_2_12 = mm_setzero_si();
+										sum_3_0 = mm_setzero_si();
+										sum_3_4 = mm_setzero_si();
+										sum_3_8 = mm_setzero_si();
+										sum_3_12 = mm_setzero_si();
+										sum_4_0 = mm_setzero_si();
+										sum_4_4 = mm_setzero_si();
+										sum_4_8 = mm_setzero_si();
+										sum_4_12 = mm_setzero_si();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 16));
+											u_2_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 24));
+											u_2_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 32));
+											u_2_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 40));
+											u_2_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 48));
+											u_2_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 56));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_16 = mm_cvtepi16_epi32(u_2_16_int16);
+											u_2_24 = mm_cvtepi16_epi32(u_2_24_int16);
+											u_2_32 = mm_cvtepi16_epi32(u_2_32_int16);
+											u_2_40 = mm_cvtepi16_epi32(u_2_40_int16);
+											u_2_48 = mm_cvtepi16_epi32(u_2_48_int16);
+											u_2_56 = mm_cvtepi16_epi32(u_2_56_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 16));
+											u_3_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 24));
+											u_3_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 32));
+											u_3_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 40));
+											u_3_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 48));
+											u_3_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 56));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_16 = mm_cvtepi16_epi32(u_3_16_int16);
+											u_3_24 = mm_cvtepi16_epi32(u_3_24_int16);
+											u_3_32 = mm_cvtepi16_epi32(u_3_32_int16);
+											u_3_40 = mm_cvtepi16_epi32(u_3_40_int16);
+											u_3_48 = mm_cvtepi16_epi32(u_3_48_int16);
+											u_3_56 = mm_cvtepi16_epi32(u_3_56_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 16));
+											u_4_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 24));
+											u_4_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 32));
+											u_4_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 40));
+											u_4_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 48));
+											u_4_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 56));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_16 = mm_cvtepi16_epi32(u_4_16_int16);
+											u_4_24 = mm_cvtepi16_epi32(u_4_24_int16);
+											u_4_32 = mm_cvtepi16_epi32(u_4_32_int16);
+											u_4_40 = mm_cvtepi16_epi32(u_4_40_int16);
+											u_4_48 = mm_cvtepi16_epi32(u_4_48_int16);
+											u_4_56 = mm_cvtepi16_epi32(u_4_56_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_0, v_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_8, v_1_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_16, v_2_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_24, v_2_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_32, v_3_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_40, v_3_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(u_1_48, v_4_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(u_1_56, v_4_8), sum_1_8);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_0, v_1_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_8, v_1_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_16, v_2_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_24, v_2_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_32, v_3_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_40, v_3_8), sum_2_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(u_2_48, v_4_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(u_2_56, v_4_8), sum_2_8);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_0, v_1_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_8, v_1_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_16, v_2_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_24, v_2_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_32, v_3_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_40, v_3_8), sum_3_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(u_3_48, v_4_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(u_3_56, v_4_8), sum_3_8);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_0, v_1_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_8, v_1_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_16, v_2_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_24, v_2_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_32, v_3_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_40, v_3_8), sum_4_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(u_4_48, v_4_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(u_4_56, v_4_8), sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 20));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 28));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 36));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 44));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 52));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 60));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_20 = mm_cvtepi16_epi32(u_1_20_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_28 = mm_cvtepi16_epi32(u_1_28_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_36 = mm_cvtepi16_epi32(u_1_36_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_44 = mm_cvtepi16_epi32(u_1_44_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_52 = mm_cvtepi16_epi32(u_1_52_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+											u_1_60 = mm_cvtepi16_epi32(u_1_60_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 4));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 12));
+											u_2_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 16));
+											u_2_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 20));
+											u_2_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 24));
+											u_2_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 28));
+											u_2_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 32));
+											u_2_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 36));
+											u_2_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 40));
+											u_2_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 44));
+											u_2_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 48));
+											u_2_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 52));
+											u_2_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 56));
+											u_2_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 60));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+											u_2_16 = mm_cvtepi16_epi32(u_2_16_int16);
+											u_2_20 = mm_cvtepi16_epi32(u_2_20_int16);
+											u_2_24 = mm_cvtepi16_epi32(u_2_24_int16);
+											u_2_28 = mm_cvtepi16_epi32(u_2_28_int16);
+											u_2_32 = mm_cvtepi16_epi32(u_2_32_int16);
+											u_2_36 = mm_cvtepi16_epi32(u_2_36_int16);
+											u_2_40 = mm_cvtepi16_epi32(u_2_40_int16);
+											u_2_44 = mm_cvtepi16_epi32(u_2_44_int16);
+											u_2_48 = mm_cvtepi16_epi32(u_2_48_int16);
+											u_2_52 = mm_cvtepi16_epi32(u_2_52_int16);
+											u_2_56 = mm_cvtepi16_epi32(u_2_56_int16);
+											u_2_60 = mm_cvtepi16_epi32(u_2_60_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 4));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 12));
+											u_3_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 16));
+											u_3_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 20));
+											u_3_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 24));
+											u_3_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 28));
+											u_3_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 32));
+											u_3_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 36));
+											u_3_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 40));
+											u_3_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 44));
+											u_3_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 48));
+											u_3_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 52));
+											u_3_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 56));
+											u_3_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 60));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+											u_3_16 = mm_cvtepi16_epi32(u_3_16_int16);
+											u_3_20 = mm_cvtepi16_epi32(u_3_20_int16);
+											u_3_24 = mm_cvtepi16_epi32(u_3_24_int16);
+											u_3_28 = mm_cvtepi16_epi32(u_3_28_int16);
+											u_3_32 = mm_cvtepi16_epi32(u_3_32_int16);
+											u_3_36 = mm_cvtepi16_epi32(u_3_36_int16);
+											u_3_40 = mm_cvtepi16_epi32(u_3_40_int16);
+											u_3_44 = mm_cvtepi16_epi32(u_3_44_int16);
+											u_3_48 = mm_cvtepi16_epi32(u_3_48_int16);
+											u_3_52 = mm_cvtepi16_epi32(u_3_52_int16);
+											u_3_56 = mm_cvtepi16_epi32(u_3_56_int16);
+											u_3_60 = mm_cvtepi16_epi32(u_3_60_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 12));
+											u_4_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 16));
+											u_4_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 20));
+											u_4_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 24));
+											u_4_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 28));
+											u_4_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 32));
+											u_4_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 36));
+											u_4_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 40));
+											u_4_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 44));
+											u_4_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 48));
+											u_4_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 52));
+											u_4_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 56));
+											u_4_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 60));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+											u_4_16 = mm_cvtepi16_epi32(u_4_16_int16);
+											u_4_20 = mm_cvtepi16_epi32(u_4_20_int16);
+											u_4_24 = mm_cvtepi16_epi32(u_4_24_int16);
+											u_4_28 = mm_cvtepi16_epi32(u_4_28_int16);
+											u_4_32 = mm_cvtepi16_epi32(u_4_32_int16);
+											u_4_36 = mm_cvtepi16_epi32(u_4_36_int16);
+											u_4_40 = mm_cvtepi16_epi32(u_4_40_int16);
+											u_4_44 = mm_cvtepi16_epi32(u_4_44_int16);
+											u_4_48 = mm_cvtepi16_epi32(u_4_48_int16);
+											u_4_52 = mm_cvtepi16_epi32(u_4_52_int16);
+											u_4_56 = mm_cvtepi16_epi32(u_4_56_int16);
+											u_4_60 = mm_cvtepi16_epi32(u_4_60_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 4));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 12));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 4));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 12));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 12));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+											v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_1_20), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_1_28), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_1_36), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_1_44), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_1_52), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_1_60), sum_1_12);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_2_4), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_2_12), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_2_16), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_2_20), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_2_24), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_2_28), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_2_32), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_2_36), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_2_40), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_2_44), sum_2_12);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_2_48), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_2_52), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_2_56), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_2_60), sum_2_12);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_3_4), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_3_12), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_3_16), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_3_20), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_3_24), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_3_28), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_3_32), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_3_36), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_3_40), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_3_44), sum_3_12);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_3_48), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_3_52), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_3_56), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_3_60), sum_3_12);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_4_4), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_4_12), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_4_16), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_4_20), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_4_24), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_4_28), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_4_32), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_4_36), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_4_40), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_4_44), sum_4_12);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_4_48), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_4_52), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_4_56), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_4_60), sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+											u_2_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2));
+											u_2_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 4));
+											u_2_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 8));
+											u_2_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_2 + 12));
+											u_2_0 = mm_cvtepi16_epi32(u_2_0_int16);
+											u_2_4 = mm_cvtepi16_epi32(u_2_4_int16);
+											u_2_8 = mm_cvtepi16_epi32(u_2_8_int16);
+											u_2_12 = mm_cvtepi16_epi32(u_2_12_int16);
+
+											u_3_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3));
+											u_3_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 4));
+											u_3_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 8));
+											u_3_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_3 + 12));
+											u_3_0 = mm_cvtepi16_epi32(u_3_0_int16);
+											u_3_4 = mm_cvtepi16_epi32(u_3_4_int16);
+											u_3_8 = mm_cvtepi16_epi32(u_3_8_int16);
+											u_3_12 = mm_cvtepi16_epi32(u_3_12_int16);
+
+											u_4_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4));
+											u_4_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 4));
+											u_4_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 8));
+											u_4_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_4 + 12));
+											u_4_0 = mm_cvtepi16_epi32(u_4_0_int16);
+											u_4_4 = mm_cvtepi16_epi32(u_4_4_int16);
+											u_4_8 = mm_cvtepi16_epi32(u_4_8_int16);
+											u_4_12 = mm_cvtepi16_epi32(u_4_12_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+
+											sum_2_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_2_0), sum_2_0);
+											sum_2_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_2_4), sum_2_4);
+											sum_2_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_2_8), sum_2_8);
+											sum_2_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_2_12), sum_2_12);
+
+											sum_3_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_3_0), sum_3_0);
+											sum_3_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_3_4), sum_3_4);
+											sum_3_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_3_8), sum_3_8);
+											sum_3_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_3_12), sum_3_12);
+
+											sum_4_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_4_0), sum_4_0);
+											sum_4_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_4_4), sum_4_4);
+											sum_4_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_4_8), sum_4_8);
+											sum_4_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_4_12), sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_int16_data[U_offset_och_ich_2 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_int16_data[U_offset_och_ich_3 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_int16_data[U_offset_och_ich_4 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}		
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+										mm_store_si((mm_typei*)mult_data_2, sum_2_0);
+										mm_store_si((mm_typei*)(mult_data_2 + 4), sum_2_4);
+										mm_store_si((mm_typei*)(mult_data_2 + 8), sum_2_8);
+										mm_store_si((mm_typei*)(mult_data_2 + 12), sum_2_12);
+										mm_store_si((mm_typei*)mult_data_3, sum_3_0);
+										mm_store_si((mm_typei*)(mult_data_3 + 4), sum_3_4);
+										mm_store_si((mm_typei*)(mult_data_3 + 8), sum_3_8);
+										mm_store_si((mm_typei*)(mult_data_3 + 12), sum_3_12);
+										mm_store_si((mm_typei*)mult_data_4, sum_4_0);
+										mm_store_si((mm_typei*)(mult_data_4 + 4), sum_4_4);
+										mm_store_si((mm_typei*)(mult_data_4 + 8), sum_4_8);
+										mm_store_si((mm_typei*)(mult_data_4 + 12), sum_4_12);
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col];
+												top_int32_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_typei sum_1_0;
+									mm_typei sum_1_8;
+									mm_typei u_1_0;
+									mm_typei u_1_8;
+									mm_typei u_1_16;
+									mm_typei u_1_24;
+									mm_typei u_1_32;
+									mm_typei u_1_40;
+									mm_typei u_1_48;
+									mm_typei u_1_56;
+									__m128i u_1_0_int16;
+									__m128i u_1_8_int16;
+									__m128i u_1_16_int16;
+									__m128i u_1_24_int16;
+									__m128i u_1_32_int16;
+									__m128i u_1_40_int16;
+									__m128i u_1_48_int16;
+									__m128i u_1_56_int16;									
+									mm_typei v_1_0;
+									mm_typei v_1_8;
+									mm_typei v_2_0;
+									mm_typei v_2_8;
+									mm_typei v_3_0;
+									mm_typei v_3_8;
+									mm_typei v_4_0;
+									mm_typei v_4_8;
+									__m128i v_1_0_int16;
+									__m128i v_1_8_int16;
+									__m128i v_2_0_int16;
+									__m128i v_2_8_int16;
+									__m128i v_3_0_int16;
+									__m128i v_3_8_int16;
+									__m128i v_4_0_int16;
+									__m128i v_4_8_int16;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_typei sum_1_0;
+									mm_typei sum_1_4;
+									mm_typei sum_1_8;
+									mm_typei sum_1_12;
+									mm_typei u_1_0;
+									mm_typei u_1_4;
+									mm_typei u_1_8;
+									mm_typei u_1_12;
+									mm_typei u_1_16;
+									mm_typei u_1_20;
+									mm_typei u_1_24;
+									mm_typei u_1_28;
+									mm_typei u_1_32;
+									mm_typei u_1_36;
+									mm_typei u_1_40;
+									mm_typei u_1_44;
+									mm_typei u_1_48;
+									mm_typei u_1_52;
+									mm_typei u_1_56;
+									mm_typei u_1_60;
+									mm_typei u_1_0_int16;
+									mm_typei u_1_4_int16;
+									mm_typei u_1_8_int16;
+									mm_typei u_1_12_int16;
+									mm_typei u_1_16_int16;
+									mm_typei u_1_20_int16;
+									mm_typei u_1_24_int16;
+									mm_typei u_1_28_int16;
+									mm_typei u_1_32_int16;
+									mm_typei u_1_36_int16;
+									mm_typei u_1_40_int16;
+									mm_typei u_1_44_int16;
+									mm_typei u_1_48_int16;
+									mm_typei u_1_52_int16;
+									mm_typei u_1_56_int16;
+									mm_typei u_1_60_int16;
+									mm_typei v_1_0;
+									mm_typei v_1_4;
+									mm_typei v_1_8;
+									mm_typei v_1_12;
+									mm_typei v_2_0;
+									mm_typei v_2_4;
+									mm_typei v_2_8;
+									mm_typei v_2_12;
+									mm_typei v_3_0;
+									mm_typei v_3_4;
+									mm_typei v_3_8;
+									mm_typei v_3_12;
+									mm_typei v_4_0;
+									mm_typei v_4_4;
+									mm_typei v_4_8;
+									mm_typei v_4_12;
+									mm_typei v_1_0_int16;
+									mm_typei v_1_4_int16;
+									mm_typei v_1_8_int16;
+									mm_typei v_1_12_int16;
+									mm_typei v_2_0_int16;
+									mm_typei v_2_4_int16;
+									mm_typei v_2_8_int16;
+									mm_typei v_2_12_int16;
+									mm_typei v_3_0_int16;
+									mm_typei v_3_4_int16;
+									mm_typei v_3_8_int16;
+									mm_typei v_3_12_int16;
+									mm_typei v_4_0_int16;
+									mm_typei v_4_4_int16;
+									mm_typei v_4_8_int16;
+									mm_typei v_4_12_int16;
+#endif
+
+									int U_offset_och_1 = och * U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									int result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_si();
+										sum_1_4 = mm_setzero_si();
+										sum_1_8 = mm_setzero_si();
+										sum_1_12 = mm_setzero_si();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_16_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 16));
+											u_1_20_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 20));
+											u_1_24_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 24));
+											u_1_28_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 28));
+											u_1_32_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 32));
+											u_1_36_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 36));
+											u_1_40_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 40));
+											u_1_44_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 44));
+											u_1_48_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 48));
+											u_1_52_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 52));
+											u_1_56_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 56));
+											u_1_60_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 60));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+											u_1_16 = mm_cvtepi16_epi32(u_1_16_int16);
+											u_1_20 = mm_cvtepi16_epi32(u_1_20_int16);
+											u_1_24 = mm_cvtepi16_epi32(u_1_24_int16);
+											u_1_28 = mm_cvtepi16_epi32(u_1_28_int16);
+											u_1_32 = mm_cvtepi16_epi32(u_1_32_int16);
+											u_1_36 = mm_cvtepi16_epi32(u_1_36_int16);
+											u_1_40 = mm_cvtepi16_epi32(u_1_40_int16);
+											u_1_44 = mm_cvtepi16_epi32(u_1_44_int16);
+											u_1_48 = mm_cvtepi16_epi32(u_1_48_int16);
+											u_1_52 = mm_cvtepi16_epi32(u_1_52_int16);
+											u_1_56 = mm_cvtepi16_epi32(u_1_56_int16);
+											u_1_60 = mm_cvtepi16_epi32(u_1_60_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+											v_2_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2));
+											v_2_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 4));
+											v_2_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 8));
+											v_2_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_2 + 12));
+											v_2_0 = mm_cvtepi16_epi32(v_2_0_int16);
+											v_2_4 = mm_cvtepi16_epi32(v_2_4_int16);
+											v_2_8 = mm_cvtepi16_epi32(v_2_8_int16);
+											v_2_12 = mm_cvtepi16_epi32(v_2_12_int16);
+											v_3_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3));
+											v_3_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 4));
+											v_3_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 8));
+											v_3_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_3 + 12));
+											v_3_0 = mm_cvtepi16_epi32(v_3_0_int16);
+											v_3_4 = mm_cvtepi16_epi32(v_3_4_int16);
+											v_3_8 = mm_cvtepi16_epi32(v_3_8_int16);
+											v_3_12 = mm_cvtepi16_epi32(v_3_12_int16);
+											v_4_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4));
+											v_4_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 4));
+											v_4_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 8));
+											v_4_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_4 + 12));
+											v_4_0 = mm_cvtepi16_epi32(v_4_0_int16);
+											v_4_4 = mm_cvtepi16_epi32(v_4_4_int16);
+											v_4_8 = mm_cvtepi16_epi32(v_4_8_int16);
+											v_4_12 = mm_cvtepi16_epi32(v_4_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_2_0, u_1_16), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_2_4, u_1_20), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_2_8, u_1_24), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_2_12, u_1_28), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_3_0, u_1_32), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_3_4, u_1_36), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_3_8, u_1_40), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_3_12, u_1_44), sum_1_12);
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_4_0, u_1_48), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_4_4, u_1_52), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_4_8, u_1_56), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_4_12, u_1_60), sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + tile_length_ + i] * V_int16_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_int16_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1));
+											u_1_4_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 4));
+											u_1_8_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 8));
+											u_1_12_int16 = _mm_load_si128((__m128i*)(U_int16_data + U_offset_och_ich_1 + 12));
+											u_1_0 = mm_cvtepi16_epi32(u_1_0_int16);
+											u_1_4 = mm_cvtepi16_epi32(u_1_4_int16);
+											u_1_8 = mm_cvtepi16_epi32(u_1_8_int16);
+											u_1_12 = mm_cvtepi16_epi32(u_1_12_int16);
+
+											v_1_0_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1));
+											v_1_4_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 4));
+											v_1_8_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 8));
+											v_1_12_int16 = _mm_load_si128((__m128i*)(V_int16_data + V_offset_ich_row_col_1 + 12));
+											v_1_0 = mm_cvtepi16_epi32(v_1_0_int16);
+											v_1_4 = mm_cvtepi16_epi32(v_1_4_int16);
+											v_1_8 = mm_cvtepi16_epi32(v_1_8_int16);
+											v_1_12 = mm_cvtepi16_epi32(v_1_12_int16);
+
+											sum_1_0 = mm_add_epi32(mm_mullo_epi32(v_1_0, u_1_0), sum_1_0);
+											sum_1_4 = mm_add_epi32(mm_mullo_epi32(v_1_4, u_1_4), sum_1_4);
+											sum_1_8 = mm_add_epi32(mm_mullo_epi32(v_1_8, u_1_8), sum_1_8);
+											sum_1_12 = mm_add_epi32(mm_mullo_epi32(v_1_12, u_1_12), sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_int16_data[U_offset_och_ich_1 + i] * V_int16_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_si((mm_typei*)mult_data_1, sum_1_0);
+										mm_store_si((mm_typei*)(mult_data_1 + 4), sum_1_4);
+										mm_store_si((mm_typei*)(mult_data_1 + 8), sum_1_8);
+										mm_store_si((mm_typei*)(mult_data_1 + 12), sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_int32_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col];
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+
+								int offset = top_dim_ / group_;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+								int circle_num = offset / mm_align_size;
+								for (int j = 0; j < group_; j++)
+								{
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									mm_type scale = mm_set1_ps(1.0f / total_scale);
+
+									int index = 0;
+									for (; index < circle_num; index++)
+									{
+										int index_offset = index * mm_align_size;
+										mm_typei temp1 = mm_load_si((mm_typei*)(top_int32_data + top_offset_num + j * offset + index_offset));
+										mm_type temp2 = mm_cvtepi32_ps(temp1);
+										mm_type res = mm_mul_ps(temp2, scale);
+										mm_store_ps(top_data + top_offset_num + j * offset + index_offset, res);
+									}
+
+									for (index = index * mm_align_size; index < offset; index++)
+									{
+										top_data[index + top_offset_num + j * offset] = top_int32_data[index + top_offset_num + j * offset] / total_scale;
+									}
+								}
+#else
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int j = 0; j < group_; j++)
+								{
+									float total_scale = scales_data[0] * scales_data[1 + j] * 4.0f;//we have multiply 4 in function: calculate_GgGT
+									for (int index = 0; index < offset; index++)
+									{
+										top_data[index + n * top_dim_ + j * offset] = top_int32_data[index + n * top_dim_ + j * offset] / total_scale;
+									}
+								}
+#endif
+
+								math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
+								if (bias_term_)
+								{
+									forward_bias(top_data + top_offset_num, bias_data);
+								}
+							}
+						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else
+					{
+						LOG(FATAL) << "group wrong!!!";
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+
+				delete V_int16_data;
+			}
+			else
+			{
+				//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
+				//V_.reset(new tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+				//V_data = V_->mutable_cpu_data();
+				V_data = new float[input_Channel_ * total_tile_num * tile_length_];
+
+				if ((order_ == NCHW) || (order_ == NHWC))
+				{
+					if (group_ > 1)
+					{
+						for (int n = 0; n < num_; n++)
+						{
+							int bottom_offset_num = n * bottom_dim_;
+							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_inch; nn++)
+								{
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										const float *row_data2_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										const float *row_data2_2 = row_data2_1 + input_dim_w_;
+										const float *row_data2_3 = row_data2_2 + input_dim_w_;
+										const float *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_data + V_offset_ich_row_col_2);
+
+										const float *row_data3_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										const float *row_data3_2 = row_data3_1 + input_dim_w_;
+										const float *row_data3_3 = row_data3_2 + input_dim_w_;
+										const float *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_data + V_offset_ich_row_col_3);
+
+										const float *row_data4_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										const float *row_data4_2 = row_data4_1 + input_dim_w_;
+										const float *row_data4_3 = row_data4_2 + input_dim_w_;
+										const float *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_2_0;
+									mm_type u_2_8;
+									mm_type u_3_0;
+									mm_type u_3_8;
+									mm_type u_4_0;
+									mm_type u_4_8;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type sum_2_0;
+									mm_type sum_2_4;
+									mm_type sum_2_8;
+									mm_type sum_2_12;
+									mm_type sum_3_0;
+									mm_type sum_3_4;
+									mm_type sum_3_8;
+									mm_type sum_3_12;
+									mm_type sum_4_0;
+									mm_type sum_4_4;
+									mm_type sum_4_8;
+									mm_type sum_4_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_2_0;
+									mm_type u_2_4;
+									mm_type u_2_8;
+									mm_type u_2_12;
+									mm_type u_3_0;
+									mm_type u_3_4;
+									mm_type u_3_8;
+									mm_type u_3_12;
+									mm_type u_4_0;
+									mm_type u_4_4;
+									mm_type u_4_8;
+									mm_type u_4_12;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * tile_length_;
+									int U_offset_och_2 = U_offset_och_1 + tile_length_;
+									int U_offset_och_3 = U_offset_och_2 + tile_length_;
+									int U_offset_och_4 = U_offset_och_3 + tile_length_;
+
+									int V_offset_och_1 = och * h_w_tile_stride;
+									int V_offset_och_2 = V_offset_och_1 + h_w_tile_stride;
+									int V_offset_och_3 = V_offset_och_2 + h_w_tile_stride;
+									int V_offset_och_4 = V_offset_och_3 + h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									float result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										float mult_data_2[16] = { 0 };
+										float mult_data_3[16] = { 0 };
+										float mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+										int V_offset_och_row_col_2 = V_offset_och_2 + V_offset_row_col;
+										int V_offset_och_row_col_3 = V_offset_och_3 + V_offset_row_col;
+										int V_offset_och_row_col_4 = V_offset_och_4 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_2_0 = mm_load_ps(U_data + U_offset_och_2);
+										u_2_8 = mm_load_ps(U_data + U_offset_och_2 + 8);
+										u_3_0 = mm_load_ps(U_data + U_offset_och_3);
+										u_3_8 = mm_load_ps(U_data + U_offset_och_3 + 8);
+										u_4_0 = mm_load_ps(U_data + U_offset_och_4);
+										u_4_8 = mm_load_ps(U_data + U_offset_och_4 + 8);
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_2_0 = mm_load_ps(V_data + V_offset_och_row_col_2);
+										v_2_8 = mm_load_ps(V_data + V_offset_och_row_col_2 + 8);
+										v_3_0 = mm_load_ps(V_data + V_offset_och_row_col_3);
+										v_3_8 = mm_load_ps(V_data + V_offset_och_row_col_3 + 8);
+										v_4_0 = mm_load_ps(V_data + V_offset_och_row_col_4);
+										v_4_8 = mm_load_ps(V_data + V_offset_och_row_col_4 + 8);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_2_0 = mm_mul_ps(v_2_0, u_2_0);
+										sum_2_8 = mm_mul_ps(v_2_8, u_2_8);
+										sum_3_0 = mm_mul_ps(v_3_0, u_3_0);
+										sum_3_8 = mm_mul_ps(v_3_8, u_3_8);
+										sum_4_0 = mm_mul_ps(v_4_0, u_4_0);
+										sum_4_8 = mm_mul_ps(v_4_8, u_4_8);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_4 = mm_load_ps(U_data + U_offset_och_1 + 4);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_1_12 = mm_load_ps(U_data + U_offset_och_1 + 12);
+
+										u_2_0 = mm_load_ps(U_data + U_offset_och_2);
+										u_2_4 = mm_load_ps(U_data + U_offset_och_2 + 4);
+										u_2_8 = mm_load_ps(U_data + U_offset_och_2 + 8);
+										u_2_12 = mm_load_ps(U_data + U_offset_och_2 + 12);
+
+										u_3_0 = mm_load_ps(U_data + U_offset_och_3);
+										u_3_4 = mm_load_ps(U_data + U_offset_och_3 + 4);
+										u_3_8 = mm_load_ps(U_data + U_offset_och_3 + 8);
+										u_3_12 = mm_load_ps(U_data + U_offset_och_3 + 12);
+
+										u_4_0 = mm_load_ps(U_data + U_offset_och_4);
+										u_4_4 = mm_load_ps(U_data + U_offset_och_4 + 4);
+										u_4_8 = mm_load_ps(U_data + U_offset_och_4 + 8);
+										u_4_12 = mm_load_ps(U_data + U_offset_och_4 + 12);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_4 = mm_load_ps(V_data + V_offset_och_row_col_1 + 4);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_1_12 = mm_load_ps(V_data + V_offset_och_row_col_1 + 12);
+
+										v_2_0 = mm_load_ps(V_data + V_offset_och_row_col_2);
+										v_2_4 = mm_load_ps(V_data + V_offset_och_row_col_2 + 4);
+										v_2_8 = mm_load_ps(V_data + V_offset_och_row_col_2 + 8);
+										v_2_12 = mm_load_ps(V_data + V_offset_och_row_col_2 + 12);
+
+										v_3_0 = mm_load_ps(V_data + V_offset_och_row_col_3);
+										v_3_4 = mm_load_ps(V_data + V_offset_och_row_col_3 + 4);
+										v_3_8 = mm_load_ps(V_data + V_offset_och_row_col_3 + 8);
+										v_3_12 = mm_load_ps(V_data + V_offset_och_row_col_3 + 12);
+
+										v_4_0 = mm_load_ps(V_data + V_offset_och_row_col_4);
+										v_4_4 = mm_load_ps(V_data + V_offset_och_row_col_4 + 4);
+										v_4_8 = mm_load_ps(V_data + V_offset_och_row_col_4 + 8);
+										v_4_12 = mm_load_ps(V_data + V_offset_och_row_col_4 + 12);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_4 = mm_mul_ps(v_1_4, u_1_4);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_1_12 = mm_mul_ps(v_1_12, u_1_12);
+
+										sum_2_0 = mm_mul_ps(v_2_0, u_2_0);
+										sum_2_4 = mm_mul_ps(v_2_4, u_2_4);
+										sum_2_8 = mm_mul_ps(v_2_8, u_2_8);
+										sum_2_12 = mm_mul_ps(v_2_12, u_2_12);
+
+										sum_3_0 = mm_mul_ps(v_3_0, u_3_0);
+										sum_3_4 = mm_mul_ps(v_3_4, u_3_4);
+										sum_3_8 = mm_mul_ps(v_3_8, u_3_8);
+										sum_3_12 = mm_mul_ps(v_3_12, u_3_12);
+
+										sum_4_0 = mm_mul_ps(v_4_0, u_4_0);
+										sum_4_4 = mm_mul_ps(v_4_4, u_4_4);
+										sum_4_8 = mm_mul_ps(v_4_8, u_4_8);
+										sum_4_12 = mm_mul_ps(v_4_12, u_4_12);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 4, sum_2_4);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_2 + 12, sum_2_12);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 4, sum_3_4);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_3 + 12, sum_3_12);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 4, sum_4_4);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+										mm_store_ps(mult_data_4 + 12, sum_4_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_data[U_offset_och_1 + i] * V_data[V_offset_och_row_col_1 + i];
+											mult_data_2[i] = U_data[U_offset_och_2 + i] * V_data[V_offset_och_row_col_2 + i];
+											mult_data_3[i] = U_data[U_offset_och_3 + i] * V_data[V_offset_och_row_col_3 + i];
+											mult_data_4[i] = U_data[U_offset_och_4 + i] * V_data[V_offset_och_row_col_4 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias_4;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type v_1_0;
+									mm_type v_1_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+#endif
+
+									int U_offset_och_1 = och * tile_length_;
+									int V_offset_och_1 = och * h_w_tile_stride;
+
+									float bias_1 = bias_data[och];
+									float result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+										int V_offset_och_row_col_1 = V_offset_och_1 + V_offset_row_col;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										u_1_0 = mm_load_ps(U_data + U_offset_och_1);
+										u_1_4 = mm_load_ps(U_data + U_offset_och_1 + 4);
+										u_1_8 = mm_load_ps(U_data + U_offset_och_1 + 8);
+										u_1_12 = mm_load_ps(U_data + U_offset_och_1 + 12);
+
+										v_1_0 = mm_load_ps(V_data + V_offset_och_row_col_1);
+										v_1_4 = mm_load_ps(V_data + V_offset_och_row_col_1 + 4);
+										v_1_8 = mm_load_ps(V_data + V_offset_och_row_col_1 + 8);
+										v_1_12 = mm_load_ps(V_data + V_offset_och_row_col_1 + 12);
+
+										sum_1_0 = mm_mul_ps(v_1_0, u_1_0);
+										sum_1_4 = mm_mul_ps(v_1_4, u_1_4);
+										sum_1_8 = mm_mul_ps(v_1_8, u_1_8);
+										sum_1_12 = mm_mul_ps(v_1_12, u_1_12);
+
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#else
+										for (int i = 0; i < tile_length_; i++)
+										{
+											mult_data_1[i] = U_data[U_offset_och_1 + i] * V_data[V_offset_och_row_col_1 + i];
+										}
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+							}
+						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else if (group_ == 1)
+					{
+						int U_offset_single_och = input_Channel_ * tile_length_;
+
+						for (int n = 0; n < num_; n++)
+						{
+							int bottom_offset_num = n * bottom_dim_;
+							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_inch; nn++)
+								{
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+
+										const float *row_data2_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										const float *row_data2_2 = row_data2_1 + input_dim_w_;
+										const float *row_data2_3 = row_data2_2 + input_dim_w_;
+										const float *row_data2_4 = row_data2_3 + input_dim_w_;
+										calculate_BTdB23(row_data2_1, row_data2_2, row_data2_3, row_data2_4, V_data + V_offset_ich_row_col_2);
+
+										const float *row_data3_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										const float *row_data3_2 = row_data3_1 + input_dim_w_;
+										const float *row_data3_3 = row_data3_2 + input_dim_w_;
+										const float *row_data3_4 = row_data3_3 + input_dim_w_;
+										calculate_BTdB23(row_data3_1, row_data3_2, row_data3_3, row_data3_4, V_data + V_offset_ich_row_col_3);
+
+										const float *row_data4_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										const float *row_data4_2 = row_data4_1 + input_dim_w_;
+										const float *row_data4_3 = row_data4_2 + input_dim_w_;
+										const float *row_data4_4 = row_data4_3 + input_dim_w_;
+										calculate_BTdB23(row_data4_1, row_data4_2, row_data4_3, row_data4_4, V_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										calculate_BTdB23(row_data1_1, row_data1_2, row_data1_3, row_data1_4, V_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									mm_type u_1_32;
+									mm_type u_1_40;
+									mm_type u_1_48;
+									mm_type u_1_56;
+									mm_type u_2_0;
+									mm_type u_2_8;
+									mm_type u_2_16;
+									mm_type u_2_24;
+									mm_type u_2_32;
+									mm_type u_2_40;
+									mm_type u_2_48;
+									mm_type u_2_56;
+									mm_type u_3_0;
+									mm_type u_3_8;
+									mm_type u_3_16;
+									mm_type u_3_24;
+									mm_type u_3_32;
+									mm_type u_3_40;
+									mm_type u_3_48;
+									mm_type u_3_56;
+									mm_type u_4_0;
+									mm_type u_4_8;
+									mm_type u_4_16;
+									mm_type u_4_24;
+									mm_type u_4_32;
+									mm_type u_4_40;
+									mm_type u_4_48;
+									mm_type u_4_56;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type sum_2_0;
+									mm_type sum_2_4;
+									mm_type sum_2_8;
+									mm_type sum_2_12;
+									mm_type sum_3_0;
+									mm_type sum_3_4;
+									mm_type sum_3_8;
+									mm_type sum_3_12;
+									mm_type sum_4_0;
+									mm_type sum_4_4;
+									mm_type sum_4_8;
+									mm_type sum_4_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type u_2_0;
+									mm_type u_2_4;
+									mm_type u_2_8;
+									mm_type u_2_12;
+									mm_type u_2_16;
+									mm_type u_2_20;
+									mm_type u_2_24;
+									mm_type u_2_28;
+									mm_type u_2_32;
+									mm_type u_2_36;
+									mm_type u_2_40;
+									mm_type u_2_44;
+									mm_type u_2_48;
+									mm_type u_2_52;
+									mm_type u_2_56;
+									mm_type u_2_60;
+									mm_type u_3_0;
+									mm_type u_3_4;
+									mm_type u_3_8;
+									mm_type u_3_12;
+									mm_type u_3_16;
+									mm_type u_3_20;
+									mm_type u_3_24;
+									mm_type u_3_28;
+									mm_type u_3_32;
+									mm_type u_3_36;
+									mm_type u_3_40;
+									mm_type u_3_44;
+									mm_type u_3_48;
+									mm_type u_3_52;
+									mm_type u_3_56;
+									mm_type u_3_60;
+									mm_type u_4_0;
+									mm_type u_4_4;
+									mm_type u_4_8;
+									mm_type u_4_12;
+									mm_type u_4_16;
+									mm_type u_4_20;
+									mm_type u_4_24;
+									mm_type u_4_28;
+									mm_type u_4_32;
+									mm_type u_4_36;
+									mm_type u_4_40;
+									mm_type u_4_44;
+									mm_type u_4_48;
+									mm_type u_4_52;
+									mm_type u_4_56;
+									mm_type u_4_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * U_offset_single_och;
+									int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+									int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+									int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									float result_1[4], result_2[4], result_3[4], result_4[4];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										float mult_data_2[16] = { 0 };
+										float mult_data_3[16] = { 0 };
+										float mult_data_4[16] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_2_0 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_3_0 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_4_0 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+										sum_2_0 = mm_setzero_ps();
+										sum_2_4 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_2_12 = mm_setzero_ps();
+										sum_3_0 = mm_setzero_ps();
+										sum_3_4 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_3_12 = mm_setzero_ps();
+										sum_4_0 = mm_setzero_ps();
+										sum_4_4 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+										sum_4_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_2_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_2_32 = mm_load_ps(U_data + U_offset_och_ich_2 + 32);
+											u_2_40 = mm_load_ps(U_data + U_offset_och_ich_2 + 40);
+											u_2_48 = mm_load_ps(U_data + U_offset_och_ich_2 + 48);
+											u_2_56 = mm_load_ps(U_data + U_offset_och_ich_2 + 56);
+
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_3_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_3_32 = mm_load_ps(U_data + U_offset_och_ich_3 + 32);
+											u_3_40 = mm_load_ps(U_data + U_offset_och_ich_3 + 40);
+											u_3_48 = mm_load_ps(U_data + U_offset_och_ich_3 + 48);
+											u_3_56 = mm_load_ps(U_data + U_offset_och_ich_3 + 56);
+
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_4_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_4_32 = mm_load_ps(U_data + U_offset_och_ich_4 + 32);
+											u_4_40 = mm_load_ps(U_data + U_offset_och_ich_4 + 40);
+											u_4_48 = mm_load_ps(U_data + U_offset_och_ich_4 + 48);
+											u_4_56 = mm_load_ps(U_data + U_offset_och_ich_4 + 56);
+
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_2_16, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_2_24, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_2_32, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_2_40, sum_2_8);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_2_48, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_2_56, sum_2_8);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_3_16, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_3_24, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_3_32, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_3_40, sum_3_8);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_3_48, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_3_56, sum_3_8);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_4_16, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_4_24, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_4_32, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_4_40, sum_4_8);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_4_48, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_4_56, sum_4_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_4 = mm_load_ps(U_data + U_offset_och_ich_2 + 4);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_12 = mm_load_ps(U_data + U_offset_och_ich_2 + 12);
+											u_2_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_2_20 = mm_load_ps(U_data + U_offset_och_ich_2 + 20);
+											u_2_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_2_28 = mm_load_ps(U_data + U_offset_och_ich_2 + 28);
+											u_2_32 = mm_load_ps(U_data + U_offset_och_ich_2 + 32);
+											u_2_36 = mm_load_ps(U_data + U_offset_och_ich_2 + 36);
+											u_2_40 = mm_load_ps(U_data + U_offset_och_ich_2 + 40);
+											u_2_44 = mm_load_ps(U_data + U_offset_och_ich_2 + 44);
+											u_2_48 = mm_load_ps(U_data + U_offset_och_ich_2 + 48);
+											u_2_52 = mm_load_ps(U_data + U_offset_och_ich_2 + 52);
+											u_2_56 = mm_load_ps(U_data + U_offset_och_ich_2 + 56);
+											u_2_60 = mm_load_ps(U_data + U_offset_och_ich_2 + 60);
+
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_4 = mm_load_ps(U_data + U_offset_och_ich_3 + 4);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_12 = mm_load_ps(U_data + U_offset_och_ich_3 + 12);
+											u_3_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_3_20 = mm_load_ps(U_data + U_offset_och_ich_3 + 20);
+											u_3_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_3_28 = mm_load_ps(U_data + U_offset_och_ich_3 + 28);
+											u_3_32 = mm_load_ps(U_data + U_offset_och_ich_3 + 32);
+											u_3_36 = mm_load_ps(U_data + U_offset_och_ich_3 + 36);
+											u_3_40 = mm_load_ps(U_data + U_offset_och_ich_3 + 40);
+											u_3_44 = mm_load_ps(U_data + U_offset_och_ich_3 + 44);
+											u_3_48 = mm_load_ps(U_data + U_offset_och_ich_3 + 48);
+											u_3_52 = mm_load_ps(U_data + U_offset_och_ich_3 + 52);
+											u_3_56 = mm_load_ps(U_data + U_offset_och_ich_3 + 56);
+											u_3_60 = mm_load_ps(U_data + U_offset_och_ich_3 + 60);
+
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_4 = mm_load_ps(U_data + U_offset_och_ich_4 + 4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_12 = mm_load_ps(U_data + U_offset_och_ich_4 + 12);
+											u_4_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_4_20 = mm_load_ps(U_data + U_offset_och_ich_4 + 20);
+											u_4_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_4_28 = mm_load_ps(U_data + U_offset_och_ich_4 + 28);
+											u_4_32 = mm_load_ps(U_data + U_offset_och_ich_4 + 32);
+											u_4_36 = mm_load_ps(U_data + U_offset_och_ich_4 + 36);
+											u_4_40 = mm_load_ps(U_data + U_offset_och_ich_4 + 40);
+											u_4_44 = mm_load_ps(U_data + U_offset_och_ich_4 + 44);
+											u_4_48 = mm_load_ps(U_data + U_offset_och_ich_4 + 48);
+											u_4_52 = mm_load_ps(U_data + U_offset_och_ich_4 + 52);
+											u_4_56 = mm_load_ps(U_data + U_offset_och_ich_4 + 56);
+											u_4_60 = mm_load_ps(U_data + U_offset_och_ich_4 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_2_16, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_2_4, u_2_20, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_2_24, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_2_12, u_2_28, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_2_32, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_3_4, u_2_36, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_2_40, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_3_12, u_2_44, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_2_48, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_4_4, u_2_52, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_2_56, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_4_12, u_2_60, sum_2_12);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_3_16, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_2_4, u_3_20, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_3_24, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_2_12, u_3_28, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_3_32, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_3_4, u_3_36, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_3_40, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_3_12, u_3_44, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_3_48, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_4_4, u_3_52, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_3_56, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_4_12, u_3_60, sum_3_12);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_4_16, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_2_4, u_4_20, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_4_24, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_2_12, u_4_28, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_4_32, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_3_4, u_4_36, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_4_40, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_3_12, u_4_44, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_4_48, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_4_4, u_4_52, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_4_56, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_4_12, u_4_60, sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_4 = mm_load_ps(U_data + U_offset_och_ich_2 + 4);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_12 = mm_load_ps(U_data + U_offset_och_ich_2 + 12);
+
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_4 = mm_load_ps(U_data + U_offset_och_ich_3 + 4);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_12 = mm_load_ps(U_data + U_offset_och_ich_3 + 12);
+
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_4 = mm_load_ps(U_data + U_offset_och_ich_4 + 4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_12 = mm_load_ps(U_data + U_offset_och_ich_4 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 4, sum_2_4);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_2 + 12, sum_2_12);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 4, sum_3_4);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_3 + 12, sum_3_12);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 4, sum_4_4);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+										mm_store_ps(mult_data_4 + 12, sum_4_12);
+#endif
+
+										calculate_ATmA23(mult_data_1, result_1);
+										calculate_ATmA23(mult_data_2, result_2);
+										calculate_ATmA23(mult_data_3, result_3);
+										calculate_ATmA23(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias_4;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									mm_type u_1_32;
+									mm_type u_1_40;
+									mm_type u_1_48;
+									mm_type u_1_56;
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_4_0;
+									mm_type v_4_8;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int U_offset_och_1 = och * U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									float result_1[4];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[16] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA23(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+							}
+						}
+
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
+						}
+
+						//if (order_ == NHWC)
+						//{
+						//	tensor_operation_cpu::nchw2nhwc_cpu(top, top);
+						//}
+					}
+					else
+					{
+						LOG(FATAL) << "group wrong!!!";
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
+
+				delete V_data;
+			}
+		}
+#endif// HW_FIRST
+
+#ifdef _MSC_VER
+
+		void conv_winograd_cpu::Forward_F43(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		{
+			CHECK_EQ(kernelSize_, 3);
+			CHECK_EQ(stride_, 1);
+			order_ = bottom->order();
+			num_ = bottom->num();
+			input_dim_h_ = bottom->height();
+			input_dim_w_ = bottom->width();
+			output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+			output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
+
+			int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
+			int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
+			h_tile_num_ = int((float)h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
+			w_tile_num_ = int((float)w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
+			int total_tile_num = h_tile_num_ * w_tile_num_;
+			int w_tile_stride = w_tile_num_ * tile_length_;
+			int h_w_tile_stride = h_tile_num_ * w_tile_stride;
+			int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
+			int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
+			int add_h = h_aligned - h_subtract_tilesize;
+			int add_w = w_aligned - w_subtract_tilesize;
+
+			input_dim_w_ += 2 * pad_ + add_w;
+			input_dim_h_ += 2 * pad_ + add_h;
+			output_dim_w_ += add_w;
+			output_dim_h_ += add_h;
+			input_spatial_dim_ = input_dim_w_ * input_dim_h_;
+			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
+
+			std::shared_ptr<tensor<float>> bottom_bordered;
+			tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_ + add_h, pad_, pad_ + add_w);
+			bottom_data = bottom_bordered->cpu_data();
+			bottom_dim_ = bottom_bordered->count(1, 4);
+
+			top.reset(new tensor<float>(std::vector<int>{num_, output_Channel_, output_dim_h_, output_dim_w_}, device_, order_));
+			top_data = top->mutable_cpu_data();
+			top_dim_ = top->count(1, 4);
+
+			if (int8_quantization_)
+			{
+				NOT_IMPLEMENTED;
+			}
+			else
+			{
+				if (order_ == NCHW)
+				{
+					if (group_ > 1)
+					{
+						NOT_IMPLEMENTED;
+					}
+					else if (group_ == 1)
+					{
+						//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
+						//V_.reset(new tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+						//V_data = V_->mutable_cpu_data();
+						V_data = new float[input_Channel_ * total_tile_num * tile_length_];
+						int U_offset_single_och = input_Channel_ * tile_length_;
+
+						for (int n = 0; n < num_; n++)
+						{
+							int bottom_offset_num = n * bottom_dim_;
+							int top_offset_num = n * top_dim_;
+
+							//get transformed bottom_data: V
+							{
+								int nn_inch = input_Channel_ >> 2;
+								int remain_inch_start = nn_inch << 2;
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_inch; nn++)
+								{
+									int ich = nn * 4;
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int bottom_offset_num_ich_2 = bottom_offset_num_ich_1 + input_spatial_dim_;
+									int bottom_offset_num_ich_3 = bottom_offset_num_ich_2 + input_spatial_dim_;
+									int bottom_offset_num_ich_4 = bottom_offset_num_ich_3 + input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+									int V_offset_ich_2 = V_offset_ich_1 + h_w_tile_stride;
+									int V_offset_ich_3 = V_offset_ich_2 + h_w_tile_stride;
+									int V_offset_ich_4 = V_offset_ich_3 + h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_2 = bottom_offset_num_ich_2 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_3 = bottom_offset_num_ich_3 + bottom_offset_row_col;
+										int bottom_offset_num_ich_row_col_4 = bottom_offset_num_ich_4 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+										int V_offset_ich_row_col_2 = V_offset_ich_2 + tile_offset;
+										int V_offset_ich_row_col_3 = V_offset_ich_3 + tile_offset;
+										int V_offset_ich_row_col_4 = V_offset_ich_4 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										const float *row_data1_5 = row_data1_4 + input_dim_w_;
+										const float *row_data1_6 = row_data1_5 + input_dim_w_;
+										calculate_BTdB43(row_data1_1, row_data1_2, row_data1_3, row_data1_4, row_data1_5, row_data1_6, V_data + V_offset_ich_row_col_1);
+
+										const float *row_data2_1 = bottom_data + bottom_offset_num_ich_row_col_2;
+										const float *row_data2_2 = row_data2_1 + input_dim_w_;
+										const float *row_data2_3 = row_data2_2 + input_dim_w_;
+										const float *row_data2_4 = row_data2_3 + input_dim_w_;
+										const float *row_data2_5 = row_data2_4 + input_dim_w_;
+										const float *row_data2_6 = row_data2_5 + input_dim_w_;
+										calculate_BTdB43(row_data2_1, row_data2_2, row_data2_3, row_data2_4, row_data2_5, row_data2_6, V_data + V_offset_ich_row_col_2);
+
+										const float *row_data3_1 = bottom_data + bottom_offset_num_ich_row_col_3;
+										const float *row_data3_2 = row_data3_1 + input_dim_w_;
+										const float *row_data3_3 = row_data3_2 + input_dim_w_;
+										const float *row_data3_4 = row_data3_3 + input_dim_w_;
+										const float *row_data3_5 = row_data3_4 + input_dim_w_;
+										const float *row_data3_6 = row_data3_5 + input_dim_w_;
+										calculate_BTdB43(row_data3_1, row_data3_2, row_data3_3, row_data3_4, row_data3_5, row_data3_6, V_data + V_offset_ich_row_col_3);
+
+										const float *row_data4_1 = bottom_data + bottom_offset_num_ich_row_col_4;
+										const float *row_data4_2 = row_data4_1 + input_dim_w_;
+										const float *row_data4_3 = row_data4_2 + input_dim_w_;
+										const float *row_data4_4 = row_data4_3 + input_dim_w_;
+										const float *row_data4_5 = row_data4_4 + input_dim_w_;
+										const float *row_data4_6 = row_data4_5 + input_dim_w_;
+										calculate_BTdB43(row_data4_1, row_data4_2, row_data4_3, row_data4_4, row_data4_5, row_data4_6, V_data + V_offset_ich_row_col_4);
+									}
+								}
+
+								for (int ich = remain_inch_start; ich < input_Channel_; ich++)
+								{
+									int bottom_offset_num_ich_1 = bottom_offset_num + ich * input_spatial_dim_;
+									int V_offset_ich_1 = ich * h_w_tile_stride;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										int row_in_input_data = (i / w_tile_num_) * m_;
+										int col_in_input_data = (i % w_tile_num_) * m_;
+										int bottom_offset_row_col = row_in_input_data * input_dim_w_ + col_in_input_data;
+										int bottom_offset_num_ich_row_col_1 = bottom_offset_num_ich_1 + bottom_offset_row_col;
+
+										int tile_offset = i * tile_length_;
+										int V_offset_ich_row_col_1 = V_offset_ich_1 + tile_offset;
+
+										const float *row_data1_1 = bottom_data + bottom_offset_num_ich_row_col_1;
+										const float *row_data1_2 = row_data1_1 + input_dim_w_;
+										const float *row_data1_3 = row_data1_2 + input_dim_w_;
+										const float *row_data1_4 = row_data1_3 + input_dim_w_;
+										const float *row_data1_5 = row_data1_4 + input_dim_w_;
+										const float *row_data1_6 = row_data1_5 + input_dim_w_;
+										calculate_BTdB43(row_data1_1, row_data1_2, row_data1_3, row_data1_4, row_data1_5, row_data1_6, V_data + V_offset_ich_row_col_1);
+									}
+								}
+							}
+
+							//multiply
+							{
+								int nn_outch = output_Channel_ >> 2;
+								int remain_outch_start = nn_outch << 2;
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+								for (int nn = 0; nn < nn_outch; nn++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_1_16;
+									mm_type sum_1_24;
+									__m128 sum_1_32;
+									mm_type sum_2_0;
+									mm_type sum_2_8;
+									mm_type sum_2_16;
+									mm_type sum_2_24;
+									__m128 sum_2_32;
+									mm_type sum_3_0;
+									mm_type sum_3_8;
+									mm_type sum_3_16;
+									mm_type sum_3_24;
+									__m128 sum_3_32;
+									mm_type sum_4_0;
+									mm_type sum_4_8;
+									mm_type sum_4_16;
+									mm_type sum_4_24;
+									__m128 sum_4_32;
+
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									__m128 u_1_32;
+
+									mm_type u_1_36;
+									mm_type u_1_44;
+									mm_type u_1_52;
+									mm_type u_1_60;
+									__m128 u_1_68;
+
+									mm_type u_1_72;
+									mm_type u_1_80;
+									mm_type u_1_88;
+									mm_type u_1_96;
+									__m128 u_1_104;
+
+									mm_type u_1_108;
+									mm_type u_1_116;
+									mm_type u_1_124;
+									mm_type u_1_132;
+									__m128 u_1_140;
+
+									mm_type u_2_0;
+									mm_type u_2_8;
+									mm_type u_2_16;
+									mm_type u_2_24;
+									__m128 u_2_32;
+
+									mm_type u_2_36;
+									mm_type u_2_44;
+									mm_type u_2_52;
+									mm_type u_2_60;
+									__m128 u_2_68;
+
+									mm_type u_2_72;
+									mm_type u_2_80;
+									mm_type u_2_88;
+									mm_type u_2_96;
+									__m128 u_2_104;
+
+									mm_type u_2_108;
+									mm_type u_2_116;
+									mm_type u_2_124;
+									mm_type u_2_132;
+									__m128 u_2_140;
+
+									mm_type u_3_0;
+									mm_type u_3_8;
+									mm_type u_3_16;
+									mm_type u_3_24;
+									__m128 u_3_32;
+
+									mm_type u_3_36;
+									mm_type u_3_44;
+									mm_type u_3_52;
+									mm_type u_3_60;
+									__m128 u_3_68;
+
+									mm_type u_3_72;
+									mm_type u_3_80;
+									mm_type u_3_88;
+									mm_type u_3_96;
+									__m128 u_3_104;
+
+									mm_type u_3_108;
+									mm_type u_3_116;
+									mm_type u_3_124;
+									mm_type u_3_132;
+									__m128 u_3_140;
+
+									mm_type u_4_0;
+									mm_type u_4_8;
+									mm_type u_4_16;
+									mm_type u_4_24;
+									__m128 u_4_32;
+
+									mm_type u_4_36;
+									mm_type u_4_44;
+									mm_type u_4_52;
+									mm_type u_4_60;
+									__m128 u_4_68;
+
+									mm_type u_4_72;
+									mm_type u_4_80;
+									mm_type u_4_88;
+									mm_type u_4_96;
+									__m128 u_4_104;
+
+									mm_type u_4_108;
+									mm_type u_4_116;
+									mm_type u_4_124;
+									mm_type u_4_132;
+									__m128 u_4_140;
+
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_1_16;
+									mm_type v_1_24;
+									__m128 v_1_32;
+									
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_2_16;
+									mm_type v_2_24;
+									__m128 v_2_32;
+
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_3_16;
+									mm_type v_3_24;
+									__m128 v_3_32;
+
+									mm_type v_4_0;
+									mm_type v_4_8;
+									mm_type v_4_16;
+									mm_type v_4_24;
+									__m128 v_4_32;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type sum_2_0;
+									mm_type sum_2_4;
+									mm_type sum_2_8;
+									mm_type sum_2_12;
+									mm_type sum_3_0;
+									mm_type sum_3_4;
+									mm_type sum_3_8;
+									mm_type sum_3_12;
+									mm_type sum_4_0;
+									mm_type sum_4_4;
+									mm_type sum_4_8;
+									mm_type sum_4_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type u_2_0;
+									mm_type u_2_4;
+									mm_type u_2_8;
+									mm_type u_2_12;
+									mm_type u_2_16;
+									mm_type u_2_20;
+									mm_type u_2_24;
+									mm_type u_2_28;
+									mm_type u_2_32;
+									mm_type u_2_36;
+									mm_type u_2_40;
+									mm_type u_2_44;
+									mm_type u_2_48;
+									mm_type u_2_52;
+									mm_type u_2_56;
+									mm_type u_2_60;
+									mm_type u_3_0;
+									mm_type u_3_4;
+									mm_type u_3_8;
+									mm_type u_3_12;
+									mm_type u_3_16;
+									mm_type u_3_20;
+									mm_type u_3_24;
+									mm_type u_3_28;
+									mm_type u_3_32;
+									mm_type u_3_36;
+									mm_type u_3_40;
+									mm_type u_3_44;
+									mm_type u_3_48;
+									mm_type u_3_52;
+									mm_type u_3_56;
+									mm_type u_3_60;
+									mm_type u_4_0;
+									mm_type u_4_4;
+									mm_type u_4_8;
+									mm_type u_4_12;
+									mm_type u_4_16;
+									mm_type u_4_20;
+									mm_type u_4_24;
+									mm_type u_4_28;
+									mm_type u_4_32;
+									mm_type u_4_36;
+									mm_type u_4_40;
+									mm_type u_4_44;
+									mm_type u_4_48;
+									mm_type u_4_52;
+									mm_type u_4_56;
+									mm_type u_4_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int och = nn * 4;
+									int U_offset_och_1 = och * U_offset_single_och;
+									int U_offset_och_2 = U_offset_och_1 + U_offset_single_och;
+									int U_offset_och_3 = U_offset_och_2 + U_offset_single_och;
+									int U_offset_och_4 = U_offset_och_3 + U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									float bias_2 = bias_data[och + 1];
+									float bias_3 = bias_data[och + 2];
+									float bias_4 = bias_data[och + 3];
+									float result_1[16], result_2[16], result_3[16], result_4[16];
+
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+									int top_offset_num_och_2 = top_offset_num_och_1 + output_spatial_dim_;
+									int top_offset_num_och_3 = top_offset_num_och_2 + output_spatial_dim_;
+									int top_offset_num_och_4 = top_offset_num_och_3 + output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[36] = { 0 };
+										float mult_data_2[36] = { 0 };
+										float mult_data_3[36] = { 0 };
+										float mult_data_4[36] = { 0 };
+
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_16 = mm_setzero_ps();
+										sum_1_24 = mm_setzero_ps();
+										sum_1_32 = _mm_setzero_ps();
+										
+										sum_2_0 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_2_16 = mm_setzero_ps();
+										sum_2_24 = mm_setzero_ps();
+										sum_2_32 = _mm_setzero_ps();
+
+										sum_3_0 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_3_16 = mm_setzero_ps();
+										sum_3_24 = mm_setzero_ps();
+										sum_3_32 = _mm_setzero_ps();
+
+										sum_4_0 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+										sum_4_16 = mm_setzero_ps();
+										sum_4_24 = mm_setzero_ps();
+										sum_4_32 = _mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+										sum_2_0 = mm_setzero_ps();
+										sum_2_4 = mm_setzero_ps();
+										sum_2_8 = mm_setzero_ps();
+										sum_2_12 = mm_setzero_ps();
+										sum_3_0 = mm_setzero_ps();
+										sum_3_4 = mm_setzero_ps();
+										sum_3_8 = mm_setzero_ps();
+										sum_3_12 = mm_setzero_ps();
+										sum_4_0 = mm_setzero_ps();
+										sum_4_4 = mm_setzero_ps();
+										sum_4_8 = mm_setzero_ps();
+										sum_4_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											//u_1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 32);
+
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+											u_1_68 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 68);
+
+											u_1_72 = mm_load_ps(U_data + U_offset_och_ich_1 + 72);
+											u_1_80 = mm_load_ps(U_data + U_offset_och_ich_1 + 80);
+											u_1_88 = mm_load_ps(U_data + U_offset_och_ich_1 + 88);
+											u_1_96 = mm_load_ps(U_data + U_offset_och_ich_1 + 96);
+											u_1_104 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 104);
+
+											u_1_108 = mm_load_ps(U_data + U_offset_och_ich_1 + 108);
+											u_1_116 = mm_load_ps(U_data + U_offset_och_ich_1 + 116);
+											u_1_124 = mm_load_ps(U_data + U_offset_och_ich_1 + 124);
+											u_1_132 = mm_load_ps(U_data + U_offset_och_ich_1 + 132);
+											u_1_140 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 140);
+
+											//u_2
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_2_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_2_32 = _mm_loadu_ps(U_data + U_offset_och_ich_2 + 32);
+
+											u_2_36 = mm_load_ps(U_data + U_offset_och_ich_2 + 36);
+											u_2_44 = mm_load_ps(U_data + U_offset_och_ich_2 + 44);
+											u_2_52 = mm_load_ps(U_data + U_offset_och_ich_2 + 52);
+											u_2_60 = mm_load_ps(U_data + U_offset_och_ich_2 + 60);
+											u_2_68 = _mm_loadu_ps(U_data + U_offset_och_ich_2 + 68);
+
+											u_2_72 = mm_load_ps(U_data + U_offset_och_ich_2 + 72);
+											u_2_80 = mm_load_ps(U_data + U_offset_och_ich_2 + 80);
+											u_2_88 = mm_load_ps(U_data + U_offset_och_ich_2 + 88);
+											u_2_96 = mm_load_ps(U_data + U_offset_och_ich_2 + 96);
+											u_2_104 = _mm_loadu_ps(U_data + U_offset_och_ich_2 + 104);
+
+											u_2_108 = mm_load_ps(U_data + U_offset_och_ich_2 + 108);
+											u_2_116 = mm_load_ps(U_data + U_offset_och_ich_2 + 116);
+											u_2_124 = mm_load_ps(U_data + U_offset_och_ich_2 + 124);
+											u_2_132 = mm_load_ps(U_data + U_offset_och_ich_2 + 132);
+											u_2_140 = _mm_loadu_ps(U_data + U_offset_och_ich_2 + 140);
+
+											//u_3
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_3_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_3_32 = _mm_loadu_ps(U_data + U_offset_och_ich_3 + 32);
+
+											u_3_36 = mm_load_ps(U_data + U_offset_och_ich_3 + 36);
+											u_3_44 = mm_load_ps(U_data + U_offset_och_ich_3 + 44);
+											u_3_52 = mm_load_ps(U_data + U_offset_och_ich_3 + 52);
+											u_3_60 = mm_load_ps(U_data + U_offset_och_ich_3 + 60);
+											u_3_68 = _mm_loadu_ps(U_data + U_offset_och_ich_3 + 68);
+
+											u_3_72 = mm_load_ps(U_data + U_offset_och_ich_3 + 72);
+											u_3_80 = mm_load_ps(U_data + U_offset_och_ich_3 + 80);
+											u_3_88 = mm_load_ps(U_data + U_offset_och_ich_3 + 88);
+											u_3_96 = mm_load_ps(U_data + U_offset_och_ich_3 + 96);
+											u_3_104 = _mm_loadu_ps(U_data + U_offset_och_ich_3 + 104);
+
+											u_3_108 = mm_load_ps(U_data + U_offset_och_ich_3 + 108);
+											u_3_116 = mm_load_ps(U_data + U_offset_och_ich_3 + 116);
+											u_3_124 = mm_load_ps(U_data + U_offset_och_ich_3 + 124);
+											u_3_132 = mm_load_ps(U_data + U_offset_och_ich_3 + 132);
+											u_3_140 = _mm_loadu_ps(U_data + U_offset_och_ich_3 + 140);
+
+											//u_4
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_4_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_4_32 = _mm_loadu_ps(U_data + U_offset_och_ich_4 + 32);
+
+											u_4_36 = mm_load_ps(U_data + U_offset_och_ich_4 + 36);
+											u_4_44 = mm_load_ps(U_data + U_offset_och_ich_4 + 44);
+											u_4_52 = mm_load_ps(U_data + U_offset_och_ich_4 + 52);
+											u_4_60 = mm_load_ps(U_data + U_offset_och_ich_4 + 60);
+											u_4_68 = _mm_loadu_ps(U_data + U_offset_och_ich_4 + 68);
+
+											u_4_72 = mm_load_ps(U_data + U_offset_och_ich_4 + 72);
+											u_4_80 = mm_load_ps(U_data + U_offset_och_ich_4 + 80);
+											u_4_88 = mm_load_ps(U_data + U_offset_och_ich_4 + 88);
+											u_4_96 = mm_load_ps(U_data + U_offset_och_ich_4 + 96);
+											u_4_104 = _mm_loadu_ps(U_data + U_offset_och_ich_4 + 104);
+
+											u_4_108 = mm_load_ps(U_data + U_offset_och_ich_4 + 108);
+											u_4_116 = mm_load_ps(U_data + U_offset_och_ich_4 + 116);
+											u_4_124 = mm_load_ps(U_data + U_offset_och_ich_4 + 124);
+											u_4_132 = mm_load_ps(U_data + U_offset_och_ich_4 + 132);
+											u_4_140 = _mm_loadu_ps(U_data + U_offset_och_ich_4 + 140);
+
+											//v
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_16 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 16);
+											v_1_24 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 24);
+											v_1_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_1 + 32);
+
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_16 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 16);
+											v_2_24 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 24);
+											v_2_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_2 + 32);
+
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_16 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 16);
+											v_3_24 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 24);
+											v_3_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_3 + 32);
+
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_16 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 16);
+											v_4_24 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 24);
+											v_4_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_4 + 32);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_1_16, u_1_16, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_1_24, u_1_24, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_1_32, u_1_32, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_1_32), sum_1_32);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_36, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_44, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_2_16, u_1_52, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_2_24, u_1_60, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_2_32, u_1_68, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_2_32, u_1_68), sum_1_32);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_72, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_80, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_3_16, u_1_88, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_3_24, u_1_96, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_3_32, u_1_104, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_3_32, u_1_104), sum_1_32);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_108, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_116, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_4_16, u_1_124, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_4_24, u_1_132, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_4_32, u_1_140, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_4_32, u_1_140), sum_1_32);
+
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_16 = mm_fmadd_ps(v_1_16, u_2_16, sum_2_16);
+											sum_2_24 = mm_fmadd_ps(v_1_24, u_2_24, sum_2_24);
+											//sum_2_32 = mm_fmadd_ps(v_1_32, u_2_32, sum_2_32);
+											sum_2_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_2_32), sum_2_32);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_2_36, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_2_44, sum_2_8);
+											sum_2_16 = mm_fmadd_ps(v_2_16, u_2_52, sum_2_16);
+											sum_2_24 = mm_fmadd_ps(v_2_24, u_2_60, sum_2_24);
+											//sum_2_32 = mm_fmadd_ps(v_2_32, u_2_68, sum_2_32);
+											sum_2_32 = _mm_add_ps(_mm_mul_ps(v_2_32, u_2_68), sum_2_32);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_2_72, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_2_80, sum_2_8);
+											sum_2_16 = mm_fmadd_ps(v_3_16, u_2_88, sum_2_16);
+											sum_2_24 = mm_fmadd_ps(v_3_24, u_2_96, sum_2_24);
+											//sum_2_32 = mm_fmadd_ps(v_3_32, u_2_104, sum_2_32);
+											sum_2_32 = _mm_add_ps(_mm_mul_ps(v_3_32, u_2_104), sum_2_32);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_2_108, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_2_116, sum_2_8);
+											sum_2_16 = mm_fmadd_ps(v_4_16, u_2_124, sum_2_16);
+											sum_2_24 = mm_fmadd_ps(v_4_24, u_2_132, sum_2_24);
+											//sum_2_32 = mm_fmadd_ps(v_4_32, u_2_140, sum_2_32);
+											sum_2_32 = _mm_add_ps(_mm_mul_ps(v_4_32, u_2_140), sum_2_32);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_16 = mm_fmadd_ps(v_1_16, u_3_16, sum_3_16);
+											sum_3_24 = mm_fmadd_ps(v_1_24, u_3_24, sum_3_24);
+											//sum_3_32 = mm_fmadd_ps(v_1_32, u_3_32, sum_3_32);
+											sum_3_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_3_32), sum_3_32);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_3_36, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_3_44, sum_3_8);
+											sum_3_16 = mm_fmadd_ps(v_2_16, u_3_52, sum_3_16);
+											sum_3_24 = mm_fmadd_ps(v_2_24, u_3_60, sum_3_24);
+											//sum_3_32 = mm_fmadd_ps(v_2_32, u_3_68, sum_3_32);
+											sum_3_32 = _mm_add_ps(_mm_mul_ps(v_2_32, u_3_68), sum_3_32);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_3_72, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_3_80, sum_3_8);
+											sum_3_16 = mm_fmadd_ps(v_3_16, u_3_88, sum_3_16);
+											sum_3_24 = mm_fmadd_ps(v_3_24, u_3_96, sum_3_24);
+											//sum_3_32 = mm_fmadd_ps(v_3_32, u_3_104, sum_3_32);
+											sum_3_32 = _mm_add_ps(_mm_mul_ps(v_3_32, u_3_104), sum_3_32);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_3_108, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_3_116, sum_3_8);
+											sum_3_16 = mm_fmadd_ps(v_4_16, u_3_124, sum_3_16);
+											sum_3_24 = mm_fmadd_ps(v_4_24, u_3_132, sum_3_24);
+											//sum_3_32 = mm_fmadd_ps(v_4_32, u_3_140, sum_3_32);
+											sum_3_32 = _mm_add_ps(_mm_mul_ps(v_4_32, u_3_140), sum_3_32);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_16 = mm_fmadd_ps(v_1_16, u_4_16, sum_4_16);
+											sum_4_24 = mm_fmadd_ps(v_1_24, u_4_24, sum_4_24);
+											//sum_4_32 = mm_fmadd_ps(v_1_32, u_4_32, sum_4_32);
+											sum_4_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_4_32), sum_4_32);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_4_36, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_4_44, sum_4_8);
+											sum_4_16 = mm_fmadd_ps(v_2_16, u_4_52, sum_4_16);
+											sum_4_24 = mm_fmadd_ps(v_2_24, u_4_60, sum_4_24);
+											//sum_4_32 = mm_fmadd_ps(v_2_32, u_4_68, sum_4_32);
+											sum_4_32 = _mm_add_ps(_mm_mul_ps(v_2_32, u_4_68), sum_4_32);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_4_72, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_4_80, sum_4_8);
+											sum_4_16 = mm_fmadd_ps(v_3_16, u_4_88, sum_4_16);
+											sum_4_24 = mm_fmadd_ps(v_3_24, u_4_96, sum_4_24);
+											//sum_4_32 = mm_fmadd_ps(v_3_32, u_4_104, sum_4_32);
+											sum_4_32 = _mm_add_ps(_mm_mul_ps(v_3_32, u_4_104), sum_4_32);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_4_108, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_4_116, sum_4_8);
+											sum_4_16 = mm_fmadd_ps(v_4_16, u_4_124, sum_4_16);
+											sum_4_24 = mm_fmadd_ps(v_4_24, u_4_132, sum_4_24);
+											//sum_4_32 = mm_fmadd_ps(v_4_32, u_4_140, sum_4_32);
+											sum_4_32 = _mm_add_ps(_mm_mul_ps(v_4_32, u_4_140), sum_4_32);
+
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_4 = mm_load_ps(U_data + U_offset_och_ich_2 + 4);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_12 = mm_load_ps(U_data + U_offset_och_ich_2 + 12);
+											u_2_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_2_20 = mm_load_ps(U_data + U_offset_och_ich_2 + 20);
+											u_2_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_2_28 = mm_load_ps(U_data + U_offset_och_ich_2 + 28);
+											u_2_32 = mm_load_ps(U_data + U_offset_och_ich_2 + 32);
+											u_2_36 = mm_load_ps(U_data + U_offset_och_ich_2 + 36);
+											u_2_40 = mm_load_ps(U_data + U_offset_och_ich_2 + 40);
+											u_2_44 = mm_load_ps(U_data + U_offset_och_ich_2 + 44);
+											u_2_48 = mm_load_ps(U_data + U_offset_och_ich_2 + 48);
+											u_2_52 = mm_load_ps(U_data + U_offset_och_ich_2 + 52);
+											u_2_56 = mm_load_ps(U_data + U_offset_och_ich_2 + 56);
+											u_2_60 = mm_load_ps(U_data + U_offset_och_ich_2 + 60);
+
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_4 = mm_load_ps(U_data + U_offset_och_ich_3 + 4);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_12 = mm_load_ps(U_data + U_offset_och_ich_3 + 12);
+											u_3_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_3_20 = mm_load_ps(U_data + U_offset_och_ich_3 + 20);
+											u_3_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_3_28 = mm_load_ps(U_data + U_offset_och_ich_3 + 28);
+											u_3_32 = mm_load_ps(U_data + U_offset_och_ich_3 + 32);
+											u_3_36 = mm_load_ps(U_data + U_offset_och_ich_3 + 36);
+											u_3_40 = mm_load_ps(U_data + U_offset_och_ich_3 + 40);
+											u_3_44 = mm_load_ps(U_data + U_offset_och_ich_3 + 44);
+											u_3_48 = mm_load_ps(U_data + U_offset_och_ich_3 + 48);
+											u_3_52 = mm_load_ps(U_data + U_offset_och_ich_3 + 52);
+											u_3_56 = mm_load_ps(U_data + U_offset_och_ich_3 + 56);
+											u_3_60 = mm_load_ps(U_data + U_offset_och_ich_3 + 60);
+
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_4 = mm_load_ps(U_data + U_offset_och_ich_4 + 4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_12 = mm_load_ps(U_data + U_offset_och_ich_4 + 12);
+											u_4_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_4_20 = mm_load_ps(U_data + U_offset_och_ich_4 + 20);
+											u_4_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_4_28 = mm_load_ps(U_data + U_offset_och_ich_4 + 28);
+											u_4_32 = mm_load_ps(U_data + U_offset_och_ich_4 + 32);
+											u_4_36 = mm_load_ps(U_data + U_offset_och_ich_4 + 36);
+											u_4_40 = mm_load_ps(U_data + U_offset_och_ich_4 + 40);
+											u_4_44 = mm_load_ps(U_data + U_offset_och_ich_4 + 44);
+											u_4_48 = mm_load_ps(U_data + U_offset_och_ich_4 + 48);
+											u_4_52 = mm_load_ps(U_data + U_offset_och_ich_4 + 52);
+											u_4_56 = mm_load_ps(U_data + U_offset_och_ich_4 + 56);
+											u_4_60 = mm_load_ps(U_data + U_offset_och_ich_4 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_2_0, u_2_16, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_2_4, u_2_20, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_2_8, u_2_24, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_2_12, u_2_28, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_3_0, u_2_32, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_3_4, u_2_36, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_3_8, u_2_40, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_3_12, u_2_44, sum_2_12);
+											sum_2_0 = mm_fmadd_ps(v_4_0, u_2_48, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_4_4, u_2_52, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_4_8, u_2_56, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_4_12, u_2_60, sum_2_12);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_2_0, u_3_16, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_2_4, u_3_20, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_2_8, u_3_24, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_2_12, u_3_28, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_3_0, u_3_32, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_3_4, u_3_36, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_3_8, u_3_40, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_3_12, u_3_44, sum_3_12);
+											sum_3_0 = mm_fmadd_ps(v_4_0, u_3_48, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_4_4, u_3_52, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_4_8, u_3_56, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_4_12, u_3_60, sum_3_12);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_2_0, u_4_16, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_2_4, u_4_20, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_2_8, u_4_24, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_2_12, u_4_28, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_3_0, u_4_32, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_3_4, u_4_36, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_3_8, u_4_40, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_3_12, u_4_44, sum_4_12);
+											sum_4_0 = mm_fmadd_ps(v_4_0, u_4_48, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_4_4, u_4_52, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_4_8, u_4_56, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_4_12, u_4_60, sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int offset = ich * tile_length_;
+											int U_offset_och_ich_1 = U_offset_och_1 + offset;
+											int U_offset_och_ich_2 = U_offset_och_2 + offset;
+											int U_offset_och_ich_3 = U_offset_och_3 + offset;
+											int U_offset_och_ich_4 = U_offset_och_4 + offset;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											//u_1
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 32);
+
+											//u_2
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_16 = mm_load_ps(U_data + U_offset_och_ich_2 + 16);
+											u_2_24 = mm_load_ps(U_data + U_offset_och_ich_2 + 24);
+											u_2_32 = _mm_loadu_ps(U_data + U_offset_och_ich_2 + 32);
+
+											//u_3
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_16 = mm_load_ps(U_data + U_offset_och_ich_3 + 16);
+											u_3_24 = mm_load_ps(U_data + U_offset_och_ich_3 + 24);
+											u_3_32 = _mm_loadu_ps(U_data + U_offset_och_ich_3 + 32);
+
+											//u_4
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_16 = mm_load_ps(U_data + U_offset_och_ich_4 + 16);
+											u_4_24 = mm_load_ps(U_data + U_offset_och_ich_4 + 24);
+											u_4_32 = _mm_loadu_ps(U_data + U_offset_och_ich_4 + 32);
+
+											//v
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_16 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 16);
+											v_1_24 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 24);
+											v_1_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_1 + 32);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_1_16, u_1_16, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_1_24, u_1_24, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_1_32, u_1_32, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_1_32), sum_1_32);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_16 = mm_fmadd_ps(v_1_16, u_2_16, sum_2_16);
+											sum_2_24 = mm_fmadd_ps(v_1_24, u_2_24, sum_2_24);
+											//sum_2_32 = mm_fmadd_ps(v_1_32, u_2_32, sum_2_32);
+											sum_2_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_2_32), sum_2_32);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_16 = mm_fmadd_ps(v_1_16, u_3_16, sum_3_16);
+											sum_3_24 = mm_fmadd_ps(v_1_24, u_3_24, sum_3_24);
+											//sum_3_32 = mm_fmadd_ps(v_1_32, u_3_32, sum_3_32);
+											sum_3_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_3_32), sum_3_32);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_16 = mm_fmadd_ps(v_1_16, u_4_16, sum_4_16);
+											sum_4_24 = mm_fmadd_ps(v_1_24, u_4_24, sum_4_24);
+											//sum_4_32 = mm_fmadd_ps(v_1_32, u_4_32, sum_4_32);
+											sum_4_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_4_32), sum_4_32);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											u_2_0 = mm_load_ps(U_data + U_offset_och_ich_2);
+											u_2_4 = mm_load_ps(U_data + U_offset_och_ich_2 + 4);
+											u_2_8 = mm_load_ps(U_data + U_offset_och_ich_2 + 8);
+											u_2_12 = mm_load_ps(U_data + U_offset_och_ich_2 + 12);
+
+											u_3_0 = mm_load_ps(U_data + U_offset_och_ich_3);
+											u_3_4 = mm_load_ps(U_data + U_offset_och_ich_3 + 4);
+											u_3_8 = mm_load_ps(U_data + U_offset_och_ich_3 + 8);
+											u_3_12 = mm_load_ps(U_data + U_offset_och_ich_3 + 12);
+
+											u_4_0 = mm_load_ps(U_data + U_offset_och_ich_4);
+											u_4_4 = mm_load_ps(U_data + U_offset_och_ich_4 + 4);
+											u_4_8 = mm_load_ps(U_data + U_offset_och_ich_4 + 8);
+											u_4_12 = mm_load_ps(U_data + U_offset_och_ich_4 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+
+											sum_2_0 = mm_fmadd_ps(v_1_0, u_2_0, sum_2_0);
+											sum_2_4 = mm_fmadd_ps(v_1_4, u_2_4, sum_2_4);
+											sum_2_8 = mm_fmadd_ps(v_1_8, u_2_8, sum_2_8);
+											sum_2_12 = mm_fmadd_ps(v_1_12, u_2_12, sum_2_12);
+
+											sum_3_0 = mm_fmadd_ps(v_1_0, u_3_0, sum_3_0);
+											sum_3_4 = mm_fmadd_ps(v_1_4, u_3_4, sum_3_4);
+											sum_3_8 = mm_fmadd_ps(v_1_8, u_3_8, sum_3_8);
+											sum_3_12 = mm_fmadd_ps(v_1_12, u_3_12, sum_3_12);
+
+											sum_4_0 = mm_fmadd_ps(v_1_0, u_4_0, sum_4_0);
+											sum_4_4 = mm_fmadd_ps(v_1_4, u_4_4, sum_4_4);
+											sum_4_8 = mm_fmadd_ps(v_1_8, u_4_8, sum_4_8);
+											sum_4_12 = mm_fmadd_ps(v_1_12, u_4_12, sum_4_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_2[i] += U_data[U_offset_och_ich_2 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_3[i] += U_data[U_offset_och_ich_3 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_4[i] += U_data[U_offset_och_ich_4 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 16, sum_1_16);
+										mm_store_ps(mult_data_1 + 24, sum_1_24);
+										_mm_storeu_ps(mult_data_1 + 32, sum_1_32);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_2 + 16, sum_2_16);
+										mm_store_ps(mult_data_2 + 24, sum_2_24);
+										_mm_storeu_ps(mult_data_2 + 32, sum_2_32);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_3 + 16, sum_3_16);
+										mm_store_ps(mult_data_3 + 24, sum_3_24);
+										_mm_storeu_ps(mult_data_3 + 32, sum_3_32);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+										mm_store_ps(mult_data_4 + 16, sum_4_16);
+										mm_store_ps(mult_data_4 + 24, sum_4_24);
+										_mm_storeu_ps(mult_data_4 + 32, sum_4_32);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 4, sum_1_4);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 12, sum_1_12);
+										mm_store_ps(mult_data_2, sum_2_0);
+										mm_store_ps(mult_data_2 + 4, sum_2_4);
+										mm_store_ps(mult_data_2 + 8, sum_2_8);
+										mm_store_ps(mult_data_2 + 12, sum_2_12);
+										mm_store_ps(mult_data_3, sum_3_0);
+										mm_store_ps(mult_data_3 + 4, sum_3_4);
+										mm_store_ps(mult_data_3 + 8, sum_3_8);
+										mm_store_ps(mult_data_3 + 12, sum_3_12);
+										mm_store_ps(mult_data_4, sum_4_0);
+										mm_store_ps(mult_data_4 + 4, sum_4_4);
+										mm_store_ps(mult_data_4 + 8, sum_4_8);
+										mm_store_ps(mult_data_4 + 12, sum_4_12);
+#endif
+
+										calculate_ATmA43(mult_data_1, result_1);
+										calculate_ATmA43(mult_data_2, result_2);
+										calculate_ATmA43(mult_data_3, result_3);
+										calculate_ATmA43(mult_data_4, result_4);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+										int top_offset_num_och_row_col_2 = top_offset_num_och_2 + top_offset_row_col;
+										int top_offset_num_och_row_col_3 = top_offset_num_och_3 + top_offset_row_col;
+										int top_offset_num_och_row_col_4 = top_offset_num_och_4 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+												top_data[top_offset_num_och_row_col_2 + col] = result_2[result_offset_row + col] + bias_2;
+												top_data[top_offset_num_och_row_col_3 + col] = result_3[result_offset_row + col] + bias_3;
+												top_data[top_offset_num_och_row_col_4 + col] = result_4[result_offset_row + col] + bias_4;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+											top_offset_num_och_row_col_2 += output_dim_w_;
+											top_offset_num_och_row_col_3 += output_dim_w_;
+											top_offset_num_och_row_col_4 += output_dim_w_;
+										}
+									}
+								}
+
+								for (int och = remain_outch_start; och < output_Channel_; och++)
+								{
+#if SIMD_TYPE >= SIMDTYPE_AVX
+									mm_type sum_1_0;
+									mm_type sum_1_8;
+									mm_type sum_1_16;
+									mm_type sum_1_24;
+									__m128 sum_1_32;
+
+									mm_type u_1_0;
+									mm_type u_1_8;
+									mm_type u_1_16;
+									mm_type u_1_24;
+									__m128 u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_44;
+									mm_type u_1_52;
+									mm_type u_1_60;
+									__m128 u_1_68;
+									mm_type u_1_72;
+									mm_type u_1_80;
+									mm_type u_1_88;
+									mm_type u_1_96;
+									__m128 u_1_104;
+									mm_type u_1_108;
+									mm_type u_1_116;
+									mm_type u_1_124;
+									mm_type u_1_132;
+									__m128 u_1_140;
+
+									mm_type v_1_0;
+									mm_type v_1_8;
+									mm_type v_1_16;
+									mm_type v_1_24;
+									__m128 v_1_32;
+									mm_type v_2_0;
+									mm_type v_2_8;
+									mm_type v_2_16;
+									mm_type v_2_24;
+									__m128 v_2_32;
+									mm_type v_3_0;
+									mm_type v_3_8;
+									mm_type v_3_16;
+									mm_type v_3_24;
+									__m128 v_3_32;
+									mm_type v_4_0;
+									mm_type v_4_8;
+									mm_type v_4_16;
+									mm_type v_4_24;
+									__m128 v_4_32;
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+									mm_type sum_1_0;
+									mm_type sum_1_4;
+									mm_type sum_1_8;
+									mm_type sum_1_12;
+									mm_type u_1_0;
+									mm_type u_1_4;
+									mm_type u_1_8;
+									mm_type u_1_12;
+									mm_type u_1_16;
+									mm_type u_1_20;
+									mm_type u_1_24;
+									mm_type u_1_28;
+									mm_type u_1_32;
+									mm_type u_1_36;
+									mm_type u_1_40;
+									mm_type u_1_44;
+									mm_type u_1_48;
+									mm_type u_1_52;
+									mm_type u_1_56;
+									mm_type u_1_60;
+									mm_type v_1_0;
+									mm_type v_1_4;
+									mm_type v_1_8;
+									mm_type v_1_12;
+									mm_type v_2_0;
+									mm_type v_2_4;
+									mm_type v_2_8;
+									mm_type v_2_12;
+									mm_type v_3_0;
+									mm_type v_3_4;
+									mm_type v_3_8;
+									mm_type v_3_12;
+									mm_type v_4_0;
+									mm_type v_4_4;
+									mm_type v_4_8;
+									mm_type v_4_12;
+#endif
+
+									int U_offset_och_1 = och * U_offset_single_och;
+
+									float bias_1 = bias_data[och];
+									float result_1[16];
+									int top_offset_num_och_1 = top_offset_num + och * output_spatial_dim_;
+
+									for (int i = 0; i < total_tile_num; i++)
+									{
+										float mult_data_1[36] = { 0 };
+										int V_offset_row_col = i * tile_length_;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										sum_1_0 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_16 = mm_setzero_ps();
+										sum_1_24 = mm_setzero_ps();
+										sum_1_32 = _mm_setzero_ps();
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+										sum_1_0 = mm_setzero_ps();
+										sum_1_4 = mm_setzero_ps();
+										sum_1_8 = mm_setzero_ps();
+										sum_1_12 = mm_setzero_ps();
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+										int ich = 0;
+										for (; ich + 3 < input_Channel_; ich += 4)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+											int V_offset_ich_row_col_2 = V_offset_ich_row_col_1 + h_w_tile_stride;
+											int V_offset_ich_row_col_3 = V_offset_ich_row_col_2 + h_w_tile_stride;
+											int V_offset_ich_row_col_4 = V_offset_ich_row_col_3 + h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+											u_1_68 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 68);
+											u_1_72 = mm_load_ps(U_data + U_offset_och_ich_1 + 72);
+											u_1_80 = mm_load_ps(U_data + U_offset_och_ich_1 + 80);
+											u_1_88 = mm_load_ps(U_data + U_offset_och_ich_1 + 88);
+											u_1_96 = mm_load_ps(U_data + U_offset_och_ich_1 + 96);
+											u_1_104 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 104);
+											u_1_108 = mm_load_ps(U_data + U_offset_och_ich_1 + 108);
+											u_1_116 = mm_load_ps(U_data + U_offset_och_ich_1 + 116);
+											u_1_124 = mm_load_ps(U_data + U_offset_och_ich_1 + 124);
+											u_1_132 = mm_load_ps(U_data + U_offset_och_ich_1 + 132);
+											u_1_140 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 140);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_16 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 16);
+											v_1_24 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 24);
+											v_1_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_1 + 32);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_16 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 16);
+											v_2_24 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 24);
+											v_2_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_2 + 32);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_16 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 16);
+											v_3_24 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 24);
+											v_3_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_3 + 32);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_16 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 16);
+											v_4_24 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 24);
+											v_4_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_4 + 32);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_1_16, u_1_16, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_1_24, u_1_24, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_1_32, u_1_32, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_1_32), sum_1_32);
+
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_36, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_44, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_2_16, u_1_52, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_2_24, u_1_60, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_2_32, u_1_68, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_2_32, u_1_68), sum_1_32);
+
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_72, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_80, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_3_16, u_1_88, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_3_24, u_1_96, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_3_32, u_1_104, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_3_32, u_1_104), sum_1_32);
+
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_108, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_116, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_4_16, u_1_124, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_4_24, u_1_132, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_4_32, u_1_140, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_4_32, u_1_140), sum_1_32);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_20 = mm_load_ps(U_data + U_offset_och_ich_1 + 20);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_28 = mm_load_ps(U_data + U_offset_och_ich_1 + 28);
+											u_1_32 = mm_load_ps(U_data + U_offset_och_ich_1 + 32);
+											u_1_36 = mm_load_ps(U_data + U_offset_och_ich_1 + 36);
+											u_1_40 = mm_load_ps(U_data + U_offset_och_ich_1 + 40);
+											u_1_44 = mm_load_ps(U_data + U_offset_och_ich_1 + 44);
+											u_1_48 = mm_load_ps(U_data + U_offset_och_ich_1 + 48);
+											u_1_52 = mm_load_ps(U_data + U_offset_och_ich_1 + 52);
+											u_1_56 = mm_load_ps(U_data + U_offset_och_ich_1 + 56);
+											u_1_60 = mm_load_ps(U_data + U_offset_och_ich_1 + 60);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+											v_2_0 = mm_load_ps(V_data + V_offset_ich_row_col_2);
+											v_2_4 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 4);
+											v_2_8 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 8);
+											v_2_12 = mm_load_ps(V_data + V_offset_ich_row_col_2 + 12);
+											v_3_0 = mm_load_ps(V_data + V_offset_ich_row_col_3);
+											v_3_4 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 4);
+											v_3_8 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 8);
+											v_3_12 = mm_load_ps(V_data + V_offset_ich_row_col_3 + 12);
+											v_4_0 = mm_load_ps(V_data + V_offset_ich_row_col_4);
+											v_4_4 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 4);
+											v_4_8 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 8);
+											v_4_12 = mm_load_ps(V_data + V_offset_ich_row_col_4 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_2_0, u_1_16, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_2_4, u_1_20, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_2_8, u_1_24, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_2_12, u_1_28, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_3_0, u_1_32, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_3_4, u_1_36, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_3_8, u_1_40, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_3_12, u_1_44, sum_1_12);
+											sum_1_0 = mm_fmadd_ps(v_4_0, u_1_48, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_4_4, u_1_52, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_4_8, u_1_56, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_4_12, u_1_60, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + tile_length_ + i] * V_data[V_offset_ich_row_col_2 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 2 * tile_length_ + i] * V_data[V_offset_ich_row_col_3 + i];
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + 3 * tile_length_ + i] * V_data[V_offset_ich_row_col_4 + i];
+											}
+#endif
+										}
+
+										for (; ich < input_Channel_; ich++)
+										{
+											int U_offset_och_ich_1 = U_offset_och_1 + ich * tile_length_;
+											int V_offset_ich_row_col_1 = V_offset_row_col + ich * h_w_tile_stride;
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_16 = mm_load_ps(U_data + U_offset_och_ich_1 + 16);
+											u_1_24 = mm_load_ps(U_data + U_offset_och_ich_1 + 24);
+											u_1_32 = _mm_loadu_ps(U_data + U_offset_och_ich_1 + 32);
+
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_16 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 16);
+											v_1_24 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 24);
+											v_1_32 = _mm_loadu_ps(V_data + V_offset_ich_row_col_1 + 32);
+
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_16 = mm_fmadd_ps(v_1_16, u_1_16, sum_1_16);
+											sum_1_24 = mm_fmadd_ps(v_1_24, u_1_24, sum_1_24);
+											//sum_1_32 = mm_fmadd_ps(v_1_32, u_1_32, sum_1_32);
+											sum_1_32 = _mm_add_ps(_mm_mul_ps(v_1_32, u_1_32), sum_1_32);
+#elif SIMD_TYPE >= SIMDTYPE_SSE
+											u_1_0 = mm_load_ps(U_data + U_offset_och_ich_1);
+											u_1_4 = mm_load_ps(U_data + U_offset_och_ich_1 + 4);
+											u_1_8 = mm_load_ps(U_data + U_offset_och_ich_1 + 8);
+											u_1_12 = mm_load_ps(U_data + U_offset_och_ich_1 + 12);
+
+											v_1_0 = mm_load_ps(V_data + V_offset_ich_row_col_1);
+											v_1_4 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 4);
+											v_1_8 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 8);
+											v_1_12 = mm_load_ps(V_data + V_offset_ich_row_col_1 + 12);
+
+											sum_1_0 = mm_fmadd_ps(v_1_0, u_1_0, sum_1_0);
+											sum_1_4 = mm_fmadd_ps(v_1_4, u_1_4, sum_1_4);
+											sum_1_8 = mm_fmadd_ps(v_1_8, u_1_8, sum_1_8);
+											sum_1_12 = mm_fmadd_ps(v_1_12, u_1_12, sum_1_12);
+#else
+											for (int i = 0; i < tile_length_; i++)
+											{
+												mult_data_1[i] += U_data[U_offset_och_ich_1 + i] * V_data[V_offset_ich_row_col_1 + i];
+											}
+#endif
+										}
+
+
+#if SIMD_TYPE >= SIMDTYPE_AVX
+										mm_store_ps(mult_data_1, sum_1_0);
+										mm_store_ps(mult_data_1 + 8, sum_1_8);
+										mm_store_ps(mult_data_1 + 16, sum_1_16);
+										mm_store_ps(mult_data_1 + 24, sum_1_24);
+										_mm_storeu_ps(mult_data_1 + 32, sum_1_32);
+#elif SIME_TYPE >= SIMDTYPE_SSE
+										mm_store_ps(Mult_data + Mult_offset_och_row_col_1, sum_1_0);
+										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 4, sum_1_4);
+										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 8, sum_1_8);
+										mm_store_ps(Mult_data + Mult_offset_och_row_col_1 + 12, sum_1_12);
+#endif // SIMD_TYPE >= SIMDTYPE_AVX
+
+										calculate_ATmA43(mult_data_1, result_1);
+
+										int row_in_output_data = i / w_tile_num_ * m_;
+										int col_in_output_data = i % w_tile_num_* m_;
+										int top_offset_row_col = row_in_output_data * output_dim_w_ + col_in_output_data;
+										int top_offset_num_och_row_col_1 = top_offset_num_och_1 + top_offset_row_col;
+
+										for (int row = 0; row < m_; row++)
+										{
+											int result_offset_row = row * m_;
+											for (int col = 0; col < m_; col++)
+											{
+												top_data[top_offset_num_och_row_col_1 + col] = result_1[result_offset_row + col] + bias_1;
+											}
+											top_offset_num_och_row_col_1 += output_dim_w_;
+										}
+									}
+								}
+							}
+						}
+
+						delete V_data;
+						if ((add_h != 0) || (add_w != 0))
+						{
+							tensor_operation_cpu::cut_border_cpu(top, top, 0, add_h, 0, add_w);
 						}
 					}
 					else
@@ -1866,507 +9886,7 @@ namespace glasssix
 				}
 				else if (order_ == NHWC)
 				{
-					input_dim_h_ = bottom->data_shape()[1];
-					input_dim_w_ = bottom->data_shape()[2];
-					input_spatial_dim_ = input_dim_h_ * input_dim_w_;
-					int input_w_stride = input_dim_w_ * input_Channel_;
-					bottom_dim_ = bottom->count(1, 4);
-
-					output_dim_h_ = (input_dim_h_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_dim_w_ = (input_dim_w_ + 2 * pad_ - kernelSize_) / stride_ + 1;
-					output_spatial_dim_ = output_dim_h_ * output_dim_w_;
-					int output_w_stride = output_dim_w_ * output_Channel_;
-					bias_multiplier_.reset(new tensor<float>(std::vector<int>{output_spatial_dim_}, device_));
-					bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
-					top.reset(new tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_Channel_}, device_, order_));
-					top_dim_ = (top)->count(1, 4);
-					float* top_data = top->mutable_cpu_data();
-
-					int h_subtract_tilesize = input_dim_h_ + 2 * pad_ - tile_size_;
-					int w_subtract_tilesize = input_dim_w_ + 2 * pad_ - tile_size_;
-					h_tile_num_ = int(h_subtract_tilesize / m_ + 0.5f) + 1;//h_tile_num_ = ceil((H-(m+r-1))/m) + 1, H is height after padding
-					w_tile_num_ = int(w_subtract_tilesize / m_ + 0.5f) + 1;//w_tile_num_ = ceil((W-(m+r-1))/m) + 1, W is width after padding
-					int total_tile_num = h_tile_num_ * w_tile_num_;
-					int w_tile_stride = w_tile_num_ * tile_length_;
-					int h_w_tile_stride = h_tile_num_ * w_tile_stride;
-					int h_aligned = (h_subtract_tilesize + m_ - 1) / m_ * m_;
-					int w_aligned = (w_subtract_tilesize + m_ - 1) / m_ * m_;
-					int add_h = h_aligned - h_subtract_tilesize;
-					int add_w = w_aligned - w_subtract_tilesize;
-
-					if (group_ > 1)
-					{
-						bool is_U_calculated = false;
-
-						for (int n = 0; n < num_; n++)
-						{
-							int bottom_offset_num = n * bottom_dim_;
-							int top_offset_num = n * top_dim_;
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_, v_;
-								TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								M_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
-								v_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								float *tile_data = TILE_->mutable_cpu_data();
-								float *m_data = M_->mutable_cpu_data();
-								float *result = RESULT_->mutable_cpu_data();
-								float *v_data = v_->mutable_cpu_data();
-
-								int bottom_offset_num_channel = bottom_offset_num + och;
-								int top_offset_num_channel = top_offset_num + och;
-								int U_offset_och = och * tile_length_;
-
-								if (!is_U_calculated)
-								{
-									calculate_GgGT(weights_data + kernel_length_ * och, U_data + U_offset_och);//calculate U
-								}
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_channel_row;
-								int top_offset_num_channel_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_channel_row_col;
-								int top_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int tile_offset_row_col;
-								int row;
-								int result_offset_row;
-								int col;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								mm_type u_1;
-								mm_type u_2;
-								mm_type v_1;
-								mm_type v_2;
-								mm_type sum_1;
-								mm_type sum_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_type u_1;
-								mm_type u_2;
-								mm_type u_3;
-								mm_type u_4;
-								mm_type v_1;
-								mm_type v_2;
-								mm_type v_3;
-								mm_type v_4;
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type sum_3;
-								mm_type sum_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
-								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_channel_row = bottom_offset_num_channel + row_in_input_data * input_w_stride;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
-									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_channel_row_col = bottom_offset_num_channel_row + col_in_input_data * input_Channel_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
-
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											real_row = row_in_input_data + row_in_tile;
-											if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-											{
-												memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
-											}
-											else
-											{
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													real_col = col_in_input_data + col_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-													{
-														tile_data[tile_offset_row + col_in_tile] = 0;
-													}
-													else
-													{
-														//output_Channel_ and input_Channel_ has the same value, so we use output_Channel_ instead
-														tile_data[tile_offset_row + col_in_tile] = bottom_data[bottom_offset_num_channel_row_col + col_in_tile * input_Channel_];
-													}
-												}
-											}
-											bottom_offset_num_channel_row_col += input_w_stride;
-										}
-
-										calculate_BTdB(tile_data, v_data);//calculate V
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										u_1 = mm_load_ps(U_data + U_offset_och);
-										u_2 = mm_load_ps(U_data + U_offset_och + 8);
-										v_1 = mm_load_ps(v_data);
-										v_2 = mm_load_ps(v_data + 8);
-										sum_1 = mm_mul_ps(u_1, v_1);
-										sum_2 = mm_mul_ps(u_2, v_2);
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 8, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										u_1 = mm_load_ps(U_data + U_offset_och);
-										u_2 = mm_load_ps(U_data + U_offset_och + 4);
-										u_3 = mm_load_ps(U_data + U_offset_och + 8);
-										u_4 = mm_load_ps(U_data + U_offset_och + 12);
-										v_1 = mm_load_ps(v_data);
-										v_2 = mm_load_ps(v_data + 4);
-										v_3 = mm_load_ps(v_data + 8);
-										v_4 = mm_load_ps(v_data + 12);
-										sum_1 = mm_mul_ps(u_1, v_1);
-										sum_2 = mm_mul_ps(u_2, v_2);
-										sum_3 = mm_mul_ps(u_3, v_3);
-										sum_4 = mm_mul_ps(u_4, v_4);
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 4, sum_2);
-										mm_store_ps(m_data + 8, sum_3);
-										mm_store_ps(m_data + 12, sum_4);
-#else
-										for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-										{
-											tile_offset_row = row_in_tile * tile_size_;
-											for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-											{
-												tile_offset_row_col = tile_offset_row + col_in_tile;
-												m_data[tile_offset_row_col] = U_data[U_offset_och + tile_offset_row_col] * v_data[tile_offset_row_col];
-											}
-										}
-#endif
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-									}
-								}
-							}
-
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
-
-							is_U_calculated = true;
-						}
-					}
-					else if (group_ == 1)
-					{
-						//calculate U_
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-						for (int n = 0; n < U_num_; ++n)
-						{
-							calculate_GgGT(weights_data + kernel_length_ * n, U_data + tile_length_ * n);//calculate U
-						}
-
-						//V=BT*d*B,so V has the same number as data tile, there are tile_length_ elements in single V
-						V_num_ = input_Channel_ * total_tile_num;
-						V_.reset(new tensor<float>(std::vector<int>{V_num_ * tile_length_}));
-						V_data = V_->mutable_cpu_data();
-						int U_offset_single_och = input_Channel_ * tile_length_;
-
-						for (int n = 0; n < num_; n++)
-						{
-							int bottom_offset_num = n * bottom_dim_;
-							int top_offset_num = n * top_dim_;
-							bool is_V_calculated = false;//only calculate V when is_V_calculated==false
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-							for (int och = 0; och < output_Channel_; och++)
-							{
-								std::shared_ptr<tensor<float>> TILE_, M_, RESULT_;
-								TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								M_.reset(new tensor<float>(std::vector<int>{tile_length_}));
-								RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
-								float *tile_data = TILE_->mutable_cpu_data();
-								float *m_data = M_->mutable_cpu_data();
-								float *result = RESULT_->mutable_cpu_data();
-
-								int U_offset_och = och * U_offset_single_och;
-								int top_offset_num_channel = top_offset_num + och;
-
-								//param declaration
-								int row_in_output_data;
-								int row_in_input_data;
-								int bottom_offset_num_row;
-								int top_offset_num_channel_row;
-								int V_offset_row;
-								int num_w;
-								int col_in_output_data;
-								int col_in_input_data;
-								int bottom_offset_num_row_col;
-								int top_offset_num_channel_row_col;
-								int V_offset_row_col;
-								int ich;
-								int V_offset_channel_row_col;
-								int U_offset_och_ich;
-								int bottom_offset_num_channel_row_col;
-								int row_in_tile;
-								int tile_offset_row;
-								int real_row;
-								int col_in_tile;
-								int real_col;
-								int row;
-								int col;
-								int tile_offset_row_col;
-								int U_offset_och_ich_row;
-								int V_offset_channel_row_col_rowt;
-								int result_offset_row;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type v_1;
-								mm_type v_2;
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-								mm_type sum_1;
-								mm_type sum_2;
-								mm_type sum_3;
-								mm_type sum_4;
-								mm_type u_1;
-								mm_type u_2;
-								mm_type u_3;
-								mm_type u_4;
-								mm_type v_1;
-								mm_type v_2;
-								mm_type v_3;
-								mm_type v_4;
-#endif
-
-								for (int num_h = 0; num_h < h_tile_num_; num_h++)
-								{
-									row_in_output_data = num_h * m_;
-									row_in_input_data = row_in_output_data - pad_;
-									bottom_offset_num_row = bottom_offset_num + row_in_input_data * input_w_stride;
-									top_offset_num_channel_row = top_offset_num_channel + row_in_output_data * output_w_stride;
-									V_offset_row = num_h * w_tile_stride;
-
-									for (num_w = 0; num_w < w_tile_num_; num_w++)
-									{
-										col_in_output_data = num_w * m_;
-										col_in_input_data = col_in_output_data - pad_;
-										bottom_offset_num_row_col = bottom_offset_num_row + col_in_input_data * input_Channel_;
-										top_offset_num_channel_row_col = top_offset_num_channel_row + col_in_output_data * output_Channel_;
-										V_offset_row_col = V_offset_row + num_w * tile_length_;
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										sum_1 = mm_setzero_ps();
-										sum_2 = mm_setzero_ps();
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										sum_1 = mm_setzero_ps();
-										sum_2 = mm_setzero_ps();
-										sum_3 = mm_setzero_ps();
-										sum_4 = mm_setzero_ps();
-#else
-										memset(m_data, 0, tile_length_ * sizeof(float));
-#endif // SIMD_TYPE >= SIMDTYPE_AVX
-
-										for (ich = 0; ich < input_Channel_; ich++)
-										{
-											V_offset_channel_row_col = ich * h_w_tile_stride + V_offset_row_col;
-											U_offset_och_ich = U_offset_och + ich * tile_length_;
-											bottom_offset_num_channel_row_col = bottom_offset_num_row_col + ich;
-
-											//calculate V when is_first==true
-											if (!is_V_calculated)
-											{
-												for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-												{
-													tile_offset_row = row_in_tile * tile_size_;
-													real_row = row_in_input_data + row_in_tile;
-													if (!is_a_ge_zero_and_a_lt_b(real_row, input_dim_h_))
-													{
-														memset(tile_data + tile_offset_row, 0, tile_size_ * sizeof(float));
-													}
-													else
-													{
-														for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-														{
-															real_col = col_in_input_data + col_in_tile;
-															if (!is_a_ge_zero_and_a_lt_b(real_col, input_dim_w_))
-															{
-																tile_data[tile_offset_row + col_in_tile] = 0;
-															}
-															else
-															{
-																tile_data[tile_offset_row + col_in_tile] = bottom_data[bottom_offset_num_channel_row_col + col_in_tile * input_Channel_];
-															}
-														}
-													}
-													bottom_offset_num_channel_row_col += input_w_stride;
-												}
-
-												calculate_BTdB(tile_data, V_data + V_offset_channel_row_col);//calculate v
-											}
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-											u_1 = mm_load_ps(U_data + U_offset_och_ich);
-											u_2 = mm_load_ps(U_data + U_offset_och_ich + 8);
-											v_1 = mm_load_ps(V_data + V_offset_channel_row_col);
-											v_2 = mm_load_ps(V_data + V_offset_channel_row_col + 8);
-											sum_1 = mm_fmadd_ps(v_1, u_1, sum_1);
-											sum_2 = mm_fmadd_ps(v_2, u_2, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-											u_1 = mm_load_ps(U_data + U_offset_och_ich);
-											u_2 = mm_load_ps(U_data + U_offset_och_ich + 4);
-											u_3 = mm_load_ps(U_data + U_offset_och_ich + 8);
-											u_4 = mm_load_ps(U_data + U_offset_och_ich + 12);
-											v_1 = mm_load_ps(V_data + V_offset_channel_row_col);
-											v_2 = mm_load_ps(V_data + V_offset_channel_row_col + 4);
-											v_3 = mm_load_ps(V_data + V_offset_channel_row_col + 8);
-											v_4 = mm_load_ps(V_data + V_offset_channel_row_col + 12);
-											sum_1 = mm_fmadd_ps(v_1, u_1, sum_1);
-											sum_2 = mm_fmadd_ps(v_2, u_2, sum_2);
-											sum_3 = mm_fmadd_ps(v_3, u_3, sum_3);
-											sum_4 = mm_fmadd_ps(v_4, u_4, sum_4);
-#else
-											for (row_in_tile = 0; row_in_tile < tile_size_; row_in_tile++)
-											{
-												tile_offset_row = row_in_tile * tile_size_;
-												for (col_in_tile = 0; col_in_tile < tile_size_; col_in_tile++)
-												{
-													tile_offset_row_col = tile_offset_row + col_in_tile;
-													m_data[tile_offset_row_col] += U_data[U_offset_och_ich + tile_offset_row_col] * V_data[V_offset_channel_row_col + tile_offset_row_col];
-												}
-											}
-#endif
-										}
-
-#if SIMD_TYPE >= SIMDTYPE_AVX
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 8, sum_2);
-#elif SIMD_TYPE >= SIMDTYPE_SSE
-										mm_store_ps(m_data, sum_1);
-										mm_store_ps(m_data + 4, sum_2);
-										mm_store_ps(m_data + 8, sum_3);
-										mm_store_ps(m_data + 12, sum_4);
-#endif // SIMD_TYPE >= SIMDTYPE_AVX
-
-										calculate_ATmA(m_data, result);//calculate result
-
-										if (num_h == h_tile_num_ - 1)
-										{
-											for (row = 0; row < m_ - add_h; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-										else
-										{
-											for (row = 0; row < m_; row++)
-											{
-												result_offset_row = row * m_;
-												if (num_w == w_tile_num_ - 1)
-												{
-													for (col = 0; col < m_ - add_w; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												else
-												{
-													for (col = 0; col < m_; col++)
-													{
-														top_data[top_offset_num_channel_row_col + col * output_Channel_] = result[result_offset_row + col];
-													}
-												}
-												top_offset_num_channel_row_col += output_w_stride;
-											}
-										}
-									}
-								}
-
-								is_V_calculated = true;
-							}
-
-							math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
-							if (bias_term_)
-							{
-								forward_bias(top_data + top_offset_num, bias_data);
-							}
-						}
-					}
-					else
-					{
-						LOG(FATAL) << "group wrong!!!";
-					}
+					NOT_IMPLEMENTED;
 				}
 				else
 				{
@@ -2374,6 +9894,6 @@ namespace glasssix
 				}
 			}
 		}
-
+#endif // _MSC_VER
 	}
 }

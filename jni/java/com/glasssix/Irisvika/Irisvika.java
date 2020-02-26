@@ -7,26 +7,20 @@ public class Irisvika {
 	
 	private long mObject;
 	
-	public Irisvika(float[][] baseData) {
-		initwithData(baseData);
+	public Irisvika(int max_items, String new_save_path, String tmp_path) {
+		init(max_items, new_save_path, tmp_path);
 	}
 	
-	public Irisvika(int dimension) {
-		init(dimension);
-	}
-	
-	public static native String getVersion();
-	public native int buildGraph();
-	public native int buildGraphwithData(float[][] baseData);
-	public native void saveGraph(String graphPath);
-	public native void saveGraphwithData(String graphPath, String baseDataPath);
-	public native float[][] getBaseData();
-	public native void loadGraph(String graphPath);
-	public native void loadGraphwithData(String graphPath, String basedataPath);
-	public native void optimizeGraph();
-	public native void searchVector(float[][] queryData, int topK, int[][] returnIDs, float[][] returnSimilarities);
-	public native void saveResult(String resultPath, int[][] returnIDs);
-	private native void initwithData(float[][] baseData);
-	private native void init(int dimension);
+	private native void init(int max_items, String new_save_path, String tmp_path);
 	protected native void finalize();
+	public native String save_path();
+	public native String tmp_path();
+	public native void build(String[] files);
+	public native knn_search_result[] search(float[] feature, int top);
+	public native String[] delete_features(String[] keys);
+	public native String[] delete_feature(String key);
+	public native void add_features(knn_mapping_data[] data);
+	public native void add_feature(knn_mapping_data data);
+	public native void update(knn_mapping_data data);
+	public native void update_more(knn_mapping_data[] data);
 }

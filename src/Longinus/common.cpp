@@ -3,7 +3,7 @@
 
 using namespace glasssix::longinus;
 
-inline int is_equal_rect(const FaceRect &r1, const FaceRect &r2)
+inline int is_equal_rect(const face_rect_basic &r1, const face_rect_basic &r2)
 {
 	int delta10x = std::min(r1.width, r2.width) + std::min(r1.height, r2.height);
 	return abs(r1.x - r2.x) * 10 <= delta10x &&
@@ -12,9 +12,9 @@ inline int is_equal_rect(const FaceRect &r1, const FaceRect &r2)
 		abs(r1.y + r1.height - r2.y - r2.height) * 10 <= delta10x;
 }
 
-inline int intersectionArea(FaceRect &r1, FaceRect &r2)
+inline int intersectionArea(face_rect_basic &r1, face_rect_basic &r2)
 {
-	FaceRect r;
+	face_rect_basic r;
 	r.x = std::max(r1.x, r2.x);
 	r.y = std::max(r1.y, r2.y);
 	r.width = std::min(r1.x + r1.width, r2.x + r2.width) - r.x;
@@ -27,7 +27,7 @@ inline int intersectionArea(FaceRect &r1, FaceRect &r2)
 }
 
 // pFaces will be modified in the function
-void glasssix::longinus::GroupRects(std::vector<FaceRect> &pFaces, int min_neighbors)
+void glasssix::longinus::GroupRects(std::vector<face_rect_basic> &pFaces, int min_neighbors)
 {
 	if (min_neighbors <= 0 || pFaces.size() == 0)
 		return;
@@ -58,7 +58,7 @@ void glasssix::longinus::GroupRects(std::vector<FaceRect> &pFaces, int min_neigh
 		}
 	}
 
-	std::vector<FaceRect> pFacesBuf(pFaces.size(), FaceRect());
+	std::vector<face_rect_basic> pFacesBuf(pFaces.size(), face_rect_basic());
 	for (int i = 0; i < pFacesBuf.size(); i++)
 	{
 		int label = nLabels[i];
@@ -106,10 +106,10 @@ void glasssix::longinus::GroupRects(std::vector<FaceRect> &pFaces, int min_neigh
 	for (int i = 0; i < pFacesBuf.size(); i++)
 	{
 		bool frb1_is_good = true;
-		std::vector<FaceRect>::iterator frb1 = pFacesBuf.begin() + i;
+		std::vector<face_rect_basic>::iterator frb1 = pFacesBuf.begin() + i;
 		for (int j = 0; j < pFacesBuf.size(); j++)
 		{
-			std::vector<FaceRect>::iterator frb2 = pFacesBuf.begin() + j;
+			std::vector<face_rect_basic>::iterator frb2 = pFacesBuf.begin() + j;
 
 			int area = intersectionArea(*frb1, *frb2);
 			bool overlap = (area * 2 >= frb1->width * frb1->height) || (area * 2 >= frb2->width * frb2->height);

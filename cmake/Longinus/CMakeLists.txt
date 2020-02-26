@@ -1,25 +1,40 @@
-#cmake_minimum_required(VERSION 3.0.0)
-#project(Longinus)
-
-
+if(WITH_JNI)
+include_directories(../../include/Longinus 
+			../../include/Damocles 
+			${JNI_INCLUDE})
+else()
 include_directories(../../include/Longinus 
 			../../include/Damocles)
+endif()
+			
 if(USE_CUDA)
-	file(GLOB Longinus_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cu)
+	file(GLOB Longinus_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cu ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cxx)
 else()
-	file(GLOB Longinus_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cpp)
+	file(GLOB Longinus_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Longinus/*.cxx)
 endif()
 
-#set(CUDA_NVCC_FLAGS -arch=compute_30)
-#set(libs ../Julius/build/libJulius.a 
-#	../Excalibur/build/libExcalibur.a 
-#	../Damocles/build/libDamocles.a)
-
-if(USE_CUDA)
-	CUDA_ADD_LIBRARY(Longinus ${Longinus_source_files})
-else()
-	add_library(Longinus ${Longinus_source_files})
+if(WITH_JNI)
+	file(GLOB Longinus_jni_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../jni/jni/Longimila/*.cpp)
 endif()
 
-target_link_libraries(Longinus Romancia Damocles ${Excalibur_LINKER_LIBS})
-add_dependencies(Longinus Romancia Damocles)
+if(USE_CUDA)
+	if(WITH_JNI)
+		CUDA_ADD_LIBRARY(Longimila ${Longinus_source_files} ${Longinus_jni_source_files})
+	else()
+		CUDA_ADD_LIBRARY(Longinus ${Longinus_source_files})
+	endif()
+else()
+	if(WITH_JNI)
+		add_library(Longimila ${Longinus_source_files} ${Longinus_jni_source_files})
+	else()
+		add_library(Longinus ${Longinus_source_files})
+	endif()
+endif()
+
+if(WITH_JNI)
+target_link_libraries(Longimila Romancia Selene Damocles ${Excalibur_LINKER_LIBS})
+add_dependencies(Longimila Romancia Selene Damocles)
+else()
+target_link_libraries(Longinus Romancia Selene Damocles ${Excalibur_LINKER_LIBS})
+add_dependencies(Longinus Romancia Selene Damocles)
+endif()

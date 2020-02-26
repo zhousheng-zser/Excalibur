@@ -4,8 +4,8 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include "baseIndex.hpp"
-#include "baseSearch.hpp"
+#include <memory>
+//#include <Windows.h>
 
 #ifdef EXPORT_IRISVIEL
 #undef EXPORT_IRISVIEL
@@ -28,8 +28,14 @@
 
 namespace glasssix
 {
+
+	class mutex_wrapper;
+
 	namespace irisviel
 	{
+		class Index;
+		class Search;
+
 		class EXPORT_IRISVIEL IrisvielSearch
 		{
 
@@ -43,6 +49,10 @@ namespace glasssix
 			IrisvielSearch(const std::vector<const float*> *baseData, int dimension);
 
 			IrisvielSearch(int dimension);
+
+			IrisvielSearch(const std::vector<const float*> *baseData, int dimension, const std::shared_ptr<mutex_wrapper> &lock);
+
+			IrisvielSearch(int dimension, const std::shared_ptr<mutex_wrapper> &lock);
 
 			virtual ~IrisvielSearch();
 
@@ -62,16 +72,16 @@ namespace glasssix
 			void saveGraph(std::string graphPath, std::string basedataPath) const;
 
 
-			void loadGraph(const char* graphPath) const;
+			bool loadGraph(const char* graphPath) const;
 
 
-			void loadGraph(std::string graphPath) const;
+			bool loadGraph(std::string graphPath) const;
 
 			const std::vector<const float*>* getBasedata() const;
 
-			void loadGraph(const char* graphPath, const char *basedataPath) const;
+			bool loadGraph(const char* graphPath, const char *basedataPath) const;
 
-			void loadGraph(std::string graphPath, std::string basedataPath) const;
+			bool loadGraph(std::string graphPath, std::string basedataPath) const;
 
 			void optimizeGraph() const;
 
@@ -85,8 +95,11 @@ namespace glasssix
 			static std::string getVersion();
 
 		private:
-			BaseIndex *index_;
-			BaseSearch *search_;
+			std::shared_ptr<Index> index_;
+			std::shared_ptr<Search> search_;
+
+			std::shared_ptr<mutex_wrapper> mutex_wrapper_;
+			
 		};
 	}
 }

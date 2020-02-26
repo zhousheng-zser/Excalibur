@@ -21,32 +21,63 @@
 #endif
 #endif
 
-#include "vunicorn_mobile.hpp"
-#include <string>
+#include <vector>
+#include <cstdint>
 
 namespace glasssix
 {
 	namespace gaius
 	{
+		/// <summary>
+		/// A common component supporting feature extraction. 
+		/// </summary>
 		class EXPORT_GAIUS GaiusFeature
 		{
 		public:
+			class impl;
 
-			GaiusFeature() {}
+			/// <summary>
+			/// Creates an instance with the default CPU.
+			/// </summary>
+			GaiusFeature();
 
+			/// <summary>
+			/// Creates an instance with a specified GPU core or the default CPU.
+			/// </summary>
+			/// <param name="device">The device ID; -1 for CPU or a non-negative number for a GPU core</param>
 			GaiusFeature(int device);
 
-			~GaiusFeature();
+			/// <summary>
+			/// The copy constructor must be disabled in PImpl pattern.
+			/// </summary>
+			GaiusFeature(const GaiusFeature&) = delete;
 
-			std::vector<std::vector<float> > Forward(const unsigned char* input_data, unsigned num, int order = 0) const;
+			/// <summary>
+			/// Destroys the instance.
+			/// </summary>
+			virtual ~GaiusFeature();
 
-			static std::string getVersion();
+			/// <summary>
+			/// The copy assignment operator must be disabled in PImpl pattern.
+			/// </summary>
+			GaiusFeature& operator=(const GaiusFeature&) = delete;
 
+			/// <summary>
+			/// Forwards the input data and gets the result.
+			/// </summary>
+			/// <param name="input_data">The input data arranged in specified order</param>
+			/// <param name="num">The number of bitmaps within the input data</param>
+			/// <param name="order">The order that the input data are arranged in</param>
+			/// <returns>The feature vectors</returns>
+			std::vector<std::vector<float>> Forward(const std::uint8_t* input_data, unsigned num, int order = 0) const;
+
+			/// <summary>
+			/// Gets the version of the component.
+			/// </summary>
+			/// <returns>The version</returns>
+			static const char* getVersion();
 		private:
-
-			vUnicornMobile* mobile_unicornia_;
-
-			std::vector<std::vector<float> > Forward(const float* input_data, unsigned num, int order = 0) const;
+			impl* impl_;
 		};
 	}
 }

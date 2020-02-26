@@ -19,10 +19,10 @@ include $(CLEAR_VARS)
 SRC_PATH := $(LOCAL_PATH)/../../../src/Longinus
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Longinus
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Longinus-java
+LOCAL_MODULE := Longimila
 LOCAL_SRC_FILES := $(SRC_PATH)/common.cpp $(SRC_PATH)/ImageOperation.cpp \
 					$(SRC_PATH)/InternalLonginusCascade.cpp $(SRC_PATH)/LonginusDetector.cpp \
-					$(SRC_PATH)/matcher.cpp Longinus-jni.cpp
+					$(SRC_PATH)/matcher.cpp Longimila-jni.cpp
 
 ifeq ($(RELEASE_SDK), 0)
 	LOCAL_SRC_FILES += tinyxml2.cpp

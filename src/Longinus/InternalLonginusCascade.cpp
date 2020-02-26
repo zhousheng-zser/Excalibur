@@ -712,7 +712,7 @@ void InternalLonginusCascade::SingleScaleDetect(glasssix::excalibur::tensor<int>
 	}
 }
 
-std::vector<FaceRect> InternalLonginusCascade::MultiScaleDetect(glasssix::excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads, bool doEarlyReject)
+std::vector<face_rect_basic> InternalLonginusCascade::MultiScaleDetect(glasssix::excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads, bool doEarlyReject)
 {
 	//LOG_IF(WARNING, (doEarlyReject && device_ >= 0)) << "doEarlyReject dose not work on gpu. It will not take any benifit on speed. Automatic disable.";
 	LOG_IF(WARNING, (useMultiThreads && device_ >= 0)) << "useMultiThreads is invalide when working on gpu. Automatic ignore.";
@@ -723,7 +723,7 @@ std::vector<FaceRect> InternalLonginusCascade::MultiScaleDetect(glasssix::excali
 	if (maxSize < minSize)
 	{
 		// create a structure vector for the output data
-		return std::vector<FaceRect>();
+		return std::vector<face_rect_basic>();
 	}
 
 	// containers for the detected faces
@@ -792,7 +792,7 @@ std::vector<FaceRect> InternalLonginusCascade::MultiScaleDetect(glasssix::excali
 		candidateRects.insert(candidateRects.end(), tempCandidateRects.begin(), tempCandidateRects.end());
 	}
 
-	std::vector<FaceRect> rects;
+	std::vector<face_rect_basic> rects;
 	for (size_t i = 0; i < candidateRects.size(); i++)
 	{
 		rects.push_back(candidateRects[i]);

@@ -14,10 +14,22 @@ namespace glasssix
 
 			if (order_ == NCHW)
 			{
-				CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
-				CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
-				CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
-				CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				if (xdesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+				}
+				if (ydesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+				}
+				if (wdesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+				}
+				if (conv_desc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				}
 
 #if CUDNN_VERSION_MIN(7, 0, 0)
 				CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, group_));
@@ -61,7 +73,11 @@ namespace glasssix
 					1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
 				if (bias_term_)
 				{
-					CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					if (bdesc == nullptr)
+					{
+						CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					}
+					
 					CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
 						1, output_Channel_, 1, 1));
 				}
@@ -98,7 +114,7 @@ namespace glasssix
 				{
 					if (extra != nullptr)
 					{
-						cudaFree(extra);
+						CUDA_CHECK(cudaFree(extra));
 					}
 					CUDA_CHECK(cudaMalloc((void **)&extra, size));
 					current_size = size;
@@ -120,10 +136,22 @@ namespace glasssix
 			}
 			else if (order_ == NHWC)
 			{
-				CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
-				CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
-				CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
-				CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				if (xdesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&xdesc));
+				}
+				if (ydesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateTensorDescriptor(&ydesc));
+				}
+				if (wdesc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateFilterDescriptor(&wdesc));
+				}
+				if (conv_desc == nullptr)
+				{
+					CUDNN_CHECK(cudnnCreateConvolutionDescriptor(&conv_desc));
+				}
 
 #if CUDNN_VERSION_MIN(7, 0, 0)
 				CUDNN_CHECK(cudnnSetConvolutionGroupCount(conv_desc, group_));
@@ -167,7 +195,11 @@ namespace glasssix
 					1, 1, CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT));
 				if (bias_term_)
 				{
-					CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					if (bdesc == nullptr)
+					{
+						CUDNN_CHECK(cudnnCreateTensorDescriptor(&bdesc));
+					}
+					
 					CUDNN_CHECK(cudnnSetTensor4dDescriptor(bdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
 						1, output_Channel_, 1, 1));
 				}
@@ -206,7 +238,7 @@ namespace glasssix
 				{
 					if (extra != nullptr)
 					{
-						cudaFree(extra);
+						CUDA_CHECK(cudaFree(extra));
 					}
 					CUDA_CHECK(cudaMalloc((void **)&extra, size));
 					current_size = size;

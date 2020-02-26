@@ -294,6 +294,39 @@ namespace glasssix
 			return output;
 		}
 
+		List<FaceInfo>^ Longinucia::Face_DetectEx_mobile(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage)
+		{
+			List<FaceInfo>^ output = gcnew List<FaceInfo>();
+			if ((stage != thresholds->Length) || (stage > 3))
+			{
+				return output;
+			}
+			auto data = Bitmaps2RGB(bmp);
+			if (!data)
+			{
+				return output;
+			}
+			float th[3];
+			for (auto i = 0; i < stage; i++)
+			{
+				th[i] = thresholds[i];
+			}
+			auto res = long_wrap->detectEx_mobile(data, 3, bmp->Height, bmp->Width, min_size, th, 1.0f / scale, stage, 0);
+			delete data;
+			for (size_t i = 0; i < res.size(); i++)
+			{
+				array<int>^ ldmk = gcnew array<int>(10);
+				for (size_t j = 0; j < 5; j++)
+				{
+					ldmk[2 * j + 0] = (int)(res[i].pts[j].x);
+					ldmk[2 * j + 1] = (int)(res[i].pts[j].y);
+				}
+				output->Add(FaceInfo(System::Drawing::Rectangle(res[i].x, res[i].y, res[i].width, res[i].height),
+					res[i].yaw, res[i].pitch, res[i].roll, res[i].confidence, ldmk));
+			}
+			return output;
+		}
+
 		System::Drawing::Bitmap^ Longinucia::AlignFace(System::Drawing::Bitmap^ extend_face_bmp)
 		{
 			auto data = Bitmap2Gray(extend_face_bmp);
@@ -308,31 +341,31 @@ namespace glasssix
 			switch (type)
 			{
 			case glasssix::longinus::DetectorType::FRONTALVIEW:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 				break;
 			case glasssix::longinus::DetectorType::FRONTALVIEW_REINFORCE:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW_REINFORCE, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW_REINFORCE, device);
 				break;
 			case glasssix::longinus::DetectorType::MULTIVIEW:
-				long_wrap->set(glasssix::longinus::DetectionType::MULTIVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::MULTIVIEW, device);
 				break;
 			case glasssix::longinus::DetectorType::MULTIVIEW_REINFORCE:
-				long_wrap->set(glasssix::longinus::DetectionType::MULTIVIEW_REINFORCE, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::MULTIVIEW_REINFORCE, device);
 				break;
 			default:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 				break;
 			}
 		}
 
-		void Longinucia::Match_Faces(List<FaceInfo>^% infos, int frame_extract_frequency)
+		void Longinucia::Match_Faces(List<FaceInfo>^% infos, int frame_extract_frequency, float distance_fractor)
 		{
-			std::vector<FaceRect> rects;
+			std::vector<face_rect_basic> rects;
 			for (size_t i = 0; i < infos->Count; i++)
 			{
-				rects.push_back(FaceRect(infos[i].rect.X, infos[i].rect.Y, infos[i].rect.Width, infos[i].rect.Height, 1, 1.0));
+				rects.push_back(face_rect_basic(infos[i].rect.X, infos[i].rect.Y, infos[i].rect.Width, infos[i].rect.Height, 1, 1.0));
 			}
-			auto res = long_wrap->match(rects, frame_extract_frequency);
+			auto res = long_wrap->match(rects, frame_extract_frequency, distance_fractor);
 			for (size_t i = 0; i < res.size(); i++)
 			{
 				infos[i] = FaceInfo(infos[i].rect, infos[i].yaw, infos[i].pitch, infos[i].roll, infos[i].score,
