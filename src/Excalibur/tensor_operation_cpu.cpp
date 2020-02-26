@@ -67,7 +67,7 @@ void type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3])
 {
 	if (src->device() >= 0)
 	{
@@ -95,7 +95,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
@@ -145,7 +144,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 		for (int n = 0; n < num; n++)
@@ -174,7 +172,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3])
 {
 	if (src.device() >= 0)
 	{
@@ -201,7 +199,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
@@ -251,7 +248,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 		for (int n = 0; n < num; n++)
@@ -465,7 +461,7 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 
 	for (; index < circle_num; index++)
 	{
-		temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 		mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
 	}
@@ -506,7 +502,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 
 	for (; index < circle_num; index++)
 	{
-		temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 		mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
 	}
@@ -550,7 +546,7 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<unsig
 
 	for (; index < circle_num; index++)
 	{
-		temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 		temp_float32 = mm_cvtepi32_ps(temp_int32);
 		mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
@@ -593,7 +589,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<unsigned char> &src, 
 
 	for (; index < circle_num; index++)
 	{
-		temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 		temp_float32 = mm_cvtepi32_ps(temp_int32);
 		mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
@@ -637,7 +633,7 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 
 	for (; index < circle_num; index++)
 	{
-		temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepi8_epi32(temp_int8);
 		mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
 	}
@@ -678,7 +674,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 
 	for (; index < circle_num; index++)
 	{
-		temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepi8_epi32(temp_int8);
 		mm_store_si((mm_typei*)(dst_data + index * mm_align_size), temp_int32);
 	}
@@ -722,7 +718,7 @@ void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<signe
 
 	for (; index < circle_num; index++)
 	{
-		temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepi8_epi32(temp_int8);
 		temp_float32 = mm_cvtepi32_ps(temp_int32);
 		mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
@@ -765,7 +761,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 
 	for (; index < circle_num; index++)
 	{
-		temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+		temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 		temp_int32 = mm_cvtepi8_epi32(temp_int8);
 		temp_float32 = mm_cvtepi32_ps(temp_int32);
 		mm_store_ps((float*)(dst_data + index * mm_align_size), temp_float32);
@@ -787,7 +783,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
 {
 	if (src->device() >= 0)
 	{
@@ -815,7 +811,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
@@ -897,7 +892,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -945,7 +939,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tensor<float> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tensor<float> &dst, float means[3])
 {
 	if (src.device() >= 0)
 	{
@@ -972,7 +966,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
@@ -1054,7 +1047,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1103,7 +1095,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
 {
 	if (src->device() >= 0)
 	{
@@ -1131,7 +1123,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
@@ -1215,7 +1206,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1265,7 +1255,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor<float> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor<float> &dst, float means[3])
 {
 	if (src.device() >= 0)
 	{
@@ -1292,7 +1282,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
@@ -1378,7 +1367,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1429,7 +1417,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
 {
 	if (src->device() >= 0)
 	{
@@ -1457,7 +1445,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
@@ -1481,7 +1468,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 
 					for (; index < circle_num; index++)
 					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+						temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + ch_offset + index * mm_align_size));
 						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 						temp_float32 = mm_cvtepi32_ps(temp_int32);
 						temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
@@ -1508,7 +1495,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 						for (int w = 0; w < width; w++)
 						{
 							dst_data[offset + sub_offset + subsub_offset + w] =
-								float((src_data[offset + sub_offset + subsub_offset + w] - means[c]) * var);
+								(float(src_data[offset + sub_offset + subsub_offset + w]) - means[c]) * var;
 						}
 					}
 				}
@@ -1543,7 +1530,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1561,7 +1547,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 			index = 0;
 			for (; index < circle_num; index++)
 			{
-				temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+				temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 				temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 				temp_float32 = mm_cvtepi32_ps(temp_int32);
 				temp_float32 = mm_sub_ps(temp_float32, mean_float32);
@@ -1595,7 +1581,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &src, tensor<float> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &src, tensor<float> &dst, float means[3])
 {
 	if (src.device() >= 0)
 	{
@@ -1622,7 +1608,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
@@ -1646,7 +1631,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 
 					for (; index < circle_num; index++)
 					{
-						temp_uint8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+						temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + ch_offset + index * mm_align_size));
 						temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 						temp_float32 = mm_cvtepi32_ps(temp_int32);
 						temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
@@ -1708,7 +1693,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1726,7 +1710,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 			index = 0;
 			for (; index < circle_num; index++)
 			{
-				temp_uint8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+				temp_uint8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 				temp_int32 = mm_cvtepu8_epi32(temp_uint8);
 				temp_float32 = mm_cvtepi32_ps(temp_int32);
 				temp_float32 = mm_sub_ps(temp_float32, mean_float32);
@@ -1761,7 +1745,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
 {
 	if (src->device() >= 0)
 	{
@@ -1789,7 +1773,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
@@ -1813,7 +1796,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 
 					for (; index < circle_num; index++)
 					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+						temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + ch_offset + index * mm_align_size));
 						temp_int32 = mm_cvtepi8_epi32(temp_int8);
 						temp_float32 = mm_cvtepi32_ps(temp_int32);
 						temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
@@ -1875,7 +1858,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1893,7 +1875,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 			index = 0;
 			for (; index < circle_num; index++)
 			{
-				temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+				temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 				temp_int32 = mm_cvtepi8_epi32(temp_int8);
 				temp_float32 = mm_cvtepi32_ps(temp_int32);
 				temp_float32 = mm_sub_ps(temp_float32, mean_float32);
@@ -1927,7 +1909,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src, tensor<float> &dst)
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src, tensor<float> &dst, float means[3])
 {
 	if (src.device() >= 0)
 	{
@@ -1954,7 +1936,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 
 	if (channel == 3)
 	{
-		float means[] = { 104.f, 117.0f, 124.f };
 		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
@@ -1978,7 +1959,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 
 					for (; index < circle_num; index++)
 					{
-						temp_int8 = _mm_loadu_si64((void const*)(src_data + n_offset + ch_offset + index * mm_align_size));
+						temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + n_offset + ch_offset + index * mm_align_size));
 						temp_int32 = mm_cvtepi8_epi32(temp_int8);
 						temp_float32 = mm_cvtepi32_ps(temp_int32);
 						temp_float32 = mm_sub_ps(temp_float32, mean_float32[ch]);
@@ -2040,7 +2021,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 	}
 	else if (channel == 1)
 	{
-		float means[] = { 127.5f };
 		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -2058,7 +2038,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 			index = 0;
 			for (; index < circle_num; index++)
 			{
-				temp_int8 = _mm_loadu_si64((void const*)(src_data + index * mm_align_size));
+				temp_int8 = _mm_loadl_epi64((__m128i const*)(src_data + index * mm_align_size));
 				temp_int32 = mm_cvtepi8_epi32(temp_int8);
 				temp_float32 = mm_cvtepi32_ps(temp_int32);
 				temp_float32 = mm_sub_ps(temp_float32, mean_float32);

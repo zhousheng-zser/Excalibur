@@ -341,29 +341,29 @@ namespace glasssix
 			switch (type)
 			{
 			case glasssix::longinus::DetectorType::FRONTALVIEW:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 				break;
 			case glasssix::longinus::DetectorType::FRONTALVIEW_REINFORCE:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW_REINFORCE, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW_REINFORCE, device);
 				break;
 			case glasssix::longinus::DetectorType::MULTIVIEW:
-				long_wrap->set(glasssix::longinus::DetectionType::MULTIVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::MULTIVIEW, device);
 				break;
 			case glasssix::longinus::DetectorType::MULTIVIEW_REINFORCE:
-				long_wrap->set(glasssix::longinus::DetectionType::MULTIVIEW_REINFORCE, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::MULTIVIEW_REINFORCE, device);
 				break;
 			default:
-				long_wrap->set(glasssix::longinus::DetectionType::FRONTALVIEW, device);
+				long_wrap->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 				break;
 			}
 		}
 
 		void Longinucia::Match_Faces(List<FaceInfo>^% infos, int frame_extract_frequency, float distance_fractor)
 		{
-			std::vector<FaceRect> rects;
+			std::vector<face_rect_basic> rects;
 			for (size_t i = 0; i < infos->Count; i++)
 			{
-				rects.push_back(FaceRect(infos[i].rect.X, infos[i].rect.Y, infos[i].rect.Width, infos[i].rect.Height, 1, 1.0));
+				rects.push_back(face_rect_basic(infos[i].rect.X, infos[i].rect.Y, infos[i].rect.Width, infos[i].rect.Height, 1, 1.0));
 			}
 			auto res = long_wrap->match(rects, frame_extract_frequency, distance_fractor);
 			for (size_t i = 0; i < res.size(); i++)

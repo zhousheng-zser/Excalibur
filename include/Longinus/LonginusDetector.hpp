@@ -7,6 +7,7 @@
 #include <algorithm>
 #include "BaseLonginusCascade.hpp"
 #include "../Romancia/romancia.hpp"
+#include "../Selene/selene.hpp"
 #include "matcher.hpp"
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
@@ -19,14 +20,15 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		typedef enum DetectionType
+		enum longinus_detection_type
 		{
 			FRONTALVIEW,
 			FRONTALVIEW_REINFORCE,
 			MULTIVIEW,
 			MULTIVIEW_REINFORCE
-		}DetectionType;
-		struct FaceRectwithFaceInfo : public FaceRect
+		};
+
+		struct face_rect_with_face_info : public face_rect_basic
 		{
 			Point2f pts[5];
 			float yaw;
@@ -34,15 +36,18 @@ namespace glasssix
 			float roll;
 			//float prob;
 
-			FaceRectwithFaceInfo() {}
-			FaceRectwithFaceInfo(const FaceRect& rect)
+			face_rect_with_face_info() : yaw{}, pitch{}, roll{}
 			{
-				*dynamic_cast<FaceRect *>(this) = rect;
 			}
 
-			FaceRectwithFaceInfo &operator = (const FaceRect& rect)
+			face_rect_with_face_info(const face_rect_basic& rect) : yaw{}, pitch{}, roll{}
 			{
-				*dynamic_cast<FaceRect *>(this) = rect;
+				*dynamic_cast<face_rect_basic*>(this) = rect;
+			}
+
+			face_rect_with_face_info& operator=(const face_rect_basic& rect)
+			{
+				*dynamic_cast<face_rect_basic*>(this) = rect;
 				return *this;
 			}
 		};
@@ -83,7 +88,7 @@ namespace glasssix
 		}
 #endif
 
-		static void extract_faceinfo(std::vector<FaceRectwithFaceInfo> face_info, 
+		static void extract_faceinfo(std::vector<face_rect_with_face_info> face_info,
 			std::vector<std::vector<int>>& bboxes, std::vector<std::vector<int>>& landmarks)
 		{
 			bboxes.clear();
@@ -99,7 +104,7 @@ namespace glasssix
 			}
 		}
 
-		static void extract_biggest_faceinfo(std::vector<FaceRectwithFaceInfo> face_info,
+		static int extract_biggest_faceinfo(std::vector<face_rect_with_face_info> face_info,
 			std::vector<std::vector<int>>& bboxes, std::vector<std::vector<int>>& landmarks)
 		{
 			bboxes.clear();
@@ -116,7 +121,7 @@ namespace glasssix
 			}
 			if (area <= 0.0f)
 			{
-				return;
+				return -1;
 			}
 			bboxes.push_back({ face_info[index].x, face_info[index].y, face_info[index].width, face_info[index].height });
 			landmarks.push_back({ static_cast<int>(face_info[index].pts[0].x), static_cast<int>(face_info[index].pts[0].y),
@@ -124,64 +129,72 @@ namespace glasssix
 												  static_cast<int>(face_info[index].pts[2].x), static_cast<int>(face_info[index].pts[2].y),
 												  static_cast<int>(face_info[index].pts[3].x), static_cast<int>(face_info[index].pts[3].y),
 												  static_cast<int>(face_info[index].pts[4].x), static_cast<int>(face_info[index].pts[4].y) });
+
+			return index;
 		}
 
-		static void sort_descend(std::vector<FaceRect>& rects)
+		static void sort_descend(std::vector<face_rect_basic>& rects)
 		{
 			std::sort(rects.begin(), rects.end());
 		}
 
-		static void sort_descend(std::vector<FaceRectwithFaceInfo>& rects)
+		static void sort_descend(std::vector<face_rect_with_face_info>& rects)
 		{
 			std::sort(rects.begin(), rects.end());
 		}
 
-		class LonginusDetector
+		class EXPORT_LONGINUS LonginusDetector
 		{
 		public:
+			class impl;
+
 			LonginusDetector(int device = -1);
 			virtual ~LonginusDetector();
-			std::vector<FaceRect> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
+			std::vector<face_rect_basic> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
-			std::vector<FaceRectwithFaceInfo> detect(unsigned char *gray, int width, int height, int step, int minSize, float scale,
+			std::vector<face_rect_with_face_info> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
 
-			std::vector<Match_Retval> match(std::vector<FaceRect> &faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
+			std::vector<Match_Retval> match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
-			std::vector<Match_Retval> match(std::vector<FaceRectwithFaceInfo> &faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
+			std::vector<Match_Retval> match(std::vector<face_rect_with_face_info>& faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
-			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width, 
+			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width,
 				std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const;
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
 
 #ifndef TRIAL
-			std::vector<FaceRectwithFaceInfo> detectEx(const unsigned char* image, const int channels, const int height, const int width,
+			std::vector<face_rect_with_face_info> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
-			std::vector<FaceRectwithFaceInfo> detectEx_mobile(const unsigned char* image, const int channels, const int height, const int width,
+
+			std::vector<face_rect_with_face_info> detectEx_mobile(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
+
+			std::vector<face_rect_with_face_info> detectEx_mobile_nir(const unsigned char* image, const int channels, const int height, const int width,
+				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
+
+			std::vector<std::vector<face_rect_with_face_info>> detectEx_mobile_pair(const unsigned char* vsl_image, const int vsl_channels, const int vsl_height, const int vsl_width,
+				const int vsl_minSize, const float* vsl_threshold, const float vsl_factor, const int vsl_stage, const int vsl_order,
+				const unsigned char* nir_image, int nir_channels = 0, int nir_height = 0, int nir_width = 0,
+				int nir_minSize = 0, const float* nir_threshold = nullptr, float nir_factor = 0, int nir_stage = 0, int nir_order = 1) const;
+
+			bool blur_judge_vsl(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const;
+
+			bool black_white_judge_vsl(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const;
+
+			bool face_nose_judge_nir(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const;
+
 #endif // !TRIAL
 
 #ifndef RELEASE_SDK
 			void load(std::vector<std::string> cascades, int device = -1);
 #endif
-			void set(DetectionType detectionType, int device = -1);
+			void set(longinus_detection_type detectionType, int device = -1);
 
-			static std::string getVersion();
-
-
+			static const char* getVersion();
 		private:
-			int device_;
-			std::vector<std::shared_ptr<BaseLonginusCascade>> *cascades_;
-			std::unique_ptr<Banshee> bansheelia_;
-			std::vector<unsigned char> data_;
-			std::unique_ptr<Matcher> matcher_;
-
-#ifndef TRIAL
-			std::unique_ptr<vDamocles> diodorus_;
-			std::unique_ptr<vDamocles> diodorus_mobile_;
-#endif // !TRIAL
-
+			impl* impl_;
 		};
 	}
 }
