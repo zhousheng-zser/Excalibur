@@ -16,7 +16,7 @@ RELEASE_SDK := 1
 TRIAL := 0
 QUANTIZATION_TYPE := SINGLE
 COSINE_DISTANCE := 1
-USE_OPENMP := 1
+USE_OPENMP := 0
 USE_OPENCV := 1
 
 COMMON_INCLUDES := C:/Tools/vcpkg/installed/x64-windows/include

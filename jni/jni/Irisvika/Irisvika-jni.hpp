@@ -6,20 +6,18 @@
 extern "C" {
 #endif
 
-JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_getVersion(JNIEnv *, jobject);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_initwithData(JNIEnv *, jobject, jobjectArray);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *, jobject, jint);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_init(JNIEnv *, jobject, jint, jstring, jstring);
 JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_finalize(JNIEnv *, jobject);
-JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraph(JNIEnv *, jobject);
-JNIEXPORT jint JNICALL Java_com_glasssix_Irisvika_Irisvika_buildGraphwithData(JNIEnv *, jobject, jobjectArray);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraph(JNIEnv *, jobject, jstring);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveGraphwithData(JNIEnv *, jobject, jstring, jstring);
-JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_IrisvikagetBaseData(JNIEnv *, jobject);
-JNIEXPORT jboolean JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraph(JNIEnv *, jobject, jstring);
-JNIEXPORT jboolean JNICALL Java_com_glasssix_Irisvika_Irisvika_loadGraphwithData(JNIEnv *, jobject, jstring, jstring);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_optimizeGraph(JNIEnv *, jobject);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_searchVector(JNIEnv *, jobject, jobjectArray, jint, jobjectArray, jobjectArray);
-JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_saveResult(JNIEnv *, jobject, jstring, jobjectArray);
+JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_save_path(JNIEnv *, jobject);
+JNIEXPORT jstring JNICALL Java_com_glasssix_Irisvika_Irisvika_tmp_path(JNIEnv *, jobject);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_build(JNIEnv *, jobject, jobjectArray);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_search(JNIEnv *, jobject, jfloatArray, jint);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_delete_features(JNIEnv *, jobject, jobjectArray);
+JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_delete_feature(JNIEnv *, jobject, jstring);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_add_features(JNIEnv *, jobject, jobjectArray);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_add_feature(JNIEnv *, jobject, jstring);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_update(JNIEnv *, jobject, jobject);
+JNIEXPORT void JNICALL Java_com_glasssix_Irisvika_Irisvika_update_more(JNIEnv *, jobject, jobjectArray);
 
 #ifdef __cplusplus
 }

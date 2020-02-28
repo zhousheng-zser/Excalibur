@@ -18,7 +18,9 @@ namespace glasssix
 
 			void Forward_F23(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
 
+#ifdef _MSC_VER
 			void Forward_F43(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+#endif
 
 		private:
 

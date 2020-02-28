@@ -7,6 +7,8 @@
 #include "conv_native_cpu.hpp"
 #include "conv_native_gpu.hpp"
 #include "conv_1x1s1_cpu.hpp"
+#include "convdw_3x3s1_cpu.hpp"
+#include "convdw_3x3s2_cpu.hpp"
 #include "conv_winograd_cpu.hpp"
 #include "prelu.hpp"
 #include "pooling.hpp"
@@ -137,6 +139,10 @@ if(device_ < 0){\
     if((group > 1) || (kernel_size == 1)) { int8_quantization = false;}\
 	if((stride == 1) && (kernel_size == 1)){\
 		conv_name = new conv_1x1s1_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	else if((stride == 1) && (kernel_size == 3) && (group > 1)){\
+		conv_name = new convdw_3x3s1_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
+	else if((stride == 2) && (kernel_size == 3) && (group > 1)){\
+		conv_name = new convdw_3x3s2_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
 	else if((stride == 1) && (kernel_size == 3)){\
 		conv_name = new conv_winograd_cpu(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_, int8_quantization);}\
     else{\

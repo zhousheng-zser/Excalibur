@@ -1,62 +1,70 @@
+#pragma once
+
 #ifndef _NEIGHBOR_HPP_
 #define _NEIGHBOR_HPP_
 
-#include <vector>
 #include <mutex>
+#include <vector>
+
 #include <glasssix/accelerator.hpp>
-#include "boost/smart_ptr/detail/spinlock.hpp"
+#include <boost/smart_ptr/detail/spinlock.hpp>
 
-namespace glasssix 
+namespace glasssix
 {
-	namespace irisviel 
+	namespace irisviel
 	{
-		typedef boost::detail::spinlock Lock;
-		typedef std::lock_guard<Lock> LockGuard;
+		using spin_lock_type = boost::detail::spinlock;
+		using lock_guard_type = std::lock_guard<spin_lock_type>;
 
-		struct Neighbor 
+		struct neighbor
 		{
-			uint32_t id = 0;
+			uint32_t id;
 			float distance;
 			bool flag;
 
-			Neighbor() = default;
-			Neighbor(unsigned id, float distance, bool f = true) : id{ id }, distance{ distance }, flag(f) {}
+			neighbor() : id{}, distance{}, flag{}
+			{
+			}
 
-			inline bool operator<(const Neighbor &other) const 
+			neighbor(uint32_t id, float distance, bool flag = true) : id{ id }, distance{ distance }, flag{ flag }
+			{
+			}
+
+			bool operator<(const neighbor& other) const noexcept
 			{
 				return distance < other.distance;
 			}
 
-			inline bool operator == (const Neighbor &other) 
+			bool operator==(const neighbor& other) const noexcept
 			{
 				return id == other.id;
 			}
 		};
 
-		struct LockNeighbor 
+		struct synchronized_neighbor
 		{
-			Lock lock;
-			std::vector<Neighbor> pool;
+			spin_lock_type lock;
+			std::vector<neighbor> pool;
 		};
 
-		typedef std::vector<LockNeighbor > LockGraph;
+		using locked_graph_type = std::vector<synchronized_neighbor>;
 
-		struct Control 
+		struct neighbor_control
 		{
-			unsigned id;
-			std::vector<Neighbor> pool;
+			uint32_t id;
+			std::vector<neighbor> pool;
 		};
 
-		static inline int insertIntoPool(Neighbor *addr, unsigned topK, Neighbor nn)
+		static int insert_into_pool(neighbor* addr, uint32_t top_k, neighbor nn)
 		{
-			if (topK == 0)
+			if (top_k == 0)
 			{
 				addr[0] = nn;
 				return 0;
 			}
 
 			int start = 0;
-			int end = topK - 1;
+			int end = top_k - 1;
 			int mid;
 
 			// binary search
@@ -73,7 +81,7 @@ namespace glasssix
 				}
 			}
 
-		    // check for equal ID
+			// check for equal ID
 			int pos = start;
 			while (pos-- > 0)
 			{
@@ -81,14 +89,14 @@ namespace glasssix
 				{
 					break;
 				}
-					
+
 				if (addr[pos].id == nn.id)
 				{
-					return topK + 1;
+					return top_k + 1;
 				}
 			}
 
-			for (int j = topK; j > start; j--) 
+			for (int j = top_k; j > start; j--)
 			{
 				addr[j] = addr[j - 1];
 			}
@@ -97,63 +105,66 @@ namespace glasssix
 			return start;
 		}
 
-		struct Nhood 
-		{ // neighborhood
-			Lock lock;
-			std::vector<Neighbor> pool;
-			unsigned neighborsLength;     // # valid items in the pool,  L + 1 <= pool.size()
-			unsigned M;     // we only join items in pool[0..M)
+		struct neighborhood
+		{
+			spin_lock_type lock;
+			std::vector<neighbor> pool;
+			uint32_t neighbors_length;     // # valid items in the pool,  L + 1 <= pool.size()
+			uint32_t M;     // we only join items in pool[0..M)
 			float radius;   // distance of interesting range
-			float radiusM;
+			float radius_m;
 			bool found;     // helped found new NN in this round
-			std::vector<unsigned> nnOld;
-			std::vector<unsigned> nnNew;
-			std::vector<unsigned> rnnOld;
-			std::vector<unsigned> rnnNew;
+			std::vector<uint32_t> nn_old;
+			std::vector<uint32_t> nn_new;
+			std::vector<uint32_t> rnn_old;
+			std::vector<uint32_t> rnn_new;
 
 			// only non-readonly method which is supposed to be called in parallel
-			unsigned parallelTryInsert(unsigned id, float dist) 
+			uint32_t try_insert_parallel(uint32_t id, float distance)
 			{
-				if (dist > radius) 
+				if (distance > radius)
+				{
 					return pool.size();
-				LockGuard guard(lock);
-				unsigned insertPos = insertIntoPool(&pool[0], neighborsLength, Neighbor(id, dist, true));
-				if (insertPos <= neighborsLength) 
+				}
+
+				lock_guard_type guard(lock);
+				uint32_t insertPos = insert_into_pool(&pool[0], neighbors_length, neighbor{ id, distance, true });
+				if (insertPos <= neighbors_length)
 				{ // inserted
-					if (neighborsLength + 1 < pool.size()) 
+					if (neighbors_length + 1 < pool.size())
 					{ // if insertPos == neighborsLength + 1, there's a duplicate
-						++neighborsLength;
+						neighbors_length++;
 					}
-					else 
+					else
 					{
-						radius = pool[neighborsLength - 1].distance;
+						radius = pool[neighbors_length - 1].distance;
 					}
 				}
 				return insertPos;
 			}
 
 			// join should not be conflict with insert
-			template <typename C>
-			void join(C callback) const 
+			template <typename Callable>
+			auto join(Callable&& callback) const
 			{
-				for (unsigned const i : nnNew) 
+				for (const uint32_t i : nn_new)
 				{
-					for (unsigned const j : nnNew) 
+					for (const uint32_t j : nn_new)
 					{
-						if (i < j) 
+						if (i < j)
 						{
-							callback(i, j);
+							std::forward<Callable>(callback)(i, j);
 						}
 					}
-					for (unsigned j : nnOld) 
+					for (uint32_t j : nn_old)
 					{
-						callback(i, j);
+						std::forward<Callable>(callback)(i, j);
 					}
 				}
 			}
 		};
 
-		typedef std::vector<std::shared_ptr<Nhood> > Nhoods;
+		using nhoods_type = std::vector<std::shared_ptr<neighborhood>>;
 	}
 }
 

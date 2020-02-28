@@ -28,7 +28,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		typedef struct FaceRect {
+		typedef struct face_rect_basic {
 			int x;
 			int y;
 			int width;
@@ -36,20 +36,20 @@ namespace glasssix
 			int neighbors;
 			double confidence;
 
-			FaceRect() :x(0), y(0), width(0), height(0), neighbors(0), confidence(0.0) {}
-			FaceRect(int x_, int y_, int width_, int height_, int neighbors_, double confidence_)
+			face_rect_basic() :x(0), y(0), width(0), height(0), neighbors(0), confidence(0.0) {}
+			face_rect_basic(int x_, int y_, int width_, int height_, int neighbors_, double confidence_)
 				:x(x_), y(y_), width(width_), height(height_), neighbors(neighbors_), confidence(confidence_) {}
 
-			bool operator <(const FaceRect& s) const
+			bool operator <(const face_rect_basic& s) const
 			{
 				return (width * height) > (s.width * s.height);
 			}
-		} FaceRect;
+		} face_rect_basic;
 
 		class BaseLonginusCascade;
 		class EXPORT_LONGINUS LonginusDetector;
 
-		typedef struct CandidateRect : public FaceRect
+		typedef struct CandidateRect : public face_rect_basic
 		{
 			int index_in_image_pyramids;
 			int ix;
@@ -62,10 +62,10 @@ namespace glasssix
 			CandidateRect() :index_in_image_pyramids(-1), ix(-1), iy(-1), xstep(0), ystep(0), xmax(-1), ymax(-1), cascade(nullptr) {}
 			CandidateRect(int x_, int y_, int width_, int height_, int neighbors_, double confidence_, 
 				int index_in_image_pyramids_, int ix_, int iy_, int xstep_, int ystep_, int xmax_, int ymax_, std::shared_ptr<BaseLonginusCascade> cascade_)
-			:FaceRect(x_, y_, width_, height_, neighbors_, confidence_), index_in_image_pyramids(-1), ix(-1), iy(-1), xstep(0), ystep(0), xmax(-1), ymax(-1), cascade(cascade_) {}
+			:face_rect_basic(x_, y_, width_, height_, neighbors_, confidence_), index_in_image_pyramids(-1), ix(-1), iy(-1), xstep(0), ystep(0), xmax(-1), ymax(-1), cascade(cascade_) {}
 		}CandidateRect;
 
-		void GroupRects(std::vector<FaceRect> &pFaces, int min_neighbors);
+		void GroupRects(std::vector<face_rect_basic> &pFaces, int min_neighbors);
 
 		typedef struct Point2i
 		{

@@ -3277,12 +3277,49 @@ namespace glasssix
 							__m128 sum4_data = _mm_mul_ps(kernel4_data, r_data);
 							__m128 sum5_data = _mm_mul_ps(kernel5_data, r_data);
 
-							sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
-							sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
-							sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
-							sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
-							sum4 += sum4_data.m128_f32[0] + sum4_data.m128_f32[1] + sum4_data.m128_f32[2] + sum4_data.m128_f32[3];
-							sum5 += sum5_data.m128_f32[0] + sum5_data.m128_f32[1] + sum5_data.m128_f32[2] + sum5_data.m128_f32[3];
+							//sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
+							//sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
+							//sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
+							//sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
+							//sum4 += sum4_data.m128_f32[0] + sum4_data.m128_f32[1] + sum4_data.m128_f32[2] + sum4_data.m128_f32[3];
+							//sum5 += sum5_data.m128_f32[0] + sum5_data.m128_f32[1] + sum5_data.m128_f32[2] + sum5_data.m128_f32[3];
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum0_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum0 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum1_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum1 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum2_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum2 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum3_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum3 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum4_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum4 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum5_data);
+							for (int i = 0; i < 4; i++)
+							{
+								sum5 += temp[i];
+							}
 #else
 							float sum0 = *r0 * kernel0[0] + *r1 * kernel0[1] + *r2 * kernel0[2] + *r3 * kernel0[3];
 							float sum1 = *r0 * kernel1[0] + *r1 * kernel1[1] + *r2 * kernel1[2] + *r3 * kernel1[3];
@@ -3450,12 +3487,21 @@ namespace glasssix
 							mm_type r_data = mm_set1_ps(*r0);
 							mm_type result = mm_mul_ps(r_data, k_data);
 
-							*outptr0 += result.m256_f32[0];
-							*outptr1 += result.m256_f32[1];
-							*outptr2 += result.m256_f32[2];
-							*outptr3 += result.m256_f32[3];
-							*outptr4 += result.m256_f32[4];
-							*outptr5 += result.m256_f32[5];
+							//*outptr0 += result.m256_f32[0];
+							//*outptr1 += result.m256_f32[1];
+							//*outptr2 += result.m256_f32[2];
+							//*outptr3 += result.m256_f32[3];
+							//*outptr4 += result.m256_f32[4];
+							//*outptr5 += result.m256_f32[5];
+
+							float temp[8];
+							_mm256_storeu_ps(temp, result);
+							*outptr0 += temp[0];
+							*outptr1 += temp[1];
+							*outptr2 += temp[2];
+							*outptr3 += temp[3];
+							*outptr4 += temp[4];
+							*outptr5 += temp[5];
 
 							r0++;
 							outptr0++;
@@ -3476,12 +3522,23 @@ namespace glasssix
 						mm_type result0 = mm_mul_ps(r_data, k_data0);
 						mm_type result4 = mm_mul_ps(r_data, k_data4);
 
-						*outptr0 += result0.m128_f32[0];
-						*outptr1 += result0.m128_f32[1];
-						*outptr2 += result0.m128_f32[2];
-						*outptr3 += result0.m128_f32[3];
-						*outptr4 += result4.m128_f32[0];
-						*outptr5 += result4.m128_f32[1];
+						//*outptr0 += result0.m128_f32[0];
+						//*outptr1 += result0.m128_f32[1];
+						//*outptr2 += result0.m128_f32[2];
+						//*outptr3 += result0.m128_f32[3];
+						//*outptr4 += result4.m128_f32[0];
+						//*outptr5 += result4.m128_f32[1];
+
+						float temp[4];
+						_mm_storeu_ps(temp, result0);
+						*outptr0 += temp[0];
+						*outptr1 += temp[1];
+						*outptr2 += temp[2];
+						*outptr3 += temp[3];
+
+						_mm_storeu_ps(temp, result4);
+						*outptr4 += temp[0];
+						*outptr5 += temp[1];
 
 						r0++;
 						outptr0++;
@@ -3845,10 +3902,35 @@ namespace glasssix
 							__m128 sum2_data = _mm_mul_ps(kernel2_data, r_data);
 							__m128 sum3_data = _mm_mul_ps(kernel3_data, r_data);
 
-							sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
-							sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
-							sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
-							sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
+							//sum0 += sum0_data.m128_f32[0] + sum0_data.m128_f32[1] + sum0_data.m128_f32[2] + sum0_data.m128_f32[3];
+							//sum1 += sum1_data.m128_f32[0] + sum1_data.m128_f32[1] + sum1_data.m128_f32[2] + sum1_data.m128_f32[3];
+							//sum2 += sum2_data.m128_f32[0] + sum2_data.m128_f32[1] + sum2_data.m128_f32[2] + sum2_data.m128_f32[3];
+							//sum3 += sum3_data.m128_f32[0] + sum3_data.m128_f32[1] + sum3_data.m128_f32[2] + sum3_data.m128_f32[3];
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum0_data);
+							for (int i = 0; i < 3; i++)
+							{
+								sum0 += temp[i];
+						    }
+
+							_mm_storeu_ps(temp, sum1_data);
+							for (int i = 0; i < 3; i++)
+							{
+								sum1 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum2_data);
+							for (int i = 0; i < 3; i++)
+							{
+								sum2 += temp[i];
+							}
+
+							_mm_storeu_ps(temp, sum3_data);
+							for (int i = 0; i < 3; i++)
+							{
+								sum3 += temp[i];
+							}
 #else
 							// TODO neon optimize
 							float sum0 = *r0 * kernel0[0] + *r1 * kernel0[1] + *r2 * kernel0[2] + *r3 * kernel0[3];
@@ -4036,10 +4118,17 @@ namespace glasssix
 							__m128 r_data = _mm_set1_ps(*r0);
 							__m128 result = _mm_mul_ps(r_data, k_data);
 
-							*outptr0 += result.m128_f32[0];
-							*outptr1 += result.m128_f32[1];
-							*outptr2 += result.m128_f32[2];
-							*outptr3 += result.m128_f32[3];
+							//*outptr0 += result.m128_f32[0];
+							//*outptr1 += result.m128_f32[1];
+							//*outptr2 += result.m128_f32[2];
+							//*outptr3 += result.m128_f32[3];
+
+							float temp[4];
+							_mm_storeu_ps(temp, result);
+							*outptr0 += temp[0];
+							*outptr1 += temp[1];
+							*outptr2 += temp[2];
+							*outptr3 += temp[3];
 
 							r0++;
 							outptr0++;
@@ -4232,8 +4321,14 @@ namespace glasssix
 							float r_array[4] = { *r0, *r1, *r2, *r3 };
 							__m128 r_data = _mm_loadu_ps(r_array);
 							__m128 result = _mm_mul_ps(r_data, k_data);
+							//*outptr += result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2] + result.m128_f32[3];
 
-							*outptr += result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2] + result.m128_f32[3];
+							float temp[4];
+							_mm_storeu_ps(temp, result);
+							for (int i = 0; i < 4; i++)
+							{
+								*outptr += temp[i];
+							}							
 
 							r0++;
 							r1++;
@@ -5222,14 +5317,25 @@ namespace glasssix
 								sum = mm_fmadd_ps(r22, ktmp0, sum);
 								ktmp += 8;
 
-								*outptr0 += sum.m256_f32[0];
-								*outptr1 += sum.m256_f32[1];
-								*outptr2 += sum.m256_f32[2];
-								*outptr3 += sum.m256_f32[3];
-								*outptr4 += sum.m256_f32[4];
-								*outptr5 += sum.m256_f32[5];
-								*outptr6 += sum.m256_f32[6];
-								*outptr7 += sum.m256_f32[7];
+								//*outptr0 += sum.m256_f32[0];
+								//*outptr1 += sum.m256_f32[1];
+								//*outptr2 += sum.m256_f32[2];
+								//*outptr3 += sum.m256_f32[3];
+								//*outptr4 += sum.m256_f32[4];
+								//*outptr5 += sum.m256_f32[5];
+								//*outptr6 += sum.m256_f32[6];
+								//*outptr7 += sum.m256_f32[7];
+
+								float temp[8];
+								_mm256_storeu_ps(temp, sum);
+								*outptr0 += temp[0];
+								*outptr1 += temp[1];
+								*outptr2 += temp[2];
+								*outptr3 += temp[3];
+								*outptr4 += temp[4];
+								*outptr5 += temp[5];
+								*outptr6 += temp[6];
+								*outptr7 += temp[7];
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 								mm_type sum_0 = mm_setzero_ps();
 								mm_type sum_4 = mm_setzero_ps();
@@ -5296,14 +5402,26 @@ namespace glasssix
 								sum_4 = mm_fmadd_ps(r22, ktmp0_4, sum_4);
 								ktmp += 8;
 
-								*outptr0 += sum_0.m128_f32[0];
-								*outptr1 += sum_0.m128_f32[1];
-								*outptr2 += sum_0.m128_f32[2];
-								*outptr3 += sum_0.m128_f32[3];
-								*outptr4 += sum_4.m128_f32[0];
-								*outptr5 += sum_4.m128_f32[1];
-								*outptr6 += sum_4.m128_f32[2];
-								*outptr7 += sum_4.m128_f32[3];
+								//*outptr0 += sum_0.m128_f32[0];
+								//*outptr1 += sum_0.m128_f32[1];
+								//*outptr2 += sum_0.m128_f32[2];
+								//*outptr3 += sum_0.m128_f32[3];
+								//*outptr4 += sum_4.m128_f32[0];
+								//*outptr5 += sum_4.m128_f32[1];
+								//*outptr6 += sum_4.m128_f32[2];
+								//*outptr7 += sum_4.m128_f32[3];
+
+								float temp[4];
+								_mm_storeu_ps(temp, sum_0);
+								*outptr0 += temp[0];
+								*outptr1 += temp[1];
+								*outptr2 += temp[2];
+								*outptr3 += temp[3];
+								_mm_storeu_ps(temp, sum_4);
+								*outptr4 += temp[0];
+								*outptr5 += temp[1];
+								*outptr6 += temp[2];
+								*outptr7 += temp[3];
 #else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
@@ -5664,7 +5782,14 @@ namespace glasssix
 								sum = _mm_add_ps(_mm_mul_ps(r1_data, ktmp3), sum);
 								sum = _mm_add_ps(_mm_mul_ps(r2_data, ktmp6), sum);
 
-								*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+								//*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+
+								float temp[4];
+								_mm_storeu_ps(temp, sum);
+								for (int i = 0; i < 3; i++)
+								{
+									*outptr += temp[i];
+								}
 #else
 								float sum = 0;
 
@@ -10237,10 +10362,17 @@ namespace glasssix
 									ktm0 += 4;
 								}
 
-								output0_tm[0] = sum.m128_f32[0];
-								output1_tm[0] = sum.m128_f32[1];
-								output2_tm[0] = sum.m128_f32[2];
-								output3_tm[0] = sum.m128_f32[3];
+								//output0_tm[0] = sum.m128_f32[0];
+								//output1_tm[0] = sum.m128_f32[1];
+								//output2_tm[0] = sum.m128_f32[2];
+								//output3_tm[0] = sum.m128_f32[3];
+
+								float temp[4];
+								_mm_storeu_ps(temp, sum);
+								output0_tm[0] = temp[0];
+								output1_tm[0] = temp[1];
+								output2_tm[0] = temp[2];
+								output3_tm[0] = temp[3];
 #else
 								float sum0 = 0.f;
 								float sum1 = 0.f;
@@ -13967,7 +14099,14 @@ namespace glasssix
 							float r_array[4] = { *r0, *r1, *r2, *r3 };
 							__m128 r_data = _mm_loadu_ps(r_array);
 							__m128 sum = _mm_mul_ps(k_data, r_data);
-							*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+							//*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum);
+							for (int i = 0; i < 4; i++)
+							{
+								*outptr += temp[i];
+							}
 
 							r0++;
 							r1++;
@@ -14115,7 +14254,14 @@ namespace glasssix
 								float r_array[4] = { *r0, *r1, *r2, *r3 };
 								__m128 r_data = _mm_loadu_ps(r_array);
 								__m128 sum = _mm_mul_ps(k_data, r_data);
-								*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+								//*outptr += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2] + sum.m128_f32[3];
+
+								float temp[4];
+								_mm_storeu_ps(temp, sum);
+								for (int i = 0; i < 4; i++)
+								{
+									*outptr += temp[i];
+								}
 
 								r0 += 2;
 								r1 += 2;
@@ -16930,6 +17076,8 @@ namespace glasssix
 			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, top_blob, 0, top_blob_bordered->height() - top_blob->height(), 0, top_blob_bordered->width() - top_blob->width());
 		}
 
+#ifdef _MSC_VER
+
 		static void conv3x3s1_winograd43_transform_kernel_sse(const std::shared_ptr<tensor<float> >& kernel, std::vector<std::shared_ptr<tensor<float> >> &kernel_tm2, int inch, int outch)
 		{
 			const float *kernel_data = kernel->cpu_data();
@@ -16996,47 +17144,193 @@ namespace glasssix
 					// h
 					float tmp[6][3] = {0};
 
-					tmp[0][0] += tmp00_data.m128_f32[0] + tmp00_data.m128_f32[1] + tmp00_data.m128_f32[2];
-					tmp[0][1] += tmp01_data.m128_f32[0] + tmp01_data.m128_f32[1] + tmp01_data.m128_f32[2];
-					tmp[0][2] += tmp02_data.m128_f32[0] + tmp02_data.m128_f32[1] + tmp02_data.m128_f32[2];
-					tmp[1][0] += tmp10_data.m128_f32[0] + tmp10_data.m128_f32[1] + tmp10_data.m128_f32[2];
-					tmp[1][1] += tmp11_data.m128_f32[0] + tmp11_data.m128_f32[1] + tmp11_data.m128_f32[2];
-					tmp[1][2] += tmp12_data.m128_f32[0] + tmp12_data.m128_f32[1] + tmp12_data.m128_f32[2];
-					tmp[2][0] += tmp20_data.m128_f32[0] + tmp20_data.m128_f32[1] + tmp20_data.m128_f32[2];
-					tmp[2][1] += tmp21_data.m128_f32[0] + tmp21_data.m128_f32[1] + tmp21_data.m128_f32[2];
-					tmp[2][2] += tmp22_data.m128_f32[0] + tmp22_data.m128_f32[1] + tmp22_data.m128_f32[2];
-					tmp[3][0] += tmp30_data.m128_f32[0] + tmp30_data.m128_f32[1] + tmp30_data.m128_f32[2];
-					tmp[3][1] += tmp31_data.m128_f32[0] + tmp31_data.m128_f32[1] + tmp31_data.m128_f32[2];
-					tmp[3][2] += tmp32_data.m128_f32[0] + tmp32_data.m128_f32[1] + tmp32_data.m128_f32[2];
-					tmp[4][0] += tmp40_data.m128_f32[0] + tmp40_data.m128_f32[1] + tmp40_data.m128_f32[2];
-					tmp[4][1] += tmp41_data.m128_f32[0] + tmp41_data.m128_f32[1] + tmp41_data.m128_f32[2];
-					tmp[4][2] += tmp42_data.m128_f32[0] + tmp42_data.m128_f32[1] + tmp42_data.m128_f32[2];
-					tmp[5][0] += tmp50_data.m128_f32[0] + tmp50_data.m128_f32[1] + tmp50_data.m128_f32[2];
-					tmp[5][1] += tmp51_data.m128_f32[0] + tmp51_data.m128_f32[1] + tmp51_data.m128_f32[2];
-					tmp[5][2] += tmp52_data.m128_f32[0] + tmp52_data.m128_f32[1] + tmp52_data.m128_f32[2];
+					//tmp[0][0] += tmp00_data.m128_f32[0] + tmp00_data.m128_f32[1] + tmp00_data.m128_f32[2];
+					//tmp[0][1] += tmp01_data.m128_f32[0] + tmp01_data.m128_f32[1] + tmp01_data.m128_f32[2];
+					//tmp[0][2] += tmp02_data.m128_f32[0] + tmp02_data.m128_f32[1] + tmp02_data.m128_f32[2];
+					//tmp[1][0] += tmp10_data.m128_f32[0] + tmp10_data.m128_f32[1] + tmp10_data.m128_f32[2];
+					//tmp[1][1] += tmp11_data.m128_f32[0] + tmp11_data.m128_f32[1] + tmp11_data.m128_f32[2];
+					//tmp[1][2] += tmp12_data.m128_f32[0] + tmp12_data.m128_f32[1] + tmp12_data.m128_f32[2];
+					//tmp[2][0] += tmp20_data.m128_f32[0] + tmp20_data.m128_f32[1] + tmp20_data.m128_f32[2];
+					//tmp[2][1] += tmp21_data.m128_f32[0] + tmp21_data.m128_f32[1] + tmp21_data.m128_f32[2];
+					//tmp[2][2] += tmp22_data.m128_f32[0] + tmp22_data.m128_f32[1] + tmp22_data.m128_f32[2];
+					//tmp[3][0] += tmp30_data.m128_f32[0] + tmp30_data.m128_f32[1] + tmp30_data.m128_f32[2];
+					//tmp[3][1] += tmp31_data.m128_f32[0] + tmp31_data.m128_f32[1] + tmp31_data.m128_f32[2];
+					//tmp[3][2] += tmp32_data.m128_f32[0] + tmp32_data.m128_f32[1] + tmp32_data.m128_f32[2];
+					//tmp[4][0] += tmp40_data.m128_f32[0] + tmp40_data.m128_f32[1] + tmp40_data.m128_f32[2];
+					//tmp[4][1] += tmp41_data.m128_f32[0] + tmp41_data.m128_f32[1] + tmp41_data.m128_f32[2];
+					//tmp[4][2] += tmp42_data.m128_f32[0] + tmp42_data.m128_f32[1] + tmp42_data.m128_f32[2];
+					//tmp[5][0] += tmp50_data.m128_f32[0] + tmp50_data.m128_f32[1] + tmp50_data.m128_f32[2];
+					//tmp[5][1] += tmp51_data.m128_f32[0] + tmp51_data.m128_f32[1] + tmp51_data.m128_f32[2];
+					//tmp[5][2] += tmp52_data.m128_f32[0] + tmp52_data.m128_f32[1] + tmp52_data.m128_f32[2];
+
+					float temp[4];
+					//tmp00_01_02
+					_mm_storeu_ps(temp, tmp00_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[0][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp01_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[0][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp02_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[0][2] += temp[i];
+					}
+
+					//tmp10_11_12
+					_mm_storeu_ps(temp, tmp10_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[1][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp11_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[1][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp12_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[1][2] += temp[i];
+					}
+
+					//tmp20_21_22
+					_mm_storeu_ps(temp, tmp20_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[2][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp21_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[2][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp22_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[2][2] += temp[i];
+					}
+
+					//tmp30_31_32
+					_mm_storeu_ps(temp, tmp30_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[3][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp31_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[3][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp32_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[3][2] += temp[i];
+					}
+
+					//tmp40_41_42
+					_mm_storeu_ps(temp, tmp40_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[4][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp41_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[4][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp42_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[4][2] += temp[i];
+					}
+
+					//tmp50_51_52
+					_mm_storeu_ps(temp, tmp50_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[5][0] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp51_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[5][1] += temp[i];
+					}
+
+					_mm_storeu_ps(temp, tmp52_data);
+					for (int i = 0; i < 3; i++)
+					{
+						tmp[5][2] += temp[i];
+					}
 
 					// U
 					for (int j = 0; j < 6; j++)
 					{
+						float temp[4];
 						__m128 tmpp = _mm_loadu_ps(tmp[j]);
 
 						__m128 result = _mm_mul_ps(tmpp, ktm0_data);
-						kernel_tm0[j * 6 + 0] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 0] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 0] += temp[i];
+						}
 
 						result = _mm_mul_ps(tmpp, ktm1_data);
-						kernel_tm0[j * 6 + 1] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 1] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 1] += temp[i];
+						}
 
 						result = _mm_mul_ps(tmpp, ktm2_data);
-						kernel_tm0[j * 6 + 2] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 2] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 2] += temp[i];
+						}
 
 						result = _mm_mul_ps(tmpp, ktm3_data);
-						kernel_tm0[j * 6 + 3] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 3] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 3] += temp[i];
+						}
 
 						result = _mm_mul_ps(tmpp, ktm4_data);
-						kernel_tm0[j * 6 + 4] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 4] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 4] += temp[i];
+						}
 
 						result = _mm_mul_ps(tmpp, ktm5_data);
-						kernel_tm0[j * 6 + 5] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						//kernel_tm0[j * 6 + 5] = result.m128_f32[0] + result.m128_f32[1] + result.m128_f32[2];
+						_mm_storeu_ps(temp, result);
+						for (int i = 0; i < 3; i++)
+						{
+							kernel_tm0[j * 6 + 5] += temp[i];
+						}
 					}
 
 #else
@@ -18353,6 +18647,7 @@ namespace glasssix
 			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, top_blob, 0, top_blob_bordered->height() - top_blob->height(), 0, top_blob_bordered->width() - top_blob->width());
 		}
 
+#endif
 	}
 }
 
