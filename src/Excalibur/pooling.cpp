@@ -16,24 +16,27 @@ namespace glasssix
 
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
-			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
-			CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
-			CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
-			if (type_ == MAX)
+			if (device_ >= 0)
 			{
-				mode_ = CUDNN_POOLING_MAX;
-			}
-			else if (type_ == AVE)
-			{
-				mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
-			}
-			else
-			{
-				LOG(FATAL) << "Unknown pooling type.";
-			}
-			CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pooling_desc_));
-			CUDNN_CHECK(cudnnSetPooling2dDescriptor(pooling_desc_, mode_,
-				CUDNN_PROPAGATE_NAN, kernel_, kernel_, pad_, pad_, stride_, stride_));
+				CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&bottom_desc_));
+				CUDNN_CHECK(cudnnCreateTensorDescriptor(&top_desc_));
+				if (type_ == MAX)
+				{
+					mode_ = CUDNN_POOLING_MAX;
+				}
+				else if (type_ == AVE)
+				{
+					mode_ = CUDNN_POOLING_AVERAGE_COUNT_INCLUDE_PADDING;
+				}
+				else
+				{
+					LOG(FATAL) << "Unknown pooling type.";
+				}
+				CUDNN_CHECK(cudnnCreatePoolingDescriptor(&pooling_desc_));
+				CUDNN_CHECK(cudnnSetPooling2dDescriptor(pooling_desc_, mode_,
+					CUDNN_PROPAGATE_NAN, kernel_, kernel_, pad_, pad_, stride_, stride_));
+			}			
 #endif
 #endif // USE_CUDA
 
@@ -45,13 +48,16 @@ namespace glasssix
 
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
-			if (cudnn_handle_)
+			if (device_ >= 0)
 			{
-				CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+				if (cudnn_handle_)
+				{
+					CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+				}
+				cudnnDestroyTensorDescriptor(bottom_desc_);
+				cudnnDestroyTensorDescriptor(top_desc_);
+				cudnnDestroyPoolingDescriptor(pooling_desc_);
 			}
-			cudnnDestroyTensorDescriptor(bottom_desc_);
-			cudnnDestroyTensorDescriptor(top_desc_);
-			cudnnDestroyPoolingDescriptor(pooling_desc_);
 #endif
 #endif // USE_CUDA
 

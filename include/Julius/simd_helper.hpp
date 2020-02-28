@@ -94,13 +94,20 @@ namespace glasssix
 		sum = _mm_fmadd_ps(r0_data, k0_data, sum);
 		sum = _mm_fmadd_ps(r1_data, k1_data, sum);
 		sum = _mm_fmadd_ps(r2_data, k2_data, sum);
-		sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
 #else
 		sum = _mm_add_ps(_mm_mul_ps(r0_data, k0_data), sum);
 		sum = _mm_add_ps(_mm_mul_ps(r1_data, k1_data), sum);
 		sum = _mm_add_ps(_mm_mul_ps(r2_data, k2_data), sum);
-		sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
 #endif
+
+		float temp[4];
+		_mm_storeu_ps(temp, sum);
+		for (int i = 0; i < 3; i++)
+		{
+			sum_sum += temp[i];
+		}
 
 		return sum_sum;
 	}
