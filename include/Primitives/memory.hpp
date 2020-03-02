@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <type_traits>
 
 namespace glasssix
 {
@@ -35,7 +36,6 @@ namespace glasssix
 		/// Frees a piece of memory on the heap.
 		/// </summary>
 		/// <param name="memory">The memory pointer</param>
-		/// <returns>The memory pointer</returns>
 		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory);
 
 		/// <summary>
@@ -56,6 +56,57 @@ namespace glasssix
 		Element* heap_alloc_elements(std::size_t size)
 		{
 			return static_cast<Element*>(heap_alloc(size * sizeof(Element)));
+		}
+
+		/// <summary>
+		/// Allocates some objects with constructible arguments.
+		/// </summary>
+		/// <typeparam name="Object">The object type</typeparam>
+		/// <typeparam name="...Args">The argument types</typeparam>
+		/// <param name="...args">The arguments</param>
+		/// <returns>The memory pointer at the first object</returns>
+		template<typename Object, typename... Args>
+		auto heap_alloc_objects(std::size_t size, Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		{
+			auto result = static_cast<Object*>(heap_alloc(sizeof(Object) * size));
+			auto end_ptr = result + size;
+
+			for (auto ptr = result; ptr < end_ptr; ptr++)
+			{
+				new (ptr) Object{ std::forward<Args>(args)... };
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Allocates an object with constructible arguments.
+		/// </summary>
+		/// <typeparam name="Object">The object type</typeparam>
+		/// <typeparam name="...Args">The argument types</typeparam>
+		/// <param name="...args">The arguments</param>
+		/// <returns>The object pointer</returns>
+		template<typename Object, typename... Args>
+		auto heap_alloc_object(Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		{
+			auto result = static_cast<Object*>(heap_alloc(sizeof(Object)));
+
+			return new (result) Object{ std::forward<Args>(args)... };
+		}
+
+		/// <summary>
+		/// Destroys an object with freeing the memory on the heap.
+		/// </summary>
+		/// <typeparam name="Object">The object type</typeparam>
+		/// <param name="memory">The memory</param>
+		template<typename Object>
+		void heap_free_object(Object* memory)
+		{
+			if (memory != nullptr)
+			{
+				memory->~Object();
+				heap_free(memory);
+			}
 		}
 	}
 }
