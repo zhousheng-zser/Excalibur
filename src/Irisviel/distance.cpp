@@ -90,6 +90,23 @@ namespace glasssix
 			}
 			result = _mm_sumall_ps(sum);
 #undef SSE_L2SQR
+#elif defined __ARM_NEON
+			float32x4_t sum_vec = vdupq_n_f32(0);
+			float32x4_t temp_vec_a;
+			float32x4_t temp_vec_b;
+			for (int i = 0; i < size; i += 4)
+			{
+				temp_vec_a = vld1q_f32(a + i);
+				temp_vec_b = vld1q_f32(b + i);
+				temp_vec_a = vsub_f32(temp_vec_a, temp_vec_b);
+				sum_vec = vmlaq_f32(sum_vec, temp_vec_a, temp_vec_a);
+			}
+			float32x2_t r = vadd_f32(vget_high_f32(sum_vec), vget_low_f32(sum_vec));
+			result += vget_lane_f32(vpadd_f32(r, r), 0);
+			for (size_t i = size - size % 4; i < size; i++)
+			{
+				result += (a[i] - b[i]) * (a[i] - b[i]);
+			}
 #else
 			float diff0, diff1, diff2, diff3;
 			const float* last = a + size;
@@ -192,6 +209,22 @@ namespace glasssix
 			}
 			result = _mm_sumall_ps(sum);
 #undef SSE_DOT
+#elif defined __ARM_NEON
+			float32x4_t sum_vec = vdupq_n_f32(0);
+			float32x4_t temp_vec_a;
+			float32x4_t temp_vec_b;
+			for (int i = 0; i < size; i += 4)
+			{
+				temp_vec_a = vld1q_f32(a + i);
+				temp_vec_b = vld1q_f32(b + i);
+				sum_vec = vmlaq_f32(sum_vec, temp_vec_a, temp_vec_b);
+			}
+			float32x2_t r = vadd_f32(vget_high_f32(sum_vec), vget_low_f32(sum_vec));
+			result += vget_lane_f32(vpadd_f32(r, r), 0);
+			for (size_t i = size - size % 4; i < size; i++)
+			{
+				result += a[i] * b[i];
+			}
 #else
 			float dot0, dot1, dot2, dot3;
 			const float* last = a + size;
@@ -286,6 +319,20 @@ namespace glasssix
 			}
 			result = _mm_sumall_ps(sum);
 #undef SSE_L2NORM
+#elif defined __ARM_NEON
+			float32x4_t sum_vec = vdupq_n_f32(0);
+			float32x4_t temp_vec;
+			for (int i = 0; i < size; i += 4)
+			{
+				temp_vec = vld1q_f32(a + i);
+				sum_vec = vmlaq_f32(sum_vec, temp_vec, temp_vec);
+			}
+			float32x2_t r = vadd_f32(vget_high_f32(sum_vec), vget_low_f32(sum_vec));
+			result += vget_lane_f32(vpadd_f32(r, r), 0);
+			for (size_t i = size - size % 4; i < size; i++)
+			{
+				result += a[i] * a[i];
+			}
 #else
 			float dot0, dot1, dot2, dot3;
 			const float* last = a + size;
@@ -399,6 +446,20 @@ namespace glasssix
 			}
 			result = _mm_sumall_ps(sum);
 #undef SSE_L2NORM2
+#elif defined __ARM_NEON
+			float32x4_t sum_vec = vdupq_n_f32(0);
+			float32x4_t temp_vec;
+			for (int i = 0; i < size; i += 4)
+			{
+				temp_vec = vld1q_f32(a + i);
+				sum_vec = vmlaq_f32(sum_vec, temp_vec, temp_vec);
+			}
+			float32x2_t r = vadd_f32(vget_high_f32(sum_vec), vget_low_f32(sum_vec));
+			result += vget_lane_f32(vpadd_f32(r, r), 0);
+			for (size_t i = size - size % 4; i < size; i++)
+			{
+				result += a[i] * a[i];
+			}
 #else
 			float dot0, dot1, dot2, dot3;
 			const float* last = a + size;
