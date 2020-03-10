@@ -67,7 +67,6 @@
 *.vs
 *.CopyComplete
 *.bin
-jni/
 windows/
 examples/
 include/Excalibur/prune.hpp
