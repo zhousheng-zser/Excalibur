@@ -134,6 +134,7 @@ namespace glasssix
 
 		std::vector<std::vector<knn_search_result>> knn_runner::search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top)
 		{
+			int dimension = features_->dimension();
 			std::vector<std::vector<knn_search_result>> result;
 
 			// We only search the result when the current state is valid.
@@ -180,9 +181,12 @@ namespace glasssix
 						}
 
 						// Retrieve the orginal data in the mapping file.
-						auto orginal_data = reinterpret_cast<const knn_mapping_data*>(reinterpret_cast<const int8_t*>(current_data_[index]) - knn_mapping_data::feature_offset);
+						auto offset = reinterpret_cast<const std::uint8_t*>(current_data_[index]) - knn_mapping_data::feature_offset(dimension);
+						auto result = knn_mapping_data::create(dimension, const_cast<std::uint8_t*>(offset));
 
-						inner.emplace_back(knn_search_result{ knn_mapping_data{*orginal_data}, distances[i][j] });
+						auto orginal_data = reinterpret_cast<const knn_mapping_data*>(reinterpret_cast<const int8_t*>(current_data_[index]) - knn_mapping_data::feature_offset(dimension));
+
+						inner.emplace_back(knn_search_result{ result, distances[i][j] });
 					}
 
 					result.emplace_back(inner);

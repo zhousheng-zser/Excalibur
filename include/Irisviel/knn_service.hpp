@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 #include <fstream>
+#include <cstddef>
 #include <algorithm>
 #include <cstdlib>
 #include <string>
@@ -37,9 +38,7 @@ namespace glasssix
 	{
 		struct pair_hash
 		{
-			size_t
-				operator()(
-					const std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>& obj) const noexcept
+			std::size_t operator()(const std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>& obj) const noexcept
 			{
 				return std::hash<std::shared_ptr<knn_mapping_manager>>{}(obj.first);
 			}
@@ -48,10 +47,8 @@ namespace glasssix
 		class knn_service
 		{
 		public:
-			knn_service(int max_items, const std::string& new_save_path,
-				const std::string& tmp_path) : max_items_{ max_items },
-				new_save_path_{ new_save_path },
-				tmp_path_{ tmp_path } {
+			knn_service(int max_items, int dimension, const std::string& new_save_path, const std::string& tmp_path) : max_items_{ max_items }, dimension_{ dimension }, new_save_path_{ new_save_path }, tmp_path_{ tmp_path }
+			{
 			}
 
 			virtual ~knn_service() = default;
@@ -104,8 +101,8 @@ namespace glasssix
 
 				std::sort(result.begin(), result.end(),
 					[](const knn_search_result& left, knn_search_result& right) {
-					return left.distance_in_percentage > right.distance_in_percentage;
-				});
+						return left.distance_in_percentage > right.distance_in_percentage;
+					});
 
 				result.resize(std::min(static_cast<size_t>(top), result.size()));
 
@@ -134,7 +131,7 @@ namespace glasssix
 						{
 							is_built = true;
 						}
-					});
+						});
 					if (is_built)
 					{
 						if (!item.second->build(true))
@@ -196,15 +193,15 @@ namespace glasssix
 				return files;
 			}
 
-			void add_features(std::vector<knn_mapping_data>& data)
+			void add_features(std::vector<std::shared_ptr<knn_mapping_data>>& data)
 			{
 				std::unordered_set<std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>, pair_hash> used_managers;
 				for (int i = 0; i < data.size(); ++i)
 				{
 					auto item = std::find_if(cache_.begin(), cache_.end(),
 						[&](const std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>& item) {
-						return item.first->emplace_back(data[i]);
-					});
+							return item.first->emplace_back(*data[i]);
+						});
 					if (item != cache_.end())
 					{
 						used_managers.emplace(*item);
@@ -215,7 +212,7 @@ namespace glasssix
 					auto uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
 					std::string file_path{ new_save_path_ + "/append_" + uuid + ".map" };
 					std::fstream{ file_path, std::ios::trunc | std::ios::out | std::ios::binary };
-					build_single_core(file_path, &data[i], false);
+					build_single_core(file_path, data[i].get(), false);
 				}
 
 				for (auto& item : used_managers)
@@ -234,8 +231,8 @@ namespace glasssix
 			{
 				auto item = std::find_if(cache_.begin(), cache_.end(),
 					[&](const std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>& item) {
-					return item.first->emplace_back(data);
-				});
+						return item.first->emplace_back(data);
+					});
 
 				// Success, rebuild it.
 				if (item != cache_.end())
@@ -267,7 +264,7 @@ namespace glasssix
 				}
 			}
 
-			void update_more(const std::vector<knn_mapping_data>& data)
+			void update_more(const std::vector<std::shared_ptr<knn_mapping_data>>& data)
 			{
 				std::unordered_set<std::pair<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>>, pair_hash> used_managers;
 
@@ -277,7 +274,7 @@ namespace glasssix
 
 					for (auto& each_data : data)
 					{
-						if (item.first->update(const_cast<knn_mapping_data&>(each_data)))
+						if (item.first->update(*each_data))
 						{
 							is_used = true;
 						}
@@ -296,11 +293,10 @@ namespace glasssix
 				}
 			}
 
-		private:
-			void build_single_core(const std::string& path, knn_mapping_data* data = nullptr,
-				bool needs_build = true)
+		public:
+			void build_single_core(const std::string& path, knn_mapping_data* data = nullptr, bool needs_build = true)
 			{
-				auto manager = std::make_shared<knn_mapping_manager>(path, max_items_);
+				auto manager = std::make_shared<knn_mapping_manager>(path, max_items_, dimension_);
 				auto runner = std::make_shared<knn_runner>(manager->create_features_reference(),
 					tmp_path_);
 				//LOGD("All finished");
@@ -323,14 +319,13 @@ namespace glasssix
 				cache_[manager] = runner;
 			}
 
-		private:
 			static inline void force_delete_file(const std::string& path)
 			{
 				system(("rm """ + path + """").c_str());
 			}
 
-		private:
 			int max_items_;
+			int dimension_;
 			std::string tmp_path_;
 			std::string new_save_path_;
 			std::unordered_map<std::shared_ptr<knn_mapping_manager>, std::shared_ptr<knn_runner>> cache_;
