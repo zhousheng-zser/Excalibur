@@ -346,7 +346,7 @@ namespace glasssix
 				std::mt19937 rng(seed);
 #endif
 
-				std::vector<uint32_t> random{ params.k + 1 };
+				std::vector<uint32_t> random(params.k + 1);
 #ifdef _OPENMP
 #pragma omp for
 #endif
@@ -566,10 +566,10 @@ namespace glasssix
 
 			kgraph.resize(n);
 
-			for (uint32_t n = 0; n < n; ++n)
+			for (uint32_t i = 0; i < n; ++i)
 			{
-				auto& knn = kgraph[n];
-				auto const& pool = nhoods[n]->pool;
+				auto& knn = kgraph[i];
+				auto const& pool = nhoods[i]->pool;
 				uint32_t size = params.pool_size;
 				knn.resize(size);
 				for (uint32_t k = 0; k < size; ++k)
