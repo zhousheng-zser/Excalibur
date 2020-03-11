@@ -47,9 +47,7 @@ void Irisviel_build(glasssix::irisviel::knn_service *instance, int n_files, char
 
 int Irisviel_search(glasssix::irisviel::knn_service *instance, glasssix::irisviel::knn_search_result **result, float *feature, int top)
 {
-	std::array<float, 128> array;
-	std::copy(feature, feature + 128, array.begin());
-	std::vector<glasssix::irisviel::knn_search_result> result_vec = instance->search(array, top);
+	std::vector<glasssix::irisviel::knn_search_result> result_vec = instance->search(feature, top);
 	
 	size_t result_num = result_vec.size();
 
