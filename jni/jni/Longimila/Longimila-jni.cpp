@@ -12,7 +12,7 @@
 #include <android/log.h>
   
 #define TAG    "Longimila-jni"
-#define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,TAG,__VA_ARGS__)
+#define LOGW(...)  __android_log_print(ANDROID_LOG_WARN,TAG, __VA_ARGS__)
 
 static const char *FaceRectClassPath = "com/glasssix/Longimila/FaceRect";
 static const char *FaceRectwithFaceInfoClassPath = "com/glasssix/Longimila/FaceRectwithFaceInfo";
@@ -41,16 +41,16 @@ JNIEXPORT void JNICALL Java_com_glasssix_Longimila_Longimila_set(JNIEnv *env, jo
 	switch(detectionType)
 	{
 		case 0:
-			pDetector->set(glasssix::longinus::DetectionType::FRONTALVIEW, device);
+			pDetector->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 			break;
 		case 1:
-			pDetector->set(glasssix::longinus::DetectionType::FRONTALVIEW_REINFORCE, device);
+			pDetector->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW_REINFORCE, device);
 			break;
 		case 2:
-			pDetector->set(glasssix::longinus::DetectionType::MULTIVIEW, device);
+			pDetector->set(glasssix::longinus::longinus_detection_type::MULTIVIEW, device);
 			break;
 		case 3:
-			pDetector->set(glasssix::longinus::DetectionType::MULTIVIEW_REINFORCE, device);
+			pDetector->set(glasssix::longinus::longinus_detection_type::MULTIVIEW_REINFORCE, device);
 			break;
 	}
 	
@@ -82,7 +82,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectbyMat
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
 	
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
-	std::vector<glasssix::longinus::FaceRect> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, false, false);
+	std::vector<glasssix::longinus::face_rect_basic> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, false, false);
 	glasssix::longinus::sort_descend(rects);
 	jsize size = rects.size();
 	jclass FaceRectClazz = env->FindClass(FaceRectClassPath);
@@ -114,7 +114,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithI
 	glasssix::longinus::LonginusDetector *pDetector = (glasssix::longinus::LonginusDetector *)p;
 	
 	cv::Mat &gray = *(cv::Mat *)grayNativeObj;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, order, false, false);
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects = pDetector->detect(gray.data, gray.cols, gray.rows, gray.step[0], minSize, scale, minNeighbors, order, false, false);
 	glasssix::longinus::sort_descend(rects);
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
@@ -191,7 +191,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectbyMet
 	std::vector<unsigned char> data_vec(dataSize, 0);
 	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
 	jsize size;
-	std::vector<glasssix::longinus::FaceRect> rects;
+	std::vector<glasssix::longinus::face_rect_basic> rects;
 	if (data_vec.size() != width * height)
 	{
 		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
@@ -236,7 +236,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectwithI
 	std::vector<unsigned char> data_vec(dataSize, 0);
 	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
 	jsize size;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (data_vec.size() != width * height)
 	{
 		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
@@ -347,7 +347,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_match(JNIEn
 	jfieldID fid_neighbors = env->GetFieldID(FaceRectClazz, "neighbors", "I");
 	jfieldID fid_confidence = env->GetFieldID(FaceRectClazz, "confidence", "D");
 	
-	std::vector<glasssix::longinus::FaceRect> faceRects;
+	std::vector<glasssix::longinus::face_rect_basic> faceRects;
 	jsize arrSize = env->GetArrayLength(faceRectArray);
 	for(size_t i = 0; i < arrSize; i++)
 	{
@@ -535,7 +535,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyM
 	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
 	
 	cv::Mat &mat = *(cv::Mat *)matNativeObj;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects = pDetector->detectEx(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
 	glasssix::longinus::sort_descend(rects);
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
@@ -611,7 +611,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExMob
 	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
 
 	cv::Mat &mat = *(cv::Mat *)matNativeObj;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx_mobile(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects = pDetector->detectEx_mobile(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
 	glasssix::longinus::sort_descend(rects);
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
@@ -709,7 +709,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExMob
 	env->GetFloatArrayRegion(threshold, 0, thresholdSize, (jfloat *)threshold_vec.data());
 
 	cv::Mat &mat = *(cv::Mat *)matNativeObj;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects = pDetector->detectEx_mobile_nir(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects = pDetector->detectEx_mobile_nir(mat.data, mat.channels(), mat.rows, mat.cols, minSize, threshold_vec.data(), 1.0f / factor, stage, order);
 	glasssix::longinus::sort_descend(rects);
 	jsize size = rects.size();
 	jclass FaceRectwithFaceInfoClazz = env->FindClass(FaceRectwithFaceInfoClassPath);
@@ -790,7 +790,7 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 
 	cv::Mat &vsl_mat = *(cv::Mat *)vsl_matNativeObj;
 	cv::Mat &nir_mat = *(cv::Mat *)nir_matNativeObj;
-	std::vector<std::vector<glasssix::longinus::FaceRectwithFaceInfo> > pair_rects = pDetector->detectEx_mobile_pair(vsl_mat.data, vsl_mat.channels(), vsl_mat.rows, vsl_mat.cols, vsl_minSize, vsl_threshold_vec.data(), 1.0f / vsl_factor, vsl_stage, vsl_order, nir_mat.data, nir_mat.channels(), nir_mat.rows, nir_mat.cols, nir_minSizeSize, nir_threshold_vec.data(), 1.0f / nir_factor, nir_stage, nir_order);
+	std::vector<std::vector<glasssix::longinus::face_rect_with_face_info> > pair_rects = pDetector->detectEx_mobile_pair(vsl_mat.data, vsl_mat.channels(), vsl_mat.rows, vsl_mat.cols, vsl_minSize, vsl_threshold_vec.data(), 1.0f / vsl_factor, vsl_stage, vsl_order, nir_mat.data, nir_mat.channels(), nir_mat.rows, nir_mat.cols, nir_minSize, nir_threshold_vec.data(), 1.0f / nir_factor, nir_stage, nir_order);
 	glasssix::longinus::sort_descend(pair_rects[0]);
 	glasssix::longinus::sort_descend(pair_rects[1]);
 	
@@ -851,9 +851,9 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 			env->DeleteLocalRef(PointObj);
 		}
 
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, pair_rects[0][i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, pair_rects[0][i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, pair_rects[0][i].roll);
 
 		env->SetObjectArrayElement(vsl_array, i, FaceRectwithFaceInfoObj);
 
@@ -883,9 +883,9 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 			env->DeleteLocalRef(PointObj);
 		}
 
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, pair_rects[1][i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, pair_rects[1][i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, pair_rects[1][i].roll);
 
 		env->SetObjectArrayElement(nir_array, i, FaceRectwithFaceInfoObj);
 
@@ -893,8 +893,8 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
 	}
 	
-	env->setObjectField(pairObj, fid_vsl, vsl_array);
-	env->setObjectField(pairObj, fid_nir, nir_array);
+	env->SetObjectField(pairObj, fid_vsl, vsl_array);
+	env->SetObjectField(pairObj, fid_nir, nir_array);
 
 	env->DeleteLocalRef(PointClazz);
 	env->DeleteLocalRef(FaceRectClazz);
@@ -976,7 +976,7 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMat(JNIEnv *env, jobject thiz, jlong vs
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0, landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -987,10 +987,8 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMat(JNIEnv *env, jobject thiz, jlong vs
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->blur_judge_vsl(vsl_color_image_mat.data, vsl_color_image_mat.rows, vsl_color_image_mat.cols, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 
@@ -1037,7 +1035,7 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMat(JNIEnv *env, jobject thiz, jl
 	
 	if(bboxDimension != 4 || landmarksDimension != 10)
 	{
-		LOGW("bboxDimension != 4 or landmarksDimension != 10")
+		LOGW("bboxDimension != 4 or landmarksDimension != 10");
 		env->DeleteLocalRef(landmarks0);
 		env->DeleteLocalRef(bbox0);
 		env->DeleteLocalRef(clazz);
@@ -1066,7 +1064,7 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMat(JNIEnv *env, jobject thiz, jl
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0, landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -1077,10 +1075,8 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMat(JNIEnv *env, jobject thiz, jl
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->black_white_judge_vsl(vsl_color_image_mat.data, vsl_color_image_mat.rows, vsl_color_image_mat.cols, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 
@@ -1156,7 +1152,7 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMat(JNIEnv *env, jobject thiz, jlon
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0, landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -1167,10 +1163,8 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMat(JNIEnv *env, jobject thiz, jlon
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->face_nose_judge_nir(nir_color_image_mat.data, nir_color_image_mat.rows, nir_color_image_mat.cols, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 
@@ -1194,10 +1188,10 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExbyM
 	std::vector<unsigned char> data_vec(dataSize, 0);
 	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
 	jsize size;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (data_vec.size() != width * height * 3)
 	{
-		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		size = 0;
 	}
 	else
@@ -1283,10 +1277,10 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExMob
 	std::vector<unsigned char> data_vec(dataSize, 0);
 	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
 	jsize size;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (data_vec.size() != width * height * 3)
 	{
-		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		size = 0;
 	}
 	else
@@ -1369,7 +1363,7 @@ JNIEXPORT jbyteArray Java_com_glasssix_Longimila_Longimila_alignSingleFacebyMeta
 	std::vector<unsigned char> aligned_vec;
 	if (data_vec.size() != width * height * 1)
 	{
-		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);l;
 	}
 	else
 	{
@@ -1402,10 +1396,10 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Longimila_Longimila_detectExMob
 	env->GetByteArrayRegion(dataArray, 0, dataSize, (jbyte *)data_vec.data());
 	
 	jsize size;
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (data_vec.size() != width * height * 3)
 	{
-		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		size = 0;
 	}
 	else
@@ -1508,13 +1502,13 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 	
 	if (vsl_data_vec.size() != vsl_width * vsl_height * 3 || nir_data_vec.size() != nir_width * nir_height * 3)
 	{
-		std::cout << "Data size dismatch! " << "In line " << __LINE__ << " of " << __FILE__ << std::endl;
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		env->DeleteLocalRef(FaceRectwithFaceInfoPairClazz);
 		env->DeleteLocalRef(clazz);
 		return pairObj;
 	}
 	
-	std::vector<std::vector<glasssix::longinus::FaceRectwithFaceInfo> > pair_rects = pDetector->detectEx_mobile_pair((unsigned char *)vsl_data_vec.data(), 3, vsl_height, vsl_width, vsl_minSize, vsl_threshold_vec.data(), 1.0f / vsl_factor, vsl_stage, vsl_order, nir_data_vec.data(), 3, nir_height, nir_width, nir_minSizeSize, nir_threshold_vec.data(), 1.0f / nir_factor, nir_stage, nir_order);
+	std::vector<std::vector<glasssix::longinus::face_rect_with_face_info> > pair_rects = pDetector->detectEx_mobile_pair((unsigned char *)vsl_data_vec.data(), 3, vsl_height, vsl_width, vsl_minSize, vsl_threshold_vec.data(), 1.0f / vsl_factor, vsl_stage, vsl_order, nir_data_vec.data(), 3, nir_height, nir_width, nir_minSizeSize, nir_threshold_vec.data(), 1.0f / nir_factor, nir_stage, nir_order);
 
 	glasssix::longinus::sort_descend(pair_rects[0]);
 	glasssix::longinus::sort_descend(pair_rects[1]);
@@ -1570,9 +1564,9 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 			env->DeleteLocalRef(PointObj);
 		}
 
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, pair_rects[0][i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, pair_rects[0][i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, pair_rects[0][i].roll);
 
 		env->SetObjectArrayElement(vsl_array, i, FaceRectwithFaceInfoObj);
 
@@ -1602,9 +1596,9 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 			env->DeleteLocalRef(PointObj);
 		}
 
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, rects[i].yaw);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, rects[i].pitch);
-		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, rects[i].roll);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_yaw, pair_rects[1][i].yaw);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_pitch, pair_rects[1][i].pitch);
+		env->SetFloatField(FaceRectwithFaceInfoObj, fid_roll, pair_rects[1][i].roll);
 
 		env->SetObjectArrayElement(nir_array, i, FaceRectwithFaceInfoObj);
 
@@ -1612,8 +1606,8 @@ JNIEXPORT jobject JNICALL Java_com_glasssix_Longimila_Longimila_detectExMobilePa
 		env->DeleteLocalRef(FaceRectwithFaceInfoObj);
 	}
 	
-	env->setObjectField(pairObj, fid_vsl, vsl_array);
-	env->setObjectField(pairObj, fid_nir, nir_array);
+	env->SetObjectField(pairObj, fid_vsl, vsl_array);
+	env->SetObjectField(pairObj, fid_nir, nir_array);
 
 	env->DeleteLocalRef(PointClazz);
 	env->DeleteLocalRef(FaceRectClazz);
@@ -1658,10 +1652,10 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMetaData(JNIEnv *env, jobject thiz, jby
 	
 	jsize dataSize = env->GetArrayLength(vsl_color_image_dataArray);
 	
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (dataSize != width * height * 3)
 	{
-		LODW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		env->DeleteLocalRef(clazz);
 		return JNI_FALSE;
 	}
@@ -1677,7 +1671,7 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMetaData(JNIEnv *env, jobject thiz, jby
 	
 	if(bboxDimension != 4 || landmarksDimension != 10)
 	{
-		LOGW("bboxDimension != 4 or landmarksDimension != 10")
+		LOGW("bboxDimension != 4 or landmarksDimension != 10");
 		env->DeleteLocalRef(landmarks0);
 		env->DeleteLocalRef(bbox0);
 		env->DeleteLocalRef(clazz);
@@ -1706,7 +1700,7 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMetaData(JNIEnv *env, jobject thiz, jby
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0, landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -1717,10 +1711,8 @@ JNIEXPORT jboolean JNICALL blurJudgeVSLbyMetaData(JNIEnv *env, jobject thiz, jby
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->blur_judge_vsl(data_vec.data(), height, width, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 
@@ -1737,7 +1729,7 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMetaDatat(JNIEnv *env, jobject th
 	jsize landmarksSize = env->GetArrayLength(landmarks);
 	if(bboxSize != landmarksSize)
 	{
-		LOGW("The size of bbox not match landmarks!");
+		//LOGW("The size of bbox not match landmarks!");
 		env->DeleteLocalRef(clazz);
 		return JNI_FALSE;
 	}
@@ -1759,10 +1751,10 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMetaDatat(JNIEnv *env, jobject th
 	
 	jsize dataSize = env->GetArrayLength(vsl_color_image_dataArray);
 	
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (dataSize != width * height * 3)
 	{
-		LODW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		env->DeleteLocalRef(clazz);
 		return JNI_FALSE;
 	}
@@ -1778,7 +1770,7 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMetaDatat(JNIEnv *env, jobject th
 	
 	if(bboxDimension != 4 || landmarksDimension != 10)
 	{
-		LOGW("bboxDimension != 4 or landmarksDimension != 10")
+		LOGW("bboxDimension != 4 or landmarksDimension != 10");
 		env->DeleteLocalRef(landmarks0);
 		env->DeleteLocalRef(bbox0);
 		env->DeleteLocalRef(clazz);
@@ -1807,7 +1799,7 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMetaDatat(JNIEnv *env, jobject th
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0,landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -1818,10 +1810,8 @@ JNIEXPORT jboolean JNICALL blackWhiteJudgeVSLbyMetaDatat(JNIEnv *env, jobject th
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->black_white_judge_vsl(data_vec.data(), height, width, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 
@@ -1861,10 +1851,10 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMetaData(JNIEnv *env, jobject thiz,
 	
 	jsize dataSize = env->GetArrayLength(nir_color_image_dataArray);
 	
-	std::vector<glasssix::longinus::FaceRectwithFaceInfo> rects;
+	std::vector<glasssix::longinus::face_rect_with_face_info> rects;
 	if (dataSize != width * height * 3)
 	{
-		LODW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
+		LOGW("Data size dismatch! In line %d of %s", __LINE__, __FILE__);
 		env->DeleteLocalRef(clazz);
 		return JNI_FALSE;
 	}
@@ -1880,7 +1870,7 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMetaData(JNIEnv *env, jobject thiz,
 	
 	if(bboxDimension != 4 || landmarksDimension != 10)
 	{
-		LOGW("bboxDimension != 4 or landmarksDimension != 10")
+		LOGW("bboxDimension != 4 or landmarksDimension != 10");
 		env->DeleteLocalRef(landmarks0);
 		env->DeleteLocalRef(bbox0);
 		env->DeleteLocalRef(clazz);
@@ -1909,7 +1899,7 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMetaData(JNIEnv *env, jobject thiz,
 		bbox_vec.push_back(bbox_veci);
 		
 		std::vector<int> landmarks_veci(10);
-		env->GetIntArrayRegion(landmarksi, landmarksDimension, (jint *)landmarks_veci.data());
+		env->GetIntArrayRegion(landmarksi, 0, landmarksDimension, (jint *)landmarks_veci.data());
 		landmarks_vec.push_back(landmarks_veci);
 		
 		env->DeleteLocalRef(landmarksi);
@@ -1920,10 +1910,8 @@ JNIEXPORT jboolean JNICALL facenoseJudgeNIRbyMetaData(JNIEnv *env, jobject thiz,
 	float value_[2];
 	env->GetFloatArrayRegion(thresh, 0, 2, (jfloat *)thresh_);
 	bool ret = pDetector->face_nose_judge_nir(data_vec.data(), height, width, bbox_vec, landmarks_vec, thresh_, value_, order);
-	
-	env->DeleteLocalRef(value);
-	value = env->NewFloatArray(2);
-	env->SetFloatArrayRegion(valueArray,0,2,(const jfloat *)value_);
+
+	env->SetFloatArrayRegion(value,0,2,(const jfloat *)value_);
 
 	env->DeleteLocalRef(clazz);
 

@@ -40,42 +40,42 @@ namespace glasssix
 				return reinterpret_cast<const uint8_t*>(data_);
 			}
 
-			virtual bool is_active() const noexcept
+			virtual bool is_active() const noexcept override
 			{
 				return data_->is_active;
 			}
 
-			virtual void is_active(bool value) noexcept
+			virtual void is_active(bool value) noexcept override
 			{
 				data_->is_active = value;
 			}
 
-			virtual char* key() noexcept
+			virtual char* key() noexcept override
 			{
 				return data_->key;
 			}
 
-			virtual const char* key() const noexcept
+			virtual const char* key() const noexcept override
 			{
 				return data_->key;
 			}
 
-			virtual void key(const char* value) noexcept
+			virtual void key(const char* value) noexcept override
 			{
 				std::strcpy(data_->key, value);
 			}
 
-			virtual float* feature() noexcept
+			virtual float* feature() noexcept override
 			{
 				return data_->feature;
 			}
 
-			virtual const float* feature() const noexcept
+			virtual const float* feature() const noexcept override
 			{
 				return data_->feature;
 			}
 
-			virtual void feature(const float* value) noexcept
+			virtual void feature(const float* value) noexcept override
 			{
 				std::memcpy(data_->feature, value, sizeof(data_type::feature));
 			}
@@ -121,42 +121,42 @@ namespace glasssix
 				return reinterpret_cast<const uint8_t*>(&data_);
 			}
 
-			virtual bool is_active() const noexcept
+			virtual bool is_active() const noexcept override
 			{
 				return data_.is_active;
 			}
 
-			virtual void is_active(bool value) noexcept
+			virtual void is_active(bool value) noexcept override
 			{
 				data_.is_active = value;
 			}
 
-			virtual char* key() noexcept
+			virtual char* key() noexcept override
 			{
 				return data_.key;
 			}
 
-			virtual const char* key() const noexcept
+			virtual const char* key() const noexcept override
 			{
 				return data_.key;
 			}
 
-			virtual void key(const char* value) noexcept
+			virtual void key(const char* value) noexcept override
 			{
 				std::strcpy(data_.key, value);
 			}
 
-			virtual float* feature() noexcept
+			virtual float* feature() noexcept override
 			{
 				return data_.feature;
 			}
 
-			virtual const float* feature() const noexcept
+			virtual const float* feature() const noexcept override
 			{
 				return data_.feature;
 			}
 
-			virtual void feature(const float* value) noexcept
+			virtual void feature(const float* value) noexcept override
 			{
 				std::memcpy(data_.feature, value, sizeof(data_type::feature));
 			}
@@ -179,11 +179,11 @@ namespace glasssix
 			switch (dimension)
 			{
 			case 128:
-				return sizeof(knn_mapping_data_impl<128>);
+				return sizeof(knn_mapping_data_impl<128>::data_type);
 			case 512:
-				return sizeof(knn_mapping_data_impl<512>);
+				return sizeof(knn_mapping_data_impl<512>::data_type);
 			default:
-				return sizeof(knn_mapping_data_impl<128>);
+				return sizeof(knn_mapping_data_impl<128>::data_type);
 			}
 		}
 

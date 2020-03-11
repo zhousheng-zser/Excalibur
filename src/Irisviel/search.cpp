@@ -39,7 +39,7 @@ namespace glasssix
 				throw nsg_calculate_error("open ngraph file error");
 			}
 
-			if (in_graph.eof())
+			if (!in_graph)
 			{
 				throw nsg_calculate_error("empty ngraph file");
 			}
@@ -57,17 +57,16 @@ namespace glasssix
 				throw nsg_calculate_error{ "Invalid file size alignment." };
 			}
 
-			in_graph >> normalized;
-			in_graph >> width;
-			in_graph >> navigate_node;
+			in_graph.read(reinterpret_cast<char*>(&normalized), sizeof(normalized));
+			in_graph.read(reinterpret_cast<char*>(&width), sizeof(width));
+			in_graph.read(reinterpret_cast<char*>(&navigate_node), sizeof(navigate_node));
 
-			while (!in_graph.eof())
+			while (in_graph)
 			{
 				uint32_t k = 0;
-				in_graph >> k;
-				//inGraph.read((char*)&k, sizeof(uint32_t));
+				in_graph.read(reinterpret_cast<char*>(&k), sizeof(k));
 
-				if (in_graph.eof())
+				if (!in_graph)
 				{
 					break;
 				}
