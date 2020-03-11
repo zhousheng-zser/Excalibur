@@ -30,8 +30,6 @@
 
 #include <string>
 
-#define FEATURE_SIZE 128//****************************************
-
 namespace glasssix
 {
 	namespace irisviel
@@ -81,8 +79,7 @@ namespace glasssix
 			/// <param name="feature">The input feature for an image</param>
 			/// <param name="top">Top N</param>
 			/// <returns>The search result</returns>
-			std::vector<knn_search_result>
-				search(const std::array<float, FEATURE_SIZE>& feature, int top) const
+			std::vector<knn_search_result> search(const float* feature, int top) const
 			{
 				std::chrono::milliseconds total_time;
 				std::vector<knn_search_result> result;
@@ -91,7 +88,7 @@ namespace glasssix
 				{
 					std::chrono::milliseconds elapsed_time;
 
-					auto single_result = item.second->search(feature.data(), elapsed_time, top)[0];
+					auto single_result = item.second->search(feature, elapsed_time, top)[0];
 
 					std::copy(single_result.begin(), single_result.end(),
 						std::back_inserter(result));
