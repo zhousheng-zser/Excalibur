@@ -22,6 +22,8 @@ namespace glasssix
 		EXPORT_LONGINUS void integral_gpu(const unsigned char* src_data, int width, int height, int* dst_data, int sum_width, int sum_height);
 #endif
 		EXPORT_LONGINUS void matrix_transpose(const unsigned char *src_data, int height, int width, unsigned char *dst_data);
+
+		EXPORT_LONGINUS float blurscore(const unsigned char *data, int width, int height);
 	}
 }
 
