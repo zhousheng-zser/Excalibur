@@ -169,8 +169,8 @@ namespace glasssix
 		{
 			num_ = bottom->data_shape()[0];
 			order_ = bottom->order();
-			intput_shape_.clear();
-			intput_shape_ = bottom->data_shape();
+			input_shape_.clear();
+			input_shape_ = bottom->data_shape();
 			bottom_dim_ = bottom->count(1, 4);
 			bottom_data = bottom->cpu_data();
 

@@ -24,6 +24,9 @@
     <ClInclude Include="..\..\include\Gaius\unicorn_mobile.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Gaius\unicorn_mobile_mask.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Gaius\gaius_c.cxx">
@@ -33,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Gaius\unicorn_mobile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Gaius\unicorn_mobile_mask.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

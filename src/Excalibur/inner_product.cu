@@ -5,7 +5,7 @@ namespace glasssix
 {
 	namespace excalibur
 	{
-		void inner_product::Forward_gpu_native(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void inner_product::Forward_gpu_native(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			M_ = bottom->num();
 			order_ = bottom->order();

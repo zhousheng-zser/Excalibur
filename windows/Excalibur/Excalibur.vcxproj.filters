@@ -177,6 +177,12 @@
     <ClInclude Include="..\..\include\Excalibur\upsample.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\reshape.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\deconv_arm.hpp">
+      <Filter>Header Files\arm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\axpy.cpp">
@@ -287,6 +293,9 @@
     <ClCompile Include="..\..\src\Excalibur\upsample.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\reshape.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
@@ -350,6 +359,9 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\upsample.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\deconv.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

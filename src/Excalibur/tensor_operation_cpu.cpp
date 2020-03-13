@@ -1,6 +1,103 @@
 #include "../../include/Excalibur/tensor_operation_cpu.hpp"
 using namespace glasssix::excalibur;
 
+const unsigned char LBPMAP[5][256] =
+{
+	//59 mapping
+	{ 1,   2,   3,   4,   5,   0,   6,   7,   8,   0,   0,   0,   9,   0,  10,  11,
+	12,   0,   0,   0,   0,   0,   0,   0,  13,   0,   0,   0,  14,   0,  15,  16,
+	17,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	18,   0,   0,   0,   0,   0,   0,   0,  19,   0,   0,   0,  20,   0,  21,  22,
+	23,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	24,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	25,   0,   0,   0,   0,   0,   0,   0,  26,   0,   0,   0,  27,   0,  28,  29,
+	30,  31,   0,  32,   0,   0,   0,  33,   0,   0,   0,   0,   0,   0,   0,  34,
+	0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  35,
+	0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  36,
+	37,  38,   0,  39,   0,   0,   0,  40,   0,   0,   0,   0,   0,   0,   0,  41,
+	0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,  42,
+	43,  44,   0,  45,   0,   0,   0,  46,   0,   0,   0,   0,   0,   0,   0,  47,
+	48,  49,   0,  50,   0,   0,   0,  51,  52,  53,   0,  54,  55,  56,  57,  58 },
+
+	//63mapping small face no overlap feature
+	{ 0,   14,  51,  30,  5,   0,   47,  26,  52,  0,   0,   0,   49,  0,   58,  37,
+	15,  0,   0,   0,   0,   0,   0,   0,   31,  0,   0,   0,   29,  0,   41,
+	56,  34,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,   0,   20,  0,   0,   0,   0,   0,   0,   0,   13,  0,   0,   0,   7,
+	0,   46,  57,  2,   61,  0,   0,   22,  0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   60,  0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   24,  0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   8,   0,   0,   0,   0,   0,   0,   0,   3,
+	0,   0,   0,   10,  0,   45,  54,  32,  19,  0,   9,   0,   0,   0,   6,
+	0,   0,   0,   0,   0,   0,   0,   43,  0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   0,   55,  0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   59,  0,   0,   0,   17,  23,  12,  0,   4,
+	0,   62,  0,   11,  0,   0,   0,   0,   0,   0,   0,   44,  0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   53,  33,  21,
+	0,   36,  0,   0,   0,   50,  0,   0,   0,   0,   0,   0,   0,   28,  18,
+	25,  0,   38,  0,   0,   0,   40,  35,  39,  0,   16,  48,  42,  27,  1 },
+
+	//63mapping big face no overlap feature
+	{ 0,    5,    44,   27,   9,    0,    43,   33,   47,   0,    0,    0,    42,   0,    61,
+	46,   4,    56,   0,    0,    0,    0,    0,    0,    26,   0,    0,    0,    31,   0,
+	45,   51,   28,   0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+	0,    0,    0,    22,   0,    0,    0,    0,    0,    0,    0,    16,   0,    0,    0,
+	15,   0,    53,   58,   2,    59,   0,    0,    48,   0,    0,    0,    0,    0,    0,
+	0,    0,    0,    0,    0,    57,   0,    0,    0,    0,    0,    0,    0,    62,   0,
+	0,    0,    0,    0,    0,    0,    17,   0,    0,    0,    0,    0,    0,    0,    0,
+	0,    0,    0,    0,    0,    0,    0,    7,    0,    0,    0,    0,    0,    0,    0,
+	3,    0,    0,    0,    12,   0,    49,   54,   32,   23,   0,    18,   0,    0,    0,
+	14,   0,    0,    0,    0,    0,    0,    0,    52,   0,    0,    0,    0,    0,    0,
+	0,    0,    0,    0,    0,    0,    0,    0,    0,    60,   0,    0,    0,    0,    0,
+	0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+	0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    37,   20,   8,    0,
+	6,    0,    0,    0,    13,   0,    0,    0,    0,    0,    0,    0,    50,   0,    0,
+	0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    55,   24,
+	11,   0,    34,   0,    0,    0,    39,   0,    0,    0,    0,    0,    0,    0,    21,
+	10,   29,   0,    41,   0,    0,    0,    36,   30,   40,   0,    25,   38,   35,   19,   1 },
+
+	//63mapping small face overlap feature
+	{ 1,     3,     43,     21,     1,     0,      31,     12,     44,     0,      0,      0,      33,     0,      40,
+	19,     4,     0,      0,      0,      0,      0,      0,      0,      24,     0,      0,      0,      13,     0,
+	20,     38,     36,     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      8,     0,      0,      0,      0,      0,      0,      0,      1,     0,      0,      0,
+	1,     0,      26,     39,     1,     49,     0,      0,      17,     0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      48,     0,      0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      11,     0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      1,     0,      0,      0,      0,      0,      0,      0,
+	1,     0,      0,      0,      1,     0,      30,     46,     35,     7,     0,      1,     0,      0,      0,
+	1,     0,      0,      0,      0,      0,      0,      0,      22,     0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      37,     0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      47,     0,      0,      0,      10,     9,     1,     0,
+	1,     50,     0,      0,      1,     0,      0,      0,      0,      0,      0,      0,      29,     0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      45,     18,
+	5,     0,      16,     0,      0,      0,      34,     0,      0,      0,      0,      0,      0,      0,      25,
+	2,     15,     0,      27,     0,      0,      0,      41,     14,     28,     0,      6,     32,     42,     23, 	1 },
+
+	//63mapping big face overlap feature
+	{ 1,     1,     43,     17,     1,     0,      29,     21,     44,     0,      0,      0,      28,     0,      42,
+	24,     1,     47,     0,      0,      0,      0,      0,      0,      14,     0,      0,      0,      18,     0,
+	23,     38,     34,     0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      11,     0,      0,      0,      0,      0,      0,      0,      5,     0,      0,      0,
+	3,     0,      26,     45,     1,     49,     0,      0,      39,     0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      48,     0,      0,      0,      0,      0,      0,      0,      52,     0,
+	0,      0,      0,      0,      0,      0,      6,     0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      1,     0,      0,      0,      0,      0,      0,      0,
+	1,     0,      0,      0,      4,     0,      35,     50,     36,     16,     0,      8,     0,      0,      0,
+	2,     0,      0,      0,      0,      0,      0,      0,      27,     0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      46,     0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      31,     9,     1,     0,
+	1,     0,      0,      0,      7,     0,      0,      0,      0,      0,      0,      0,      37,     0,      0,
+	0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      0,      51,     10,
+	1,     0,      19,     0,      0,      0,      30,     0,      0,      0,      0,      0,      0,      0,      15,
+	1,     22,     0,      33,     0,      0,      0,      41,     13,     32,     0,      20,     25,     40,     12, 	1 },
+};
+
 
 /// <summary>
 /// convert between different datatype of tensor
@@ -8,7 +105,7 @@ using namespace glasssix::excalibur;
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void type_converter_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
+void tensor_operation_cpu::type_converter_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
 {
 	if (src->device() >= 0)
 	{
@@ -38,7 +135,7 @@ void type_converter_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::share
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
+void tensor_operation_cpu::type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 {
 	if (src.device() >= 0)
 	{
@@ -67,7 +164,7 @@ void type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var)
 {
 	if (src->device() >= 0)
 	{
@@ -95,8 +192,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src->order() == NCHW)
 		{
 			for (int n = 0; n < num; n++)
@@ -144,8 +239,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
-
 		for (int n = 0; n < num; n++)
 		{
 			int offset = n * height * width;
@@ -172,7 +265,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<D
 /// <param name="src">original tensor</param>
 /// <param name="dst">new tensor</param>
 template <typename DtypeSRC, typename DtypeDST>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var)
 {
 	if (src.device() >= 0)
 	{
@@ -199,8 +292,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src.order() == NCHW)
 		{
 			for (int n = 0; n < num; n++)
@@ -248,8 +339,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<DtypeSRC> &src, t
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
-
 		for (int n = 0; n < num; n++)
 		{
 			int offset = n * height * width;
@@ -783,7 +872,7 @@ void tensor_operation_cpu::type_converter_cpu(const tensor<signed char> &src, te
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var)
 {
 	if (src->device() >= 0)
 	{
@@ -811,8 +900,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -892,7 +979,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		mm_type temp_float32;
@@ -939,7 +1025,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<f
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tensor<float> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tensor<float> &dst, float means[3], float var)
 {
 	if (src.device() >= 0)
 	{
@@ -966,8 +1052,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src.order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1047,8 +1131,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
-
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		mm_type temp_float32;
 		mm_type mean_float32 = mm_set1_ps(means[0]);
@@ -1095,7 +1177,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<float> &src, tens
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var)
 {
 	if (src->device() >= 0)
 	{
@@ -1123,8 +1205,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src->order() == NCHW)
 		{
 #if SIMD_TYPE >= SIMDTYPE_SSE
@@ -1206,8 +1286,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
-
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		mm_type temp_float32;
 		mm_typei temp_int32;
@@ -1255,7 +1333,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<i
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor<float> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor<float> &dst, float means[3], float var)
 {
 	if (src.device() >= 0)
 	{
@@ -1282,8 +1360,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
-
 		if (src.order() == NCHW)
 		{
 
@@ -1367,7 +1443,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		mm_type temp_float32;
@@ -1417,7 +1492,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<int> &src, tensor
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var)
 {
 	if (src->device() >= 0)
 	{
@@ -1445,7 +1520,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
 		{
@@ -1530,7 +1604,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		__m128i temp_uint8;
@@ -1581,7 +1654,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<u
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &src, tensor<float> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &src, tensor<float> &dst, float means[3], float var)
 {
 	if (src.device() >= 0)
 	{
@@ -1608,7 +1681,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
 		{
@@ -1693,7 +1765,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		__m128i temp_uint8;
@@ -1745,7 +1816,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<unsigned char> &s
 
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<signed char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var)
 {
 	if (src->device() >= 0)
 	{
@@ -1773,7 +1844,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
 
 		if (src->order() == NCHW)
 		{
@@ -1858,7 +1928,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		__m128i temp_int8;
@@ -1909,7 +1978,7 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const std::shared_ptr<tensor<s
 }
 
 template<>
-void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src, tensor<float> &dst, float means[3])
+void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src, tensor<float> &dst, float means[3], float var)
 {
 	if (src.device() >= 0)
 	{
@@ -1936,7 +2005,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 
 	if (channel == 3)
 	{
-		float var = 0.0078125f;
 
 		if (src.order() == NCHW)
 		{
@@ -2021,7 +2089,6 @@ void tensor_operation_cpu::preprocess_tensors_cpu(const tensor<signed char> &src
 	}
 	else if (channel == 1)
 	{
-		float var = 0.0078125f;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 		__m128i temp_int8;

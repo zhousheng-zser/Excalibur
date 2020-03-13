@@ -101,13 +101,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -425,11 +425,13 @@
     <ClInclude Include="..\..\include\Gaius\GaiusFeature.hpp" />
     <ClInclude Include="..\..\include\Gaius\gaius_c.h" />
     <ClInclude Include="..\..\include\Gaius\unicorn_mobile.hpp" />
+    <ClInclude Include="..\..\include\Gaius\unicorn_mobile_mask.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Gaius\GaiusFeature.cpp" />
     <ClCompile Include="..\..\src\Gaius\gaius_c.cxx" />
     <ClCompile Include="..\..\src\Gaius\unicorn_mobile.cpp" />
+    <ClCompile Include="..\..\src\Gaius\unicorn_mobile_mask.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
