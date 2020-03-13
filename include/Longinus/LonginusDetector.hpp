@@ -164,6 +164,11 @@ namespace glasssix
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
 
+			static std::vector<bool> maskJudge(const std::vector<unsigned char> &aligned_data, int n);
+
+			std::vector<face_rect_with_face_info> detectRetina(const unsigned char *image, int channels, int height, int width,
+				                                           int order, float threshold = 0.5, float scales = 1.0) const;
+
 #ifndef TRIAL
 			std::vector<face_rect_with_face_info> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;

@@ -101,13 +101,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
@@ -429,6 +429,9 @@
     </ProjectReference>
     <ProjectReference Include="..\Primitives\Primitives.vcxproj">
       <Project>{8da2420a-7980-4feb-b6b0-a58430c950ff}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\Retina\Retina.vcxproj">
+      <Project>{93aacea7-3740-412a-be1e-5c50467f5c76}</Project>
     </ProjectReference>
     <ProjectReference Include="..\Romancia\Romancia.vcxproj">
       <Project>{9e81958b-61ae-4de2-b254-cfd4260f64a6}</Project>

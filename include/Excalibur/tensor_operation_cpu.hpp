@@ -34,6 +34,8 @@ typedef struct CvResizeAlpha
 
 }CvResizeAlpha;
 
+extern const unsigned char LBPMAP[][256];
+
 namespace glasssix
 {
 	namespace excalibur
@@ -5712,6 +5714,87 @@ namespace glasssix
 
 
 			/// <summary>
+            /// calculate histogram, gray image required
+            /// </summary>
+            /// <param name="src">original tensor</param>
+            /// <param name="dst">new tensor</param>
+			static void calc_hist_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>>& dst, int dimension = 59)
+			{
+				if (src->device() >= 0)
+				{
+					LOG(ERROR) << "device wrong, invoke function xxx_gpu() instead!!!";
+					return;
+				}
+
+				int num = src->num();
+				CHECK_EQ(src->channels(), 1);
+				int height = src->height();
+				int width = src->width();
+				int offset = height * width;
+
+				std::shared_ptr<tensor<int>> dst_int;
+				dst_int.reset(new tensor<int>(std::vector<int>{num, 1, 1, dimension}, -1, src->order()));			
+				int *dst_int_data = dst_int->mutable_cpu_data();
+
+				const unsigned char* src_data = src->cpu_data();
+
+				for (int n = 0; n < num; n++)
+				{
+					int *dst_int_data_num = dst_int_data + n * dimension;
+
+					//Count the number of pixels in each grayscale
+					for (int i = 0; i < offset; i++)
+					{
+						int value = static_cast<int>(src_data[n * offset + i]);
+						dst_int_data_num[value]++;
+					}
+				}
+
+				std::vector<int> max_vals(num), min_vals(num);
+				for (int n = 0; n < num; n++)
+				{
+					max_vals[n] = INT_MIN;
+					min_vals[n] = INT_MAX;
+				}
+
+				for (int n = 0; n < num; n++)
+				{
+					int *dst_int_data_num = dst_int_data + n * dimension;
+
+					for (int i = 0; i < dimension; i++)
+					{
+						if (dst_int_data_num[i] > max_vals[n])
+						{
+							max_vals[n] = dst_int_data_num[i];
+						}
+
+						if (dst_int_data_num[i] < min_vals[n])
+						{
+							min_vals[n] = dst_int_data_num[i];
+						}
+					}
+				}
+
+				dst.reset(new tensor<float>(std::vector<int>{num, 1, 1, dimension}, src->device(), src->order()));
+				float *dst_float_data = dst->mutable_cpu_data();
+
+				for (int n = 0; n < num; n++)
+				{
+					float *dst_float_data_num = dst_float_data + n * dimension;
+					int *dst_int_data_num = dst_int_data + n * dimension;
+
+					for (int i = 0; i < dimension; i++)
+					{
+						dst_float_data_num[i] = float(dst_int_data_num[i] - min_vals[n]) / (max_vals[n] - min_vals[n]);
+					}
+				}
+
+				return;
+			}
+
+
+
+			/// <summary>
 			/// equalize histogram, gray image required
 			/// </summary>
 			/// <param name="src">original tensor</param>
@@ -8373,8 +8456,8 @@ namespace glasssix
 			/// </summary>
 			/// <param name="src">original tensor</param>
 			/// <param name="dst">LBP feature tensor</param>
-			/// <param name="type">lbpType: Native(calculate with neighboring 8 pixels)</param>
-			static void lbp_feature_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, lbpType type = Native)
+			/// <param name="map_59">map_59: map 256-dimension LBP-feature to 59-dimension)</param>
+			static void lbp_feature_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59 = false)
 			{
 				if (src->device() >= 0)
 				{
@@ -8405,109 +8488,111 @@ namespace glasssix
 				
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
-				switch (type)
-				{
-				case excalibur::Native:
-					if (src->order() == NCHW)
-					{
-						for (int n = 0; n < num; n++)
-						{
-							int src_n_offset = n * src_num_offset;
-							int dst_n_offset = n * dst_num_offset;
 
-							for (int c = 0; c < channels; c++)
+				if (src->order() == NCHW)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int src_n_offset = n * src_num_offset;
+						int dst_n_offset = n * dst_num_offset;
+
+						for (int c = 0; c < channels; c++)
+						{
+							int src_c_offset = c * height * width;
+							int dst_c_offset = c * (height - 2) * (width - 2);
+							for (int h = 1; h < height - 1; h++)
 							{
-								int src_c_offset = c * height * width;
-								int dst_c_offset = c * (height - 2) * (width - 2);
-								for (int h = 1; h < height - 1; h++)
+								int offset = src_c_offset + h * width;
+								int offset_plus = offset + width;
+								int offset_minus = offset - width;
+								for (int w = 1; w < width - 1; w++)
 								{
-									int offset = src_c_offset + h * width;
-									int offset_plus = offset + width;
-									int offset_minus = offset - width;
-									for (int w = 1; w < width - 1; w++)
+									Dtype center = src_data[src_n_offset + offset + w];
+									unsigned char code = 0;
+									//code |= (src_data[src_n_offset + offset_minus + w - 1] >= center) << 7;
+									//code |= (src_data[src_n_offset + offset_minus + w - 0] >= center) << 6;
+									//code |= (src_data[src_n_offset + offset_minus + w + 1] >= center) << 5;
+									//code |= (src_data[src_n_offset + offset + w + 1] >= center) << 4;
+									//code |= (src_data[src_n_offset + offset_plus + w + 1] >= center) << 3;
+									//code |= (src_data[src_n_offset + offset_plus + w + 0] >= center) << 2;
+									//code |= (src_data[src_n_offset + offset_plus + w - 1] >= center) << 1;
+									//code |= (src_data[src_n_offset + offset + w - 1] >= center) << 0;
+
+									code |= (src_data[src_n_offset + offset_minus + w - 1] > center) << 0;
+									code |= (src_data[src_n_offset + offset_minus + w - 0] > center) << 1;
+									code |= (src_data[src_n_offset + offset_minus + w + 1] > center) << 2;
+									code |= (src_data[src_n_offset + offset + w + 1] > center) << 3;
+									code |= (src_data[src_n_offset + offset_plus + w + 1] > center) << 4;
+									code |= (src_data[src_n_offset + offset_plus + w + 0] > center) << 5;
+									code |= (src_data[src_n_offset + offset_plus + w - 1] > center) << 6;
+									code |= (src_data[src_n_offset + offset + w - 1] > center) << 7;
+
+									if (map_59)
 									{
-										Dtype center = src_data[src_n_offset + offset + w];
-										unsigned char code = 0;
-										code |= (src_data[src_n_offset + offset_minus + w - 1] >= center) << 7;
-										code |= (src_data[src_n_offset + offset_minus + w - 0] >= center) << 6;
-										code |= (src_data[src_n_offset + offset_minus + w + 1] >= center) << 5;
-										code |= (src_data[src_n_offset + offset + w + 1] >= center) << 4;
-										code |= (src_data[src_n_offset + offset_plus + w + 1] >= center) << 3;
-										code |= (src_data[src_n_offset + offset_plus + w + 0] >= center) << 2;
-										code |= (src_data[src_n_offset + offset_plus + w - 1] >= center) << 1;
-										code |= (src_data[src_n_offset + offset + w - 1] >= center) << 0;
+										dst_data[dst_n_offset + dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(LBPMAP[0][code]);
+									}
+									else
+									{
 										dst_data[dst_n_offset + dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(code);
 									}
 								}
 							}
 						}
 					}
-					else if (src->order() == NHWC)
+				}
+				else if (src->order() == NHWC)
+				{
+					for (int n = 0; n < num; n++)
 					{
-						for (int n = 0; n < num; n++)
+						int src_n_offset = n * src_num_offset;
+						int dst_n_offset = n * dst_num_offset;
+						for (int h = 1; h < height - 1; h++)
 						{
-							int src_n_offset = n * src_num_offset;
-							int dst_n_offset = n * dst_num_offset;
-							for (int h = 1; h < height - 1; h++)
+							int offset = h * width * channels;
+							int offset_plus = offset + width * channels;
+							int offset_minus = offset - width * channels;
+							for (int w = 1; w < width - 1; w++)
 							{
-								int offset = h * width * channels;
-								int offset_plus = offset + width * channels;
-								int offset_minus = offset - width * channels;
-								for (int w = 1; w < width - 1; w++)
+								for (int c = 0; c < channels; c++)
 								{
-									for (int c = 0; c < channels; c++)
-									{
-										Dtype center = src_data[src_n_offset + offset + w * channels + c];
-										unsigned char code = 0;
-										//code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] >= center) << 7;
-										//code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] >= center) << 6;
-										//code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] >= center) << 5;
-										//code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] >= center) << 4;
-										//code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] >= center) << 3;
-										//code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] >= center) << 2;
-										//code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] >= center) << 1;
-										//code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] >= center) << 0;
+									Dtype center = src_data[src_n_offset + offset + w * channels + c];
+									unsigned char code = 0;
 
-										code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] >= center) << 7;
-										code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] >= center) << 6;
-										code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] >= center) << 5;
-										code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] >= center) << 4;
-										code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] >= center) << 3;
-										code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] >= center) << 2;
-										code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] >= center) << 1;
-										code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] >= center) << 0;
-										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(code);
+									//code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] >= center) << 7;
+									//code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] >= center) << 6;
+									//code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] >= center) << 5;
+									//code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] >= center) << 4;
+									//code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] >= center) << 3;
+									//code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] >= center) << 2;
+									//code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] >= center) << 1;
+									//code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] >= center) << 0;
+
+									code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] > center) << 0;
+									code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] > center) << 1;
+									code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] > center) << 2;
+									code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] > center) << 3;
+									code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] > center) << 4;
+									code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] > center) << 5;
+									code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] > center) << 6;
+									code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] > center) << 7;
+
+									if (map_59)
+									{
+										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(LBPMAP[0][code]);
 									}
+									else
+									{
+										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(code);
+									}									
 								}
 							}
 						}
 					}
-					else
-					{
-						NOT_IMPLEMENTED;
-					}
-
-					break;
-				case excalibur::RI:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::U2:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::RIU2:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::HF:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::LTP:
-					NOT_IMPLEMENTED;
-					break;
-				default:
-					LOG(ERROR) << "Un-supported LBP type.";
-					break;
 				}
-				//showimage(dst);
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 
 				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
 			}
@@ -8520,8 +8605,8 @@ namespace glasssix
 			/// </summary>
 			/// <param name="src">original tensor</param>
 			/// <param name="dst">LBP feature tensor</param>
-			/// <param name="type">lbpType: Native(calculate with neighboring 8 pixels)</param>
-			static void lbp_feature_cpu(const tensor<Dtype>& src, tensor<Dtype>& dst, lbpType type = Native)
+			/// <param name="map_59">map_59: map 256-dimension LBP-feature to 59-dimension)</param>
+			static void lbp_feature_cpu(const tensor<Dtype>& src, tensor<Dtype>& dst, bool map_59 = false)
 			{
 				if (src.device() >= 0)
 				{
@@ -8551,99 +8636,109 @@ namespace glasssix
 				}
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
-				switch (type)
+
+				if (src->order() == NCHW)
 				{
-				case excalibur::Native:
-					if (src->order() == NCHW)
+					for (int n = 0; n < num; n++)
 					{
-						for (int n = 0; n < num; n++)
+						int src_n_offset = n * src_num_offset;
+						int dst_n_offset = n * dst_num_offset;
+						for (int c = 0; c < channels; c++)
 						{
-							int src_n_offset = n * src_num_offset;
-							int dst_n_offset = n * dst_num_offset;
-							for (int c = 0; c < channels; c++)
-							{
-								int src_c_offset = c * height * width;
-								int dst_c_offset = c * (height - 2) * (width - 2);
-								for (int h = 1; h < height - 1; h++)
-								{
-									int offset = src_c_offset + h * width;
-									int offset_plus = offset + width;
-									int offset_minus = offset - width;
-									for (int w = 1; w < width - 1; w++)
-									{
-										Dtype center = src_data[src_n_offset + offset + w];
-										unsigned char code = 0;
-										code |= (src_data[src_n_offset + offset_minus + w - 1] >= center) << 7;
-										code |= (src_data[src_n_offset + offset_minus + w - 0] >= center) << 6;
-										code |= (src_data[src_n_offset + offset_minus + w + 1] >= center) << 5;
-										code |= (src_data[src_n_offset + offset + w + 1] >= center) << 4;
-										code |= (src_data[src_n_offset + offset_plus + w + 1] >= center) << 3;
-										code |= (src_data[src_n_offset + offset_plus + w + 0] >= center) << 2;
-										code |= (src_data[src_n_offset + offset_plus + w - 1] >= center) << 1;
-										code |= (src_data[src_n_offset + offset + w - 1] >= center) << 0;
-										dst_data[dst_n_offset + dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(code);
-									}
-								}
-							}
-						}
-					}
-					else if (src->order() == NHWC)
-					{
-						for (int n = 0; n < num; n++)
-						{
-							int src_n_offset = n * src_num_offset;
-							int dst_n_offset = n * dst_num_offset;
+							int src_c_offset = c * height * width;
+							int dst_c_offset = c * (height - 2) * (width - 2);
 							for (int h = 1; h < height - 1; h++)
 							{
-								int offset = h * width * channels;
-								int offset_plus = offset + width * channels;
-								int offset_minus = offset - width * channels;
+								int offset = src_c_offset + h * width;
+								int offset_plus = offset + width;
+								int offset_minus = offset - width;
 								for (int w = 1; w < width - 1; w++)
 								{
-									for (int c = 0; c < channels; c++)
+									Dtype center = src_data[src_n_offset + offset + w];
+									unsigned char code = 0;
+									//code |= (src_data[src_n_offset + offset_minus + w - 1] >= center) << 7;
+									//code |= (src_data[src_n_offset + offset_minus + w - 0] >= center) << 6;
+									//code |= (src_data[src_n_offset + offset_minus + w + 1] >= center) << 5;
+									//code |= (src_data[src_n_offset + offset + w + 1] >= center) << 4;
+									//code |= (src_data[src_n_offset + offset_plus + w + 1] >= center) << 3;
+									//code |= (src_data[src_n_offset + offset_plus + w + 0] >= center) << 2;
+									//code |= (src_data[src_n_offset + offset_plus + w - 1] >= center) << 1;
+									//code |= (src_data[src_n_offset + offset + w - 1] >= center) << 0;
+
+									code |= (src_data[src_n_offset + offset_minus + w - 1] > center) << 0;
+									code |= (src_data[src_n_offset + offset_minus + w - 0] > center) << 1;
+									code |= (src_data[src_n_offset + offset_minus + w + 1] > center) << 2;
+									code |= (src_data[src_n_offset + offset + w + 1] > center) << 3;
+									code |= (src_data[src_n_offset + offset_plus + w + 1] > center) << 4;
+									code |= (src_data[src_n_offset + offset_plus + w + 0] > center) << 5;
+									code |= (src_data[src_n_offset + offset_plus + w - 1] > center) << 6;
+									code |= (src_data[src_n_offset + offset + w - 1] > center) << 7;
+
+									if (map_59)
 									{
-										Dtype center = src_data[src_n_offset + offset + w * channels + c];
-										unsigned char code = 0;
-										code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] >= center) << 7;
-										code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] >= center) << 6;
-										code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] >= center) << 5;
-										code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] >= center) << 4;
-										code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] >= center) << 3;
-										code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] >= center) << 2;
-										code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] >= center) << 1;
-										code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] >= center) << 0;
-										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(code);
+										dst_data[dst_n_offset + dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(LBPMAP[0][code]);
 									}
+									else
+									{
+										dst_data[dst_n_offset + dst_c_offset + (h - 1) * (width - 2) + w - 1] = static_cast<Dtype>(code);
+									}									
 								}
 							}
 						}
 					}
-					else
-					{
-						NOT_IMPLEMENTED;
-					}
-
-					break;
-				case excalibur::RI:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::U2:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::RIU2:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::HF:
-					NOT_IMPLEMENTED;
-					break;
-				case excalibur::LTP:
-					NOT_IMPLEMENTED;
-					break;
-				default:
-					LOG(ERROR) << "Un-supported LBP type.";
-					break;
 				}
-				//showimage(dst);
+				else if (src->order() == NHWC)
+				{
+					for (int n = 0; n < num; n++)
+					{
+						int src_n_offset = n * src_num_offset;
+						int dst_n_offset = n * dst_num_offset;
+						for (int h = 1; h < height - 1; h++)
+						{
+							int offset = h * width * channels;
+							int offset_plus = offset + width * channels;
+							int offset_minus = offset - width * channels;
+							for (int w = 1; w < width - 1; w++)
+							{
+								for (int c = 0; c < channels; c++)
+								{
+									Dtype center = src_data[src_n_offset + offset + w * channels + c];
+									unsigned char code = 0;
+									//code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] >= center) << 7;
+									//code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] >= center) << 6;
+									//code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] >= center) << 5;
+									//code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] >= center) << 4;
+									//code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] >= center) << 3;
+									//code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] >= center) << 2;
+									//code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] >= center) << 1;
+									//code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] >= center) << 0;
+
+									code |= (src_data[src_n_offset + offset_minus + (w - 1) * channels + c] > center) << 0;
+									code |= (src_data[src_n_offset + offset_minus + (w - 0) * channels + c] > center) << 1;
+									code |= (src_data[src_n_offset + offset_minus + (w + 1) * channels + c] > center) << 2;
+									code |= (src_data[src_n_offset + offset + (w + 1) * channels + c] > center) << 3;
+									code |= (src_data[src_n_offset + offset_plus + (w + 1) * channels + c] > center) << 4;
+									code |= (src_data[src_n_offset + offset_plus + (w + 0) * channels + c] > center) << 5;
+									code |= (src_data[src_n_offset + offset_plus + (w - 1) * channels + c] > center) << 6;
+									code |= (src_data[src_n_offset + offset + (w - 1) * channels + c] > center) << 7;
+
+									if (map_59)
+									{
+										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(LBPMAP[0][code]);
+									}
+									else
+									{
+										dst_data[dst_n_offset + ((h - 1) * (width - 2) + (w - 1)) * channels + c] = static_cast<Dtype>(code);
+									}									
+								}
+							}
+						}
+					}
+				}
+				else
+				{
+					NOT_IMPLEMENTED;
+				}
 
 				dst = dst_temp.clone();
 			}
@@ -8925,7 +9020,7 @@ namespace glasssix
 			/// <param name="src">original tensor</param>
 			/// <param name="dst">new tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3]);
+			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var);
 
 
 
@@ -8935,7 +9030,7 @@ namespace glasssix
 			/// <param name="src">original tensor</param>
 			/// <param name="dst">new tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3]);
+			static void preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var);
 
 
 			

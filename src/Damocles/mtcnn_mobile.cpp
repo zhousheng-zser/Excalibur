@@ -114,6 +114,7 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile::Detect(const unsig
 	std::vector<Longinus_CNN_BBox> result_bbox;
 	
 	std::vector<Longinus_CNN_BBox> pnet_bbox;
+
 	if(stage >= 1)
 		PNet_Process(src_tensor, threshold[0], nms_thresh[0], scales, pnet_bbox);
 	
@@ -184,6 +185,7 @@ bool glasssix::longinus::mtcnn_mobile::PNet_Process(std::shared_ptr<tensor<unsig
 	}
 
 	float means[3] = { 104.0f, 117.0f, 124.0f };
+	float var = 0.0078125;
 	for (int i = 0; i < scale_num; i++)
 	{
 		int changedh = changedH[i];
@@ -196,13 +198,13 @@ bool glasssix::longinus::mtcnn_mobile::PNet_Process(std::shared_ptr<tensor<unsig
 		if (device_id_ < 0)
 		{
 			tensor_operation_cpu::resize_cpu(bgr_8uc3, resized, changedh, changedw);
-			tensor_operation_cpu::preprocess_tensors_cpu(resized, bgr_32fc3, means);
+			tensor_operation_cpu::preprocess_tensors_cpu(resized, bgr_32fc3, means, var);
 		}
 		else
 		{
 #ifdef USE_CUDA
 			tensor_operation_gpu::resize_gpu(bgr_8uc3, resized, changedh, changedw);
-			tensor_operation_gpu::preprocess_tensors_gpu(resized, bgr_32fc3, means);
+			tensor_operation_gpu::preprocess_tensors_gpu(resized, bgr_32fc3, means, var);
 #else
 			NO_GPU;
 #endif
@@ -658,6 +660,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 	std::vector<std::vector<Longinus_CNN_BBox> > task_secondBbox(need_thread_num);
 
 	float means[3] = { 104.0f, 117.0f, 124.0f };
+	float var = 0.0078125;
 	for (int i = 0; i < need_thread_num; i++)
 	{
 		int st_id = per_num * i;
@@ -729,7 +732,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_cpu::safty_cut_cpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
-					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means, var);
 					memcpy(input_data_i, roi_resized_float_tensor->cpu_data(), channels * rnet_size * rnet_size * sizeof(float));
 				}
 				else
@@ -744,7 +747,7 @@ bool glasssix::longinus::mtcnn_mobile::RNet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, rnet_size, rnet_size);
-					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means, var);
 					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * rnet_size * rnet_size * sizeof(float), cudaMemcpyDefault);
 				}
 				else
@@ -936,7 +939,7 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 		}
 
 		float means[3] = { 104.0f, 117.0f, 124.0f };
-
+		float var = 0.0078125;
 		for (int i = 0; i < task_thirdBbox[pp].size(); i++)
 		{
 			int rect_h = (int)regressed_pading_[i].ymax - (int)regressed_pading_[i].ymin + 1;
@@ -950,7 +953,7 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_cpu::safty_cut_cpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_cpu::resize_cpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
-					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					tensor_operation_cpu::preprocess_tensors_cpu(roi_resized_tensor, roi_resized_float_tensor, means, var);
 					memcpy(input_data_i, roi_resized_float_tensor->cpu_data(), channels * onet_size * onet_size * sizeof(float));
 				}
 				else
@@ -965,7 +968,7 @@ bool glasssix::longinus::mtcnn_mobile::ONet_Process(std::vector<Longinus_CNN_BBo
 				{
 					tensor_operation_gpu::safty_cut_gpu(bgr_8uc3, roi_tensor, &roi_rect);
 					tensor_operation_gpu::resize_gpu(roi_tensor, roi_resized_tensor, onet_size, onet_size);
-					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means);
+					tensor_operation_gpu::preprocess_tensors_gpu(roi_resized_tensor, roi_resized_float_tensor, means, var);
 					cudaMemcpy(input_data_i, roi_resized_float_tensor->gpu_data(), channels * onet_size * onet_size * sizeof(float), cudaMemcpyDefault);
 				}
 				else

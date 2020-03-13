@@ -12,50 +12,48 @@ namespace glasssix
 
 			if (order_ == NCHW)
 			{
-				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_Channel_ * kernel_length_ / group_,
-					input_spatial_dim_, input_Channel_, 1.0f,
-					weights, input, 0.0f, col_buff);
-
-				if (group_ > 1)
+				for (int g = 0; g < group_; g++)
 				{
-					for (int i = 1; i < output_Channel_; i++)
-					{
-						memcpy(col_buff + i * kernel_length_ * input_spatial_dim_, col_buff, kernel_length_ * input_spatial_dim_ * sizeof(float));
-					}
+					math_functions::cpu_sgemm(CblasTrans, CblasNoTrans, output_Channel_ * kernel_length_ / group_,
+						input_spatial_dim_, input_Channel_ / group_, 1.0f,
+						weights + weight_offset_ * g, input + g * input_Channel_ * input_spatial_dim_ / group_, 0.0f, col_buff + col_offset_ * g);
 				}
 
 				conv_col2im_cpu(col_buff, output);
 			}
 			else if (order_ == NHWC)
 			{
-				if (group_ == 1)
-				{
-					math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_,
-						input_Channel_, 1.0f,
-						input, weights, 0.0f, col_buff);
-				}
-				else if (group_ > 1)
-				{
-					float* temp = (float*)malloc(input_spatial_dim_ * kernel_length_ * sizeof(float));
-					math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_ / group_,
-						input_Channel_, 1.0f,
-						input, weights, 0.0f, temp);
+				NOT_IMPLEMENTED;
+				//if (group_ == 1)
+				//{
+				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_,
+				//		input_Channel_, 1.0f,
+				//		input, weights, 0.0f, col_buff);
+				//}
+				//else if (group_ > 1)
+				//{
+				//	float* temp = (float*)malloc(input_spatial_dim_ * kernel_length_ * sizeof(float));
+				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_ / group_,
+				//		input_Channel_, 1.0f,
+				//		input, weights, 0.0f, temp);
 
-					for (int i = 0; i < input_spatial_dim_; i++)
-					{
-						for (int j = 0; j < output_Channel_; j++)
-						{
-							memcpy(col_buff + i * output_Channel_ * kernel_length_ + j * kernel_length_, 
-								temp + i * kernel_length_, kernel_length_ * sizeof(float));
-						}
-					}
-				}
-				else
-				{
-					LOG(FATAL) << "illegal group!";
-				}
+				//	for (int i = 0; i < input_spatial_dim_; i++)
+				//	{
+				//		for (int j = 0; j < output_Channel_; j++)
+				//		{
+				//			memcpy(col_buff + i * output_Channel_ * kernel_length_ + j * kernel_length_, 
+				//				temp + i * kernel_length_, kernel_length_ * sizeof(float));
+				//		}
+				//	}
 
-				conv_col2im_cpu(col_buff, output);
+				//	free(temp);
+				//}
+				//else
+				//{
+				//	LOG(FATAL) << "illegal group!";
+				//}
+
+				//conv_col2im_cpu(col_buff, output);
 			}
 			else
 			{
@@ -87,6 +85,8 @@ namespace glasssix
 		{
 			order_ = bottom->order();
 			num_ = bottom->data_shape()[0];
+			input_shape_.clear();
+			input_shape_ = bottom->data_shape();
 			bottom_dim_ = bottom->count(1, 4);
 			const float* bottom_data = bottom->cpu_data();
 			const float* weights = weights_->cpu_data();

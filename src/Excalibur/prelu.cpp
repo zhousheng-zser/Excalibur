@@ -34,7 +34,12 @@ namespace glasssix
 			{
 				if (isrelu_)
 				{
-					memset(slope_data_->mutable_cpu_data(), 0, channel_ * sizeof(float));
+					float *slop_data = slope_data_->mutable_cpu_data();
+					for (int i = 0; i < channel_; i++)
+					{
+						slop_data[i] = 0.1f;
+					}
+					//memset(slope_data_->mutable_cpu_data(), 0, channel_ * sizeof(float));
 				}
 				else
 				{
@@ -48,7 +53,7 @@ namespace glasssix
 			{
 				if (isrelu_)
 				{
-					slope_data_->mutable_cpu_data()[0] = 0.0f;
+					slope_data_->mutable_cpu_data()[0] = 0.1f;
 				}
 				else
 				{

@@ -10,6 +10,7 @@
 #include "ImageOperation.hpp"
 #include "InternalLonginusCascade.hpp"
 #include "../../include/Romancia/banshee.hpp"
+#include "../../include/Retina/RetinaFace.hpp"
 #include "../../include/Selene/blur_vsl_net.hpp"
 #include "../../include/Selene/black_white_vsl.hpp"
 #include "../../include/Selene/face_nose_nir.hpp"
@@ -18,6 +19,8 @@
 #include "../../include/Damocles/mtcnn_mobile.hpp"
 #include "../../include/Damocles/mtcnn_mobile_nir.hpp"
 #endif // !TRIAL
+
+const float mask_param[59] = { -0.356874f, -0.317302f, 1.10015f, 0.203173f, 0.91378f, 0.734194f, 3.34722f, 0.905967f, 2.24634f, -2.46884f, -1.68401f, 0.0891612f, 0.926708f, -0.53775f, 0.317807f, -0.286258f, 2.25947f, -2.57434f, 3.58891f, -0.452248f, -0.20355f, -4.43465f, 2.19633f, 0.881652f, 2.57983f, -0.0162699f, 0.361714f, 0.681337f, 1.21092f, 1.28893f, 2.22137f, -0.156652f, -2.70496f, 0.188347f, -5.69427f, 0.872288f, -1.04805f, -0.441653f, 0.366482f, -0.41308f, 4.03894f, -0.251758f, 0.495999f, 0.0838288f, -0.296292f, -4.56964f, 0.39035f, -1.49526f, 0.194758f, 0.539041f, 3.21483f, 0.61976f, -6.02826f, 1.90285f, -1.08749f, 1.31174f, 1.28299f, -1.32005f, 8.10837f };
 
 namespace glasssix
 {
@@ -43,6 +46,9 @@ namespace glasssix
 
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
 
+			std::vector<face_rect_with_face_info> detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, 
+			    int img_order, float threshold = 0.5, float scales = 1.0) const;
+				
 #ifndef TRIAL
 			std::vector<face_rect_with_face_info> detectEx(const unsigned char* image, const int channels, const int height, const int width,
 				const int minSize, const float* threshold, const float factor, const int stage, const int order = 1) const;
@@ -78,6 +84,7 @@ namespace glasssix
 			std::unique_ptr<Banshee> bansheelia_;
 			std::vector<unsigned char> data_;
 			std::unique_ptr<Matcher> matcher_;
+			std::shared_ptr<RetinaFace> retina_;
 
 			std::shared_ptr<Selene> selene_blur_vsl_;
 			std::shared_ptr<Selene> selene_black_white_vsl_;
@@ -101,6 +108,7 @@ namespace glasssix
 			matcher_.reset(new Matcher());
 			int dstep = (((48 * 8 + 7) / 8) * 4 - 1) & (~(4 - 1));
 			data_.resize(dstep * 48);
+			retina_.reset(new RetinaFace(device_));
 
 #ifndef TRIAL
 			diodorus_.reset(new MTCNN(device_));
@@ -346,6 +354,7 @@ namespace glasssix
 			selene_blur_vsl_.reset(new Blur_vsl_net(device_));
 			selene_black_white_vsl_.reset(new Black_white_vsl(device_));
 			selene_face_nose_nir_.reset(new Face_nose_nir(device_));
+			retina_.reset(new RetinaFace(device_));
 
 #ifndef TRIAL
 			diodorus_.reset(new MTCNN(device_));
@@ -437,6 +446,38 @@ namespace glasssix
 			return bansheelia_->alignFace(ori_image, n, channels, height, width);
 #endif
 		}
+
+		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold, float scales) const
+		{
+			std::vector<face_rect_with_face_info> output;
+
+#ifdef __ANDROID__
+			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=] {
+				return res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
+			}).get();
+#else
+			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
+#endif
+
+			for (auto i = 0; i < res.size(); i++)
+			{
+				float x = res[i].bbox.xmin;
+				float y = res[i].bbox.ymin;
+				float w = res[i].bbox.xmax - res[i].bbox.xmin;
+				float h = res[i].bbox.ymax - res[i].bbox.ymin;
+
+				face_rect_with_face_info info(face_rect_basic(x, y, w, h, 0, res[i].bbox.score));
+
+				for (auto j = 0; j < 5; j++)
+				{
+					info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
+				}
+				output.push_back(info);
+			}
+
+			return output;
+		}
+
 
 #ifndef TRIAL
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx(const unsigned char* image, const int channels, const int height, const int width,
@@ -707,6 +748,11 @@ namespace glasssix
 			return impl_->alignFace(ori_image, n, channels, height, width);
 		}
 
+		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int channels, int height, int width, int order, float threshold, float scales) const
+		{
+			return impl_->detectRetina(image, channels, height, width, order, threshold, scales);
+		}
+
 #ifndef TRIAL
 		std::vector<face_rect_with_face_info> LonginusDetector::detectEx(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
@@ -762,6 +808,39 @@ namespace glasssix
 		const char* LonginusDetector::getVersion()
 		{
 			return impl::getVersion();
+		}
+
+		std::vector<bool> LonginusDetector::maskJudge(const std::vector<unsigned char> &aligned_data, int n)
+		{
+			std::vector<bool> result;
+			std::shared_ptr<tensor<unsigned char>> aligned_face(new tensor<unsigned char>(std::vector<int>{n, 3, 128, 128}, -1, NCHW));
+			memcpy(aligned_face->mutable_cpu_data(), aligned_data.data(), n * 3 * 128 * 128 * sizeof(unsigned char));
+
+			std::shared_ptr<tensor<unsigned char>> gray_img;
+			std::shared_ptr<tensor<float>> hist_lbp;
+			tensor_operation_cpu::rgb2gray_cpu(aligned_face, gray_img);
+			tensor_operation_cpu::lbp_feature_cpu(gray_img, gray_img, true);
+			tensor_operation_cpu::calc_hist_cpu(gray_img, hist_lbp);
+			const float *hist_data = hist_lbp->cpu_data();
+
+			float sum = 0;
+			for (int i = 0; i < 59; i++)
+			{
+				sum += hist_data[i] * mask_param[i];
+			}
+
+			if (sum > 0)
+			{
+				//mask
+				result.push_back(true);
+			}
+			else
+			{
+				//unmask
+				result.push_back(false);
+			}
+
+			return result;
 		}
 	}
 }

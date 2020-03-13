@@ -23,6 +23,8 @@
 #include "sigmoid.hpp"
 #include "axpy.hpp"
 #include "deconv.hpp"
+#include "upsample.hpp"
+#include "reshape.hpp"
 
 #include "arm/conv_arm.hpp"
 #include "arm/inner_product_arm.hpp"
@@ -33,6 +35,7 @@
 #include "arm/batchnorm_arm.hpp"
 #include "arm/scale_arm.hpp"
 #include "arm/eltwise_arm.hpp"
+#include "arm/deconv_arm.hpp"
 
 #include <climits>
 
@@ -171,6 +174,8 @@ deconv_name = new deconv(input_channel, output_channel, group, kernel_size, stri
 deconv_name->set_weights(deconv_name##_##weights);\
 deconv_name->set_bias(deconv_name##_##bias);
 
+#define Init_Upsample_Params(upsample_name, scale)\
+upsample_name = new upsample(scale, device_);
 
 #define Init_PReLU_Shared_Params(prelu_name, input_channel, isrelu, is_shared)\
 prelu_name = new prelu(input_channel, isrelu, device_, is_shared);\
@@ -206,6 +211,9 @@ concat_name = new concat(concat_axis, device_);
 #define Init_Sigmoid_Params(sigmoid_name)\
 sigmoid_name = new sigmoid();
 
+#define Init_Reshape_Params(reshape_name, dim1, dim2, dim3, dim4)\
+reshape_name = new reshape(dim1, dim2, dim3, dim4);
+
 #define Init_Slice_Params(slice_name, slice_axis)\
 slice_name = new slice(slice_axis, device_);
 
@@ -235,6 +243,12 @@ else{\
 prelu_name = new prelu_arm(input_channel, isrelu, -1, is_shared);\
 prelu_name->setslope(prelu_name##_##weights);
 
+#define Init_ReLU_arm_Params(prelu_name, input_channel, isrelu)\
+prelu_name = new prelu_arm(input_channel, isrelu, -1, false);
+
+#define Init_Reshape_arm_Params(reshape_name, dim1, dim2, dim3, dim4)\
+reshape_name = new reshape(dim1, dim2, dim3, dim4);
+
 #define Init_Pooling_arm_Params(pooling_name, kernel, stride, pad, type)\
 pooling_name = new pooling_arm(kernel, stride, pad, type, -1);
 
@@ -261,5 +275,10 @@ scale_name->set_bias(scale_name##_##bias);
 
 #define Init_Eltwise_arm_Params(eltwise_name, type)\
 eltwise_name = new eltwise_arm(type, device_);
+
+#define Init_Deconv_arm_Params(deconv_name, input_channel, output_channel, group, kernel_size, stride, pad, bias_term)\
+deconv_name = new deconv_arm(input_channel, output_channel, group, kernel_size, stride, pad, bias_term, device_);\
+deconv_name->set_weights(deconv_name##_##weights);\
+deconv_name->set_bias(deconv_name##_##bias);
 
 #endif //_SUPPORT_LAYERS_HPP_
