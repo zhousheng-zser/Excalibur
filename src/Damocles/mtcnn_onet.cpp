@@ -20,47 +20,47 @@ namespace glasssix
 			float quantize_level = INT_MAX;
 			if (int8_quantization_)
 			{
-				Copy_Int8_Params(conv1, ONet);
-				Copy_Params(prelu1_weights, ONet, quantize_level);
-				Copy_Int8_Params(conv2, ONet);
-				Copy_Params(prelu2_weights, ONet, quantize_level);
-				Copy_Int8_Params(conv3, ONet);
-				Copy_Params(prelu3_weights, ONet, quantize_level);
-				Copy_Int8_Params(conv4, ONet);
-				Copy_Params(prelu4_weights, ONet, quantize_level);
-				Copy_Params(conv5_weights, ONet, quantize_level);
-				Copy_Params(conv5_bias, ONet, quantize_level);
-				Copy_Params(prelu5_weights, ONet, quantize_level);
-				Copy_Params(conv6_1_weights, ONet, quantize_level);
-				Copy_Params(conv6_1_bias, ONet, quantize_level);
-				Copy_Params(conv6_2_weights, ONet, quantize_level);
-				Copy_Params(conv6_2_bias, ONet, quantize_level);
-				Copy_Params(conv6_3_weights, ONet, quantize_level);
-				Copy_Params(conv6_3_bias, ONet, quantize_level);
+				Copy_Int8_Params(conv1, mtcnn_onet);
+				Copy_Params(prelu1_weights, mtcnn_onet, quantize_level);
+				Copy_Int8_Params(conv2, mtcnn_onet);
+				Copy_Params(prelu2_weights, mtcnn_onet, quantize_level);
+				Copy_Int8_Params(conv3, mtcnn_onet);
+				Copy_Params(prelu3_weights, mtcnn_onet, quantize_level);
+				Copy_Int8_Params(conv4, mtcnn_onet);
+				Copy_Params(prelu4_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv5_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv5_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu5_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_1_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_1_bias, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_2_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_2_bias, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_3_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_3_bias, mtcnn_onet, quantize_level);
 			}
 			else
 			{
-				Copy_Params(conv1_weights, ONet, quantize_level);
-				Copy_Params(conv1_bias, ONet, quantize_level);
-				Copy_Params(prelu1_weights, ONet, quantize_level);
-				Copy_Params(conv2_weights, ONet, quantize_level);
-				Copy_Params(conv2_bias, ONet, quantize_level);
-				Copy_Params(prelu2_weights, ONet, quantize_level);
-				Copy_Params(conv3_weights, ONet, quantize_level);
-				Copy_Params(conv3_bias, ONet, quantize_level);
-				Copy_Params(prelu3_weights, ONet, quantize_level);
-				Copy_Params(conv4_weights, ONet, quantize_level);
-				Copy_Params(conv4_bias, ONet, quantize_level);
-				Copy_Params(prelu4_weights, ONet, quantize_level);
-				Copy_Params(conv5_weights, ONet, quantize_level);
-				Copy_Params(conv5_bias, ONet, quantize_level);
-				Copy_Params(prelu5_weights, ONet, quantize_level);
-				Copy_Params(conv6_1_weights, ONet, quantize_level);
-				Copy_Params(conv6_1_bias, ONet, quantize_level);
-				Copy_Params(conv6_2_weights, ONet, quantize_level);
-				Copy_Params(conv6_2_bias, ONet, quantize_level);
-				Copy_Params(conv6_3_weights, ONet, quantize_level);
-				Copy_Params(conv6_3_bias, ONet, quantize_level);
+				Copy_Params(conv1_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv1_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu1_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv2_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv2_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu2_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv3_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv3_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu3_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv4_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv4_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu4_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv5_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv5_bias, mtcnn_onet, quantize_level);
+				Copy_Params(prelu5_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_1_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_1_bias, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_2_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_2_bias, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_3_weights, mtcnn_onet, quantize_level);
+				Copy_Params(conv6_3_bias, mtcnn_onet, quantize_level);
 			}
 			
 			//
@@ -74,40 +74,40 @@ namespace glasssix
 #endif
 			//
 #ifdef __ARM_NEON
-			Init_Conv_arm_Params(conv1, 3, 16, 1, 3, 1, 0, true);
-			Init_PReLU_arm_Params(prelu1, 16, false, false);
+			Init_Conv_arm_Params(conv1, 3, 32, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu1, 32, false, false);
 			Init_Pooling_arm_Params(pool1, 3, 2, 0, 0);
-			Init_Conv_arm_Params(conv2, 16, 32, 1, 3, 1, 0, true);
-			Init_PReLU_arm_Params(prelu2, 32, false, false);
+			Init_Conv_arm_Params(conv2, 32, 64, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu2, 64, false, false);
 			Init_Pooling_arm_Params(pool2, 3, 2, 0, 0);
-			Init_Conv_arm_Params(conv3, 32, 32, 1, 3, 1, 0, true);
-			Init_PReLU_arm_Params(prelu3, 32, false, false);
+			Init_Conv_arm_Params(conv3, 64, 64, 1, 3, 1, 0, true);
+			Init_PReLU_arm_Params(prelu3, 64, false, false);
 			Init_Pooling_arm_Params(pool3, 2, 2, 0, 0);
-			Init_Conv_arm_Params(conv4, 32, 64, 1, 2, 1, 0, true);
-			Init_PReLU_arm_Params(prelu4, 64, false, false);
-			Init_InnerProduct_arm_Params(conv5, 64, 3, 3, 128, true);
-			Init_PReLU_arm_Params(prelu5, 128, false, false);
-			Init_InnerProduct_arm_Params(conv6_1, 128, 1, 1, 2, true);
-			Init_InnerProduct_arm_Params(conv6_2, 128, 1, 1, 4, true);
-			Init_InnerProduct_arm_Params(conv6_3, 128, 1, 1, 10, true);
+			Init_Conv_arm_Params(conv4, 64, 128, 1, 2, 1, 0, true);
+			Init_PReLU_arm_Params(prelu4, 128, false, false);
+			Init_InnerProduct_arm_Params(conv5, 128, 3, 3, 256, true);
+			Init_PReLU_arm_Params(prelu5, 256, false, false);
+			Init_InnerProduct_arm_Params(conv6_1, 256, 1, 1, 2, true);
+			Init_InnerProduct_arm_Params(conv6_2, 256, 1, 1, 4, true);
+			Init_InnerProduct_arm_Params(conv6_3, 256, 1, 1, 10, true);
 			Init_Softmax_arm_Params(prob1, 2);
 #else
-			Init_Conv_Params(conv1, 3, 16, 1, 3, 1, 0, true);
-			Init_PReLU_Params(prelu1, 16, false);
+			Init_Conv_Params(conv1, 3, 32, 1, 3, 1, 0, true);
+			Init_PReLU_Params(prelu1, 32, false);
 			Init_Pooling_Params(pool1, 3, 2, 0, 0);
-			Init_Conv_Params(conv2, 16, 32, 1, 3, 1, 0, true);
-			Init_PReLU_Params(prelu2, 32, false);
+			Init_Conv_Params(conv2, 32, 64, 1, 3, 1, 0, true);
+			Init_PReLU_Params(prelu2, 64, false);
 			Init_Pooling_Params(pool2, 3, 2, 0, 0);
-			Init_Conv_Params(conv3, 32, 32, 1, 3, 1, 0, true);
-			Init_PReLU_Params(prelu3, 32, false);
+			Init_Conv_Params(conv3, 64, 64, 1, 3, 1, 0, true);
+			Init_PReLU_Params(prelu3, 64, false);
 			Init_Pooling_Params(pool3, 2, 2, 0, 0);
-			Init_Conv_Params(conv4, 32, 64, 1, 2, 1, 0, true);
-			Init_PReLU_Params(prelu4, 64, false);
-			Init_InnerProduct_Params(conv5, 64, 3, 3, 128, true);
-			Init_PReLU_Params(prelu5, 128, false);
-			Init_InnerProduct_Params(conv6_1, 128, 1, 1, 2, true);
-			Init_InnerProduct_Params(conv6_2, 128, 1, 1, 4, true);
-			Init_InnerProduct_Params(conv6_3, 128, 1, 1, 10, true);
+			Init_Conv_Params(conv4, 64, 128, 1, 2, 1, 0, true);
+			Init_PReLU_Params(prelu4, 128, false);
+			Init_InnerProduct_Params(conv5, 128, 3, 3, 256, true);
+			Init_PReLU_Params(prelu5, 256, false);
+			Init_InnerProduct_Params(conv6_1, 256, 1, 1, 2, true);
+			Init_InnerProduct_Params(conv6_2, 256, 1, 1, 4, true);
+			Init_InnerProduct_Params(conv6_3, 256, 1, 1, 10, true);
 			Init_Softmax_Params(prob1, 2);
 #endif
 		}
@@ -153,6 +153,141 @@ namespace glasssix
 #endif
 		}
 
+//#define CALC_LAYERS
+
+#ifdef CALC_LAYERS
+#include <glasssix/timer.hpp>
+		void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		{
+			std::cout << "onet:" << std::endl << std::endl;
+			int loop = 1000;
+			glasssix::Timer calcTime;
+			double elapseTime;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv1->Forward(input_data, conv1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv1  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu1->Forward_cpu(conv1_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				pool1->Forward_cpu(conv1_top_data, pool1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-pool1  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv2->Forward(pool1_top_data, conv2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv2  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu2->Forward_cpu(conv2_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				pool2->Forward_cpu(conv2_top_data, pool2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-pool2  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv3->Forward(pool2_top_data, conv3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv3  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu3->Forward_cpu(conv3_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				pool3->Forward_cpu(conv3_top_data, pool3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-pool3  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv4->Forward(pool3_top_data, conv4_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv4  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu4->Forward_cpu(conv4_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv5->Forward_cpu(conv4_top_data, conv5_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv5  :" << std::setw(5) << elapseTime << std::endl;
+
+			
+			prelu5->Forward_cpu(conv5_top_data);
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv6_1  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv6_2  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-conv6_3  :" << std::setw(5) << elapseTime << std::endl;
+
+			calcTime.Start();
+			for (int i = 0; i < loop; i++)
+			{
+				prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
+			}
+			calcTime.Stop();
+			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
+			std::cout << "layer-prob1  :" << std::setw(5) << elapseTime << std::endl;
+		}
+#else
 		void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
@@ -173,6 +308,8 @@ namespace glasssix
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
 			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);			
 		}
+
+#endif
 
 #ifdef USE_CUDA
 		void mtcnn_onet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)

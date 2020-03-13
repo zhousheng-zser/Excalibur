@@ -23,39 +23,12 @@ namespace glasssix
 			void forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) override;
 
 			void forward_bias(float* output, const float* bias) override;
-			
-			static inline void fill(float *ptr, int size, float _v)
-			{
-				int remain = size;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
-				mm_type fill_value = mm_set1_ps(_v);
-				int circle_num = remain / mm_align_size;
-				int index = 0;
-				for (; index < circle_num; index++)
-				{
-					int index_offset = index * mm_align_size;
-					mm_store_ps(ptr + index_offset, fill_value);
-				}
-
-				remain -= mm_align_size * index;
-				for (; remain > 0; remain--)
-				{
-					ptr[size - remain] = _v;
-				}
-#else
-				for (; remain > 0; remain--)
-				{
-					*ptr++ = _v;
-				}
-#endif
-			}
 
 #ifdef USE_CUDA
-			void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
-			void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) {}
-			void forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
-			void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) {}
+			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) {}
+			void forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
+			void forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias) {}
 #ifdef USE_CUDNN
 			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
 #endif //!USE_CUDNN

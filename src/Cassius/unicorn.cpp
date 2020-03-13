@@ -9,6 +9,11 @@
 #include "unicorn_data.hpp"
 #endif//INT8_DATA
 
+//#define CALC_LAYERS
+#ifdef CALC_LAYERS
+#include <glasssix/profiler.hpp>
+#endif //CALC_LAYERS
+
 namespace glasssix
 {
 	namespace cassius
@@ -16,6 +21,10 @@ namespace glasssix
 		Unicorn::Unicorn(int device)
 		{
 			device_ = device;
+			if (device >= 0)
+			{
+				int8_quantization_ = false;//do not use int8 in GPU mode
+			}
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
@@ -27,10 +36,6 @@ namespace glasssix
 #ifdef USE_CUDNN
 			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 			cudnn_ready_ = true;
-			if (device >= 0)
-			{
-				int8_quantization_ = false;//do not use int8 in CUDNN
-			}
 #endif
 #endif
 
@@ -550,334 +555,188 @@ namespace glasssix
 #endif
 		} 
 
-//#define CALC_LAYERS
 
-#ifdef CALC_LAYERS
+#ifdef CALC_LAYERS		
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
-			int loop = 1000;
-			glasssix::Timer calcTime;
-			double elapseTime;
+			Profiler *profiler_ = Profiler::Get();
+			profiler_->TurnON();
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv1a->Forward(input_data, conv1a_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv1a  :" << std::setw(5) << elapseTime << std::endl;
-			
+			profiler_->ScopeStart("conv1a");
+			conv1a->Forward(input_data, conv1a_top_data);
+			profiler_->ScopeEnd();
 			relu1a->Forward_cpu(conv1a_top_data);
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv1b->Forward(conv1a_top_data, conv1b_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv1b  :" << std::setw(5) << elapseTime << std::endl;
-			
+			profiler_->ScopeStart("conv1b");
+			conv1b->Forward(conv1a_top_data, conv1b_top_data);
+			profiler_->ScopeEnd();
 			relu1b->Forward_cpu(conv1b_top_data);
-			pool1b->Forward_cpu(conv1b_top_data, pool1b_top_data);
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv2_1->Forward(pool1b_top_data, conv2_1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv2_1 :" << std::setw(5) << elapseTime << std::endl;
-			
+			profiler_->ScopeStart("pool1b");
+			pool1b->Forward_cpu(conv1b_top_data, pool1b_top_data);
+			profiler_->ScopeEnd();
+
+			profiler_->ScopeStart("conv2_1");
+			conv2_1->Forward(pool1b_top_data, conv2_1_top_data);
+			profiler_->ScopeEnd();
 			relu2_1->Forward_cpu(conv2_1_top_data);
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv2_2->Forward(conv2_1_top_data, conv2_2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv2_2 :" << std::setw(5) << elapseTime << std::endl;
-			
+			profiler_->ScopeStart("conv2_2");
+			conv2_2->Forward(conv2_1_top_data, conv2_2_top_data);
+			profiler_->ScopeEnd();
 			relu2_2->Forward_cpu(conv2_2_top_data);
-
 			res2_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool1b_top_data, conv2_2_top_data}, res2_2_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv2->Forward(res2_2_top_data, conv2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv2   :" << std::setw(5) << elapseTime << std::endl;
 			
+			profiler_->ScopeStart("conv2");
+			conv2->Forward(res2_2_top_data, conv2_top_data);
+			profiler_->ScopeEnd();
 			relu2->Forward_cpu(conv2_top_data);
 
+			profiler_->ScopeStart("pool2");
 			pool2->Forward_cpu(conv2_top_data, pool2_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3_1->Forward(pool2_top_data, conv3_1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3_1 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeEnd();
 
+			profiler_->ScopeStart("conv3_1");
+			conv3_1->Forward(pool2_top_data, conv3_1_top_data);
+			profiler_->ScopeEnd();
 			relu3_1->Forward_cpu(conv3_1_top_data);
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3_2->Forward(conv3_1_top_data, conv3_2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3_2 :" << std::setw(5) << elapseTime << std::endl;
-
+			profiler_->ScopeStart("conv3_2");
+			conv3_2->Forward(conv3_1_top_data, conv3_2_top_data);
+			profiler_->ScopeEnd();
 			relu3_2->Forward_cpu(conv3_2_top_data);
 			res3_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool2_top_data, conv3_2_top_data}, res3_2_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3_3->Forward(res3_2_top_data, conv3_3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3_3 :" << std::setw(5) << elapseTime << std::endl;
-
+			profiler_->ScopeStart("conv3_3");
+			conv3_3->Forward(res3_2_top_data, conv3_3_top_data);
+			profiler_->ScopeEnd();
 			relu3_3->Forward_cpu(conv3_3_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3_4->Forward(conv3_3_top_data, conv3_4_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3_4 :" << std::setw(5) << elapseTime << std::endl;
 
+			profiler_->ScopeStart("conv3_4");
+			conv3_4->Forward(conv3_3_top_data, conv3_4_top_data);
+			profiler_->ScopeEnd();
 			relu3_4->Forward_cpu(conv3_4_top_data);
 			res3_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res3_2_top_data, conv3_4_top_data}, res3_4_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3->Forward(res3_4_top_data, conv3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3   :" << std::setw(5) << elapseTime << std::endl;
-
+			profiler_->ScopeStart("conv3");
+			conv3->Forward(res3_4_top_data, conv3_top_data);
+			profiler_->ScopeEnd();
 			relu3->Forward_cpu(conv3_top_data);
+
+			profiler_->ScopeStart("pool3");
 			pool3->Forward_cpu(conv3_top_data, pool3_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_1->Forward(pool3_top_data, conv4_1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_1 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeEnd();
 
+			profiler_->ScopeStart("conv4_1");
+			conv4_1->Forward(pool3_top_data, conv4_1_top_data);
+			profiler_->ScopeEnd();
 			relu4_1->Forward_cpu(conv4_1_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_2->Forward(conv4_1_top_data, conv4_2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_2 :" << std::setw(5) << elapseTime << std::endl;
 
+			profiler_->ScopeStart("conv4_2");
+			conv4_2->Forward(conv4_1_top_data, conv4_2_top_data);
+			profiler_->ScopeEnd();
 			relu4_2->Forward_cpu(conv4_2_top_data);
 			res4_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool3_top_data, conv4_2_top_data}, res4_2_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_3->Forward(res4_2_top_data, conv4_3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_3 :" << std::setw(5) << elapseTime << std::endl;
-			relu4_3->Forward_cpu(conv4_3_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_4->Forward(conv4_3_top_data, conv4_4_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_4 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv4_3");
+			conv4_3->Forward(res4_2_top_data, conv4_3_top_data);
+			profiler_->ScopeEnd();
+			relu4_3->Forward_cpu(conv4_3_top_data);			
+
+			profiler_->ScopeStart("conv4_4");
+			conv4_4->Forward(conv4_3_top_data, conv4_4_top_data);
+			profiler_->ScopeEnd();
 			relu4_4->Forward_cpu(conv4_4_top_data);
 			res4_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_2_top_data, conv4_4_top_data}, res4_4_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_5->Forward(res4_4_top_data, conv4_5_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_5 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv4_5");
+			conv4_5->Forward(res4_4_top_data, conv4_5_top_data);
+			profiler_->ScopeEnd();
 			relu4_5->Forward_cpu(conv4_5_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_6->Forward(conv4_5_top_data, conv4_6_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_6 :" << std::setw(5) << elapseTime << std::endl;
+
+			profiler_->ScopeStart("conv4_6");
+			conv4_6->Forward(conv4_5_top_data, conv4_6_top_data);
+			profiler_->ScopeEnd();
 			relu4_6->Forward_cpu(conv4_6_top_data);
 			res4_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_4_top_data, conv4_6_top_data}, res4_6_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_7->Forward(res4_6_top_data, conv4_7_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_7 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv4_7");
+			conv4_7->Forward(res4_6_top_data, conv4_7_top_data);
+			profiler_->ScopeEnd();
 			relu4_7->Forward_cpu(conv4_7_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_8->Forward(conv4_7_top_data, conv4_8_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_8 :" << std::setw(5) << elapseTime << std::endl;
+
+			profiler_->ScopeStart("conv4_8");
+			conv4_8->Forward(conv4_7_top_data, conv4_8_top_data);
+			profiler_->ScopeEnd();
 			relu4_8->Forward_cpu(conv4_8_top_data);
 			res4_8->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_6_top_data, conv4_8_top_data}, res4_8_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_9->Forward(res4_8_top_data, conv4_9_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_9 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv4_9");
+			conv4_9->Forward(res4_8_top_data, conv4_9_top_data);
+			profiler_->ScopeEnd();
 			relu4_9->Forward_cpu(conv4_9_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4_10->Forward(conv4_9_top_data, conv4_10_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4_10:" << std::setw(5) << elapseTime << std::endl;
+
+			profiler_->ScopeStart("conv4_10");
+			conv4_10->Forward(conv4_9_top_data, conv4_10_top_data);
+			profiler_->ScopeEnd();
 			relu4_10->Forward_cpu(conv4_10_top_data);
 			res4_10->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res4_8_top_data, conv4_10_top_data}, res4_10_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4->Forward(res4_10_top_data, conv4_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4   :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv4");
+			conv4->Forward(res4_10_top_data, conv4_top_data);
+			profiler_->ScopeEnd();
 			relu4->Forward_cpu(conv4_top_data);
+			
+			profiler_->ScopeStart("pool4");
 			pool4->Forward_cpu(conv4_top_data, pool4_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_1->Forward(pool4_top_data, conv5_1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_1 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeEnd();
+
+			profiler_->ScopeStart("conv5_1");
+			conv5_1->Forward(pool4_top_data, conv5_1_top_data);
+			profiler_->ScopeEnd();
 			relu5_1->Forward_cpu(conv5_1_top_data);
-			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_2->Forward(conv5_1_top_data, conv5_2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_2 :" << std::setw(5) << elapseTime << std::endl;
+
+			profiler_->ScopeStart("conv5_2");
+			conv5_2->Forward(conv5_1_top_data, conv5_2_top_data);
+			profiler_->ScopeEnd();
 			relu5_2->Forward_cpu(conv5_2_top_data);
 			res5_2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{pool4_top_data, conv5_2_top_data}, res5_2_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_3->Forward(res5_2_top_data, conv5_3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_3 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5_3");
+			conv5_3->Forward(res5_2_top_data, conv5_3_top_data);
+			profiler_->ScopeEnd();
 			relu5_3->Forward_cpu(conv5_3_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_4->Forward(conv5_3_top_data, conv5_4_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_4 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5_4");
+			conv5_4->Forward(conv5_3_top_data, conv5_4_top_data);
+			profiler_->ScopeEnd();
 			relu5_4->Forward_cpu(conv5_4_top_data);
 			res5_4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_2_top_data, conv5_4_top_data}, res5_4_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_5->Forward(res5_4_top_data, conv5_5_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_5 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5_5");
+			conv5_5->Forward(res5_4_top_data, conv5_5_top_data);
+			profiler_->ScopeEnd();
 			relu5_5->Forward_cpu(conv5_5_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_6->Forward(conv5_5_top_data, conv5_6_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_6 :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5_6");
+			conv5_6->Forward(conv5_5_top_data, conv5_6_top_data);
+			profiler_->ScopeEnd();
 			relu5_6->Forward_cpu(conv5_6_top_data);
 			res5_6->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{res5_4_top_data, conv5_6_top_data}, res5_6_top_data);
 			
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5->Forward(res5_6_top_data, conv5_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5   :" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5");
+			conv5->Forward(res5_6_top_data, conv5_top_data);
+			profiler_->ScopeEnd();
 			relu5->Forward_cpu(conv5_top_data);
 
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5_dw->Forward(conv5_top_data, conv5_dw_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5_dw:" << std::setw(5) << elapseTime << std::endl;
+			profiler_->ScopeStart("conv5_dw");
+			conv5_dw->Forward(conv5_top_data, conv5_dw_top_data);
+			profiler_->ScopeEnd();
 
 			normalizer->Forward_cpu(conv5_dw_top_data);//feature_top_data
+
+			profiler_->TurnOFF();
+			profiler_->DumpProfile("D:/cassius.json");
 		}
 #else
 		void Unicorn::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
@@ -1136,11 +995,14 @@ namespace glasssix
 				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
 			}
 
+			float means[3] = { 104.0f, 117.0f, 124.0f };
+			float var = 0.0078125f;
+
 			if (device_ < 0)
 			{
 				float* tensor_data = tensor_float_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float));
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data, means, var);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -1155,7 +1017,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				float* tensor_data = tensor_float_data->mutable_gpu_data();
 				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(float), cudaMemcpyDefault));
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_float_data, tensor_float_data, means, var);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
@@ -1202,11 +1064,14 @@ namespace glasssix
 				tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 128, 128, 3}, device_, NHWC));
 			}
 
+			float means[3] = { 104.0f, 117.0f, 124.0f };
+			float var = 0.0078125f;
+
 			if (device_ < 0)
 			{
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_cpu_data();
 				memcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char));
-				tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data);
+				tensor_operation_cpu::preprocess_tensors_cpu(tensor_unsigned_char_data, tensor_float_data, means, var);
 				Forward_cpu(tensor_float_data);
 				for (size_t i = 0; i < num; i++)
 				{
@@ -1221,7 +1086,7 @@ namespace glasssix
 #ifdef USE_CUDA
 				unsigned char* tensor_data = tensor_unsigned_char_data->mutable_gpu_data();
 				CUDA_CHECK(cudaMemcpy(tensor_data, input_data, num * 3 * 128 * 128 * sizeof(unsigned char), cudaMemcpyDefault));
-				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data);
+				tensor_operation_gpu::preprocess_tensors_gpu(tensor_unsigned_char_data, tensor_float_data, means, var);
 #ifdef USE_CUDNN
 				Forward_gpu_cudnn(tensor_float_data);
 				for (size_t i = 0; i < num; i++)

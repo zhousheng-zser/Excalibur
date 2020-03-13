@@ -15,7 +15,7 @@
 #include <algorithm>
 
 #define PI 3.1415926
-
+extern const unsigned char LBPMAP[][256];
 namespace glasssix
 {
 	namespace excalibur
@@ -3495,7 +3495,7 @@ namespace glasssix
 		/// <param name="order">orderType: NHWC / NCHW</param>
 		template <typename DtypeSRC, typename DtypeDST>
 		__global__
-			void kernel_preprocess_tensors(const DtypeSRC* src_data, DtypeDST* dst_data, int num, int channels, int height, int width, orderType order)
+			void kernel_preprocess_tensors(const DtypeSRC* src_data, DtypeDST* dst_data, int num, int channels, int height, int width, orderType order, float *means, float var)
 		{
 			int totalID = (blockIdx.z * gridDim.x * gridDim.y + blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
 			int channelID = totalID % channels;
@@ -3509,16 +3509,11 @@ namespace glasssix
 
 			if (channels == 1)
 			{
-				float means[] = { 127.5f };
-				float var = 0.0078125f;
 				int index = rowID * width + colID;
 				dst_data[num_offset + index] = DtypeDST((src_data[num_offset + index] - means[0]) * var);
 			}
 			else if (channels == 3)
 			{
-				float means[3] = { 104.f, 117.0f, 124.f };
-				float var = 0.0078125f;
-
 				if (order == NCHW)
 				{
 					int channel_offset = channelID * height * width;
@@ -3545,7 +3540,7 @@ namespace glasssix
 		/// <param name="src">original tensor</param>
 		/// <param name="dst">new tensor</param>
 		template <typename DtypeSRC, typename DtypeDST>
-		void tensor_operation_gpu::preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst)
+		void tensor_operation_gpu::preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var)
 		{
 			if (src->device() < 0)
 			{
@@ -3563,11 +3558,15 @@ namespace glasssix
 			dst_temp.reset(new tensor<DtypeDST>(src->data_shape(), src->device(), src->order()));
 			DtypeDST* dst_data = dst_temp->mutable_gpu_data();
 
+			std::shared_ptr<tensor<float>> means_tensor;
+			means_tensor.reset(new tensor<float>(std::vector<int>{3}, src->device(), src->order()));
+			float *means_data = means_tensor->mutable_gpu_data();
+			cudaMemcpy(means_data, means, 3 * sizeof(float), cudaMemcpyDefault);
+
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
 
-			
-			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src->order());
+			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src->order(), means_data, var);
 			dst = std::make_shared<tensor<DtypeDST>>(dst_temp->clone());
 		}
 
@@ -3579,7 +3578,7 @@ namespace glasssix
 		/// <param name="src">original tensor</param>
 		/// <param name="dst">new tensor</param>
 		template <typename DtypeSRC, typename DtypeDST>
-		void tensor_operation_gpu::preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst)
+		void tensor_operation_gpu::preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var)
 		{
 			if (src.device() < 0)
 			{
@@ -3596,11 +3595,15 @@ namespace glasssix
 			tensor<DtypeDST> dst_temp = tensor<DtypeDST>(src.data_shape(), src.device(), src.order());
 			DtypeDST* dst_data = dst_temp.mutable_gpu_data();
 
+			std::shared_ptr<tensor<float>> means_tensor;
+			means_tensor.reset(new tensor<float>(std::vector<int>{3}, src.device(), src.order()));
+			float *means_data = means_tensor->mutable_gpu_data();
+			cudaMemcpy(means_data, means, 3 * sizeof(float), cudaMemcpyDefault);
+
 			const dim3 block_size(channels, 1, 1);
 			const dim3 grid_size(width, height, num);
-
 			
-			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src.order());
+			kernel_preprocess_tensors << <grid_size, block_size >> > (src_data, dst_data, num, channels, height, width, src.order(), means_data, var);
 			dst = dst_temp.clone();
 		}
 
@@ -3619,7 +3622,7 @@ namespace glasssix
 		/// <param name="fill_pixel_value">validate when borderType is Border_Constant, zero by default</param>
 		template <typename Dtype>
 		void tensor_operation_gpu::make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-			int top, int bottom, int left, int right, borderType type, int fill_pixel_value)
+			int top, int bottom, int left, int right, borderType type, Dtype fill_pixel_value)
 		{
 			if (src->device() < 0)
 			{
@@ -4224,16 +4227,221 @@ namespace glasssix
 		}
 
 
+
+
+
+		/// <summary>
+        /// for image(w*h), calculate LBP feature((w-2)*(h-2))
+        /// </summary>
+        /// <param name="src_data">original 3 channels image data</param>
+        /// <param name="dst_data">new 1 channel image data</param>
+        /// <param name="height">image height</param>
+        /// <param name="width">image width</param>
+		template<typename Dtype>
+		__global__
+			void kernel_lbp_feature(const Dtype* src_data, Dtype* dst_data, unsigned char *gpu_LBPMAP_data, int height, int width, bool map_59)
+		{
+			int totalID = (blockIdx.z * gridDim.x * gridDim.y + blockIdx.y * gridDim.x + blockIdx.x) * (blockDim.x * blockDim.y) + threadIdx.y * blockDim.x + threadIdx.x;
+			int offset = height * width;
+			int numID = totalID / offset;
+			int remainID = totalID % offset;
+			int rowID = remainID / width;
+			int colID = remainID % width;
+
+			int src_height = height + 2;
+			int src_width = width + 2;
+
+			int src_num_offset = numID * src_height * src_width;
+			int dst_num_offset = numID * height * width;
+
+			int src_index = src_num_offset + (rowID + 1) * src_width + colID + 1;
+			int dst_index = dst_num_offset + rowID * width + colID;
+
+			Dtype center = src_data[src_index];
+			unsigned char code = 0;
+			//code |= (src_data[src_index - src_width - 1] >= center) << 7;
+			//code |= (src_data[src_index - src_width - 0] >= center) << 6;
+			//code |= (src_data[src_index - src_width + 1] >= center) << 5;
+			//code |= (src_data[src_index + 1] >= center) << 4;
+			//code |= (src_data[src_index + src_width + 1] >= center) << 3;
+			//code |= (src_data[src_index + src_width + 0] >= center) << 2;
+			//code |= (src_data[src_index + src_width - 1] >= center) << 1;
+			//code |= (src_data[src_index - 1] >= center) << 0;
+
+			code |= (src_data[src_index - src_width - 1] > center) << 0;
+			code |= (src_data[src_index - src_width - 0] > center) << 1;
+			code |= (src_data[src_index - src_width + 1] > center) << 2;
+			code |= (src_data[src_index + 1] > center) << 3;
+			code |= (src_data[src_index + src_width + 1] > center) << 4;
+			code |= (src_data[src_index + src_width + 0] > center) << 5;
+			code |= (src_data[src_index + src_width - 1] > center) << 6;
+			code |= (src_data[src_index - 1] > center) << 7;
+
+			if (map_59)
+			{
+				dst_data[dst_index] = static_cast<Dtype>(gpu_LBPMAP_data[code]);
+			}
+			else
+			{
+				dst_data[dst_index] = static_cast<Dtype>(code);
+			}			
+		}
+
+		template <typename Dtype>
+		/// <summary>
+		/// for image(w*h), calculate LBP feature((w-2)*(h-2))
+		/// </summary>
+		/// <param name="src">original tensor</param>
+		/// <param name="dst">LBP feature tensor</param>
+		/// <param name="type">lbpType: Native(calculate with neighboring 8 pixels)</param>
+		static void tensor_operation_gpu::lbp_feature_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59)
+		{
+			if (src->device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			int num = src->num();
+			int channels = src->channels();
+			CHECK_EQ(channels, 1);
+			int height = src->height();
+			int width = src->width();
+			int src_num_offset = channels * height * width;
+			int dst_num_offset = channels * (height - 2) * (width - 2);
+			std::shared_ptr<tensor<Dtype>> dst_temp;
+
+			if (src->order() == NCHW)
+			{
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order()));
+			}
+			else if (src->order() == NHWC)
+			{
+				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order()));
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+
+			const Dtype* src_data = src->gpu_data();
+			Dtype* dst_data = dst_temp->mutable_gpu_data();
+
+			std::shared_ptr<tensor<unsigned char>> gpu_LBPMAP;
+			gpu_LBPMAP.reset(new tensor<unsigned char>(256, 0));
+			unsigned char *gpu_LBPMAP_data = gpu_LBPMAP->mutable_gpu_data();
+			cudaMemcpy(gpu_LBPMAP_data, LBPMAP[0], 256 * sizeof(unsigned char), cudaMemcpyDefault);
+
+			const dim3 block_size(channels, 1, 1);
+			const dim3 grid_size(width - 2, height - 2, num);
+
+			kernel_lbp_feature << <grid_size, block_size >> > (src_data, dst_data, gpu_LBPMAP_data, height - 2, width - 2, map_59);
+			dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+		}
+
+
+		/// <summary>
+        /// calculate histogram, gray image required
+        /// </summary>
+        /// <param name="src">original tensor</param>
+        /// <param name="dst">new tensor</param>
+		void tensor_operation_gpu::calc_hist_gpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>>& dst, int dimension)
+		{
+			if (src->device() < 0)
+			{
+				LOG(ERROR) << "device wrong, invoke function xxx_cpu() instead!!!";
+				return;
+			}
+
+			int num = src->num();
+			CHECK_EQ(src->channels(), 1);
+			int height = src->height();
+			int width = src->width();
+			int offset = height * width;
+
+			std::shared_ptr<tensor<int>> dst_int;
+			dst_int.reset(new tensor<int>(std::vector<int>{num, 1, 1, dimension}, -1, src->order()));
+			int *dst_int_data = dst_int->mutable_cpu_data();
+
+			const unsigned char* src_data = src->cpu_data();
+
+			for (int n = 0; n < num; n++)
+			{
+				int *dst_int_data_num = dst_int_data + n * dimension;
+
+				//Count the number of pixels in each grayscale
+				for (int i = 0; i < offset; i++)
+				{
+					int value = static_cast<int>(src_data[n * offset + i]);
+					dst_int_data_num[value]++;
+				}
+			}
+
+			std::vector<int> max_vals(num), min_vals(num);
+			for (int n = 0; n < num; n++)
+			{
+				max_vals[n] = INT_MIN;
+				min_vals[n] = INT_MAX;
+			}
+
+			for (int n = 0; n < num; n++)
+			{
+				int *dst_int_data_num = dst_int_data + n * dimension;
+
+				for (int i = 0; i < dimension; i++)
+				{
+					if (dst_int_data_num[i] > max_vals[n])
+					{
+						max_vals[n] = dst_int_data_num[i];
+					}
+
+					if (dst_int_data_num[i] < min_vals[n])
+					{
+						min_vals[n] = dst_int_data_num[i];
+					}
+				}
+			}
+
+			std::vector<float> temp_float(num * dimension);
+			float *dst_float_data = temp_float.data();
+
+			for (int n = 0; n < num; n++)
+			{
+				float *dst_float_data_num = temp_float.data() + n * dimension;
+				int *dst_int_data_num = dst_int_data + n * dimension;
+
+				for (int i = 0; i < dimension; i++)
+				{
+					dst_float_data_num[i] = float(dst_int_data_num[i] - min_vals[n]) / (max_vals[n] - min_vals[n]);
+				}
+			}
+
+			dst.reset(new tensor<float>(std::vector<int>{num, 1, 1, dimension}, src->device(), src->order()));
+			cudaMemcpy(dst->mutable_gpu_data(), temp_float.data(), num * dimension * sizeof(float), cudaMemcpyDefault);
+
+			return;
+		}
+
+
+
+		template void tensor_operation_gpu::lbp_feature_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>> &dst, bool map_59);
+		template void tensor_operation_gpu::lbp_feature_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>> &dst, bool map_59);
+		template void tensor_operation_gpu::lbp_feature_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>> &dst, bool map_59);
+		template void tensor_operation_gpu::lbp_feature_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>> &dst, bool map_59);
+		template void tensor_operation_gpu::lbp_feature_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, bool map_59);
+
+
+
 		template void tensor_operation_gpu::make_border_gpu<unsigned char>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst,
-			int top, int bottom, int left, int right, borderType type , int fill_pixel_value);
+			int top, int bottom, int left, int right, borderType type , unsigned char fill_pixel_value);
 		template void tensor_operation_gpu::make_border_gpu<char>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<char>>& dst,
-			int top, int bottom, int left, int right, borderType type , int fill_pixel_value);
+			int top, int bottom, int left, int right, borderType type , char fill_pixel_value);
 		template void tensor_operation_gpu::make_border_gpu<unsigned int>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<unsigned int>>& dst,
-			int top, int bottom, int left, int right, borderType type , int fill_pixel_value);
+			int top, int bottom, int left, int right, borderType type , unsigned int fill_pixel_value);
 		template void tensor_operation_gpu::make_border_gpu<int>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<int>>& dst,
 			int top, int bottom, int left, int right, borderType type , int fill_pixel_value);
 		template void tensor_operation_gpu::make_border_gpu<float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>>& dst,
-			int top, int bottom, int left, int right, borderType type , int fill_pixel_value);
+			int top, int bottom, int left, int right, borderType type , float fill_pixel_value);
 
 
 
@@ -4291,21 +4499,21 @@ namespace glasssix
 
 
 
-		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned char, float>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<char, float>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<float>> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned int, float>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<float>> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<int, float>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<float, int>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<int>> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<float, float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned char, float>(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<char, float>(const std::shared_ptr<tensor<char>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned int, float>(const std::shared_ptr<tensor<unsigned int>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<int, float>(const std::shared_ptr<tensor<int>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<float, int>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<int>> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<float, float>(const std::shared_ptr<tensor<float>> &src, std::shared_ptr<tensor<float>> &dst, float means[3], float var);
 
 
 
-		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned char, float>(const tensor<unsigned char> &src, tensor<float> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<char, float>(const tensor<char> &src, tensor<float> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned int, float>(const tensor<unsigned int> &src, tensor<float> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<int, float>(const tensor<int> &src, tensor<float> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<float, int>(const tensor<float> &src, tensor<int> &dst);
-		template void tensor_operation_gpu::preprocess_tensors_gpu<float, float>(const tensor<float> &src, tensor<float> &dst);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned char, float>(const tensor<unsigned char> &src, tensor<float> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<char, float>(const tensor<char> &src, tensor<float> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<unsigned int, float>(const tensor<unsigned int> &src, tensor<float> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<int, float>(const tensor<int> &src, tensor<float> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<float, int>(const tensor<float> &src, tensor<int> &dst, float means[3], float var);
+		template void tensor_operation_gpu::preprocess_tensors_gpu<float, float>(const tensor<float> &src, tensor<float> &dst, float means[3], float var);
 
 
 

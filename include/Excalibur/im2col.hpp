@@ -26,12 +26,10 @@ namespace glasssix
 			const int stride_w, const int dilation_h, const int dilation_w,
 			signed char* data_col, orderType order = NCHW, int num = 1);
 
-
 		void col2im_nd_cpu(const float* data_col, const int num_spatial_axes,
 			const int* im_shape, const int* col_shape,
 			const int* kernel_shape, const int* pad, const int* stride,
 			const int* dilation, float* data_im);
-
 
 		void col2im_cpu(const float* data_col, const int channels,
 			const int height, const int width, const int kernel_h, const int kernel_w,

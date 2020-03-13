@@ -7,7 +7,7 @@ include_directories(../../include/Cassius
 				../../include/Excalibur)
 endif()
 
-file(GLOB Cassius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Cassius/*.cpp)
+file(GLOB Cassius_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Cassius/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Cassius/*.cxx)
 
 if(WITH_JNI)
 	file(GLOB Cassius_jni_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../jni/jni/Cassiutia/*.cpp)

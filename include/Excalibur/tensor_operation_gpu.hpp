@@ -193,18 +193,18 @@ namespace glasssix
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst);
+			static void preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var);
 
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst);
+			static void preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var);
 
 
 
 			template <typename Dtype>
 			static void make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
-				int top, int bottom, int left, int right, borderType type = Border_Constant, int fill_pixel_value = 0);
+				int top, int bottom, int left, int right, borderType type = Border_Constant, Dtype fill_pixel_value = 0);
 
 
 			template <typename Dtype>
@@ -223,6 +223,11 @@ namespace glasssix
 			template <typename Dtype>
 			static void merge_channel_gpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst);
 
+
+			template <typename Dtype>
+			static void lbp_feature_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59 = false);
+
+			static void calc_hist_gpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>>& dst, int dimension = 59);
 		};
 	}
 }

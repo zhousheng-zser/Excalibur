@@ -1,39 +1,33 @@
 #ifndef _DISTANCE_HPP_
 #define _DISTANCE_HPP_
+
 #include "nsg_calculate_error.hpp"
 
-namespace glasssix {
-	namespace irisviel {
-
-		class DistanceL2 
+namespace glasssix
+{
+	namespace irisviel
+	{
+		struct distance_l2
 		{
-		public:
-			static float compare(const float* a, const float* b, unsigned size);
+			static float compare(const float* a, const float* b, uint32_t size);
+		};
+
+		struct distance_inner_product
+		{
+			static float compare(const float* a, const float* b, uint32_t size);
+		};
+
+		struct distance_fast_l2 : public distance_inner_product
+		{
+			static float norm(const float* a, uint32_t size);
+			static float compare(const float* a, float norma, const float* b, float normb, uint32_t size);
 		};
 
 
-		class DistanceInnerProduct
+		struct distance_cosine : public distance_inner_product
 		{
-		public:
-			static float compare(const float* a, const float* b, unsigned size);
-		};
-
-
-		class DistanceFastL2 : public DistanceInnerProduct 
-		{
-		public:
-			static float norm(const float* a, unsigned size);
-
-            static float compare(const float* a, float norma, const float* b, float normb, unsigned size);
-		};
-
-
-		class DistanceCosine : public DistanceInnerProduct 
-		{
-		public:
-			static float norm(const float* a, unsigned size);
-
-            static float compare(const float* a, float norma, const float* b, float normb, unsigned size);
+			static float norm(const float* a, uint32_t size);
+			static float compare(const float* a, float norma, const float* b, float normb, uint32_t size);
 		};
 	}
 }

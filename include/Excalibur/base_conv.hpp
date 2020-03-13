@@ -19,13 +19,13 @@ namespace glasssix
 		{
 		public:
 			bool int8_quantization_;
-			std::shared_ptr<tensor<signed char>> weights_int8_;
+			std::shared_ptr<tensor<signed char>> weights_int8_, weights1x1_int8_;
 			std::shared_ptr<tensor<signed char>> col_buffer_int8_;
 			std::shared_ptr<tensor<signed char>> bottom_int8_;
 			std::shared_ptr<tensor<int>> top_int32_;
 			std::shared_ptr<tensor<float>> scales_;
 			signed char *col_buffer_int8_data, *bottom_int8_data;
-			const signed char *weights_int8_data;
+			const signed char *weights_int8_data, *weights1x1_int8_data;
 			int *top_int32_data;
 			const float *scales_data;
 
@@ -56,7 +56,7 @@ namespace glasssix
 			int pad_;
 
 			///
-			std::vector<int> intput_shape_;
+			std::vector<int> input_shape_;
 			std::vector<int> output_shape_;
 			int num_;
 			int group_;
@@ -115,7 +115,7 @@ namespace glasssix
 				}
 
 				//winograd
-				if ((stride_ == 1) && (kernelSize_ == 3))
+				if ((stride_ == 1) && (kernelSize_ == 3) && (group_ == 1))
 				{
 					useWinograd23 = true;
 					tile_size_ = m_ + kernelSize_ - 1;//m+r-1
@@ -249,6 +249,11 @@ namespace glasssix
 							calculate_GgGT23(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
 						}
 					}
+
+					if (use_conv1x1)
+					{
+						conv1x1s1_transform_kernel_int8();
+					}
 				}
 				else
 				{
@@ -273,6 +278,33 @@ namespace glasssix
 
 			//1*1s1
 			bool use_conv1x1 = false;
+
+			inline void fill(float *ptr, int size, float _v)
+			{
+				int remain = size;
+
+#if SIMD_TYPE >= SIMDTYPE_SSE
+				mm_type fill_value = mm_set1_ps(_v);
+				int circle_num = remain / mm_align_size;
+				int index = 0;
+				for (; index < circle_num; index++)
+				{
+					int index_offset = index * mm_align_size;
+					mm_store_ps(ptr + index_offset, fill_value);
+				}
+
+				remain -= mm_align_size * index;
+				for (; remain > 0; remain--)
+				{
+					ptr[size - remain] = _v;
+				}
+#else
+				for (; remain > 0; remain--)
+				{
+					*ptr++ = _v;
+				}
+#endif
+			}
 
 			inline void conv1x1s1_transform_kernel()
 			{
@@ -322,6 +354,53 @@ namespace glasssix
 				weights1x1_data = weights1x1_->cpu_data();
 			}
 				
+			inline void conv1x1s1_transform_kernel_int8()
+			{
+				int inch = input_Channel_;
+				int outch = output_Channel_;
+				weights1x1_int8_.reset(new tensor<signed char>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, NCHW));
+				signed char *weights1x1_temp_data_int8 = weights1x1_int8_->mutable_cpu_data();
+
+				int p = 0;
+				for (; p + 3 < outch; p += 4)
+				{
+					const signed char* kernel0 = weights_int8_data + (p + 0)*inch;
+					const signed char* kernel1 = weights_int8_data + (p + 1)*inch;
+					const signed char* kernel2 = weights_int8_data + (p + 2)*inch;
+					const signed char* kernel3 = weights_int8_data + (p + 3)*inch;
+
+					signed char* ktmp = weights1x1_temp_data_int8 + (p / 4) * weights1x1_int8_->width() * weights1x1_int8_->height();
+
+					for (int q = 0; q < inch; q++)
+					{
+						// kernel0...3 0
+						ktmp[0] = kernel0[0];
+						ktmp[1] = kernel1[0];
+						ktmp[2] = kernel2[0];
+						ktmp[3] = kernel3[0];
+
+						ktmp += 4;
+						kernel0 += 1;
+						kernel1 += 1;
+						kernel2 += 1;
+						kernel3 += 1;
+					}
+				}
+				for (; p < outch; p++)
+				{
+					const signed char* kernel0 = weights_int8_data + p * inch;
+					signed char* ktmp = weights1x1_temp_data_int8 + (p / 4 + p % 4) * weights1x1_int8_->width() * weights1x1_int8_->height();
+
+					for (int q = 0; q < inch; q++)
+					{
+						ktmp[0] = kernel0[0];
+						ktmp++;
+						kernel0++;
+					}
+				}
+
+				weights1x1_int8_data = weights1x1_int8_->cpu_data();
+			}
 
 			//winograd
 			bool useWinograd23 = false;
@@ -344,6 +423,8 @@ namespace glasssix
 			//fp32
 			inline void calculate_GgGT23(const float *weight_data, float *u_data)
 			{
+#ifdef _MSC_VER
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
 				__m128 _d0, _d1, _d2;
 				__m128 _w0, _w1, _w2, _w3;
@@ -416,10 +497,39 @@ namespace glasssix
 				u_data[14] = (weight_data[6] - weight_data[7] + weight_data[8]) / 2;
 				u_data[15] = weight_data[8];
 #endif
+
+#else
+				u_data[0] = weight_data[0];
+				u_data[1] = (weight_data[0] + weight_data[1] + weight_data[2]) / 2;
+				u_data[2] = (weight_data[0] - weight_data[1] + weight_data[2]) / 2;
+				u_data[3] = weight_data[2];
+				u_data[4] = (weight_data[0] + weight_data[3] + weight_data[6]) / 2;
+				u_data[5] = (weight_data[0] + weight_data[1] + weight_data[2] +
+					weight_data[3] + weight_data[4] + weight_data[5] +
+					weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+				u_data[6] = (weight_data[0] - weight_data[1] + weight_data[2] +
+					weight_data[3] - weight_data[4] + weight_data[5] +
+					weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+				u_data[7] = (weight_data[2] + weight_data[5] + weight_data[8]) / 2;
+				u_data[8] = (weight_data[0] - weight_data[3] + weight_data[6]) / 2;
+				u_data[9] = (weight_data[0] + weight_data[1] + weight_data[2] -
+					weight_data[3] - weight_data[4] - weight_data[5] +
+					weight_data[6] + weight_data[7] + weight_data[8]) / 4;
+				u_data[10] = (weight_data[0] - weight_data[1] + weight_data[2] -
+					weight_data[3] + weight_data[4] - weight_data[5] +
+					weight_data[6] - weight_data[7] + weight_data[8]) / 4;
+				u_data[11] = (weight_data[2] - weight_data[5] + weight_data[8]) / 2;
+				u_data[12] = weight_data[6];
+				u_data[13] = (weight_data[6] + weight_data[7] + weight_data[8]) / 2;
+				u_data[14] = (weight_data[6] - weight_data[7] + weight_data[8]) / 2;
+				u_data[15] = weight_data[8];
+#endif
 			}
 
+#ifdef _MSC_VER
 			inline void calculate_GgGT43(const float *weight_data, float *u_data)
 			{
+
 #if SIMD_TYPE >= SIMDTYPE_AVX
 				__m128 _d0, _d1, _d2;
 				__m128 _w0, _w1, _w2, _w3, _w4, _w5;
@@ -525,53 +635,57 @@ namespace glasssix
 				u_data[35] = _res5.m256_f32[5];
 
 #else
-				//// save to u_data
-				//u_data[0] = 0.25 * _w0.m128_f32[0];
-				//u_data[1] = -1.0f / 6 * (_w0.m128_f32[0] + _w0.m128_f32[1] + _w0.m128_f32[2]);
-				//u_data[2] = -1.0f / 6 * (_w0.m128_f32[0] - _w0.m128_f32[1] + _w0.m128_f32[2]);
-				//u_data[3] = 1.0f / 24 * _w0.m128_f32[0] + 1.0f / 12 * _w0.m128_f32[1] + 1.0f / 6 * _w0.m128_f32[2];
-				//u_data[4] = 1.0f / 24 * _w0.m128_f32[0] - 1.0f / 12 * _w0.m128_f32[1] + 1.0f / 6 * _w0.m128_f32[2];
-				//u_data[5] = _w0.m128_f32[2];
+				// save to u_data
+				u_data[0] = 0.25 * _w0.m128_f32[0];
+				u_data[1] = -1.0f / 6 * (_w0.m128_f32[0] + _w0.m128_f32[1] + _w0.m128_f32[2]);
+				u_data[2] = -1.0f / 6 * (_w0.m128_f32[0] - _w0.m128_f32[1] + _w0.m128_f32[2]);
+				u_data[3] = 1.0f / 24 * _w0.m128_f32[0] + 1.0f / 12 * _w0.m128_f32[1] + 1.0f / 6 * _w0.m128_f32[2];
+				u_data[4] = 1.0f / 24 * _w0.m128_f32[0] - 1.0f / 12 * _w0.m128_f32[1] + 1.0f / 6 * _w0.m128_f32[2];
+				u_data[5] = _w0.m128_f32[2];
 
-				//u_data[6] = 0.25 * _w1.m128_f32[0];
-				//u_data[7] = -1.0f / 6 * (_w1.m128_f32[0] + _w1.m128_f32[1] + _w1.m128_f32[2]);
-				//u_data[8] = -1.0f / 6 * (_w1.m128_f32[0] - _w1.m128_f32[1] + _w1.m128_f32[2]);
-				//u_data[9] = 1.0f / 24 * _w1.m128_f32[0] + 1.0f / 12 * _w1.m128_f32[1] + 1.0f / 6 * _w1.m128_f32[2];
-				//u_data[10] = 1.0f / 24 * _w1.m128_f32[0] - 1.0f / 12 * _w1.m128_f32[1] + 1.0f / 6 * _w1.m128_f32[2];
-				//u_data[11] = _w1.m128_f32[2];
+				u_data[6] = 0.25 * _w1.m128_f32[0];
+				u_data[7] = -1.0f / 6 * (_w1.m128_f32[0] + _w1.m128_f32[1] + _w1.m128_f32[2]);
+				u_data[8] = -1.0f / 6 * (_w1.m128_f32[0] - _w1.m128_f32[1] + _w1.m128_f32[2]);
+				u_data[9] = 1.0f / 24 * _w1.m128_f32[0] + 1.0f / 12 * _w1.m128_f32[1] + 1.0f / 6 * _w1.m128_f32[2];
+				u_data[10] = 1.0f / 24 * _w1.m128_f32[0] - 1.0f / 12 * _w1.m128_f32[1] + 1.0f / 6 * _w1.m128_f32[2];
+				u_data[11] = _w1.m128_f32[2];
 
-				//u_data[12] = 0.25 * _w2.m128_f32[0];
-				//u_data[13] = -1.0f / 6 * (_w2.m128_f32[0] + _w2.m128_f32[1] + _w2.m128_f32[2]);
-				//u_data[14] = -1.0f / 6 * (_w2.m128_f32[0] - _w2.m128_f32[1] + _w2.m128_f32[2]);
-				//u_data[15] = 1.0f / 24 * _w2.m128_f32[0] + 1.0f / 12 * _w2.m128_f32[1] + 1.0f / 6 * _w2.m128_f32[2];
-				//u_data[16] = 1.0f / 24 * _w2.m128_f32[0] - 1.0f / 12 * _w2.m128_f32[1] + 1.0f / 6 * _w2.m128_f32[2];
-				//u_data[17] = _w2.m128_f32[2];
+				u_data[12] = 0.25 * _w2.m128_f32[0];
+				u_data[13] = -1.0f / 6 * (_w2.m128_f32[0] + _w2.m128_f32[1] + _w2.m128_f32[2]);
+				u_data[14] = -1.0f / 6 * (_w2.m128_f32[0] - _w2.m128_f32[1] + _w2.m128_f32[2]);
+				u_data[15] = 1.0f / 24 * _w2.m128_f32[0] + 1.0f / 12 * _w2.m128_f32[1] + 1.0f / 6 * _w2.m128_f32[2];
+				u_data[16] = 1.0f / 24 * _w2.m128_f32[0] - 1.0f / 12 * _w2.m128_f32[1] + 1.0f / 6 * _w2.m128_f32[2];
+				u_data[17] = _w2.m128_f32[2];
 
-				//u_data[18] = 0.25 * _w3.m128_f32[0];
-				//u_data[19] = -1.0f / 6 * (_w3.m128_f32[0] + _w3.m128_f32[1] + _w3.m128_f32[2]);
-				//u_data[20] = -1.0f / 6 * (_w3.m128_f32[0] - _w3.m128_f32[1] + _w3.m128_f32[2]);
-				//u_data[21] = 1.0f / 24 * _w3.m128_f32[0] + 1.0f / 12 * _w3.m128_f32[1] + 1.0f / 6 * _w3.m128_f32[2];
-				//u_data[22] = 1.0f / 24 * _w3.m128_f32[0] - 1.0f / 12 * _w3.m128_f32[1] + 1.0f / 6 * _w3.m128_f32[2];
-				//u_data[23] = _w3.m128_f32[2];
+				u_data[18] = 0.25 * _w3.m128_f32[0];
+				u_data[19] = -1.0f / 6 * (_w3.m128_f32[0] + _w3.m128_f32[1] + _w3.m128_f32[2]);
+				u_data[20] = -1.0f / 6 * (_w3.m128_f32[0] - _w3.m128_f32[1] + _w3.m128_f32[2]);
+				u_data[21] = 1.0f / 24 * _w3.m128_f32[0] + 1.0f / 12 * _w3.m128_f32[1] + 1.0f / 6 * _w3.m128_f32[2];
+				u_data[22] = 1.0f / 24 * _w3.m128_f32[0] - 1.0f / 12 * _w3.m128_f32[1] + 1.0f / 6 * _w3.m128_f32[2];
+				u_data[23] = _w3.m128_f32[2];
 
-				//u_data[24] = 0.25 * _w4.m128_f32[0];
-				//u_data[25] = -1.0f / 6 * (_w4.m128_f32[0] + _w4.m128_f32[1] + _w4.m128_f32[2]);
-				//u_data[26] = -1.0f / 6 * (_w4.m128_f32[0] - _w4.m128_f32[1] + _w4.m128_f32[2]);
-				//u_data[27] = 1.0f / 24 * _w4.m128_f32[0] + 1.0f / 12 * _w4.m128_f32[1] + 1.0f / 6 * _w4.m128_f32[2];
-				//u_data[28] = 1.0f / 24 * _w4.m128_f32[0] - 1.0f / 12 * _w4.m128_f32[1] + 1.0f / 6 * _w4.m128_f32[2];
-				//u_data[29] = _w4.m128_f32[2];
+				u_data[24] = 0.25 * _w4.m128_f32[0];
+				u_data[25] = -1.0f / 6 * (_w4.m128_f32[0] + _w4.m128_f32[1] + _w4.m128_f32[2]);
+				u_data[26] = -1.0f / 6 * (_w4.m128_f32[0] - _w4.m128_f32[1] + _w4.m128_f32[2]);
+				u_data[27] = 1.0f / 24 * _w4.m128_f32[0] + 1.0f / 12 * _w4.m128_f32[1] + 1.0f / 6 * _w4.m128_f32[2];
+				u_data[28] = 1.0f / 24 * _w4.m128_f32[0] - 1.0f / 12 * _w4.m128_f32[1] + 1.0f / 6 * _w4.m128_f32[2];
+				u_data[29] = _w4.m128_f32[2];
 
-				//u_data[30] = 0.25 * _w5.m128_f32[0];
-				//u_data[31] = -1.0f / 6 * (_w5.m128_f32[0] + _w5.m128_f32[1] + _w5.m128_f32[2]);
-				//u_data[32] = -1.0f / 6 * (_w5.m128_f32[0] - _w5.m128_f32[1] + _w5.m128_f32[2]);
-				//u_data[33] = 1.0f / 24 * _w5.m128_f32[0] + 1.0f / 12 * _w5.m128_f32[1] + 1.0f / 6 * _w5.m128_f32[2];
-				//u_data[34] = 1.0f / 24 * _w5.m128_f32[0] - 1.0f / 12 * _w5.m128_f32[1] + 1.0f / 6 * _w5.m128_f32[2];
-				//u_data[35] = _w5.m128_f32[2];
+				u_data[30] = 0.25 * _w5.m128_f32[0];
+				u_data[31] = -1.0f / 6 * (_w5.m128_f32[0] + _w5.m128_f32[1] + _w5.m128_f32[2]);
+				u_data[32] = -1.0f / 6 * (_w5.m128_f32[0] - _w5.m128_f32[1] + _w5.m128_f32[2]);
+				u_data[33] = 1.0f / 24 * _w5.m128_f32[0] + 1.0f / 12 * _w5.m128_f32[1] + 1.0f / 6 * _w5.m128_f32[2];
+				u_data[34] = 1.0f / 24 * _w5.m128_f32[0] - 1.0f / 12 * _w5.m128_f32[1] + 1.0f / 6 * _w5.m128_f32[2];
+				u_data[35] = _w5.m128_f32[2];
 #endif
 			}
+#endif
 
 			inline void calculate_BTdB23(const float *row_data1, const float *row_data2, const float *row_data3, const float *row_data4, float *v_data)
 			{
+
+#ifdef _MSC_VER
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
 				__m128 _d0, _d1, _d2, _d3;
 				__m128 _w0, _w1, _w2, _w3;
@@ -630,10 +744,31 @@ namespace glasssix
 				v_data[14] = -row_data2[1] + row_data2[2] + row_data4[1] - row_data4[2];
 				v_data[15] = row_data2[1] - row_data2[3] - row_data4[1] + row_data4[3];
 #endif
+
+#else
+				v_data[0] = row_data1[0] - row_data1[2] - row_data3[0] + row_data3[2];
+				v_data[1] = row_data1[1] + row_data1[2] - row_data3[1] - row_data3[2];
+				v_data[2] = -row_data1[1] + row_data1[2] + row_data3[1] - row_data3[2];
+				v_data[3] = row_data1[1] - row_data1[3] - row_data3[1] + row_data3[3];
+				v_data[4] = row_data2[0] - row_data2[2] + row_data3[0] - row_data3[2];
+				v_data[5] = row_data2[1] + row_data2[2] + row_data3[1] + row_data3[2];
+				v_data[6] = -row_data2[1] + row_data2[2] - row_data3[1] + row_data3[2];
+				v_data[7] = row_data2[1] - row_data2[3] + row_data3[1] - row_data3[3];
+				v_data[8] = -row_data2[0] + row_data2[2] + row_data3[0] - row_data3[2];
+				v_data[9] = -row_data2[1] - row_data2[2] + row_data3[1] + row_data3[2];
+				v_data[10] = row_data2[1] - row_data2[2] - row_data3[1] + row_data3[2];
+				v_data[11] = -row_data2[1] + row_data2[3] + row_data3[1] - row_data3[3];
+				v_data[12] = row_data2[0] - row_data2[2] - row_data4[0] + row_data4[2];
+				v_data[13] = row_data2[1] + row_data2[2] - row_data4[1] - row_data4[2];
+				v_data[14] = -row_data2[1] + row_data2[2] + row_data4[1] - row_data4[2];
+				v_data[15] = row_data2[1] - row_data2[3] - row_data4[1] + row_data4[3];
+#endif
 			}
 
+#ifdef _MSC_VER
 			inline void calculate_BTdB43(const float *row_data1, const float *row_data2, const float *row_data3, const float *row_data4, const float *row_data5, const float *row_data6, float *v_data)
 			{
+
 #if SIMD_TYPE >= SIMDTYPE_AVX
 				__m256 _d0, _d1, _d2, _d3, _d4, _d5;
 				__m256 _w0, _w1, _w2, _w3, _w4, _w5;
@@ -741,53 +876,57 @@ namespace glasssix
 				v_data[35] = _res5.m256_f32[5];
 
 #else
-				//// save to V_data
-				//v_data[0] = 4 * _w0.m256_f32[0] - 5 * _w0.m256_f32[2] + _w0.m256_f32[4];
-				//v_data[1] = -4 * _w0.m256_f32[1] - 4 * _w0.m256_f32[2] + _w0.m256_f32[3] + _w0.m256_f32[4];
-				//v_data[2] = 4 * _w0.m256_f32[1] - 4 * _w0.m256_f32[2] - _w0.m256_f32[3] + _w0.m256_f32[4];
-				//v_data[3] = -2 * _w0.m256_f32[1] - _w0.m256_f32[2] + 2 * _w0.m256_f32[3] + _w0.m256_f32[4];
-				//v_data[4] = 2 * _w0.m256_f32[1] - _w0.m256_f32[2] - 2 * _w0.m256_f32[3] + _w0.m256_f32[4];
-				//v_data[5] = 4 * _w0.m256_f32[1] - 5 * _w0.m256_f32[3] + _w0.m256_f32[5];
+				// save to V_data
+				v_data[0] = 4 * _w0.m256_f32[0] - 5 * _w0.m256_f32[2] + _w0.m256_f32[4];
+				v_data[1] = -4 * _w0.m256_f32[1] - 4 * _w0.m256_f32[2] + _w0.m256_f32[3] + _w0.m256_f32[4];
+				v_data[2] = 4 * _w0.m256_f32[1] - 4 * _w0.m256_f32[2] - _w0.m256_f32[3] + _w0.m256_f32[4];
+				v_data[3] = -2 * _w0.m256_f32[1] - _w0.m256_f32[2] + 2 * _w0.m256_f32[3] + _w0.m256_f32[4];
+				v_data[4] = 2 * _w0.m256_f32[1] - _w0.m256_f32[2] - 2 * _w0.m256_f32[3] + _w0.m256_f32[4];
+				v_data[5] = 4 * _w0.m256_f32[1] - 5 * _w0.m256_f32[3] + _w0.m256_f32[5];
 
-				//v_data[6] = 4 * _w1.m256_f32[0] - 5 * _w1.m256_f32[2] + _w1.m256_f32[4];
-				//v_data[7] = -4 * _w1.m256_f32[1] - 4 * _w1.m256_f32[2] + _w1.m256_f32[3] + _w1.m256_f32[4];
-				//v_data[8] = 4 * _w1.m256_f32[1] - 4 * _w1.m256_f32[2] - _w1.m256_f32[3] + _w1.m256_f32[4];
-				//v_data[9] = -2 * _w1.m256_f32[1] - _w1.m256_f32[2] + 2 * _w1.m256_f32[3] + _w1.m256_f32[4];
-				//v_data[10] = 2 * _w1.m256_f32[1] - _w1.m256_f32[2] - 2 * _w1.m256_f32[3] + _w1.m256_f32[4];
-				//v_data[11] = 4 * _w1.m256_f32[1] - 5 * _w1.m256_f32[3] + _w1.m256_f32[5];
+				v_data[6] = 4 * _w1.m256_f32[0] - 5 * _w1.m256_f32[2] + _w1.m256_f32[4];
+				v_data[7] = -4 * _w1.m256_f32[1] - 4 * _w1.m256_f32[2] + _w1.m256_f32[3] + _w1.m256_f32[4];
+				v_data[8] = 4 * _w1.m256_f32[1] - 4 * _w1.m256_f32[2] - _w1.m256_f32[3] + _w1.m256_f32[4];
+				v_data[9] = -2 * _w1.m256_f32[1] - _w1.m256_f32[2] + 2 * _w1.m256_f32[3] + _w1.m256_f32[4];
+				v_data[10] = 2 * _w1.m256_f32[1] - _w1.m256_f32[2] - 2 * _w1.m256_f32[3] + _w1.m256_f32[4];
+				v_data[11] = 4 * _w1.m256_f32[1] - 5 * _w1.m256_f32[3] + _w1.m256_f32[5];
 
-				//v_data[12] = 4 * _w2.m256_f32[0] - 5 * _w2.m256_f32[2] + _w2.m256_f32[4];
-				//v_data[13] = -4 * _w2.m256_f32[1] - 4 * _w2.m256_f32[2] + _w2.m256_f32[3] + _w2.m256_f32[4];
-				//v_data[14] = 4 * _w2.m256_f32[1] - 4 * _w2.m256_f32[2] - _w2.m256_f32[3] + _w2.m256_f32[4];
-				//v_data[15] = -2 * _w2.m256_f32[1] - _w2.m256_f32[2] + 2 * _w2.m256_f32[3] + _w2.m256_f32[4];
-				//v_data[16] = 2 * _w2.m256_f32[1] - _w2.m256_f32[2] - 2 * _w2.m256_f32[3] + _w2.m256_f32[4];
-				//v_data[17] = 4 * _w2.m256_f32[1] - 5 * _w2.m256_f32[3] + _w2.m256_f32[5];
+				v_data[12] = 4 * _w2.m256_f32[0] - 5 * _w2.m256_f32[2] + _w2.m256_f32[4];
+				v_data[13] = -4 * _w2.m256_f32[1] - 4 * _w2.m256_f32[2] + _w2.m256_f32[3] + _w2.m256_f32[4];
+				v_data[14] = 4 * _w2.m256_f32[1] - 4 * _w2.m256_f32[2] - _w2.m256_f32[3] + _w2.m256_f32[4];
+				v_data[15] = -2 * _w2.m256_f32[1] - _w2.m256_f32[2] + 2 * _w2.m256_f32[3] + _w2.m256_f32[4];
+				v_data[16] = 2 * _w2.m256_f32[1] - _w2.m256_f32[2] - 2 * _w2.m256_f32[3] + _w2.m256_f32[4];
+				v_data[17] = 4 * _w2.m256_f32[1] - 5 * _w2.m256_f32[3] + _w2.m256_f32[5];
 
-				//v_data[18] = 4 * _w3.m256_f32[0] - 5 * _w3.m256_f32[2] + _w3.m256_f32[4];
-				//v_data[19] = -4 * _w3.m256_f32[1] - 4 * _w3.m256_f32[2] + _w3.m256_f32[3] + _w3.m256_f32[4];
-				//v_data[20] = 4 * _w3.m256_f32[1] - 4 * _w3.m256_f32[2] - _w3.m256_f32[3] + _w3.m256_f32[4];
-				//v_data[21] = -2 * _w3.m256_f32[1] - _w3.m256_f32[2] + 2 * _w3.m256_f32[3] + _w3.m256_f32[4];
-				//v_data[22] = 2 * _w3.m256_f32[1] - _w3.m256_f32[2] - 2 * _w3.m256_f32[3] + _w3.m256_f32[4];
-				//v_data[23] = 4 * _w3.m256_f32[1] - 5 * _w3.m256_f32[3] + _w3.m256_f32[5];
+				v_data[18] = 4 * _w3.m256_f32[0] - 5 * _w3.m256_f32[2] + _w3.m256_f32[4];
+				v_data[19] = -4 * _w3.m256_f32[1] - 4 * _w3.m256_f32[2] + _w3.m256_f32[3] + _w3.m256_f32[4];
+				v_data[20] = 4 * _w3.m256_f32[1] - 4 * _w3.m256_f32[2] - _w3.m256_f32[3] + _w3.m256_f32[4];
+				v_data[21] = -2 * _w3.m256_f32[1] - _w3.m256_f32[2] + 2 * _w3.m256_f32[3] + _w3.m256_f32[4];
+				v_data[22] = 2 * _w3.m256_f32[1] - _w3.m256_f32[2] - 2 * _w3.m256_f32[3] + _w3.m256_f32[4];
+				v_data[23] = 4 * _w3.m256_f32[1] - 5 * _w3.m256_f32[3] + _w3.m256_f32[5];
 
-				//v_data[24] = 4 * _w4.m256_f32[0] - 5 * _w4.m256_f32[2] + _w4.m256_f32[4];
-				//v_data[25] = -4 * _w4.m256_f32[1] - 4 * _w4.m256_f32[2] + _w4.m256_f32[3] + _w4.m256_f32[4];
-				//v_data[26] = 4 * _w4.m256_f32[1] - 4 * _w4.m256_f32[2] - _w4.m256_f32[3] + _w4.m256_f32[4];
-				//v_data[27] = -2 * _w4.m256_f32[1] - _w4.m256_f32[2] + 2 * _w4.m256_f32[3] + _w4.m256_f32[4];
-				//v_data[28] = 2 * _w4.m256_f32[1] - _w4.m256_f32[2] - 2 * _w4.m256_f32[3] + _w4.m256_f32[4];
-				//v_data[29] = 4 * _w4.m256_f32[1] - 5 * _w4.m256_f32[3] + _w4.m256_f32[5];
+				v_data[24] = 4 * _w4.m256_f32[0] - 5 * _w4.m256_f32[2] + _w4.m256_f32[4];
+				v_data[25] = -4 * _w4.m256_f32[1] - 4 * _w4.m256_f32[2] + _w4.m256_f32[3] + _w4.m256_f32[4];
+				v_data[26] = 4 * _w4.m256_f32[1] - 4 * _w4.m256_f32[2] - _w4.m256_f32[3] + _w4.m256_f32[4];
+				v_data[27] = -2 * _w4.m256_f32[1] - _w4.m256_f32[2] + 2 * _w4.m256_f32[3] + _w4.m256_f32[4];
+				v_data[28] = 2 * _w4.m256_f32[1] - _w4.m256_f32[2] - 2 * _w4.m256_f32[3] + _w4.m256_f32[4];
+				v_data[29] = 4 * _w4.m256_f32[1] - 5 * _w4.m256_f32[3] + _w4.m256_f32[5];
 
-				//v_data[30] = 4 * _w5.m256_f32[0] - 5 * _w5.m256_f32[2] + _w5.m256_f32[4];
-				//v_data[31] = -4 * _w5.m256_f32[1] - 4 * _w5.m256_f32[2] + _w5.m256_f32[3] + _w5.m256_f32[4];
-				//v_data[32] = 4 * _w5.m256_f32[1] - 4 * _w5.m256_f32[2] - _w5.m256_f32[3] + _w5.m256_f32[4];
-				//v_data[33] = -2 * _w5.m256_f32[1] - _w5.m256_f32[2] + 2 * _w5.m256_f32[3] + _w5.m256_f32[4];
-				//v_data[34] = 2 * _w5.m256_f32[1] - _w5.m256_f32[2] - 2 * _w5.m256_f32[3] + _w5.m256_f32[4];
-				//v_data[35] = 4 * _w5.m256_f32[1] - 5 * _w5.m256_f32[3] + _w5.m256_f32[5];
+				v_data[30] = 4 * _w5.m256_f32[0] - 5 * _w5.m256_f32[2] + _w5.m256_f32[4];
+				v_data[31] = -4 * _w5.m256_f32[1] - 4 * _w5.m256_f32[2] + _w5.m256_f32[3] + _w5.m256_f32[4];
+				v_data[32] = 4 * _w5.m256_f32[1] - 4 * _w5.m256_f32[2] - _w5.m256_f32[3] + _w5.m256_f32[4];
+				v_data[33] = -2 * _w5.m256_f32[1] - _w5.m256_f32[2] + 2 * _w5.m256_f32[3] + _w5.m256_f32[4];
+				v_data[34] = 2 * _w5.m256_f32[1] - _w5.m256_f32[2] - 2 * _w5.m256_f32[3] + _w5.m256_f32[4];
+				v_data[35] = 4 * _w5.m256_f32[1] - 5 * _w5.m256_f32[3] + _w5.m256_f32[5];
 #endif
 			}
+#endif
 
 			inline void calculate_ATmA23(const float *m_data, float *result)
 			{
+
+#ifdef _MSC_VER
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
 				__m128 _d0, _d1, _d2, _d3;
 				__m128 _w0, _w1;
@@ -813,8 +952,16 @@ namespace glasssix
 				result[2] = m_data[4] + m_data[5] + m_data[6] - m_data[8] - m_data[9] - m_data[10] - m_data[12] - m_data[13] - m_data[14];
 				result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
 #endif
+
+#else
+				result[0] = m_data[0] + m_data[1] + m_data[2] + m_data[4] + m_data[5] + m_data[6] + m_data[8] + m_data[9] + m_data[10];
+				result[1] = m_data[1] - m_data[2] - m_data[3] + m_data[5] - m_data[6] - m_data[7] + m_data[9] - m_data[10] - m_data[11];
+				result[2] = m_data[4] + m_data[5] + m_data[6] - m_data[8] - m_data[9] - m_data[10] - m_data[12] - m_data[13] - m_data[14];
+				result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
+#endif
 			}
 
+#ifdef _MSC_VER
 			inline void calculate_ATmA43(const float *m_data, float *result)
 			{
 #if SIMD_TYPE >= SIMDTYPE_AVX
@@ -896,28 +1043,30 @@ namespace glasssix
 				result[15] = _res3.m128_f32[3];
 
 #else
-				//// save to result
-				//result[0] = _w0.m256_f32[0] + _w0.m256_f32[1] + _w0.m256_f32[2] + _w0.m256_f32[3] + _w0.m256_f32[4];
-				//result[1] = _w0.m256_f32[1] - _w0.m256_f32[2] + 2 * _w0.m256_f32[3] - 2 * _w0.m256_f32[4];
-				//result[2] = _w0.m256_f32[1] + _w0.m256_f32[2] + 4 * _w0.m256_f32[3] + 4 * _w0.m256_f32[4];
-				//result[3] = _w0.m256_f32[1] - _w0.m256_f32[2] + 8 * _w0.m256_f32[3] - 8 * _w0.m256_f32[4] + _w0.m256_f32[5];
+				// save to result
+				result[0] = _w0.m256_f32[0] + _w0.m256_f32[1] + _w0.m256_f32[2] + _w0.m256_f32[3] + _w0.m256_f32[4];
+				result[1] = _w0.m256_f32[1] - _w0.m256_f32[2] + 2 * _w0.m256_f32[3] - 2 * _w0.m256_f32[4];
+				result[2] = _w0.m256_f32[1] + _w0.m256_f32[2] + 4 * _w0.m256_f32[3] + 4 * _w0.m256_f32[4];
+				result[3] = _w0.m256_f32[1] - _w0.m256_f32[2] + 8 * _w0.m256_f32[3] - 8 * _w0.m256_f32[4] + _w0.m256_f32[5];
 
-				//result[4] = _w1.m256_f32[0] + _w1.m256_f32[1] + _w1.m256_f32[2] + _w1.m256_f32[3] + _w1.m256_f32[4];
-				//result[5] = _w1.m256_f32[1] - _w1.m256_f32[2] + 2 * _w1.m256_f32[3] - 2 * _w1.m256_f32[4];
-				//result[6] = _w1.m256_f32[1] + _w1.m256_f32[2] + 4 * _w1.m256_f32[3] + 4 * _w1.m256_f32[4];
-				//result[7] = _w1.m256_f32[1] - _w1.m256_f32[2] + 8 * _w1.m256_f32[3] - 8 * _w1.m256_f32[4] + _w1.m256_f32[5];
+				result[4] = _w1.m256_f32[0] + _w1.m256_f32[1] + _w1.m256_f32[2] + _w1.m256_f32[3] + _w1.m256_f32[4];
+				result[5] = _w1.m256_f32[1] - _w1.m256_f32[2] + 2 * _w1.m256_f32[3] - 2 * _w1.m256_f32[4];
+				result[6] = _w1.m256_f32[1] + _w1.m256_f32[2] + 4 * _w1.m256_f32[3] + 4 * _w1.m256_f32[4];
+				result[7] = _w1.m256_f32[1] - _w1.m256_f32[2] + 8 * _w1.m256_f32[3] - 8 * _w1.m256_f32[4] + _w1.m256_f32[5];
 
-				//result[8] = _w2.m256_f32[0] + _w2.m256_f32[1] + _w2.m256_f32[2] + _w2.m256_f32[3] + _w2.m256_f32[4];
-				//result[9] = _w2.m256_f32[1] - _w2.m256_f32[2] + 2 * _w2.m256_f32[3] - 2 * _w2.m256_f32[4];
-				//result[10] = _w2.m256_f32[1] + _w2.m256_f32[2] + 4 * _w2.m256_f32[3] + 4 * _w2.m256_f32[4];
-				//result[11] = _w2.m256_f32[1] - _w2.m256_f32[2] + 8 * _w2.m256_f32[3] - 8 * _w2.m256_f32[4] + _w2.m256_f32[5];
+				result[8] = _w2.m256_f32[0] + _w2.m256_f32[1] + _w2.m256_f32[2] + _w2.m256_f32[3] + _w2.m256_f32[4];
+				result[9] = _w2.m256_f32[1] - _w2.m256_f32[2] + 2 * _w2.m256_f32[3] - 2 * _w2.m256_f32[4];
+				result[10] = _w2.m256_f32[1] + _w2.m256_f32[2] + 4 * _w2.m256_f32[3] + 4 * _w2.m256_f32[4];
+				result[11] = _w2.m256_f32[1] - _w2.m256_f32[2] + 8 * _w2.m256_f32[3] - 8 * _w2.m256_f32[4] + _w2.m256_f32[5];
 
-				//result[12] = _w3.m256_f32[0] + _w3.m256_f32[1] + _w3.m256_f32[2] + _w3.m256_f32[3] + _w3.m256_f32[4];
-				//result[13] = _w3.m256_f32[1] - _w3.m256_f32[2] + 2 * _w3.m256_f32[3] - 2 * _w3.m256_f32[4];
-				//result[14] = _w3.m256_f32[1] + _w3.m256_f32[2] + 4 * _w3.m256_f32[3] + 4 * _w3.m256_f32[4];
-				//result[15] = _w3.m256_f32[1] - _w3.m256_f32[2] + 8 * _w3.m256_f32[3] - 8 * _w3.m256_f32[4] + _w3.m256_f32[5];
+				result[12] = _w3.m256_f32[0] + _w3.m256_f32[1] + _w3.m256_f32[2] + _w3.m256_f32[3] + _w3.m256_f32[4];
+				result[13] = _w3.m256_f32[1] - _w3.m256_f32[2] + 2 * _w3.m256_f32[3] - 2 * _w3.m256_f32[4];
+				result[14] = _w3.m256_f32[1] + _w3.m256_f32[2] + 4 * _w3.m256_f32[3] + 4 * _w3.m256_f32[4];
+				result[15] = _w3.m256_f32[1] - _w3.m256_f32[2] + 8 * _w3.m256_f32[3] - 8 * _w3.m256_f32[4] + _w3.m256_f32[5];
 #endif
 			}
+
+#endif
 
 			//int8
 			inline void calculate_GgGT23(const signed char *weight_data, short *u_data)
@@ -987,11 +1136,11 @@ namespace glasssix
 
 #ifdef USE_CUDA
 		public:
-			virtual void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
+			virtual void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 		protected:
-			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
-			virtual void forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) = 0;
-			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;			
+			virtual void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
+			virtual void forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) = 0;
+			virtual void forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias) = 0;			
 #ifdef USE_CUDNN
 		public:
 			virtual void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;		
@@ -1003,12 +1152,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1016,17 +1165,17 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 			}
-
+																																																																														
 			void conv_im2col_cpu(const signed char* data, signed char* col_buff)
 			{
 				if (order_ == NCHW)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1037,7 +1186,7 @@ namespace glasssix
 
 			void conv_col2im_cpu(const float* col_buff, float* data)
 			{
-				col2im_cpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				col2im_cpu(col_buff, input_Channel_, output_shape_[2], output_shape_[3], kernelSize_,
 					kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 			}
 
@@ -1046,12 +1195,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1064,12 +1213,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1080,7 +1229,7 @@ namespace glasssix
 
 			void conv_col2im_gpu(const float* col_buff, float* data)
 			{
-				col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				col2im_gpu(col_buff, input_Channel_, output_shape_[2], output_shape_[3], kernelSize_,
 					kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 			}
 #endif //!USE_CUDA
