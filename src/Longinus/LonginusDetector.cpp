@@ -658,7 +658,7 @@ namespace glasssix
 		const char* LonginusDetector::impl::getVersion()
 		{
 #ifdef TRIAL
-			return std::string("Glasssix Trial FaceSDK";
+			return std::string("Glasssix Trial FaceSDK");
 #else
 			return "Glasssix";
 #endif // TRIAL	
