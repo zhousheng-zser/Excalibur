@@ -35,19 +35,22 @@ namespace glasssix
 			float pitch;
 			float roll;
 			//float prob;
+			float clarity;
 
-			face_rect_with_face_info() : yaw{}, pitch{}, roll{}
+			face_rect_with_face_info() : yaw{}, pitch{}, roll{}, clarity{}
 			{
 			}
 
 			face_rect_with_face_info(const face_rect_basic& rect) : yaw{}, pitch{}, roll{}
 			{
 				*dynamic_cast<face_rect_basic*>(this) = rect;
+				this->clarity = 0.0f;
 			}
 
 			face_rect_with_face_info& operator=(const face_rect_basic& rect)
 			{
 				*dynamic_cast<face_rect_basic*>(this) = rect;
+				this->clarity = 0.0f;
 				return *this;
 			}
 		};
