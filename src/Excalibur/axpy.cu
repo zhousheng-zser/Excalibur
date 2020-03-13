@@ -17,7 +17,7 @@ namespace glasssix
 			top_data[totalID] += bottom_data[totalID] * scales_data[numID * channels + channelID];
 		}
 
-		void axpy::Forward_gpu_native(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
+		void axpy::Forward_gpu_native(cublasHandle_t &cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			CHECK_EQ(bottom.size(), 2);
 			scales_ = bottom[0];

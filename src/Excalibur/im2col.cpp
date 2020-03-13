@@ -183,7 +183,7 @@ namespace glasssix
 			}
 		}
 
-
+		
 		inline void im2col_nd_core_cpu(const float* data_input, const bool im2col,
 			const int num_spatial_axes, const int* im_shape, const int* col_shape,
 			const int* kernel_shape, const int* pad, const int* stride,

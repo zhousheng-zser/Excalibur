@@ -92,15 +92,16 @@ namespace glasssix
 			void Forward(const std::shared_ptr<tensor<unsigned char>> input_data, int order = 0)
 			{
 				float means[3] = { 127.5f, 127.5f, 127.5f };
+				float var = 0.0078125;
 				if (device_ < 0)
 				{
-					tensor_operation_cpu::preprocess_tensors_cpu(input_data, tensor_float_data, means);
+					tensor_operation_cpu::preprocess_tensors_cpu(input_data, tensor_float_data, means, var);
 					Forward_cpu(tensor_float_data);
 				}
 				else
 				{
 #ifdef USE_CUDA
-					tensor_operation_gpu::preprocess_tensors_gpu(input_data, tensor_float_data, means);
+					tensor_operation_gpu::preprocess_tensors_gpu(input_data, tensor_float_data, means, var);
 #ifdef USE_CUDNN
 					Forward_gpu_cudnn(tensor_float_data);
 					return;
