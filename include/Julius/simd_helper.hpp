@@ -370,6 +370,23 @@ namespace glasssix
 		return tmp.f;
 	}
 
+	// convert float to brain half
+	static unsigned short float32_to_bfloat16(float value)
+	{
+		// 16 : 16
+		union { unsigned int u; float f; } tmp;
+		tmp.f = value;
+		return tmp.u >> 16;
+	}
+	// convert brain half to float
+	static float bfloat16_to_float32(unsigned short value)
+	{
+		// 16 : 16
+		union { unsigned int u; float f; } tmp;
+		tmp.u = value << 16;
+		return tmp.f;
+	}
+
 	// round to nearest
 	static signed char float32_to_int8(float value)
 	{
@@ -385,6 +402,7 @@ namespace glasssix
 		return tmp;
 	}
 
+	// convert float32 to float16 with SIMD
 	inline void float2half(const float* floats, unsigned short* halfs, int length)
 	{
 		const int restl = length - length % mm_align_size;
@@ -412,6 +430,7 @@ namespace glasssix
 		}
 	}
 
+	// convert float16 to float32 with SIMD
 	inline void half2float(const unsigned short* halfs, float* floats, int length)
 	{
 		const int restl = length - length % mm_align_size;
