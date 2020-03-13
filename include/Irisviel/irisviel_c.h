@@ -1,12 +1,20 @@
-#include "knn_service.hpp"
-
 #ifdef _MSC_VER
 #define IRISVIEL_C_EXPORT __declspec(dllexport)
 #else
 #define IRISVIEL_C_EXPORT
 #endif
 
-extern "C" IRISVIEL_C_EXPORT glasssix::irisviel::knn_service *Irisviel_NewInstance(int max_items, char * new_save_path, char *tmp_path);
+namespace glasssix
+{
+	namespace irisviel
+	{
+		class knn_service;
+		struct knn_search_result;
+		struct knn_mapping_data;
+	}
+}
+
+extern "C" IRISVIEL_C_EXPORT glasssix::irisviel::knn_service *Irisviel_NewInstance(int max_items, int dimension, char * new_save_path, char *tmp_path);
 
 extern "C" IRISVIEL_C_EXPORT void Irisviel_ReleaseInstance(glasssix::irisviel::knn_service *instance);
 
