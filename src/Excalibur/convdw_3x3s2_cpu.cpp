@@ -31,6 +31,7 @@ namespace glasssix
 			int inw = bottom->width();
 			int bottom_cstep = inw * inh;
 			const float* bottom_data = bottom->cpu_data();
+			order_ = bottom->order();
 
 			int outch = output_Channel_;
 			int outh = (inh + 2 * pad_ - kernelSize_) / stride_ + 1;
@@ -41,7 +42,7 @@ namespace glasssix
 
 			std::shared_ptr<tensor<float>> bottom_bordered;
 			tensor_operation_cpu::make_border_cpu(bottom, bottom_bordered, pad_, pad_, pad_, pad_);
-			if (bottom->order() == NHWC)
+			if (order_ == NHWC)
 			{
 				tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
 			}
@@ -135,6 +136,11 @@ namespace glasssix
 
 				}
 
+			}
+
+			if (order_ == NHWC)
+			{
+				tensor_operation_cpu::nchw2nhwc_cpu(top, top);
 			}
 		}
 	}

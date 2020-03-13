@@ -208,7 +208,7 @@ namespace glasssix
 		}
 
 
-		void conv_native_gpu::Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void conv_native_gpu::Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			order_ = bottom->order();
 			num_ = bottom->num();
@@ -218,12 +218,12 @@ namespace glasssix
 			input_spatial_dim_ = width * height;
 			bottom_dim_ = bottom->count(1, 4);
 			bottom_data = bottom->gpu_data();
-			intput_shape_.clear();
-			intput_shape_ = bottom->data_shape();
+			input_shape_.clear();
+			input_shape_ = bottom->data_shape();
 			output_dim_h_ = (height + 2 * pad_ - kernelSize_) / stride_ + 1;
 			output_dim_w_ = (width + 2 * pad_ - kernelSize_) / stride_ + 1;
 			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
-
+			
 			if (int8_quantization_)
 			{
 				bottom_int8_.reset(new tensor<signed char>(std::vector<int>{num_ * bottom_dim_}, 0));
@@ -387,7 +387,7 @@ namespace glasssix
 		}
 
 
-		void conv_native_gpu::forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col)
+		void conv_native_gpu::forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col)
 		{
 			const float* col_buff = input;
 			if ((kernelSize_ != 1) || (order_ == NHWC))
@@ -418,7 +418,7 @@ namespace glasssix
 			}
 		}
 
-		void conv_native_gpu::forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col)
+		void conv_native_gpu::forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col)
 		{
 			const signed char* col_buff = input;
 			if ((kernelSize_ != 1) || (order_ == NHWC))
@@ -448,7 +448,7 @@ namespace glasssix
 			}
 		}
 
-		void conv_native_gpu::forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias)
+		void conv_native_gpu::forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias)
 		{
 			if (order_ == NCHW)
 			{

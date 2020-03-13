@@ -442,6 +442,7 @@ namespace glasssix
 			std::shared_ptr<tensor<unsigned char>> src_tensor;
 			std::shared_ptr<tensor<float>> src_float_tensor;
 			float means[3] = { 127.5f, 127.5f, 127.5f };
+			float var = 0.0078125;
 			if (order == NHWC)
 			{
 				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
@@ -450,14 +451,14 @@ namespace glasssix
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
 					tensor_operation_cpu::nhwc2nchw_cpu(src_nhwc_tensor, src_tensor);
-					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means);
+					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means, var);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					CUDA_CHECK(cudaMemcpy(src_nhwc_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 					tensor_operation_gpu::nhwc2nchw_gpu(src_nhwc_tensor, src_tensor);
-					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means);
+					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means, var);
 #else
 					NO_GPU;
 #endif // USE_CUDA
@@ -469,13 +470,13 @@ namespace glasssix
 				if (device_id_ < 0)
 				{
 					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
-					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means);
+					tensor_operation_cpu::preprocess_tensors_cpu(src_tensor, src_float_tensor, means, var);
 				}
 				else
 				{
 #ifdef USE_CUDA
 					CUDA_CHECK(cudaMemcpy(src_tensor->mutable_gpu_data(), image, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
-					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means);
+					tensor_operation_gpu::preprocess_tensors_gpu(src_tensor, src_float_tensor, means, var);
 #else
 					NO_GPU;
 #endif // USE_CUDA

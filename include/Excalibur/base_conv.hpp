@@ -19,13 +19,13 @@ namespace glasssix
 		{
 		public:
 			bool int8_quantization_;
-			std::shared_ptr<tensor<signed char>> weights_int8_;
+			std::shared_ptr<tensor<signed char>> weights_int8_, weights1x1_int8_;
 			std::shared_ptr<tensor<signed char>> col_buffer_int8_;
 			std::shared_ptr<tensor<signed char>> bottom_int8_;
 			std::shared_ptr<tensor<int>> top_int32_;
 			std::shared_ptr<tensor<float>> scales_;
 			signed char *col_buffer_int8_data, *bottom_int8_data;
-			const signed char *weights_int8_data;
+			const signed char *weights_int8_data, *weights1x1_int8_data;
 			int *top_int32_data;
 			const float *scales_data;
 
@@ -56,7 +56,7 @@ namespace glasssix
 			int pad_;
 
 			///
-			std::vector<int> intput_shape_;
+			std::vector<int> input_shape_;
 			std::vector<int> output_shape_;
 			int num_;
 			int group_;
@@ -249,6 +249,11 @@ namespace glasssix
 							calculate_GgGT23(weights_int8_data + kernel_length_ * n, U_int16_data + tile_length_ * n);//calculate U
 						}
 					}
+
+					if (use_conv1x1)
+					{
+						conv1x1s1_transform_kernel_int8();
+					}
 				}
 				else
 				{
@@ -349,6 +354,53 @@ namespace glasssix
 				weights1x1_data = weights1x1_->cpu_data();
 			}
 				
+			inline void conv1x1s1_transform_kernel_int8()
+			{
+				int inch = input_Channel_;
+				int outch = output_Channel_;
+				weights1x1_int8_.reset(new tensor<signed char>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, NCHW));
+				signed char *weights1x1_temp_data_int8 = weights1x1_int8_->mutable_cpu_data();
+
+				int p = 0;
+				for (; p + 3 < outch; p += 4)
+				{
+					const signed char* kernel0 = weights_int8_data + (p + 0)*inch;
+					const signed char* kernel1 = weights_int8_data + (p + 1)*inch;
+					const signed char* kernel2 = weights_int8_data + (p + 2)*inch;
+					const signed char* kernel3 = weights_int8_data + (p + 3)*inch;
+
+					signed char* ktmp = weights1x1_temp_data_int8 + (p / 4) * weights1x1_int8_->width() * weights1x1_int8_->height();
+
+					for (int q = 0; q < inch; q++)
+					{
+						// kernel0...3 0
+						ktmp[0] = kernel0[0];
+						ktmp[1] = kernel1[0];
+						ktmp[2] = kernel2[0];
+						ktmp[3] = kernel3[0];
+
+						ktmp += 4;
+						kernel0 += 1;
+						kernel1 += 1;
+						kernel2 += 1;
+						kernel3 += 1;
+					}
+				}
+				for (; p < outch; p++)
+				{
+					const signed char* kernel0 = weights_int8_data + p * inch;
+					signed char* ktmp = weights1x1_temp_data_int8 + (p / 4 + p % 4) * weights1x1_int8_->width() * weights1x1_int8_->height();
+
+					for (int q = 0; q < inch; q++)
+					{
+						ktmp[0] = kernel0[0];
+						ktmp++;
+						kernel0++;
+					}
+				}
+
+				weights1x1_int8_data = weights1x1_int8_->cpu_data();
+			}
 
 			//winograd
 			bool useWinograd23 = false;
@@ -1084,11 +1136,11 @@ namespace glasssix
 
 #ifdef USE_CUDA
 		public:
-			virtual void Forward(cublasHandle_t cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
+			virtual void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;
 		protected:
-			virtual void forward_gemm(cublasHandle_t cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
-			virtual void forward_gemm(cublasHandle_t cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) = 0;
-			virtual void forward_bias(cublasHandle_t cublas_handle_, float* output, const float* bias) = 0;			
+			virtual void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) = 0; 
+			virtual void forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) = 0;
+			virtual void forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias) = 0;			
 #ifdef USE_CUDNN
 		public:
 			virtual void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) = 0;		
@@ -1100,12 +1152,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1113,17 +1165,17 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 			}
-
+																																																																														
 			void conv_im2col_cpu(const signed char* data, signed char* col_buff)
 			{
 				if (order_ == NCHW)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_cpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_cpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1134,7 +1186,7 @@ namespace glasssix
 
 			void conv_col2im_cpu(const float* col_buff, float* data)
 			{
-				col2im_cpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				col2im_cpu(col_buff, input_Channel_, output_shape_[2], output_shape_[3], kernelSize_,
 					kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 			}
 
@@ -1143,12 +1195,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1161,12 +1213,12 @@ namespace glasssix
 			{
 				if (order_ == NCHW)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[2], input_shape_[3], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else if (order_ == NHWC)
 				{
-					im2col_gpu(data, input_Channel_, intput_shape_[1], intput_shape_[2], kernelSize_,
+					im2col_gpu(data, input_Channel_, input_shape_[1], input_shape_[2], kernelSize_,
 						kernelSize_, pad_, pad_, stride_, stride_, 1, 1, col_buff, order_);
 				}
 				else
@@ -1177,7 +1229,7 @@ namespace glasssix
 
 			void conv_col2im_gpu(const float* col_buff, float* data)
 			{
-				col2im_gpu(col_buff, input_Channel_, intput_shape_[2], intput_shape_[3], kernelSize_,
+				col2im_gpu(col_buff, input_Channel_, output_shape_[2], output_shape_[3], kernelSize_,
 					kernelSize_, pad_, pad_, stride_, stride_, 1, 1, data);
 			}
 #endif //!USE_CUDA
