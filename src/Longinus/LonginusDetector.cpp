@@ -8,15 +8,15 @@
 
 #include "LonginusDetector.hpp"
 #include "ImageOperation.hpp"
-#include "InternalLonginusCascade.hpp"
 #include "../../include/Romancia/banshee.hpp"
 #include "../../include/Selene/blur_vsl_net.hpp"
 #include "../../include/Selene/black_white_vsl.hpp"
 #include "../../include/Selene/face_nose_nir.hpp"
-#ifndef TRIAL
 #include "../../include/Damocles/mtcnn.hpp"
 #include "../../include/Damocles/mtcnn_mobile.hpp"
 #include "../../include/Damocles/mtcnn_mobile_nir.hpp"
+#ifdef TRIAL
+#include "InternalLonginusCascade.hpp"
 #endif // !TRIAL
 
 namespace glasssix
@@ -29,10 +29,12 @@ namespace glasssix
 			impl(int device = -1);
 			virtual ~impl();
 
+#ifdef TRIAL
 			std::vector<face_rect_basic> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
 			std::vector<face_rect_with_face_info> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
+#endif //!TRIAL
 
 			std::vector<Match_Retval> match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
@@ -113,6 +115,7 @@ namespace glasssix
 			delete cascades_;
 		}
 
+#ifdef TRIAL
 		std::vector<face_rect_basic> LonginusDetector::impl::detect(unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors,
 			bool useMultiThreads, bool doEarlyReject)
 		{
@@ -300,7 +303,7 @@ namespace glasssix
 			return rectsWithLandmark;
 		}
 
-#ifndef RELEASE_SDK
+
 		void LonginusDetector::impl::load(std::vector<std::string> cascades, int device)
 		{
 			if (device >= 0)
@@ -329,7 +332,7 @@ namespace glasssix
 
 			device_ = device;
 		}
-#endif
+#endif //!TRIAL
 
 		void LonginusDetector::impl::set(longinus_detection_type detectionType, int device)
 		{
@@ -352,7 +355,7 @@ namespace glasssix
 			diodorus_mobile_.reset(new mtcnn_mobile(device_));
 			diodorus_mobile_nir_.reset(new mtcnn_mobile_nir(device_));
 #endif // !TRIAL
-
+#ifdef TRIAL
 			InternalLonginusCascade* cascade = nullptr;
 			switch (detectionType)
 			{
@@ -395,6 +398,7 @@ namespace glasssix
 			default:
 				break;
 			}
+#endif //!TRIAL
 		}
 
 		std::vector<Match_Retval> LonginusDetector::impl::match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor) const
@@ -456,7 +460,7 @@ namespace glasssix
 			for (auto i = 0; i < res.size(); i++)
 			{
 
-#ifdef ANGLES
+#ifdef DEPRECATED_SUPPORT
 				float w = res[i].bbox.xmax - res[i].bbox.xmin;
 				float h = res[i].bbox.ymax - res[i].bbox.ymin;
 				float x = res[i].bbox.xmin + w / 2 - h / 2;
@@ -531,7 +535,7 @@ namespace glasssix
 				info.yaw = res[i].headpose[0];
 				info.pitch = res[i].headpose[1];
 				info.roll = res[i].headpose[2];
-#endif // ANGLES		
+#endif // DEPRECATED_SUPPORT		
 
 				float x = res[i].bbox.xmin;
 				float y = res[i].bbox.ymin;
@@ -545,6 +549,9 @@ namespace glasssix
 					info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
 				}
 				output.push_back(info);
+				// get roll, pitch, yaw, using traditional estimation method(without romancia)
+				// much more faster, but totally rely on the landmarks precision
+				evaluate_pose(info.pts, info.yaw, info.pitch, info.roll);
 			}
 			return output;
 		}
@@ -577,6 +584,9 @@ namespace glasssix
 					info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
 				}
 				output.push_back(info);
+				// get roll, pitch, yaw, using traditional estimation method(without romancia)
+				// much more faster, but totally rely on the landmarks precision
+				evaluate_pose(info.pts, info.yaw, info.pitch, info.roll);
 			}
 			return output;
 		}
@@ -608,6 +618,9 @@ namespace glasssix
 					info.pts[j] = Point2f(res[i].landmark[2 * j], res[i].landmark[2 * j + 1]);
 				}
 				output.push_back(info);
+				// get roll, pitch, yaw, using traditional estimation method(without romancia)
+				// much more faster, but totally rely on the landmarks precision
+				evaluate_pose(info.pts, info.yaw, info.pitch, info.roll);
 			}
 			return output;
 		}
@@ -677,6 +690,7 @@ namespace glasssix
 			}
 		}
 
+#ifdef TRIAL
 		std::vector<face_rect_basic> LonginusDetector::detect(unsigned char* gray, int width, int height, int step, int minSize, float scale, int minNeighbors, bool useMultiThreads, bool doEarlyReject)
 		{
 			return impl_->detect(gray, width, height, step, minSize, scale, minNeighbors, useMultiThreads, doEarlyReject);
@@ -686,6 +700,7 @@ namespace glasssix
 		{
 			return impl_->detect(gray, width, height, step, minSize, scale, minNeighbors, order, useMultiThreads, doEarlyReject);
 		}
+#endif //!TRIAL
 
 		std::vector<Match_Retval> LonginusDetector::match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor) const
 		{
@@ -747,14 +762,14 @@ namespace glasssix
 		}
 #endif // !TRIAL
 
-#ifndef RELEASE_SDK
+#ifdef TRIAL
 		void LonginusDetector::load(std::vector<std::string> cascades, int device)
 		{
 			impl_->load(cascades, device);
 		}
 #endif
 
-		void LonginusDetector::set(longinus_detection_type detectionType, int device)
+		void LonginusDetector::set(longinus_detection_type detectionType, int device) 
 		{
 			impl_->set(detectionType, device);
 		}

@@ -34,13 +34,15 @@ extern "C" LONGINUS_C_EXPORT void Longinus_ReleaseInstance(glasssix::longinus::L
 
 extern "C" LONGINUS_C_EXPORT void Longinus_set(glasssix::longinus::LonginusDetector *instance, int type, int device);
 
+#ifdef TRIAL
 extern "C" LONGINUS_C_EXPORT int Longinus_detect(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::face_rect_basic **ptr, unsigned char *gray, int width, int height, int step, int minSize, float scale, int min_neighbors);
 
 extern "C" LONGINUS_C_EXPORT int Longinus_detectWithInfo(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::face_rect_with_face_info **ptr, unsigned char *gray, int width, int height, int step, int minSize, float scale, int min_neighbors, int order);
+#endif //!TRIAL
 
 extern "C" LONGINUS_C_EXPORT int Longinus_match(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::Match_Retval_C **ptr, glasssix::longinus::face_rect_basic *rects, int rect_num, int frame_extract_frequency, float distance_factor);
 
-extern "C" LONGINUS_C_EXPORT int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::Match_Retval_C **ptr, glasssix::longinus::face_rect_basic *rects, int rect_num, int frame_extract_frequency, float distance_factor);
+extern "C" LONGINUS_C_EXPORT int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::Match_Retval_C** ptr, glasssix::longinus::face_rect_with_face_info* rects, int rect_num, int frame_extract_frequency, float distance_factor);
 
 extern "C" LONGINUS_C_EXPORT int Longinus_detectEx(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::face_rect_with_face_info **ptr, unsigned char *image, int height, int width, int minSize, float *threshold, float factor, int stage, int order);
 
