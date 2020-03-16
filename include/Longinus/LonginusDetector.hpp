@@ -5,16 +5,10 @@
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "BaseLonginusCascade.hpp"
-#include "../Romancia/romancia.hpp"
-#include "../Selene/selene.hpp"
 #include "matcher.hpp"
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
-#ifndef TRIAL
-#include "../Damocles/damocles.hpp"
-#endif // !TRIAL
 
 namespace glasssix
 {
@@ -153,10 +147,13 @@ namespace glasssix
 
 			LonginusDetector(int device = -1);
 			virtual ~LonginusDetector();
+
+#ifdef TRIAL
 			std::vector<face_rect_basic> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, bool useMultiThreads = false, bool doEarlyReject = false);
 			std::vector<face_rect_with_face_info> detect(unsigned char* gray, int width, int height, int step, int minSize, float scale,
 				int minNeighbors, int order = 0, bool useMultiThreads = false, bool doEarlyReject = false);
+#endif //!TRIAL
 
 			std::vector<Match_Retval> match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor = 1.0f) const;
 
@@ -190,7 +187,7 @@ namespace glasssix
 
 #endif // !TRIAL
 
-#ifndef RELEASE_SDK
+#ifdef TRIAL
 			void load(std::vector<std::string> cascades, int device = -1);
 #endif
 			void set(longinus_detection_type detectionType, int device = -1);
