@@ -125,6 +125,24 @@ int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector* instance, glass
 	return num;
 }
 
+int Longinus_detectRetina(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int order, float threshold, float factor)
+{
+	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectRetina(image, 3, height, width, order, threshold, factor);
+	int num = vec.size();
+	if (num)
+	{
+		sort_descend(vec);
+		*ptr = heap_alloc_elements<glasssix::longinus::face_rect_with_face_info>(num);
+		std::copy(vec.begin(), vec.end(), *ptr);
+	}
+	else
+	{
+		*ptr = nullptr;
+	}
+
+	return num;
+}
+
 int Longinus_detectEx(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectEx(image, 3, height, width, minSize, threshold, 1.0f / factor, stage, order);

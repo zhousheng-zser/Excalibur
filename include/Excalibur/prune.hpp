@@ -391,73 +391,112 @@ writedataend(out);
 #endif
 
 //{
-//string file_name = "Unicorn";
-//string name_space = "cassius";
-//ofstream out("D:/projects/data/unicornModel/cassius/new/unicorn_int8_data.hpp");
+
+//string prefix = "retina_net";
+//string name_space = "longinus";
+//ofstream out("D:/projects/data/detectModel/retinaFace/retina_net_int8_data.hpp");
 //int pos = 0;
-//writedatafilehead(file_name, name_space, out);
-//if (true)
-//{
-//	Copy_Int8_Params_Str(conv1a, Unicorn, "conv1a", "Unicorn");//64
-//	Copy_Params_Str(relu1a_weights, Unicorn, quantize_level, "relu1a_weights", "Unicorn");//32
-//	Copy_Int8_Params_Str(conv1b, Unicorn, "conv1b", "Unicorn");//18432
-//	Copy_Params_Str(relu1b_weights, Unicorn, quantize_level, "relu1b_weights", "Unicorn");//64
-//	Copy_Int8_Params_Str(conv2_1, Unicorn, "conv2_1", "Unicorn");//36864
-//	Copy_Params_Str(relu2_1_weights, Unicorn, quantize_level, "relu2_1_weights", "Unicorn");//64
-//	Copy_Int8_Params_Str(conv2_2, Unicorn, "conv2_2", "Unicorn");//36864
-//	Copy_Params_Str(relu2_2_weights, Unicorn, quantize_level, "relu2_2_weights", "Unicorn");//64
-//	Copy_Int8_Params_Str(conv2, Unicorn, "conv2", "Unicorn");//73728
-//	Copy_Params_Str(relu2_weights, Unicorn, quantize_level, "relu2_weights", "Unicorn");//128
-//	Copy_Int8_Params_Str(conv3_1, Unicorn, "conv3_1", "Unicorn");//147456
-//	Copy_Params_Str(relu3_1_weights, Unicorn, quantize_level, "relu3_1_weights", "Unicorn");//128
-//	Copy_Int8_Params_Str(conv3_2, Unicorn, "conv3_2", "Unicorn");//147456
-//	Copy_Params_Str(relu3_2_weights, Unicorn, quantize_level, "relu3_2_weights", "Unicorn");//128
-//	Copy_Int8_Params_Str(conv3_3, Unicorn, "conv3_3", "Unicorn");//147456
-//	Copy_Params_Str(relu3_3_weights, Unicorn, quantize_level, "relu3_3_weights", "Unicorn");//128
-//	Copy_Int8_Params_Str(conv3_4, Unicorn, "conv3_4", "Unicorn");//147456
-//	Copy_Params_Str(relu3_4_weights, Unicorn, quantize_level, "relu3_4_weights", "Unicorn");//128
-//	Copy_Int8_Params_Str(conv3, Unicorn, "conv3", "Unicorn");//294912
-//	Copy_Params_Str(relu3_weights, Unicorn, quantize_level, "relu3_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_1, Unicorn, "conv4_1", "Unicorn");//589824
-//	Copy_Params_Str(relu4_1_weights, Unicorn, quantize_level, "relu4_1_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_2, Unicorn, "conv4_2", "Unicorn");//589824
-//	Copy_Params_Str(relu4_2_weights, Unicorn, quantize_level, "relu4_2_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_3, Unicorn, "conv4_3", "Unicorn");//589824
-//	Copy_Params_Str(relu4_3_weights, Unicorn, quantize_level, "relu4_3_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_4, Unicorn, "conv4_4", "Unicorn");//589824
-//	Copy_Params_Str(relu4_4_weights, Unicorn, quantize_level, "relu4_4_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_5, Unicorn, "conv4_5", "Unicorn");//589824
-//	Copy_Params_Str(relu4_5_weights, Unicorn, quantize_level, "relu4_5_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_6, Unicorn, "conv4_6", "Unicorn");//589824
-//	Copy_Params_Str(relu4_6_weights, Unicorn, quantize_level, "relu4_6_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_7, Unicorn, "conv4_7", "Unicorn");//589824
-//	Copy_Params_Str(relu4_7_weights, Unicorn, quantize_level, "relu4_7_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_8, Unicorn, "conv4_8", "Unicorn");//589824
-//	Copy_Params_Str(relu4_8_weights, Unicorn, quantize_level, "relu4_8_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_9, Unicorn, "conv4_9", "Unicorn");//589824
-//	Copy_Params_Str(relu4_9_weights, Unicorn, quantize_level, "relu4_9_weights", "Unicorn");//256
-//	Copy_Int8_Params_Str(conv4_10, Unicorn, "conv4_10", "Unicorn");//589824
-//	Copy_Params_Str(relu4_10_weights, Unicorn, quantize_level, "relu4_10_weights", "Unicorn");//256,512
-//	Copy_Int8_Params_Str(conv4, Unicorn, "conv4", "Unicorn");//1179648
-//	Copy_Params_Str(relu4_weights, Unicorn, quantize_level, "relu4_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_1, Unicorn, "conv5_1", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_1_weights, Unicorn, quantize_level, "relu5_1_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_2, Unicorn, "conv5_2", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_2_weights, Unicorn, quantize_level, "relu5_2_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_3, Unicorn, "conv5_3", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_3_weights, Unicorn, quantize_level, "relu5_3_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_4, Unicorn, "conv5_4", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_4_weights, Unicorn, quantize_level, "relu5_4_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_5, Unicorn, "conv5_5", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_5_weights, Unicorn, quantize_level, "relu5_5_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5_6, Unicorn, "conv5_6", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_6_weights, Unicorn, quantize_level, "relu5_6_weights", "Unicorn");//512
-//	Copy_Int8_Params_Str(conv5, Unicorn, "conv5", "Unicorn");//2359296
-//	Copy_Params_Str(relu5_weights, Unicorn, quantize_level, "relu5_weights", "Unicorn");//512
-//	Copy_Params_Str(conv5_dw_weights, Unicorn, quantize_level, "conv5_dw_weights", "Unicorn");//864
-//	Copy_Params_Str(conv5_dw_bias, Unicorn, quantize_level, "conv5_dw_bias", "Unicorn");//64
-//}
+//writedatafilehead(prefix, name_space, out);
+
+//Copy_Int8_Params_Str(mobilenet0_conv0_fwd, retina_net, "mobilenet0_conv0_fwd", prefix);
+//Copy_Params_Str(mobilenet0_conv1_fwd_weights, retina_net, quantize_level, "mobilenet0_conv1_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv1_fwd_bias, retina_net, quantize_level, "mobilenet0_conv1_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv2_fwd_weights, retina_net, quantize_level, "mobilenet0_conv2_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv2_fwd_bias, retina_net, quantize_level, "mobilenet0_conv2_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv3_fwd_weights, retina_net, quantize_level, "mobilenet0_conv3_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv3_fwd_bias, retina_net, quantize_level, "mobilenet0_conv3_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv4_fwd_weights, retina_net, quantize_level, "mobilenet0_conv4_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv4_fwd_bias, retina_net, quantize_level, "mobilenet0_conv4_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv5_fwd_weights, retina_net, quantize_level, "mobilenet0_conv5_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv5_fwd_bias, retina_net, quantize_level, "mobilenet0_conv5_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv6_fwd_weights, retina_net, quantize_level, "mobilenet0_conv6_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv6_fwd_bias, retina_net, quantize_level, "mobilenet0_conv6_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv7_fwd_weights, retina_net, quantize_level, "mobilenet0_conv7_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv7_fwd_bias, retina_net, quantize_level, "mobilenet0_conv7_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv8_fwd_weights, retina_net, quantize_level, "mobilenet0_conv8_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv8_fwd_bias, retina_net, quantize_level, "mobilenet0_conv8_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv9_fwd_weights, retina_net, quantize_level, "mobilenet0_conv9_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv9_fwd_bias, retina_net, quantize_level, "mobilenet0_conv9_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv10_fwd_weights, retina_net, quantize_level, "mobilenet0_conv10_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv10_fwd_bias, retina_net, quantize_level, "mobilenet0_conv10_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv11_fwd_weights, retina_net, quantize_level, "mobilenet0_conv11_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv11_fwd_bias, retina_net, quantize_level, "mobilenet0_conv11_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv12_fwd_weights, retina_net, quantize_level, "mobilenet0_conv12_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv12_fwd_bias, retina_net, quantize_level, "mobilenet0_conv12_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv13_fwd_weights, retina_net, quantize_level, "mobilenet0_conv13_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv13_fwd_bias, retina_net, quantize_level, "mobilenet0_conv13_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv14_fwd_weights, retina_net, quantize_level, "mobilenet0_conv14_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv14_fwd_bias, retina_net, quantize_level, "mobilenet0_conv14_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv15_fwd_weights, retina_net, quantize_level, "mobilenet0_conv15_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv15_fwd_bias, retina_net, quantize_level, "mobilenet0_conv15_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv16_fwd_weights, retina_net, quantize_level, "mobilenet0_conv16_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv16_fwd_bias, retina_net, quantize_level, "mobilenet0_conv16_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv17_fwd_weights, retina_net, quantize_level, "mobilenet0_conv17_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv17_fwd_bias, retina_net, quantize_level, "mobilenet0_conv17_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv18_fwd_weights, retina_net, quantize_level, "mobilenet0_conv18_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv18_fwd_bias, retina_net, quantize_level, "mobilenet0_conv18_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv19_fwd_weights, retina_net, quantize_level, "mobilenet0_conv19_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv19_fwd_bias, retina_net, quantize_level, "mobilenet0_conv19_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv20_fwd_weights, retina_net, quantize_level, "mobilenet0_conv20_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv20_fwd_bias, retina_net, quantize_level, "mobilenet0_conv20_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv21_fwd_weights, retina_net, quantize_level, "mobilenet0_conv21_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv21_fwd_bias, retina_net, quantize_level, "mobilenet0_conv21_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv22_fwd_weights, retina_net, quantize_level, "mobilenet0_conv22_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv22_fwd_bias, retina_net, quantize_level, "mobilenet0_conv22_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv23_fwd_weights, retina_net, quantize_level, "mobilenet0_conv23_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv23_fwd_bias, retina_net, quantize_level, "mobilenet0_conv23_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv24_fwd_weights, retina_net, quantize_level, "mobilenet0_conv24_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv24_fwd_bias, retina_net, quantize_level, "mobilenet0_conv24_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv25_fwd_weights, retina_net, quantize_level, "mobilenet0_conv25_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv25_fwd_bias, retina_net, quantize_level, "mobilenet0_conv25_fwd_bias", prefix);
+//Copy_Params_Str(mobilenet0_conv26_fwd_weights, retina_net, quantize_level, "mobilenet0_conv26_fwd_weights", prefix);
+//Copy_Params_Str(mobilenet0_conv26_fwd_bias, retina_net, quantize_level, "mobilenet0_conv26_fwd_bias", prefix);
+//Copy_Params_Str(rf_c3_lateral_weights, retina_net, quantize_level, "rf_c3_lateral_weights", prefix);
+//Copy_Params_Str(rf_c3_lateral_bias, retina_net, quantize_level, "rf_c3_lateral_bias", prefix);
+//Copy_Int8_Params_Str(rf_c3_det_conv1, retina_net, "rf_c3_det_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c3_det_context_conv1, retina_net, "rf_c3_det_context_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c3_det_context_conv2, retina_net, "rf_c3_det_context_conv2", prefix);
+//Copy_Int8_Params_Str(rf_c3_det_context_conv3_1, retina_net, "rf_c3_det_context_conv3_1", prefix);
+//Copy_Int8_Params_Str(rf_c3_det_context_conv3_2, retina_net, "rf_c3_det_context_conv3_2", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride32_weights, retina_net, quantize_level, "face_rpn_cls_score_stride32_weights", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride32_bias, retina_net, quantize_level, "face_rpn_cls_score_stride32_bias", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride32_weights, retina_net, quantize_level, "face_rpn_bbox_pred_stride32_weights", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride32_bias, retina_net, quantize_level, "face_rpn_bbox_pred_stride32_bias", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride32_weights, retina_net, quantize_level, "face_rpn_landmark_pred_stride32_weights", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride32_bias, retina_net, quantize_level, "face_rpn_landmark_pred_stride32_bias", prefix);
+//Copy_Params_Str(rf_c2_lateral_weights, retina_net, quantize_level, "rf_c2_lateral_weights", prefix);
+//Copy_Params_Str(rf_c2_lateral_bias, retina_net, quantize_level, "rf_c2_lateral_bias", prefix);
+//Copy_Params_Str(rf_c3_upsampling_weights, retina_net, quantize_level, "rf_c3_upsampling_weights", prefix);
+//Copy_Int8_Params_Str(rf_c2_aggr, retina_net, "rf_c2_aggr", prefix);
+//Copy_Int8_Params_Str(rf_c2_det_conv1, retina_net, "rf_c2_det_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c2_det_context_conv1, retina_net, "rf_c2_det_context_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c2_det_context_conv2, retina_net, "rf_c2_det_context_conv2", prefix);
+//Copy_Int8_Params_Str(rf_c2_det_context_conv3_1, retina_net, "rf_c2_det_context_conv3_1", prefix);
+//Copy_Int8_Params_Str(rf_c2_det_context_conv3_2, retina_net, "rf_c2_det_context_conv3_2", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride16_weights, retina_net, quantize_level, "face_rpn_cls_score_stride16_weights", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride16_bias, retina_net, quantize_level, "face_rpn_cls_score_stride16_bias", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride16_weights, retina_net, quantize_level, "face_rpn_bbox_pred_stride16_weights", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride16_bias, retina_net, quantize_level, "face_rpn_bbox_pred_stride16_bias", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride16_weights, retina_net, quantize_level, "face_rpn_landmark_pred_stride16_weights", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride16_bias, retina_net, quantize_level, "face_rpn_landmark_pred_stride16_bias", prefix);
+//Copy_Params_Str(rf_c1_red_conv_weights, retina_net, quantize_level, "rf_c1_red_conv_weights", prefix);
+//Copy_Params_Str(rf_c1_red_conv_bias, retina_net, quantize_level, "rf_c1_red_conv_bias", prefix);
+//Copy_Params_Str(rf_c2_upsampling_weights, retina_net, quantize_level, "rf_c2_upsampling_weights", prefix);
+//Copy_Int8_Params_Str(rf_c1_aggr, retina_net, "rf_c1_aggr", prefix);
+//Copy_Int8_Params_Str(rf_c1_det_conv1, retina_net, "rf_c1_det_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c1_det_context_conv1, retina_net, "rf_c1_det_context_conv1", prefix);
+//Copy_Int8_Params_Str(rf_c1_det_context_conv2, retina_net, "rf_c1_det_context_conv2", prefix);
+//Copy_Int8_Params_Str(rf_c1_det_context_conv3_1, retina_net, "rf_c1_det_context_conv3_1", prefix);
+//Copy_Int8_Params_Str(rf_c1_det_context_conv3_2, retina_net, "rf_c1_det_context_conv3_2", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride8_weights, retina_net, quantize_level, "face_rpn_cls_score_stride8_weights", prefix);
+//Copy_Params_Str(face_rpn_cls_score_stride8_bias, retina_net, quantize_level, "face_rpn_cls_score_stride8_bias", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride8_weights, retina_net, quantize_level, "face_rpn_bbox_pred_stride8_weights", prefix);
+//Copy_Params_Str(face_rpn_bbox_pred_stride8_bias, retina_net, quantize_level, "face_rpn_bbox_pred_stride8_bias", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride8_weights, retina_net, quantize_level, "face_rpn_landmark_pred_stride8_weights", prefix);
+//Copy_Params_Str(face_rpn_landmark_pred_stride8_bias, retina_net, quantize_level, "face_rpn_landmark_pred_stride8_bias", prefix);
+
 //writedatafileend(out);
+
 //}
 
 #endif // !_PRUNE_HPP_
