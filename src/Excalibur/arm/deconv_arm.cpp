@@ -83,7 +83,7 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 			for (int num_i = 0; num_i < n; num_i++)
 			{
 				const float *bottom_pack4_data = bottom_pack4->cpu_data() + num_i * input_Channel_ * bottom_cstep;
-				float top_pack4_data = top_pack4->mutable_cpu_data() + num_i * output_Channel_ * top_cstep;
+				float* top_pack4_data = top_pack4->mutable_cpu_data() + num_i * output_Channel_ * top_cstep;
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -99,7 +99,7 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 						{
 							float32x4_t _sum = vdupq_n_f32(0.f);
 
-							if (bias_term)
+							if (bias_term_)
 							{
 								_sum = vld1q_f32(bias_data + g * 4);
 							}
@@ -158,11 +158,11 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 
 					for (int i = 0; i < h; i++)
 					{
-						float* inptr = in + i * w * 4;
+						const float* inptr = in + i * w * 4;
 
 						for (int j = 0; j < w; j++)
 						{
-							float* in_elem_ptr = inptr + j * 4;
+							const float* in_elem_ptr = inptr + j * 4;
 
 							for (int k = 0; k < 4; k++)
 							{
@@ -170,8 +170,8 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 								if (dstq >= output_Channel_)
 									break;
 
-								const float* ptr = top_data + dstq * top_cstep + i * w;
-								const float* elem_ptr = ptr + j;
+								float* ptr = top_data + dstq * top_cstep + i * w;
+								float* elem_ptr = ptr + j;
 
 								*elem_ptr = *(in_elem_ptr + k);
 							}

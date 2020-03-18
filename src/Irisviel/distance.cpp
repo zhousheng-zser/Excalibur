@@ -3,6 +3,11 @@
 
 #include <cmath>
 
+#ifdef __ARM_NEON
+//#include <arm_neon.h>
+#undef __ARM_NEON
+#endif
+
 #ifdef __linux__
 #ifndef __cpuid
 #define __cpuid(out, infoType)\

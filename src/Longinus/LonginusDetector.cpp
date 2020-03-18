@@ -457,7 +457,7 @@ namespace glasssix
 
 #ifdef __ANDROID__
 			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=] {
-				return res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
+				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
 			}).get();
 #else
 			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
