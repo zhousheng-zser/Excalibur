@@ -34,10 +34,10 @@ namespace glasssix
 			int width;
 			int height;
 			int neighbors;
-			double confidence;
+			float confidence;
 
 			face_rect_basic() :x(0), y(0), width(0), height(0), neighbors(0), confidence(0.0) {}
-			face_rect_basic(int x_, int y_, int width_, int height_, int neighbors_, double confidence_)
+			face_rect_basic(int x_, int y_, int width_, int height_, int neighbors_, float confidence_)
 				:x(x_), y(y_), width(width_), height(height_), neighbors(neighbors_), confidence(confidence_) {}
 
 			bool operator <(const face_rect_basic& s) const
@@ -60,7 +60,7 @@ namespace glasssix
 			int ymax;
 			std::shared_ptr<BaseLonginusCascade> cascade;
 			CandidateRect() :index_in_image_pyramids(-1), ix(-1), iy(-1), xstep(0), ystep(0), xmax(-1), ymax(-1), cascade(nullptr) {}
-			CandidateRect(int x_, int y_, int width_, int height_, int neighbors_, double confidence_, 
+			CandidateRect(int x_, int y_, int width_, int height_, int neighbors_, float confidence_, 
 				int index_in_image_pyramids_, int ix_, int iy_, int xstep_, int ystep_, int xmax_, int ymax_, std::shared_ptr<BaseLonginusCascade> cascade_)
 			:face_rect_basic(x_, y_, width_, height_, neighbors_, confidence_), index_in_image_pyramids(-1), ix(-1), iy(-1), xstep(0), ystep(0), xmax(-1), ymax(-1), cascade(cascade_) {}
 		}CandidateRect;
@@ -99,7 +99,7 @@ namespace glasssix
 			return result;
 		}
 
-		static Point2f operator/(const Point2f &lhs, double rhs) {
+		static Point2f operator/(const Point2f &lhs, float rhs) {
 			Point2f result;
 			result.x = lhs.x / rhs;
 			result.y = lhs.y / rhs;
@@ -107,7 +107,7 @@ namespace glasssix
 			return result;
 		}
 
-		static Point2f operator*(const Point2f &lhs, double rhs) {
+		static Point2f operator*(const Point2f &lhs, float rhs) {
 			Point2f result;
 			result.x = lhs.x * rhs;
 			result.y = lhs.y * rhs;
@@ -115,7 +115,7 @@ namespace glasssix
 			return result;
 		}
 
-		static double operator^(const Point2f &lhs, const Point2f &rhs) {
+		static float operator^(const Point2f &lhs, const Point2f &rhs) {
 			auto dx = lhs.x - rhs.x;
 			auto dy = lhs.y - rhs.y;
 			return std::sqrt(dx * dx + dy * dy);
@@ -128,7 +128,7 @@ namespace glasssix
 		{
 		public:
 			Line() = default;
-			Line(double a, double b, double c)
+			Line(float a, float b, float c)
 				: a(a), b(b), c(c) {}
 
 			Line(const Point2f &a, const Point2f &b) 
@@ -143,12 +143,12 @@ namespace glasssix
 				this->c = y1 * (x2 - x1) - x1 * (y2 - y1);
 			}
 
-			double distance(const Point2f &p) const 
+			float distance(const Point2f &p) const 
 			{
 				return std::fabs(a * p.x + b * p.y + c) / std::sqrt(a * a + b * b);
 			}
 
-			static bool near_zero(double f) 
+			static bool near_zero(float f) 
 			{
 				return f <= DBL_EPSILON && -f <= DBL_EPSILON;
 			}
@@ -178,9 +178,9 @@ namespace glasssix
 				return project;
 			}
 
-			double a = 0;
-			double b = 0;
-			double c = 0;
+			float a = 0;
+			float b = 0;
+			float c = 0;
 		};
 
 		typedef struct ScaledMatrix
@@ -208,7 +208,7 @@ namespace glasssix
 		} FaceInfomation;
 
 		// Use 5 landmarks to estimate head pose
-		inline void evaluate_pose(std::vector<Point2f> points, float &yaw, float &pitch, float &roll)
+		inline void evaluate_pose(const Point2f* points, float &yaw, float &pitch, float &roll)
 		{
 			static const float nose_center = 0.5f;
 			// static const float roll0 = 1 / 6.0f;
