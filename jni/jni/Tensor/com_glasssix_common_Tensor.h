@@ -88,10 +88,17 @@ extern "C"
 
 	 /*
 	  * Class:     com_glasssix_common_Tensor
-	  * Method:    layoutInternal
-	  * Signature: ()I
+	  * Method:    copyFrom
+	  * Signature: ([BII)V
 	  */
-	 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_layoutInternal(JNIEnv* env, jobject obj);
+	 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_copyFrom(JNIEnv* env, jobject obj, jbyteArray buffer, jint index, jint size);
+
+	 /*
+	  * Class:     com_glasssix_common_Tensor
+	  * Method:    convertToInternal
+	  * Signature: (I)V
+	  */
+	 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_convertToInternal(JNIEnv* env, jobject obj, jbyteArray buffer, jint layout_ordinal);
 
 	 /*
 	  * Class:     com_glasssix_common_Tensor
@@ -99,6 +106,13 @@ extern "C"
 	  * Signature: ()V
 	  */
 	 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_initialize(JNIEnv* env, jobject obj);
+
+	 /*
+	  * Class:     com_glasssix_common_Tensor
+	  * Method:    layoutInternal
+	  * Signature: ()I
+	  */
+	 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_layoutInternal(JNIEnv* env, jobject obj);
 
 	 /*
 	  * Class:     com_glasssix_common_Tensor

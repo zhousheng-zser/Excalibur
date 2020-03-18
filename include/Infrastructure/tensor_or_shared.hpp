@@ -8,44 +8,44 @@ namespace glasssix
 {
     namespace excalibur
     {
-        template<typename TUnderlyingType, bool shared>
+        template<typename UnderlyingType, bool Shared>
         struct tensor_or_shared {};
 
-        template<typename TUnderlyingType>
-        struct tensor_or_shared<TUnderlyingType, false>
+        template<typename UnderlyingType>
+        struct tensor_or_shared<UnderlyingType, false>
         {
-            std::reference_wrapper<tensor<TUnderlyingType>> data;
+            std::reference_wrapper<tensor<UnderlyingType>> data;
 
-            tensor_or_shared(const tensor<TUnderlyingType>& tensor) : data{ const_cast<excalibur::tensor<TUnderlyingType>&>(tensor) }
+            tensor_or_shared(const tensor<UnderlyingType>& tensor) : data{ const_cast<excalibur::tensor<UnderlyingType>&>(tensor) }
             {
             }
 
-            inline auto operator->() const
+            auto operator->() const
             {
                 return &data.get();
             }
 
-            inline auto& access() const
+            auto& access() const
             {
                 return data.get();
             }
         };
 
-        template<typename TUnderlyingType>
-        struct tensor_or_shared<TUnderlyingType, true>
+        template<typename UnderlyingType>
+        struct tensor_or_shared<UnderlyingType, true>
         {
-            std::shared_ptr<tensor<TUnderlyingType>> data;
+            std::shared_ptr<tensor<UnderlyingType>> data;
 
-            tensor_or_shared(const std::shared_ptr<tensor<TUnderlyingType>>& tensor) : data{ tensor }
+            tensor_or_shared(const std::shared_ptr<tensor<UnderlyingType>>& tensor) : data{ tensor }
             {
             }
 
-            inline auto operator->() const
+            auto operator->() const
             {
                 return data.get();
             }
 
-            inline auto& access() const
+            auto& access() const
             {
                 return *data;
             }

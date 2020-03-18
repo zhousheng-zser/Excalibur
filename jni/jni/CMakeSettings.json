@@ -1,0 +1,145 @@
+﻿{
+  "environments": [
+    {
+      "environment": "android-clang-arm",
+      "androidSdkDir": "C:/Users/Glasssix-ZMY/AppData/Local/Android/Sdk",
+      "androidNdkDir": "${env.androidSdkDir}/ndk-bundle",
+      "androidCMakeDir": "${env.androidSdkDir}/cmake/3.10.2.4988404/bin",
+      "androidPrebuiltDir": "${env.androidNdkDir}/toolchains/llvm/prebuilt"
+    }
+  ],
+  "configurations": [
+    {
+      "buildCommandArgs": "-v",
+      "buildRoot": "${projectDir}/../../Build/${name}",
+      "cmakeCommandArgs": "",
+      "cmakeToolchain": "${env.androidNdkDir}/build/cmake/android.toolchain.cmake",
+      "configurationType": "Debug",
+      "ctestCommandArgs": "",
+      "generator": "Ninja",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
+      "intelliSenseMode": "android-clang-arm64",
+      "name": "Android-ARM64-Debug",
+      "variables": [
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "22",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_STL",
+          "value": "c++_shared",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_CXX_FLAGS",
+          "value": "-std=c++17 -frtti -fexceptions",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "arm64-v8a",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_MAKE_PROGRAM",
+          "value": "${env.androidCMakeDir}/ninja.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_SYSROOT",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_CXX",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/c++/v1",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_CLANG",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/lib64/clang/8.0.7/include",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_PLATFORM",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
+          "type": "STRING"
+        },
+        {
+          "name": "EXCALIBUR_INCLUDE_CXX",
+          "value": "../../include",
+          "type": "FILEPATH"
+        }
+      ],
+      "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",
+      "inheritEnvironments": [ "android-clang-arm" ]
+    },
+    {
+      "buildCommandArgs": "-v",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "cmakeCommandArgs": "",
+      "cmakeToolchain": "${env.androidNdkDir}/build/cmake/android.toolchain.cmake",
+      "configurationType": "Release",
+      "ctestCommandArgs": "",
+      "generator": "Ninja",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "intelliSenseMode": "android-clang-arm64",
+      "name": "Android-ARM64-Release",
+      "variables": [
+        {
+          "name": "ANDROID_PLATFORM",
+          "value": "22",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_STL",
+          "value": "c++_shared",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_CXX_FLAGS",
+          "value": "-std=c++17 -frtti -fexceptions",
+          "type": "STRING"
+        },
+        {
+          "name": "ANDROID_ABI",
+          "value": "arm64-v8a",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_MAKE_PROGRAM",
+          "value": "${env.androidCMakeDir}/ninja.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_SYSROOT",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_CXX",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/c++/v1",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_CLANG",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/lib64/clang/8.0.7/include",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "ANDROID_INCLUDE_PLATFORM",
+          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
+          "type": "STRING"
+        },
+        {
+          "name": "EXCALIBUR_INCLUDE_CXX",
+          "value": "../../include",
+          "type": "FILEPATH"
+        }
+      ],
+      "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",
+      "inheritEnvironments": [ "android-clang-arm" ]
+    }
+  ]
+}

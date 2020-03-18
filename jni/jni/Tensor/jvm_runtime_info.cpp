@@ -123,7 +123,7 @@ namespace glasssix::jni
 				{
 					auto item_id = handler(env_, clazz, item_name.data(), item_signature.data());
 
-					if (item_id != nullptr)
+					if (item_id)
 					{
 						cache_.emplace(utils::make_cache_key<T>(item_key), item_id);
 					}
@@ -138,7 +138,7 @@ namespace glasssix::jni
 
 	jvm_runtime_info::~jvm_runtime_info()
 	{
-		if (impl_ != nullptr)
+		if (impl_)
 		{
 			delete impl_;
 			impl_ = nullptr;
