@@ -33,7 +33,7 @@
     <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\byte_allocator.hpp">
+    <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

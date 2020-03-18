@@ -10,12 +10,12 @@ namespace glasssix
 	namespace memory
 	{
 		/// <summary>
-		/// A stateless essential allocator to allocate bytes.
+		/// A stateless essential allocator to allocate memory on the heap.
 		/// </summary>
 		template<typename Object>
-		class byte_allocator : public basic_allocator<Object, byte_allocator<Object>>
+		class heap_allocator : public basic_allocator<Object, heap_allocator<Object>>
 		{
-			friend basic_allocator<Object, byte_allocator>;
+			friend basic_allocator<Object, heap_allocator>;
 
 			/// <summary>
 			/// Allocates a piece of memory.
