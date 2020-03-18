@@ -2,6 +2,7 @@
 
 #include "hash_utils.hpp"
 
+#include <array>
 #include <functional>
 #include <type_traits>
 

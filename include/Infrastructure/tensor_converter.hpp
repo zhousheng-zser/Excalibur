@@ -25,31 +25,31 @@ namespace glasssix
         /// <summary>
         /// The default converter for underlying types.
         /// </summary>
-        template<typename TSource, typename TDestination>
+        template<typename Source, typename Destination>
         struct tensor_underlying_type_converter
         {
-            TDestination operator()(const TSource& source) const
+            Destination operator()(const Source& source) const
             {
-                return (TDestination)source;
+                return (Destination)source;
             }
         };
 
-        template<typename TSource, typename TDestination>
-        tensor_underlying_type_converter<TSource, TDestination> tensor_underlying_type_converter_v;
+        template<typename Source, typename Destination>
+        tensor_underlying_type_converter<Source, Destination> tensor_underlying_type_converter_v;
 
         /// <summary>
         /// The default converter.
         /// </summary>
-        template<typename TSource, typename TDestination, typename TTag>
+        template<typename Source, typename Destination, typename TTag>
         struct tensor_converter {};
 
         /// <summary>
         /// The default CPU-based converter.
         /// </summary>
-        template<typename TSource, typename TDestination>
-        struct tensor_converter<TSource, TDestination, tensor_cpu_tag>
+        template<typename Source, typename Destination>
+        struct tensor_converter<Source, Destination, tensor_cpu_tag>
         {
-            void operator()(const tensor<TSource>& source, tensor<TDestination>& destination) const
+            void operator()(const tensor<Source>& source, tensor<Destination>& destination) const
             {
                 auto source_ptr = source.cpu_data();
                 auto destination_ptr = destination.mutable_cpu_data();
@@ -58,28 +58,28 @@ namespace glasssix
                 // Assign the data directly.
                 for (size_t i = 0; i < count; i++)
                 {
-                    destination_ptr[i] = tensor_underlying_type_converter_v<TSource, TDestination>(source_ptr[i]);
+                    destination_ptr[i] = tensor_underlying_type_converter_v<Source, Destination>(source_ptr[i]);
                 }
             }
         };
 
-        template<typename TSource, typename TDestination, typename TTag>
-        tensor_converter<TSource, TDestination, TTag> tensor_converter_v;
+        template<typename Source, typename Destination, typename TTag>
+        tensor_converter<Source, Destination, TTag> tensor_converter_v;
 
         /// <summary>
         /// The default layout converter.
         /// </summary>
-        template<typename TUnderlyingType, tensor_layout layout, typename TTag>
+        template<typename UnderlyingType, tensor_layout Layout, typename TTag>
         struct tensor_layout_converter {};
 
         /// <summary>
         /// The default CPU-based layout converter.
         /// Layout type: grayscale 8-bit.
         /// </summary>
-        template<typename TUnderlyingType>
-        struct tensor_layout_converter<TUnderlyingType, tensor_layout::grayscale, tensor_cpu_tag>
+        template<typename UnderlyingType>
+        struct tensor_layout_converter<UnderlyingType, tensor_layout::grayscale, tensor_cpu_tag>
         {
-            void operator()(const tensor<TUnderlyingType>& source, tensor<TUnderlyingType>& destination) const
+            void operator()(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination) const
             {
                 // We only support triple-channel bitmaps and single-channel bitmaps.
                 assert(tensor_helper::has_single_channel(source) || tensor_helper::has_triple_channel(source) || tensor_helper::has_quadruple_channel(source));
@@ -105,10 +105,10 @@ namespace glasssix
         /// The default CPU-based layout converter.
         /// Layout type: grayscale 32-bit.
         /// </summary>
-        template<typename TUnderlyingType>
-        struct tensor_layout_converter<TUnderlyingType, tensor_layout::grayscale_3, tensor_cpu_tag>
+        template<typename UnderlyingType>
+        struct tensor_layout_converter<UnderlyingType, tensor_layout::grayscale_3, tensor_cpu_tag>
         {
-            void operator()(const tensor<TUnderlyingType>& source, tensor<TUnderlyingType>& destination) const
+            void operator()(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination) const
             {
                 // We only support triple-channel bitmaps and single-channel bitmaps.
                 assert(tensor_helper::has_single_channel(source) || tensor_helper::has_triple_channel(source) || tensor_helper::has_quadruple_channel(source));
@@ -134,10 +134,10 @@ namespace glasssix
         /// The default CPU-based layout converter.
         /// Layout type: RGB.
         /// </summary>
-        template<typename TUnderlyingType>
-        struct tensor_layout_converter<TUnderlyingType, tensor_layout::rgb, tensor_cpu_tag>
+        template<typename UnderlyingType>
+        struct tensor_layout_converter<UnderlyingType, tensor_layout::rgb, tensor_cpu_tag>
         {
-            void operator()(const tensor<TUnderlyingType>& source, tensor<TUnderlyingType>& destination) const
+            void operator()(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination) const
             {
                 // We only support triple-channel bitmaps and single-channel bitmaps.
                 assert(tensor_helper::has_triple_channel(source) || tensor_helper::has_quadruple_channel(source));
@@ -156,7 +156,7 @@ namespace glasssix
             }
         };
 
-        template<typename TUnderlyingType, tensor_layout layout, typename TTag>
-        tensor_layout_converter<TUnderlyingType, layout, TTag> tensor_layout_converter_v;
+        template<typename UnderlyingType, tensor_layout Layout, typename TTag>
+        tensor_layout_converter<UnderlyingType, Layout, TTag> tensor_layout_converter_v;
     }
 }

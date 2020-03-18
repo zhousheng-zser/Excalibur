@@ -16,11 +16,11 @@ namespace glasssix::jni
 	{
 	}
 
-	jvm_global_ref::jvm_global_ref(JNIEnv* env, jobject obj, bool takeOverOnly) : env_{ env }, ref_{ !takeOverOnly && env != nullptr && obj != nullptr ? env->NewGlobalRef(obj) : obj }
+	jvm_global_ref::jvm_global_ref(JNIEnv* env, jobject obj, bool takeOverOnly) : env_{ env }, ref_{ !takeOverOnly && env && obj ? env->NewGlobalRef(obj) : obj }
 	{
 	}
 
-	jvm_global_ref::jvm_global_ref(const jvm_global_ref& other) : env_{ other.env_ }, ref_{ env_ != nullptr && other.ref_ != nullptr ? env_ ->NewGlobalRef(other.ref_) : nullptr }
+	jvm_global_ref::jvm_global_ref(const jvm_global_ref& other) : env_{ other.env_ }, ref_{ env_ && other.ref_ ? env_ ->NewGlobalRef(other.ref_) : nullptr }
 	{
 	}
 
@@ -30,9 +30,9 @@ namespace glasssix::jni
 
 	jvm_global_ref::~jvm_global_ref()
 	{
-		if (env_ != nullptr)
+		if (env_)
 		{
-			if (ref_ != nullptr)
+			if (ref_)
 			{
 				env_->DeleteGlobalRef(ref_);
 				ref_ = nullptr;
@@ -44,13 +44,13 @@ namespace glasssix::jni
 
 	jvm_global_ref::operator bool() const noexcept
 	{
-		return env_ != nullptr && ref_ != nullptr;
+		return env_ && ref_;
 	}
 
 	jvm_global_ref& jvm_global_ref::operator=(const jvm_global_ref& right)
 	{
 		env_ = right.env_;
-		ref_ = env_ != nullptr && right.ref_ != nullptr ? env_->NewGlobalRef(right.ref_) : nullptr;
+		ref_ = env_ && right.ref_ ? env_->NewGlobalRef(right.ref_) : nullptr;
 
 		return *this;
 	}

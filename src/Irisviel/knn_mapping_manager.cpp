@@ -6,9 +6,9 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		knn_mapping_manager::knn_mapping_manager(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, read_line_position_ { 1 }, file_path_{ file_path }
+		knn_mapping_manager::knn_mapping_manager(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, read_line_position_{ 1 }, file_path_{ file_path }
 		{
-			mapping_ = std::make_shared<memory_mapping>(file_path, (max_items + 1UL) * sizeof(knn_mapping_data));
+			mapping_ = std::make_shared<memory_mapping>(file_path, (max_items + 1UL) * knn_mapping_data::struct_size(dimension));
 
 			// Get the mapping description header.
 			auto header = mapping_->get_from<knn_mapping_header>(0, knn_mapping_header_traits::header_size);
@@ -54,7 +54,7 @@ namespace glasssix
 
 		bool knn_mapping_manager::emplace_back(knn_mapping_data& data)
 		{
-			if (header_.current_position >= header_.max_items)
+			if (header_.current_position >= header_.max_items || contains(data.key()))
 			{
 				return false;
 			}
@@ -67,55 +67,60 @@ namespace glasssix
 			return true;
 		}
 
+		bool knn_mapping_manager::contains(const std::string& key)
+		{
+			return search_core([&](const knn_mapping_data& item) { return knn_mapping_data::key_equals(key.c_str(), item.key()); }, [](knn_mapping_data& item, int position) {});
+		}
+
 		bool knn_mapping_manager::update(knn_mapping_data& data)
 		{
 			return search_core([&](const knn_mapping_data& item)
-			{
-				return knn_mapping_data::key_equals(data, item);
-			},
+				{
+					return knn_mapping_data::key_equals(data, item);
+				},
 				[&](knn_mapping_data& item, int position)
-			{
-				mapping_->write_dynamic_buffer_to(position, item);
-			});
+				{
+					mapping_->write_dynamic_buffer_to(position, item);
+				});
 		}
 
 		std::shared_ptr<knn_mapping_data> knn_mapping_manager::read_next()
 		{
 			return first_or_default_core<knn_mapping_data>([](const knn_mapping_data& item)
-			{
-				return true;
-			},
+				{
+					return true;
+				},
 				[&](knn_mapping_data& item, int position)
-			{
-				read_line_position_ = position;
+				{
+					read_line_position_ = position;
 
-				return item.shared();
-			}, read_line_position_);
+					return item.shared();
+				}, read_line_position_);
 		}
 
 		bool knn_mapping_manager::delete_by_key(const std::string& key)
 		{
 			return search_core([&](const knn_mapping_data& item)
-			{
-				return key == item.key();
-			},
+				{
+					return key == item.key();
+				},
 				[&](knn_mapping_data& item, int position)
-			{
-				item.is_active(false);
-				mapping_->write_dynamic_buffer_to(position, item);
-			});
+				{
+					item.is_active(false);
+					mapping_->write_dynamic_buffer_to(position, item);
+				});
 		}
 
 		std::vector<std::shared_ptr<knn_mapping_data>> knn_mapping_manager::select_by_key(const std::string& key)
 		{
 			return select_core<knn_mapping_data>([&](const knn_mapping_data& item)
-			{
-				return key == item.key();
-			},
+				{
+					return key == item.key();
+				},
 				[&](knn_mapping_data& item, int position)
-			{
-				return item.shared();
-			});
+				{
+					return item.shared();
+				});
 		}
 
 		std::shared_ptr<knn_features> knn_mapping_manager::create_features_reference()
