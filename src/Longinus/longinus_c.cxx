@@ -16,6 +16,7 @@ void Longinus_ReleaseInstance(glasssix::longinus::LonginusDetector* instance)
 
 void Longinus_set(glasssix::longinus::LonginusDetector* instance, int type, int device)
 {
+#ifdef TRIAL
 	switch (type)
 	{
 	case 0:
@@ -29,8 +30,10 @@ void Longinus_set(glasssix::longinus::LonginusDetector* instance, int type, int 
 	default:
 		instance->set(glasssix::longinus::longinus_detection_type::FRONTALVIEW, device);
 	}
+#endif //!TRIAL
 }
 
+#ifdef TRIAL
 int Longinus_detect(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_basic** ptr, unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors)
 {
 	std::vector<glasssix::longinus::face_rect_basic> vec = instance->detect(gray, width, height, step, minSize, scale, min_neighbors, false, false);
@@ -66,6 +69,7 @@ int Longinus_detectWithInfo(glasssix::longinus::LonginusDetector* instance, glas
 
 	return num;
 }
+#endif //!TRIAL
 
 int Longinus_match(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::Match_Retval_C** ptr, glasssix::longinus::face_rect_basic* rects, int rect_num, int frame_extract_frequency, float distance_factor)
 {
