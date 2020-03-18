@@ -21,9 +21,6 @@
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\allocator.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\memory.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -31,6 +28,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\byte_allocator.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
