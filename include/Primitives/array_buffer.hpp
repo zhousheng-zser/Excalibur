@@ -194,7 +194,7 @@ namespace glasssix
 			Element* buffer_;
 			std::size_t position_;
 			std::size_t capacity_;
-			byte_allocator<Element> allocator_;
+			heap_allocator<Element> allocator_;
 			static constexpr std::size_t initial_capacity_ = 1;
 			static constexpr std::size_t expanding_factor_ = 2;
 		};
