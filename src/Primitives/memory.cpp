@@ -1,4 +1,5 @@
 #include "memory.hpp"
+#include "byte_allocator.hpp"
 
 #include <new>
 #include <exception>
