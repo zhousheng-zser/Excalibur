@@ -333,11 +333,11 @@ bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector* instanc
 	return false;
 }
 
-unsigned char* Longinus_getVersion()
+char* Longinus_getVersion()
 {
 	auto version = glasssix::longinus::LonginusDetector::getVersion();
 	std::size_t size = std::strlen(version) + 1;
-	auto str = glasssix::memory::heap_alloc_elements<unsigned char>(size);
+	auto str = glasssix::memory::heap_alloc_elements<char>(size);
 
 	return str;
 }
