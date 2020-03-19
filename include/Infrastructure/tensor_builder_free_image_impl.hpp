@@ -141,9 +141,9 @@ namespace glasssix
             /// <param name="type">The destintion bitmap type</param>
             /// <param name="converters">The converter cache</param>
             /// <returns>The result</returns>
-            template<typename TEnum, typename TUnderlyingType, bool shared>
+            template<typename TEnum, typename UnderlyingType, bool Shared>
             auto to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
-                ->std::conditional_t<shared, std::shared_ptr<tensor<TUnderlyingType>>, std::optional<tensor<TUnderlyingType>>>;
+                ->std::conditional_t<Shared, std::shared_ptr<tensor<UnderlyingType>>, std::optional<tensor<UnderlyingType>>>;
         private:
             int width_;
             int height_;

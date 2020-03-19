@@ -481,7 +481,7 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 #endif // SPLIT_TIME
 
 #else
-		NO_GPU
+		NO_GPU;
 #endif // USE_CUDA
 
 	}

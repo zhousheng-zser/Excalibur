@@ -25,6 +25,7 @@ namespace glasssix
 		public:
 			knn_mapping_manager(const std::string& file_path, std::size_t max_items, int dimensions);
 
+			bool contains(const std::string& key);
 			bool update(knn_mapping_data& data);
 			bool emplace_back(knn_mapping_data& data);
 			std::shared_ptr<knn_mapping_data> read_next();
@@ -55,11 +56,10 @@ namespace glasssix
 			// Get all feature entries in the memory mapping file.
 			std::vector<const float*> select_feature_entries_core();
 
-			// Implement 'select'.
-			template<typename TResult>
-			std::vector<std::shared_ptr<TResult>> select_core(const std::function<bool(const knn_mapping_data&)>& predicate, const std::function<std::shared_ptr<TResult>(knn_mapping_data&, int)>& action)
+			template<typename Result>
+			std::vector<std::shared_ptr<Result>> select_core(const std::function<bool(const knn_mapping_data&)>& predicate, const std::function<std::shared_ptr<Result>(knn_mapping_data&, int)>& action)
 			{
-				std::vector<std::shared_ptr<TResult>> result;
+				std::vector<std::shared_ptr<Result>> result;
 
 				if (!predicate || !action)
 				{
@@ -74,11 +74,10 @@ namespace glasssix
 				return result;
 			}
 
-			// Implement 'first_or_default'.
-			template<typename TResult>
-			std::shared_ptr<TResult> first_or_default_core(const std::function<bool(const knn_mapping_data&)>& predicate, const std::function<std::shared_ptr<TResult>(knn_mapping_data&, int)>& action, int start_position = 0)
+			template<typename Result>
+			std::shared_ptr<Result> first_or_default_core(const std::function<bool(const knn_mapping_data&)>& predicate, const std::function<std::shared_ptr<Result>(knn_mapping_data&, int)>& action, int start_position = 0)
 			{
-				std::shared_ptr<TResult> result;
+				std::shared_ptr<Result> result;
 
 				if (!predicate || !action)
 				{

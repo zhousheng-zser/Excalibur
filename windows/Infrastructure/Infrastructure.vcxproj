@@ -197,7 +197,7 @@
     <ClInclude Include="..\..\include\Infrastructure\FreeImagePlus.h" />
     <ClInclude Include="..\..\include\Infrastructure\init_free_image.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_converter.hpp" />
-    <ClInclude Include="..\..\include\Infrastructure\tensor_convertions.hpp" />
+    <ClInclude Include="..\..\include\Infrastructure\tensor_conversions.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_layout.hpp" />
     <ClInclude Include="..\..\include\Infrastructure\tensor_or_shared.hpp" />
   </ItemGroup>

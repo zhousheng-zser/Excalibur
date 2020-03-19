@@ -239,9 +239,14 @@ namespace glasssix
 			}
 		}
 
+		bool knn_mapping_data::key_equals(const char* left, const char* right)
+		{
+			return !strcmp(left, right);
+		}
+
 		bool knn_mapping_data::key_equals(const knn_mapping_data& left, const knn_mapping_data& right)
 		{
-			return !strcmp(left.key(), right.key());
+			return key_equals(left.key(), right.key());
 		}
 	}
 }

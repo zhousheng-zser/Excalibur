@@ -29,7 +29,7 @@ namespace																		\
 {																				\
 	struct android_logger_traits_##name											\
 	{																			\
-		inline static constexpr auto value = #name;								\
+		static constexpr auto value = #name;									\
 	};																			\
 																				\
 	using logger = glasssix::jni::android_logger<android_logger_traits_##name>;	\
