@@ -66,7 +66,7 @@ namespace glasssix
 		/// <param name="...args">The arguments</param>
 		/// <returns>The memory pointer at the first object</returns>
 		template<typename Object, typename... Args>
-		auto heap_alloc_objects(std::size_t size, Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		auto heap_alloc_objects(std::size_t size, Args&&... args) -> std::enable_if_t<std::is_constructible<Object, Args...>::value, Object*>
 		{
 			auto result = static_cast<Object*>(heap_alloc(sizeof(Object) * size));
 			auto end_ptr = result + size;

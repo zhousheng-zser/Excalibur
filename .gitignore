@@ -67,7 +67,6 @@
 *.vs
 *.CopyComplete
 *.bin
-jni/
 windows/
 examples/
 include/Excalibur/prune.hpp
@@ -75,3 +74,6 @@ src/PersonalReality/main.cpp
 src/Reconstruct/deconv_net.cpp
 src/Reconstruct/main.cpp
 include/Reconstruct/deconv_net.hpp
+/jni/Build/Android-ARM64-Debug
+include/Apollo/
+src/Apollo/

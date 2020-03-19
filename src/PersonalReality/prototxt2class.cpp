@@ -65,10 +65,7 @@ void prototxt2class::declear_operation_neuron(std::string prorotxt)
 			hpp << "Declear_Opration(" + type_name + ", " + layer_name + ");" << std::endl;
 		}
 
-		if (type_name!="prelu"||type_name!="relu")
-		{
-			hpp << "Neuron_Name(" + layer_name + ");" << std::endl;
-		}
+        hpp << "Neuron_Name(" + layer_name + ");" << std::endl;
 	}
 	hpp  << std::endl;
 }
@@ -251,6 +248,12 @@ void prototxt2class::init_operation(std::string prorotxt)
 		{
 			cpp << "Init_Softmax_Params(" << elem.second << ", 666);" << std::endl;
 		}
+
+		if (type_name == "upsample")
+		{
+			int num_input = 666;
+			cpp << "Init_Upsample_Params(" + elem.second << ", " << num_input << ", false);" << std::endl;
+		}
 	}
 	cpp << std::endl;
 }
@@ -274,7 +277,7 @@ void prototxt2class::build_forward(std::string prorotxt)
 		}
 		if (bottom_names.size()<2)
 		{
-			if (type_name=="relu"|| type_name=="prelu")
+			if (type_name=="relu"|| type_name=="prelu" || type_name == "upsample")
 			{
 				cpp << elem.second << "->Forward_cpu(" << bottom_names[0] << "_top_data);" << std::endl;
 			}

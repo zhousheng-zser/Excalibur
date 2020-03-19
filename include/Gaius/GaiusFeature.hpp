@@ -69,7 +69,7 @@ namespace glasssix
 			/// <param name="num">The number of bitmaps within the input data</param>
 			/// <param name="order">The order that the input data are arranged in</param>
 			/// <returns>The feature vectors</returns>
-			std::vector<std::vector<float>> Forward(const std::uint8_t* input_data, unsigned num, int order = 0) const;
+			std::vector<std::vector<float>> Forward(const std::uint8_t* input_data, unsigned num, int order = 0, bool mask = false) const;
 
 			/// <summary>
 			/// Gets the version of the component.

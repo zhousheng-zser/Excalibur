@@ -24,8 +24,8 @@ namespace glasssix
 			bool judge(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) override;
 
 		private:
-			std::unique_ptr<Face_nir_net> face_nir_net_;
-			std::unique_ptr<Nose_nir_net> nose_nir_net_;
+			std::shared_ptr<Face_nir_net> face_nir_net_;
+			std::shared_ptr<Nose_nir_net> nose_nir_net_;
 		};
 	}
 }

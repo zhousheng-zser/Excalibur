@@ -20,7 +20,7 @@ namespace glasssix
 
 		struct ngraph_internal
 		{
-			ngraph_internal() : base_data{}, base_num{}, dimension{}
+			ngraph_internal() : base_data{}, base_num{}, dimension{}, norm_array{}, width{}, navigate_node{}, neighbors_max_length{}, range{}
 			{
 			}
 
