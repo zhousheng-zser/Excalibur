@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp" />
+    <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
     <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\iterators.hpp" />
@@ -159,6 +160,7 @@
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
