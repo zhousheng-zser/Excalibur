@@ -1,7 +1,9 @@
 #pragma once
 
 #include <variant>
+#include <string_view>
 #include <type_traits>
+#include <unordered_map>
 
 #include <jni.h>
 
@@ -18,26 +20,30 @@ namespace glasssix::jni::utils
 		template<typename... Functor>
 		functor_package(Functor&&...)->functor_package<Functor...>;
 
-		template<typename T>
+		template<typename T, typename = void>
 		struct jvm_field_operator;
-
+		
 		/// <summary>
 		/// jboolean
 		/// </summary>
-		template<typename JObject> struct jvm_field_operator<std::enable_if_t<std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>, JObject>>
+		template<typename JObject> struct jvm_field_operator<JObject, std::enable_if_t<std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>, JObject>>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetObjectField(obj, field); },
-						[&](jclass source) { return env->GetStaticObjectField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticObjectField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jobject value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jobject value)
 			{
-				return env->SetObjectField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetObjectField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticObjectField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -46,18 +52,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jboolean>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetBooleanField(obj, field); },
-						[&](jclass source) { return env->GetStaticBooleanField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticBooleanField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jboolean value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jboolean value)
 			{
-				return env->SetBooleanField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetBooleanField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticBooleanField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -66,18 +76,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jbyte>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetByteField(obj, field); },
-						[&](jclass source) { return env->GetStaticByteField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticByteField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jbyte value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jbyte value)
 			{
-				return env->SetByteField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetByteField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticByteField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -86,18 +100,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jint>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetIntField(obj, field); },
-						[&](jclass source) { return env->GetStaticIntField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticIntField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jint value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jint value)
 			{
-				return env->SetIntField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetIntField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticIntField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -106,18 +124,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jshort>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetShortField(obj, field); },
-						[&](jclass source) { return env->GetStaticShortField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticShortField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jshort value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jshort value)
 			{
-				return env->SetShortField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetShortField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticShortField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -126,18 +148,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jlong>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetLongField(obj, field); },
-						[&](jclass source) { return env->GetStaticLongField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticLongField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jlong value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jlong value)
 			{
-				return env->SetLongField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetLongField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticLongField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -146,18 +172,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jfloat>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetFloatField(obj, field); },
-						[&](jclass source) { return env->GetStaticFloatField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticFloatField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jfloat value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jfloat value)
 			{
-				return env->SetFloatField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetFloatField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticFloatField(clazz, field, value); }
+					}, source);
 			}
 		};
 
@@ -166,18 +196,22 @@ namespace glasssix::jni::utils
 		/// </summary>
 		template<> struct jvm_field_operator<jdouble>
 		{
-			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& obj, jfieldID field)
+			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
 						[&](jobject obj) { return env->GetDoubleField(obj, field); },
-						[&](jclass source) { return env->GetStaticDoubleField(source, field); }
-					}, obj);
+						[&](jclass clazz) { return env->GetStaticDoubleField(clazz, field); }
+					}, source);
 			}
 
-			static void set(JNIEnv* env, jobject obj, jfieldID field, jdouble value)
+			static void set(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, jdouble value)
 			{
-				return env->SetDoubleField(obj, field, value);
+				std::visit(functor_package
+					{
+						[&](jobject obj) { env->SetDoubleField(obj, field, value); },
+						[&](jclass clazz) { env->SetStaticDoubleField(clazz, field, value); }
+					}, source);
 			}
 		};
 	}
@@ -185,7 +219,20 @@ namespace glasssix::jni::utils
 	template<typename JObject>
 	constexpr auto jobject_as(jobject obj) noexcept -> std::enable_if_t<std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>, JObject>
 	{
-		return obj != nullptr ? static_cast<JObject>(obj) : nullptr;
+		return obj ? static_cast<JObject>(obj) : nullptr;
+	}
+
+	template<typename T = void, typename... Args>
+	auto throw_new_exception(JNIEnv* env, jclass clazz, std::string_view message, Args&&... args) -> std::enable_if_t<std::is_void_v<T> || std::is_constructible_v<T, Args...>, T>
+	{
+		env->ThrowNew(clazz, message.data());
+
+		// Throwing a java exception does not imply omitting the return value in native code.
+		// Thus, we just return the default value here.
+		if constexpr (!std::is_void_v<T>)
+		{
+			return T{ std::forward<Args>(args...) };
+		}
 	}
 
 	constexpr jboolean to_jboolean(bool value) noexcept
@@ -198,7 +245,7 @@ namespace glasssix::jni::utils
 	{
 		return details::jvm_field_operator<T>::get(env, source, field);
 	}
-	
+
 	template<typename T>
 	auto set_field_value(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, T&& value)
 	{

@@ -27,6 +27,7 @@ namespace glasssix
 			static std::shared_ptr<knn_mapping_data> create(int dimension);
 			static std::shared_ptr<knn_mapping_data> create(int dimension, std::uint8_t* ptr);
 			static std::shared_ptr<knn_mapping_data> create_ref(int dimension, std::uint8_t* ptr);
+			static bool key_equals(const char* left, const char* right);
 			static bool key_equals(const knn_mapping_data& left, const knn_mapping_data& right);
 		};
 	}

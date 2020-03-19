@@ -7,7 +7,10 @@
 #endif
 #include "../../include/Excalibur/prune.hpp"
 #include <glasssix/timer.hpp>
+
+#ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
+#endif
 
 using namespace glasssix::excalibur;
 

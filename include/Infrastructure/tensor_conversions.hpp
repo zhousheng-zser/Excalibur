@@ -14,56 +14,56 @@ namespace glasssix
         /// <summary>
         /// Indicate a type which is the destination type of the tensor convertion.
         /// </summary>
-        template<typename TDestination>
+        template<typename Destination>
         struct tensor_convert_to_tag {};
 
         /// <summary>
         /// Indicate a layout type which a tensor is converted to.
         /// </summary>
-        template<tensor_layout layout>
+        template<tensor_layout Layout>
         struct tensor_convert_layout_to_tag {};
 
         /// <summary>
         /// A template variable to simplify coding.
         /// </summary>
-        template<typename TDestination>
-        tensor_convert_to_tag<TDestination> tensor_convert_to;
+        template<typename Destination>
+        tensor_convert_to_tag<Destination> tensor_convert_to;
 
         /// <summary>
         /// A template variable to simplify coding.
         /// </summary>
-        template<tensor_layout layout>
-        tensor_convert_layout_to_tag<layout> tensor_convert_layout_to;
+        template<tensor_layout Layout>
+        tensor_convert_layout_to_tag<Layout> tensor_convert_layout_to;
 
         /// <summary>
         /// Allocate a tensor in a uniform form.
         /// </summary>
         /// <param name="source">The source tensor</param>
         /// <returns>The allocated tensor</returns>
-        template<typename TUnderlyingType, bool shared = false>
-        auto allocate_tensor(const tensor_& source)
+        template<typename UnderlyingType, bool Shared = false>
+        auto allocate_tensor(const tensor_base& source)
         {
             auto input_vector = source.order() == NHWC ?
                 std::vector<int>{ source.num(), source.height(), source.width(), source.channels() } :
                 std::vector<int>{ source.num(),  source.channels(),  source.height(),  source.width() };
 
-            if constexpr (shared)
+            if constexpr (Shared)
             {
-                return std::make_shared<tensor<TUnderlyingType>>(input_vector, source.device(), source.order());
+                return std::make_shared<tensor<UnderlyingType>>(input_vector, source.device(), source.order());
             }
             else
             {
-                return tensor<TUnderlyingType>{ input_vector, source.device(), source.order() };
+                return tensor<UnderlyingType>{ input_vector, source.device(), source.order() };
             }
         }
 
         /// <summary>
         /// Assert the template argumant is numeric statically.
         /// </summary>
-        template<typename TArgs>
-        inline constexpr void assert_numeric()
+        template<typename Args>
+        constexpr void assert_numeric()
         {
-            static_assert(std::is_arithmetic_v<TArgs>, "All parameters must be numerical.");
+            static_assert(std::is_arithmetic_v<Args>, "All parameters must be numerical.");
         }
 
         /// <summary>
@@ -72,22 +72,22 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<bool shared, typename TSource, typename TDestination>
-        auto convert_to_core(const tensor_or_shared<TSource, shared>& source, const tensor_convert_to_tag<TDestination>& tag)
+        template<bool Shared, typename Source, typename Destination>
+        auto convert_to_core(const tensor_or_shared<Source, Shared>& source, const tensor_convert_to_tag<Destination>& tag)
         {
-            assert_numeric<TSource>();
-            assert_numeric<TDestination>();
+            assert_numeric<Source>();
+            assert_numeric<Destination>();
             
-            auto destination = allocate_tensor<TDestination, shared>(source.access());
-            tensor_or_shared<TDestination, shared> destination_wrapper{ destination };
+            auto destination = allocate_tensor<Destination, Shared>(source.access());
+            tensor_or_shared<Destination, Shared> destination_wrapper{ destination };
             
             if (source->device() < 0)
             {
-                tensor_converter_v<TSource, TDestination, tensor_cpu_tag>(source.access(), destination_wrapper.access());
+                tensor_converter_v<Source, Destination, tensor_cpu_tag>(source.access(), destination_wrapper.access());
             }
             else
             {
-                tensor_converter_v<TSource, TDestination, tensor_cpu_tag>(source.access(), destination_wrapper.access());
+                tensor_converter_v<Source, Destination, tensor_cpu_tag>(source.access(), destination_wrapper.access());
             }
 
             return destination;
@@ -99,21 +99,21 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, bool shared, tensor_layout layout>
-        auto convert_layout_to_core(const tensor_or_shared<TSource, shared>& source, const tensor_convert_layout_to_tag<layout>& tag)
+        template<typename Source, bool Shared, tensor_layout Layout>
+        auto convert_layout_to_core(const tensor_or_shared<Source, Shared>& source, const tensor_convert_layout_to_tag<Layout>& tag)
         {
-            assert_numeric<TSource>();
+            assert_numeric<Source>();
 
-            auto destination = allocate_tensor<TSource, shared>(source.access());
-            tensor_or_shared<TSource, shared> destination_wrapper{ destination };
+            auto destination = allocate_tensor<Source, Shared>(source.access());
+            tensor_or_shared<Source, Shared> destination_wrapper{ destination };
 
             if (source->device() < 0)
             {
-                tensor_layout_converter_v<TSource, layout, tensor_cpu_tag>(source.access(), destination_wrapper.access());
+                tensor_layout_converter_v<Source, Layout, tensor_cpu_tag>(source.access(), destination_wrapper.access());
             }
             else
             {
-                tensor_layout_converter_v<TSource, layout, tensor_cpu_tag>(source.access(), destination_wrapper.access());
+                tensor_layout_converter_v<Source, Layout, tensor_cpu_tag>(source.access(), destination_wrapper.access());
             }
 
             return destination;
@@ -125,10 +125,10 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, typename TDestination>
-        inline tensor<TDestination> operator|(const tensor<TSource>& source, const tensor_convert_to_tag<TDestination>& tag)
+        template<typename Source, typename Destination>
+        tensor<Destination> operator|(const tensor<Source>& source, const tensor_convert_to_tag<Destination>& tag)
         {
-            return convert_to_core<false, TSource>(source, tag);
+            return convert_to_core<false, Source>(source, tag);
         }
 
         /// <summary>
@@ -137,10 +137,10 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination underlying type</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, typename TDestination>
-        inline std::shared_ptr<tensor<TDestination>> operator|(const std::shared_ptr<tensor<TSource>>& source, const tensor_convert_to_tag<TDestination>& tag)
+        template<typename Source, typename Destination>
+        std::shared_ptr<tensor<Destination>> operator|(const std::shared_ptr<tensor<Source>>& source, const tensor_convert_to_tag<Destination>& tag)
         {
-            return convert_to_core<true, TSource>(source, tag);
+            return convert_to_core<true, Source>(source, tag);
         }
 
         /// <summary>
@@ -149,10 +149,10 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination layout</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, tensor_layout layout>
-        inline tensor<TSource> operator|(const tensor<TSource>& source, const tensor_convert_layout_to_tag<layout>& tag)
+        template<typename Source, tensor_layout Layout>
+        tensor<Source> operator|(const tensor<Source>& source, const tensor_convert_layout_to_tag<Layout>& tag)
         {
-            return convert_layout_to_core<TSource, false>(source, tag);
+            return convert_layout_to_core<Source, false>(source, tag);
         }
 
         /// <summary>
@@ -161,10 +161,10 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <param name="tag">The tag containing information about the destination layout</param>
         /// <returns>The destination tensor</returns>
-        template<typename TSource, tensor_layout layout>
-        inline std::shared_ptr<tensor<TSource>> operator|(const std::shared_ptr<tensor<TSource>>& source, const tensor_convert_layout_to_tag<layout>& tag)
+        template<typename Source, tensor_layout Layout>
+        std::shared_ptr<tensor<Source>> operator|(const std::shared_ptr<tensor<Source>>& source, const tensor_convert_layout_to_tag<Layout>& tag)
         {
-            return convert_layout_to_core<TSource, true>(source, tag);
+            return convert_layout_to_core<Source, true>(source, tag);
         }
     }
 }

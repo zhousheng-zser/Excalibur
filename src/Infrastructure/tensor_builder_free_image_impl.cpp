@@ -1,7 +1,7 @@
 #include "tensor_builder_free_image_impl.hpp"
 #include "fi_image_ex.hpp"
 #include "init_free_image.hpp"
-#include "tensor_convertions.hpp"
+#include "tensor_conversions.hpp"
 
 namespace glasssix
 {
@@ -279,16 +279,16 @@ namespace glasssix
         /// <param name="type">The destintion bitmap type</param>
         /// <param name="converters">The converter cache</param>
         /// <returns>The result</returns>
-        template<typename TEnum, typename TUnderlyingType, bool shared>
+        template<typename TEnum, typename UnderlyingType, bool Shared>
         auto tensor_builder_free_image_impl::to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
-            -> std::conditional_t<shared, std::shared_ptr<tensor<TUnderlyingType>>, std::optional<tensor<TUnderlyingType>>>
+            -> std::conditional_t<Shared, std::shared_ptr<tensor<UnderlyingType>>, std::optional<tensor<UnderlyingType>>>
         {
             static_assert(std::is_enum_v<TEnum>, "The TEnum must be an enumeration type.");
-            static_assert(std::is_integral_v<TUnderlyingType> || std::is_floating_point_v<TUnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
+            static_assert(std::is_integral_v<UnderlyingType> || std::is_floating_point_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
 
             auto return_null_wrapper = []
             {
-                if constexpr (shared)
+                if constexpr (Shared)
                 {
                     return nullptr;
                 }
@@ -317,7 +317,7 @@ namespace glasssix
                 return return_null_wrapper();
             }
 
-            return tensor_helper::create<TUnderlyingType, shared>(result->accessPixels(), order_, device_, result->width(), result->height(), result->stride(), result->channels());
+            return tensor_helper::create<UnderlyingType, Shared>(result->accessPixels(), order_, device_, result->width(), result->height(), result->stride(), result->channels());
         }
     }
 }
