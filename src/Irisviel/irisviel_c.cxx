@@ -6,9 +6,9 @@
 using glasssix::memory::heap_alloc_objects;
 using glasssix::memory::heap_alloc_elements;
 
-glasssix::irisviel::knn_service *Irisviel_NewInstance(int max_items, char * new_save_path, char *tmp_path)
+glasssix::irisviel::knn_service *Irisviel_NewInstance(int max_items, int dimension, char * new_save_path, char *tmp_path)
 {
-	return new glasssix::irisviel::knn_service(max_items, new_save_path, tmp_path);
+	return new glasssix::irisviel::knn_service(max_items, dimension, new_save_path, tmp_path);
 }
 
 void Irisviel_ReleaseInstance(glasssix::irisviel::knn_service *instance)
@@ -47,9 +47,7 @@ void Irisviel_build(glasssix::irisviel::knn_service *instance, int n_files, char
 
 int Irisviel_search(glasssix::irisviel::knn_service *instance, glasssix::irisviel::knn_search_result **result, float *feature, int top)
 {
-	std::array<float, 128> array;
-	std::copy(feature, feature + 128, array.begin());
-	std::vector<glasssix::irisviel::knn_search_result> result_vec = instance->search(array, top);
+	std::vector<glasssix::irisviel::knn_search_result> result_vec = instance->search(feature, top);
 	
 	size_t result_num = result_vec.size();
 
@@ -80,7 +78,7 @@ void Irisviel_delete_features(glasssix::irisviel::knn_service *instance, int *ne
 			*needs_delete_files = heap_alloc_elements<char*>(*needs_delete_files_num);
 			for(int i = 0; i < *needs_delete_files_num; i++)
 			{
-				size_t file_path_len = files[i].length();
+				size_t file_path_len = files[i].size() + 1;
 				(*needs_delete_files)[i] = heap_alloc_elements<char>(file_path_len + 1);
 				(*needs_delete_files)[i][file_path_len] = '\0';
 				std::copy(files[i].begin(), files[i].end(), (*needs_delete_files)[i]);
@@ -111,8 +109,13 @@ void Irisviel_add_features(glasssix::irisviel::knn_service *instance, int data_n
 {
 	if(data_num)
 	{
-		std::vector<glasssix::irisviel::knn_mapping_data> data_vec(data_num);
-		std::copy(data, data + data_num, data_vec.begin());
+		std::vector <std::shared_ptr<glasssix::irisviel::knn_mapping_data>> data_vec(data_num);
+
+		for (size_t i = 0; i < data_num; i++)
+		{
+			data_vec.emplace_back(data[i].shared());
+		}
+
 		instance->add_features(data_vec);
 	}
 }
@@ -131,8 +134,13 @@ void Irisviel_update_more(glasssix::irisviel::knn_service *instance, int data_nu
 {
 	if(data_num)
 	{
-		std::vector<glasssix::irisviel::knn_mapping_data> data_vec(data_num);
-		std::copy(data, data + data_num, data_vec.begin());
+		std::vector<std::shared_ptr<glasssix::irisviel::knn_mapping_data>> data_vec(data_num);
+
+		for (size_t i = 0; i < data_num; i++)
+		{
+			data_vec.emplace_back(data[i].shared());
+		}
+
 		instance->update_more(data_vec);
 	}
 }

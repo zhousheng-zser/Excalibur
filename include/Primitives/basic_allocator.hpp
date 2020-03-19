@@ -2,17 +2,27 @@
 
 #include "memory.hpp"
 
+#include <cstddef>
 #include <type_traits>
 
 namespace glasssix
 {
 	namespace memory
 	{
+		namespace details
+		{
+			template<typename T, typename... Args>
+			struct contains_template_argument : std::false_type {};
+
+			template<template<typename...> class Template, typename... Args>
+			struct contains_template_argument<Template<Args...>, Args...> : std::true_type {};
+		}
+
 		/// <summary>
-		/// A glasssix uniform memory allocator.
+		/// A stateless essential allocator with the Curiously Recurring Template Pattern (CRTP).
 		/// </summary>
-		template<typename Object>
-		class allocator
+		template<typename Object, typename Impl, typename = std::enable_if_t<details::contains_template_argument<Impl, Object>::value>>
+		class basic_allocator
 		{
 		public:
 			using pointer_type = std::add_pointer_t<Object>;
@@ -24,7 +34,7 @@ namespace glasssix
 			/// <returns>The pointer at the first element</returns>
 			pointer_type allocate(std::size_t size)
 			{
-				return heap_alloc_elements<Object>(size);
+				return reinterpret_cast<pointer_type>(allocate_bytes(size * sizeof(Object)));
 			}
 
 			/// <summary>
@@ -34,7 +44,7 @@ namespace glasssix
 			/// <param name="size">The size in elements</param>
 			void deallocate(pointer_type ptr, std::size_t size)
 			{
-				heap_free(ptr, size);
+				deallocate_bytes(reinterpret_cast<byte_type*>(ptr), size * sizeof(Object));
 			}
 
 			/// <summary>
@@ -45,7 +55,7 @@ namespace glasssix
 			/// <param name="ptr">The object</param>
 			/// <param name="...args">The arguments of its constructor</param>
 			template<typename Individual, typename... Args>
-			auto construct(Individual* ptr, Args&&... args) -> std::enable_if_t<std::is_constructible_v<Individual, Args...>>
+			auto construct(Individual* ptr, Args&&... args) -> std::enable_if_t<std::is_constructible<Individual, Args...>::value>
 			{
 				if (ptr == nullptr)
 				{
@@ -56,7 +66,7 @@ namespace glasssix
 			}
 
 			/// <summary>
-			/// Destroys an object
+			/// Destroys an object.
 			/// </summary>
 			/// <typeparam name="Individual">The object type</typeparam>
 			/// <param name="ptr">The object</param>
@@ -67,6 +77,26 @@ namespace glasssix
 				{
 					ptr->~Individual();
 				}
+			}
+		private:
+			/// <summary>
+			/// Allocates a piece of memory.
+			/// </summary>
+			/// <param name="size">The size in bytes</param>
+			/// <returns>The pointer</returns>
+			byte_type* allocate_bytes(std::size_t size)
+			{
+				return static_cast<Impl&>(*this).allocate_bytes_impl(size);
+			}
+
+			/// <summary>
+			/// Deallocates a piece of memory.
+			/// </summary>
+			/// <param name="ptr">The pointer</param>
+			/// <param name="size">The size in bytes</param>
+			void deallocate_bytes(byte_type* ptr, std::size_t size)
+			{
+				static_cast<Impl&>(*this).deallocate_bytes_impl(ptr, size);
 			}
 		};
 	}

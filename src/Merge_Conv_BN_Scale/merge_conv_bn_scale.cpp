@@ -75,7 +75,8 @@ void Merge_Conv_BN_Scale(std::string input_weights, std::string output_prefix)
 	for (size_t n = 0; n < param.layer_size();)
 	{
 		std::string layer_type = param.layer(n).type();
-		if ((layer_type == "Convolution" || layer_type == "DepthwiseConvolution") && (param.layer_size() > (n + 2)))
+		
+		if ((layer_type == "Convolution" || layer_type == "DepthwiseConvolution" || layer_type == "ConvolutionDepthwise") && (param.layer_size() > (n + 2)))
 		{
 			if ((param.layer(n + 1).type() == "BatchNorm") && (param.layer(n+2).type() == "Scale"))
 			{
@@ -133,16 +134,14 @@ void Merge_Conv_BN_Scale(std::string input_weights, std::string output_prefix)
 				else
 				{
 					blob_b = conv_layer_param.add_blobs();
-					blob_b->set_num(N);
-					blob_b->set_channels(1);
-					blob_b->set_height(1);
-					blob_b->set_width(1);
+					::caffe::BlobShape* bias_shape = blob_b->mutable_shape();					
+					bias_shape->add_dim(N);
 
 					for (int i = 0; i < N; i++)
 					{
-						blob_b->set_data(i, 0.0);
+						blob_b->add_data(0.0);
 					}
-
+					
 					conv_layer_param.mutable_convolution_param()->set_bias_term(true);
 				}
 
@@ -232,11 +231,11 @@ void Usage(char *argv)
 
 int main(int argc, char *argv[])
 {
-	if (argc < 3)
-	{
-		Usage(argv[0]);
-		return -1;
-	}
-	Merge_Conv_BN_Scale(argv[1], argv[2]);
+	std::string src_caffemodel = "D:/projects/data/unicornModel/gaius/new/mobile_unicorn_8805_usefulpart.caffemodel";
+	std::string dst_caffemode_prefix = "D:/projects/data/unicornModel/gaius/new/mobile_unicorn_8805_usefulpart_merged";
+
+	Merge_Conv_BN_Scale(src_caffemodel, dst_caffemode_prefix);
+
+	system("pause");
 	return 0;
 }

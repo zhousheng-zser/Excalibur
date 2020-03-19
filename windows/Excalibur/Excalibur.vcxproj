@@ -101,14 +101,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
     <UseIntelMKL>No</UseIntelMKL>
@@ -420,6 +420,7 @@
     <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\conv_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\conv_arm_func.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\deconv_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\inner_product_arm.hpp" />
     <ClInclude Include="..\..\include\Excalibur\arm\neon_mathfun.hpp" />
@@ -458,6 +459,7 @@
     <ClInclude Include="..\..\include\Excalibur\pooling.hpp" />
     <ClInclude Include="..\..\include\Excalibur\prelu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\reshape.hpp" />
     <ClInclude Include="..\..\include\Excalibur\scale.hpp" />
     <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp" />
     <ClInclude Include="..\..\include\Excalibur\slice.hpp" />
@@ -499,6 +501,7 @@
     <ClCompile Include="..\..\src\Excalibur\pca.cpp" />
     <ClCompile Include="..\..\src\Excalibur\pooling.cpp" />
     <ClCompile Include="..\..\src\Excalibur\prelu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\reshape.cpp" />
     <ClCompile Include="..\..\src\Excalibur\scale.cpp" />
     <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp" />
     <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
@@ -512,6 +515,7 @@
     <CudaCompile Include="..\..\src\Excalibur\concat.cu" />
     <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu" />
     <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\deconv.cu" />
     <CudaCompile Include="..\..\src\Excalibur\eltwise.cu" />
     <CudaCompile Include="..\..\src\Excalibur\flip.cu" />
     <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />

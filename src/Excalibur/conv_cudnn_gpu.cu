@@ -90,6 +90,7 @@ namespace glasssix
 				int height_out = (height + 2 * pad_ - kernelSize_) / stride_ + 1;
 				int width_out = (width + 2 * pad_ - kernelSize_) / stride_ + 1;
 				top.reset(new tensor<float>(std::vector<int>{num, this->output_Channel_, height_out, width_out}, this->device_, order_));
+
 				CUDNN_CHECK(cudnnSetTensor4dDescriptor(xdesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
 					num, input_Channel_, height, width));
 				CUDNN_CHECK(cudnnSetTensor4dDescriptor(ydesc, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT,
@@ -119,15 +120,17 @@ namespace glasssix
 					CUDA_CHECK(cudaMalloc((void **)&extra, size));
 					current_size = size;
 				}
-
+				
 				const float* bottom_data = bottom->gpu_data();
 				float* top_data = top->mutable_gpu_data();
+				
 				// FORWARD!
 				CUDNN_CHECK(cudnnConvolutionForward(cudnn_handle_, &one,
 					xdesc, bottom_data, wdesc, weights_->gpu_data(),
 					conv_desc, fwd_algo_,
 					extra, size, &zero,
 					ydesc, top_data));
+				
 				if (bias_term_)
 				{
 					CUDNN_CHECK(cudnnAddTensor(cudnn_handle_, &one, bdesc, bias_->gpu_data(),

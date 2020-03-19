@@ -14,7 +14,7 @@ namespace glasssix
 			}
 		}
 
-		void eltwise::Forward_gpu_native(cublasHandle_t cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
+		void eltwise::Forward_gpu_native(cublasHandle_t &cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top)
 		{
 			coeffs_ = std::vector<float>(bottom.size(), 1);
 			top.reset(new tensor<float>(bottom[0]->data_shape(), device_, bottom[0]->order()));
