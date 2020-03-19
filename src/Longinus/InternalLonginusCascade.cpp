@@ -1,4 +1,4 @@
-#ifndef RELEASE_SDK
+#ifdef TRIAL
 #include "tinyxml2.h"
 #endif
 #include "common.hpp"
@@ -139,7 +139,7 @@ InternalLonginusCascade::InternalLonginusCascade()
 {
 }
 
-#ifndef RELEASE_SDK
+#ifdef TRIAL
 void InternalLonginusCascade::LoadCascade(const std::string & filename, int device)
 {
 	if (device >= 0)
@@ -221,7 +221,7 @@ void InternalLonginusCascade::LoadCascade(const std::string & filename, int devi
 		tmp_i++;
 	}
 }
-#endif
+
 
 void InternalLonginusCascade::LoadCascade(LonginusCascadeType cascadeType, int device)
 {
@@ -313,6 +313,8 @@ void InternalLonginusCascade::LoadCascade(LonginusCascadeType cascadeType, int d
 		p_regression_value += lut_len;
 	}
 }
+
+#endif
 
 // pCascade: the classifier
 // pSum: the integral image
