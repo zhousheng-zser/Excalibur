@@ -296,6 +296,9 @@
     <ClCompile Include="..\..\src\Excalibur\reshape.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\deconv_arm.cpp">
+      <Filter>Source Files\arm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu">

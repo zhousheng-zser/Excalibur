@@ -8,6 +8,7 @@
 #include "../../include/Excalibur/prune.hpp"
 #include <glasssix/timer.hpp>
 
+//define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
 #endif
@@ -27,6 +28,7 @@ namespace glasssix
 			}
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
+			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
@@ -143,6 +145,7 @@ namespace glasssix
 			else
 			{
 #ifdef INT8_DATA
+			    //already have retina_net_int8_data.hpp
 				Copy_Int8_to_FP32_Params(mobilenet0_conv0_fwd, retina_net);
 				Copy_Params(mobilenet0_conv0_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv1_fwd_weights, retina_net, quantize_level);
@@ -258,6 +261,7 @@ namespace glasssix
 				Copy_Params(face_rpn_landmark_pred_stride8_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride8_bias, retina_net, quantize_level);
 #else
+                //copy float32_data directly
 				Copy_Params(mobilenet0_conv0_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv0_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv1_fwd_weights, retina_net, quantize_level);

@@ -9134,6 +9134,12 @@ namespace glasssix
 
 
 
+			/// <summary>
+            /// calculate absolute pixel-subtraction of two images
+            /// </summary>
+            /// <param name="channel1">first image</param>
+            /// <param name="channel2">second image</param>
+            /// <param name="result">absolute pixel-subtraction image</param>
 			static void absdiff_cpu(const std::shared_ptr<tensor<unsigned char>> &channel1, const std::shared_ptr<tensor<unsigned char>> &channel2, std::shared_ptr<tensor<unsigned char>> &result)
 			{
 				CHECK_EQ(channel1->num(), channel2->num());
@@ -9170,6 +9176,13 @@ namespace glasssix
 			}
 
 
+
+			/// <summary>
+            /// calculate pixel-sum of two images
+            /// </summary>
+            /// <param name="channel1">first image</param>
+            /// <param name="channel2">second image</param>
+            /// <param name="result">pixel-sum image</param>
 			static void add_channel_cpu(const std::shared_ptr<tensor<unsigned char>> &channel1, const std::shared_ptr<tensor<unsigned char>> &channel2, std::shared_ptr<tensor<unsigned char>> &result)
 			{
 				CHECK_EQ(channel1->num(), channel2->num());
@@ -9206,6 +9219,11 @@ namespace glasssix
 			}
 
 
+
+			/// <summary>
+            /// calculate mean-value of input image
+            /// </summary>
+            /// <param name="array_tensor">image tensor</param>
 			static float mean_array(const std::shared_ptr<tensor<unsigned char>> &array_tensor)
 			{
 				const unsigned char *array_data = array_tensor->cpu_data();

@@ -21,9 +21,14 @@ namespace glasssix
 				const int min_size, const float* threshold, const float factor, const int stage, int order) override;
 			
 		protected:
-			std::vector<FaceInfomation> ProposalNet(const std::shared_ptr<tensor<float>> &image, int min_size, float threshold, float factor, orderType order = orderType::NHWC);
-			std::vector<FaceInfomation> NextStage(const std::shared_ptr<tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order = orderType::NHWC);
+
+			//P-NET
 			void GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box, float scale, float thresh);
+			std::vector<FaceInfomation> ProposalNet(const std::shared_ptr<tensor<float>> &image, int min_size, float threshold, float factor, orderType order = orderType::NHWC);
+
+			//R-NET, O-NET
+			std::vector<FaceInfomation> NextStage(const std::shared_ptr<tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order = orderType::NHWC);
+			
 			std::vector<FaceInfomation> NMS(std::vector<FaceInfomation>& bboxes, float thresh, char methodType);
 			void refine(std::vector<FaceInfomation> &vecFaceInfomation, const int &height, const int &width, bool square);
 
