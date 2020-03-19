@@ -63,4 +63,4 @@ extern "C" LONGINUS_C_EXPORT bool Longinus_black_white_judge_vsl(glasssix::longi
 
 extern "C" LONGINUS_C_EXPORT bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector *instance, unsigned char *nir_color_image, int height, int width, int n, int *bbox, int *landmarks, float *thresh, float **value, int order);
 
-extern "C" LONGINUS_C_EXPORT unsigned char *Longinus_getVersion();
+extern "C" LONGINUS_C_EXPORT char *Longinus_getVersion();
