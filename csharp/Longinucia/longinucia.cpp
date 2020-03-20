@@ -222,6 +222,8 @@ namespace glasssix
 			return outputs;
 		}
 
+
+#ifdef TRIAL
 		List<FaceInfo>^ Longinucia::Face_Detect(System::Drawing::Bitmap^ bmp, int min_size, float scale,
 			int minNeighbors, bool useMultiThreads, bool doEarlyReject, bool doLandmark)
 		{
@@ -249,7 +251,7 @@ namespace glasssix
 			}
 			else
 			{
-				auto res = long_wrap->detect(data, bmp->Width, bmp->Height, bmp->Width, 
+				auto res = long_wrap->detect(data, bmp->Width, bmp->Height, bmp->Width,
 					min_size, scale, minNeighbors, useMultiThreads, doEarlyReject);
 				for (size_t i = 0; i < res.size(); i++)
 				{
@@ -259,6 +261,9 @@ namespace glasssix
 			delete data;
 			return output;
 		}
+#endif // TRIAL
+
+
 
 #ifndef TRIAL
 		List<FaceInfo>^ Longinucia::Face_DetectEx(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage)
@@ -279,6 +284,7 @@ namespace glasssix
 				th[i] = thresholds[i];
 			}
 			auto res = long_wrap->detectEx(data, 3, bmp->Height, bmp->Width, min_size, th, 1.0f / scale, stage, 0);
+
 			delete data;
 			for (size_t i = 0; i < res.size(); i++)
 			{

@@ -84,8 +84,11 @@ namespace glasssix
 
 			void set(DetectorType type, int device);
 
-			List<FaceInfo>^ Face_Detect(System::Drawing::Bitmap^ bmp, int min_size, float scale, 
+#ifdef TRIAL
+			List<FaceInfo>^ Face_Detect(System::Drawing::Bitmap^ bmp, int min_size, float scale,
 				int minNeighbors, bool useMultiThreads, bool doEarlyReject, bool doLandmark);
+#endif // TRIAL
+
 
 #ifndef TRIAL
 			List<FaceInfo>^ Face_DetectEx(System::Drawing::Bitmap^ bmp, int min_size, float scale, array<float>^ thresholds, int stage);

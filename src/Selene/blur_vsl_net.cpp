@@ -211,6 +211,19 @@ namespace glasssix
 #endif 
 #endif
 
+
+
+		/// <summary>
+		/// detect on visible image, whether motion-blur happens, return true if pass(no motion-blur happens)
+		/// </summary>
+		/// <param name="vsl_color_image">visible image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of blur-judge-model, 0.6 by default; thresh[1]: not in use</param>
+		/// <param name="value">value[0]: return value of blur-judge-model score; value[1]: not in use</param>
+		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		bool Blur_vsl_net::judge(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order)
 		{
 			std::shared_ptr<tensor<unsigned char>> face_vsl;
@@ -242,31 +255,6 @@ namespace glasssix
 				tensor_operation_cpu::resize_cpu(face_vsl, face_vsl, 48, 48);
 			}
 
-#ifdef TEST_CAFFE
-			//mclc compare
-			{
-				caffe::CaffeBinding mclc = caffe::CaffeBinding();
-				int id = mclc.AddNet("D:/projects/data/blurModel/blur_softmax_deploy.prototxt", "D:/projects/data/blurModel/blur_softmax_iter_20650.caffemodel", -1);
-				float thresh = 0.6;
-
-				std::vector<cv::Mat> img;
-				tensor_operation_cpu::tensor2mat_cpu(face_vsl, img);
-				cv::imshow("face_vsl", img[0]);
-				cv::waitKey(1);
-				auto res = mclc.Forward({ img[0] }, id);
-				const float *prob = res["cls_loss"].data;
-		
-				if (prob[1] > thresh)
-				{
-					std::cout << "blur_judge, mclc, blur :" << prob[1] << std::endl;
-				}
-				else
-				{
-					std::cout << "blur_judge, mclc, clear" << prob[1] << std::endl;
-				}
-			}
-#endif
-
 			//forward
 			{
 				this->Forward(face_vsl->cpu_data(), order);
@@ -277,17 +265,11 @@ namespace glasssix
 
 				if (value[0] > thresh[0])
 				{
-#ifdef TEST_CAFFE
-					std::cout << "blur_judge, prob, blur :" << value << std::endl;
-#endif
-					return false;
+					return false;//motion-blur detected
 				}
 				else
 				{
-#ifdef TEST_CAFFE
-					std::cout << "blur_judge, prob, clear" << value << std::endl;
-#endif
-					return true;
+					return true;//photo is clear
 				}
 			}
 		}
