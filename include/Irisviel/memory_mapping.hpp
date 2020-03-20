@@ -1,8 +1,8 @@
 #pragma once
 
 #include "dynamic_buffer.hpp"
-#include "knn_mapping_data.hpp"
-#include "knn_mapping_header.hpp"
+#include "database_record.hpp"
+#include "database_header.hpp"
 
 #include <mutex>
 #include <string>
@@ -17,23 +17,19 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		// Providing basic disk-file memory mapping operations.
 		class memory_mapping final
 		{
 		public:
-			memory_mapping(const std::string& file_path, std::size_t max_size) : file_path_{ file_path },
-				max_size_{ max_size }
+			memory_mapping(const std::string& file_path, std::size_t max_size) : file_path_{ file_path }, max_size_{ max_size }
 			{
-				std::fstream stream{ file_path, std::ios::binary | std::ios::in | std::ios::out };
+				std::ifstream stream{ file_path, std::ios::binary };
 
 				buffer_.resize(max_size);
 				stream.seekg(0, stream.end);
 				std::streamoff length = stream.tellg();
 
 				stream.seekg(0, stream.beg);
-				stream.read(const_cast<char*>(buffer_.data()), static_cast<uint32_t>(length));
-
-				stream.close();
+				stream.read(const_cast<char*>(buffer_.data()), length);
 
 				// Map the whole file into the memory.
 				//file_data_ = MapViewOfFileEx(mapping_handle_, FILE_MAP_ALL_ACCESS, 0, 0, 0, nullptr);
@@ -41,7 +37,7 @@ namespace glasssix
 
 				if (file_data_ == nullptr)
 				{
-					throw std::runtime_error{ "Fail in mapping the file into the memory." };
+					throw std::runtime_error{ "Fail to map the file into the memory." };
 				}
 			}
 
@@ -178,7 +174,7 @@ namespace glasssix
 			// Flush all bytes to the disk.
 			bool save_changes() const
 			{
-				std::fstream stream{ file_path_, std::ios::binary | std::ios::out };
+				std::ofstream stream{ file_path_, std::ios::trunc | std::ios::binary };
 
 				if (!stream.is_open())
 				{
@@ -187,16 +183,20 @@ namespace glasssix
 
 				stream.write(reinterpret_cast<char*>(file_data_), max_size_);
 				stream.flush();
+
+#ifdef __linux__
 				system("sync");
 				system("sync");
+#endif
+
 				return true;
 				//return FlushViewOfFile(file_data_, 0);
 			}
 		private:
 			void* file_data_;
+			std::mutex mutex_;
 			std::string buffer_;
 			std::string file_path_;
-			std::mutex mutex_;
 			std::size_t max_size_;
 		};
 	}
