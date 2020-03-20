@@ -211,7 +211,7 @@ namespace glasssix
 
 		void index_builder::save_graph(const char* ngraph_path)
 		{
-			std::ofstream out(ngraph_path, std::ios::binary);
+			std::ofstream out(ngraph_path, std::ios::trunc | std::ios::binary);
 			std::vector<std::vector<uint32_t>>& tempGraph = ngraph_.final_graph;
 			assert(tempGraph.size() == base_num);
 
@@ -234,7 +234,7 @@ namespace glasssix
 		void index_builder::save_graph(const char* ngraph_path, const char* base_data_path)
 		{
 			//save ngraph
-			std::ofstream outGraph(ngraph_path, std::ios::binary);
+			std::ofstream outGraph(ngraph_path, std::ios::trunc | std::ios::binary);
 			std::vector<std::vector<uint32_t>>& tempGraph = ngraph_.final_graph;
 			assert(tempGraph.size() == base_num);
 
@@ -254,7 +254,7 @@ namespace glasssix
 			outGraph.close();
 
 			//save basedata
-			std::ofstream outBaseData(base_data_path, std::ios::binary);
+			std::ofstream outBaseData(base_data_path, std::ios::trunc | std::ios::binary);
 			for (uint32_t n = 0; n < base_num; n++)
 			{
 				outBaseData.write(reinterpret_cast<char const*>(&(*base_data)[n][0]), dimension_ * sizeof(float));

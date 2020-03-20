@@ -51,21 +51,23 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Irisviel\database_cache.hpp" />
     <ClInclude Include="..\..\include\Irisviel\distance.hpp" />
     <ClInclude Include="..\..\include\Irisviel\dynamic_buffer.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\filesystem.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\filesystem_utils.hpp" />
     <ClInclude Include="..\..\include\Irisviel\index_builder.hpp" />
     <ClInclude Include="..\..\include\Irisviel\irisviel_c.h" />
     <ClInclude Include="..\..\include\Irisviel\irisviel_search.hpp" />
     <ClInclude Include="..\..\include\Irisviel\irisviel_types.hpp" />
     <ClInclude Include="..\..\include\Irisviel\kgraph_internal.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_features.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_mapping_data.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_mapping_header.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_mapping_manager.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_runner.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_search_result.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_service.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\knn_utils.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_feature_observer.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_record.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_header.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_manager.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_business_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\database_search_result.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\face_service.hpp" />
     <ClInclude Include="..\..\include\Irisviel\memory_mapping.hpp" />
     <ClInclude Include="..\..\include\Irisviel\neighbor.hpp" />
     <ClInclude Include="..\..\include\Irisviel\ngraph_internal.hpp" />
@@ -73,17 +75,19 @@
     <ClInclude Include="..\..\include\Irisviel\search.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Irisviel\database_cache.cpp" />
     <ClCompile Include="..\..\src\Irisviel\distance.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\filesystem_utils.cpp" />
     <ClCompile Include="..\..\src\Irisviel\index_builder.cpp" />
     <ClCompile Include="..\..\src\Irisviel\irisviel_c.cxx" />
     <ClCompile Include="..\..\src\Irisviel\irisviel_search.cpp" />
     <ClCompile Include="..\..\src\Irisviel\kgraph_internal.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_mapping_data.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_mapping_header.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_mapping_manager.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_runner.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_service.cpp" />
-    <ClCompile Include="..\..\src\Irisviel\knn_utils.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\database_feature_observer.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\database_record.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\database_header.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\database_manager.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\database_business_wrapper.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\face_service.cpp" />
     <ClCompile Include="..\..\src\Irisviel\ngraph_internal.cpp" />
     <ClCompile Include="..\..\src\Irisviel\search.cpp" />
   </ItemGroup>
@@ -262,7 +266,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -376,7 +380,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -400,7 +404,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -426,7 +430,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -452,7 +456,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -478,7 +482,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;NOMINMAX;__cplusplus_cli;EXPORT_IRISVIEL;$(PROCESSOR_ARCHITECTURE);COSINE_DISTANCE;FMT_HEADER_ONLY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <OpenMPSupport>
       </OpenMPSupport>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

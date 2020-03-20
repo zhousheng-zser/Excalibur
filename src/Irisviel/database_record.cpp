@@ -1,4 +1,4 @@
-#include "knn_mapping_data.hpp"
+#include "database_record.hpp"
 
 #include <cstring>
 #include <cstdint>
@@ -8,20 +8,20 @@ namespace glasssix
 	namespace irisviel
 	{
 		template<int Dimension>
-		struct basic_knn_mapping_data
+		struct basic_database_record
 		{
 			float feature[Dimension];
 			char key[33];
-			bool is_active;
+			bool active;
 		};
 
 		template<int Dimension>
-		class knn_mapping_data_ref_impl : public knn_mapping_data
+		class database_record_ref_impl : public database_record
 		{
 		public:
-			using data_type = basic_knn_mapping_data<Dimension>;
+			using data_type = basic_database_record<Dimension>;
 
-			knn_mapping_data_ref_impl(data_type* data) : data_{ data }
+			database_record_ref_impl(data_type* data) : data_{ data }
 			{
 			}
 
@@ -40,14 +40,14 @@ namespace glasssix
 				return reinterpret_cast<const uint8_t*>(data_);
 			}
 
-			virtual bool is_active() const noexcept override
+			virtual bool active() const noexcept override
 			{
-				return data_->is_active;
+				return data_->active;
 			}
 
-			virtual void is_active(bool value) noexcept override
+			virtual void active(bool value) noexcept override
 			{
-				data_->is_active = value;
+				data_->active = value;
 			}
 
 			virtual char* key() noexcept override
@@ -82,27 +82,27 @@ namespace glasssix
 
 			virtual std::size_t feature_offset() const noexcept override
 			{
-				return offsetof(basic_knn_mapping_data<Dimension>, feature);
+				return offsetof(basic_database_record<Dimension>, feature);
 			}
 		private:
 			data_type* data_;
 		};
 
 		template<int Dimension>
-		class knn_mapping_data_impl : public knn_mapping_data
+		class database_record_impl : public database_record
 		{
 		public:
-			using data_type = basic_knn_mapping_data<Dimension>;
+			using data_type = basic_database_record<Dimension>;
 
-			knn_mapping_data_impl() : data_{ }
+			database_record_impl() : data_{ }
 			{
 			}
 
-			knn_mapping_data_impl(const data_type& data) : data_{ data }
+			database_record_impl(const data_type& data) : data_{ data }
 			{
 			}
 
-			knn_mapping_data_impl(data_type&& data) : data_{ data }
+			database_record_impl(data_type&& data) : data_{ data }
 			{
 			}
 
@@ -121,14 +121,14 @@ namespace glasssix
 				return reinterpret_cast<const uint8_t*>(&data_);
 			}
 
-			virtual bool is_active() const noexcept override
+			virtual bool active() const noexcept override
 			{
-				return data_.is_active;
+				return data_.active;
 			}
 
-			virtual void is_active(bool value) noexcept override
+			virtual void active(bool value) noexcept override
 			{
-				data_.is_active = value;
+				data_.active = value;
 			}
 
 			virtual char* key() noexcept override
@@ -169,82 +169,82 @@ namespace glasssix
 			data_type data_;
 		};
 
-		std::shared_ptr<knn_mapping_data> knn_mapping_data::shared()
+		std::shared_ptr<database_record> database_record::shared()
 		{
 			return shared_from_this();
 		}
 
-		std::size_t knn_mapping_data::struct_size(int dimension) noexcept
+		std::size_t database_record::struct_size(int dimension) noexcept
 		{
 			switch (dimension)
 			{
 			case 128:
-				return sizeof(knn_mapping_data_impl<128>::data_type);
+				return sizeof(database_record_impl<128>::data_type);
 			case 512:
-				return sizeof(knn_mapping_data_impl<512>::data_type);
+				return sizeof(database_record_impl<512>::data_type);
 			default:
-				return sizeof(knn_mapping_data_impl<128>::data_type);
+				return sizeof(database_record_impl<128>::data_type);
 			}
 		}
 
-		std::size_t knn_mapping_data::feature_offset(int dimension) noexcept
+		std::size_t database_record::feature_offset(int dimension) noexcept
 		{
 			switch (dimension)
 			{
 			case 128:
-				return offsetof(basic_knn_mapping_data<128>, feature);
+				return offsetof(basic_database_record<128>, feature);
 			case 512:
-				return offsetof(basic_knn_mapping_data<512>, feature);
+				return offsetof(basic_database_record<512>, feature);
 			default:
-				return offsetof(basic_knn_mapping_data<128>, feature);
+				return offsetof(basic_database_record<128>, feature);
 			}
 		}
 
-		std::shared_ptr<knn_mapping_data> knn_mapping_data::create(int dimension)
+		std::shared_ptr<database_record> database_record::create(int dimension)
 		{
 			switch (dimension)
 			{
 			case 128:
-				return std::make_shared<knn_mapping_data_impl<128>>();
+				return std::make_shared<database_record_impl<128>>();
 			case 512:
-				return std::make_shared<knn_mapping_data_impl<512>>();
+				return std::make_shared<database_record_impl<512>>();
 			default:
-				return std::make_shared<knn_mapping_data_impl<128>>();
+				return std::make_shared<database_record_impl<128>>();
 			}
 		}
 
-		std::shared_ptr<knn_mapping_data> knn_mapping_data::create(int dimension, std::uint8_t* ptr)
+		std::shared_ptr<database_record> database_record::create(int dimension, std::uint8_t* ptr)
 		{
 			switch (dimension)
 			{
 			case 128:
-				return std::make_shared<knn_mapping_data_impl<128>>(*reinterpret_cast<basic_knn_mapping_data<128>*>(ptr));
+				return std::make_shared<database_record_impl<128>>(*reinterpret_cast<basic_database_record<128>*>(ptr));
 			case 512:
-				return std::make_shared<knn_mapping_data_impl<512>>(*reinterpret_cast<basic_knn_mapping_data<512>*>(ptr));
+				return std::make_shared<database_record_impl<512>>(*reinterpret_cast<basic_database_record<512>*>(ptr));
 			default:
-				return std::make_shared<knn_mapping_data_impl<128>>(*reinterpret_cast<basic_knn_mapping_data<128>*>(ptr));
+				return std::make_shared<database_record_impl<128>>(*reinterpret_cast<basic_database_record<128>*>(ptr));
 			}
 		}
 
-		std::shared_ptr<knn_mapping_data> knn_mapping_data::create_ref(int dimension, std::uint8_t* ptr)
+		std::shared_ptr<database_record> database_record::create_ref(int dimension, std::uint8_t* ptr)
 		{
 			switch (dimension)
 			{
 			case 128:
-				return std::make_shared<knn_mapping_data_ref_impl<128>>(reinterpret_cast<basic_knn_mapping_data<128>*>(ptr));
+				return std::make_shared<database_record_ref_impl<128>>(reinterpret_cast<basic_database_record<128>*>(ptr));
 			case 512:
-				return std::make_shared<knn_mapping_data_ref_impl<512>>(reinterpret_cast<basic_knn_mapping_data<512>*>(ptr));
+				return std::make_shared<database_record_ref_impl<512>>(reinterpret_cast<basic_database_record<512>*>(ptr));
 			default:
-				return std::make_shared<knn_mapping_data_ref_impl<128>>(reinterpret_cast<basic_knn_mapping_data<128>*>(ptr));
+				return std::make_shared<database_record_ref_impl<128>>(reinterpret_cast<basic_database_record<128>*>(ptr));
 			}
 		}
 
-		bool knn_mapping_data::key_equals(const char* left, const char* right)
+		bool database_record::key_equals(const char* left, const char* right)
 		{
-			return !strcmp(left, right);
+			return !_stricmp(left, right);
 		}
 
-		bool knn_mapping_data::key_equals(const knn_mapping_data& left, const knn_mapping_data& right)
+		bool database_record::key_equals(const database_record& left, const database_record& right)
 		{
 			return key_equals(left.key(), right.key());
 		}

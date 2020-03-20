@@ -408,7 +408,7 @@ namespace glasssix
 
 		void irisviel_search_internal::save_result(const char* path, const std::vector<std::vector<uint32_t> >& return_ids)
 		{
-			std::ofstream out(path, std::ios::binary | std::ios::out);
+			std::ofstream out(path, std::ios::trunc | std::ios::binary);
 
 			for (uint32_t i = 0; i < return_ids.size(); i++) {
 				uint32_t GK = (uint32_t)return_ids[i].size();
