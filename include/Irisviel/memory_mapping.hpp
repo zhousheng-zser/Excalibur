@@ -10,14 +10,11 @@
 #include <fstream>
 #include <cstddef>
 
-#define LODWORD(x) ((DWORD)(x))
-#define HIDWORD(x) ((DWORD)(((DWORDLONG)(x) >> 32) & 0xFFFFFFFF))
-
 namespace glasssix
 {
 	namespace irisviel
 	{
-		class memory_mapping final
+		class memory_mapping
 		{
 		public:
 			memory_mapping(const std::string& file_path, std::size_t max_size) : file_path_{ file_path }, max_size_{ max_size }
@@ -83,92 +80,41 @@ namespace glasssix
 				return (offset + 1) * element_size <= max_size_ ? reinterpret_cast<std::uint8_t*>(file_data_) + offset * element_size : nullptr;
 			}
 
+			void write_raw_buffer_to(std::size_t offset, const std::uint8_t* buffer, std::size_t element_size)
+			{
+				if ((offset + 1) * element_size > max_size_)
+				{
+					throw std::out_of_range{ "The offset is out of range." };
+				}
+
+				std::lock_guard<std::mutex> lock{ mutex_ };
+
+				std::memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + offset * element_size, buffer, element_size);
+			}
+
 			void get_dynamic_buffer_from(std::size_t offset, dynamic_buffer& buffer)
 			{
-				if ((offset + 1) * buffer.size() <= max_size_)
+				if (auto ptr = get_raw_buffer_from(offset, buffer.size()))
 				{
-					std::memcpy(buffer.data(), reinterpret_cast<const std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.size());
+					std::memcpy(buffer.data(), ptr, buffer.size());
 				}
 			}
 
 			void write_dynamic_buffer_to(std::size_t offset, const dynamic_buffer& buffer)
 			{
-				if ((offset + 1) * buffer.size() > max_size_)
-				{
-					throw std::out_of_range{ "The offset is out of range." };
-				}
-
-				std::lock_guard<std::mutex> lock{ mutex_ };
-
-				std::memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.data(), buffer.size());
+				write_raw_buffer_to(offset, buffer.data(), buffer.size());
 			}
 
-			// Get the entry in the mapping file.
 			template<typename Structure>
-			Structure* get_entry_from(std::size_t offset)
+			Structure* get_fixed_entry_from(std::size_t offset)
 			{
-				if ((offset + 1) * sizeof(Structure) > max_size_)
-				{
-					return nullptr;
-				}
-
-				return reinterpret_cast<Structure*>(file_data_) + offset;
+				return reinterpret_cast<Structure*>(get_raw_buffer_from(offset, sizeof(Structure)));
 			}
 
-			// Fulfill the specified struct with data at the offset and fix the size to read.
 			template<typename Structure>
-			std::shared_ptr<Structure> get_from(std::size_t offset, std::size_t size)
+			void write_fixed_entry_to(std::size_t offset, const Structure& buffer)
 			{
-				if (offset * sizeof(Structure) + size > max_size_)
-				{
-					return nullptr;
-				}
-
-				auto obj = std::make_shared<Structure>();
-				std::memcpy(obj.get(), reinterpret_cast<Structure*>(file_data_) + offset, size);
-
-				return obj;
-			}
-
-			// Fulfill the specified struct with data at the offset.
-			template<typename Structure>
-			std::shared_ptr<Structure> get_from(std::size_t offset)
-			{
-				return get_from<Structure>(offset, sizeof(Structure));
-			}
-
-			// Overwrite the data with the structure at the offset and fix the size to write.
-			template<typename Structure>
-			void write_to(const Structure& obj, std::size_t offset, std::size_t size)
-			{
-				if ((offset + 1) * size > max_size_)
-				{
-					throw std::out_of_range{ "The offset is out of range." };
-				}
-
-				std::lock_guard<std::mutex> lock{ mutex_ };
-				std::memcpy(reinterpret_cast<Structure*>(file_data_) + offset, &obj, size);
-			}
-
-			// Overwrite the data with the structure at the offset.
-			template<typename Structure>
-			void write_to(const Structure& obj, std::size_t offset)
-			{
-				write_to(obj, offset, sizeof(Structure));
-			}
-
-			// Overwrite the data with the structure at the offset in bytes.
-			template<typename Structure>
-			void write_to_byte_offset(const Structure& obj, std::size_t byte_offset)
-			{
-				//LOGD("write_to_byte_offset");
-				if (byte_offset + sizeof(Structure) > max_size_)
-				{
-					throw std::out_of_range{ "The offset is out of range." };
-				}
-
-				std::lock_guard<std::mutex> lock{ mutex_ };
-				std::memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + byte_offset, &obj, sizeof(Structure));
+				write_raw_buffer_to(offset, reinterpret_cast<const std::uint8_t*>(&buffer), sizeof(buffer));
 			}
 
 			// Flush all bytes to the disk.
