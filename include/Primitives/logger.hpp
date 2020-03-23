@@ -182,6 +182,11 @@ LOG(FATAL) << "CHECK" << #name << " FAILED(" << #a << " " << #op << " " << #b <<
 #define DCHECK_EQ(x, y) CHECK_EQ(x, y)
 #define DCHECK_NE(x, y) CHECK_NE(x, y)
 #endif  // NDEBUG
+
+	// A simple macro to mark codes that are not implemented, so that when the code
+// is executed we will see a fatal log.
+#define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet"
+#define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Mode: check mode."
 }
 
 #endif

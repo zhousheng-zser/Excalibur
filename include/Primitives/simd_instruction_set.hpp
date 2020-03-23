@@ -318,7 +318,11 @@
 #define SIMD_TYPE 0
 #endif // SIMD_X86_INSTR_SET < SIMD_X86_SSE_VERSION
 
-
+#define SIMDTYPE_NONE 0
+#define SIMDTYPE_SSE 1
+#define SIMDTYPE_AVX 2
+#define SIMDTYPE_AVX2 3
+#define SIMDTYPE_AVX512 4
 //*****************INCLUDE FILES*********************//
 
 
