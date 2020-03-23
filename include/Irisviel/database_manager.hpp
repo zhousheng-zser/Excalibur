@@ -36,7 +36,6 @@ namespace glasssix
 			void update_index_file(const std::string& file_path);
 			std::string file_path() const;
 		private:
-			void update_current_position_core();
 			std::size_t search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& action, int start_position, bool only_first);
 			std::size_t search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& action, bool only_first);
 
