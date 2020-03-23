@@ -51,7 +51,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Julius\instructionset.hpp" />
     <ClInclude Include="..\..\include\Julius\julius.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_asum.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_axpby.hpp" />

@@ -2,19 +2,10 @@
 #ifndef _CPU_HPP_
 #define _CPU_HPP_
 
-#include <intrin.h>
-#include <vector>
-#include <array>
-#include <bitset>
+#include <string>
 
 #ifdef _OPENMP
 #include <omp.h>
-#endif
-
-#ifdef _MSC_VER //Windows
-#include <Windows.h>
-#else // *nix
-#include "unistd.h"
 #endif
 
 #ifdef __ANDROID__ // Android
@@ -179,11 +170,16 @@ namespace glasssix
 #endif //!arm
 
 
-	// misc function wrapper for openmp routines
+	//************* misc function wrapper for openmp routines *****************//
+
+	/// get openmp threads number
 	int get_omp_num_threads();
+
+	/// set openmp threads number
 	void set_omp_num_threads(int num_threads);
 
 	int get_omp_dynamic();
+
 	void set_omp_dynamic(int dynamic);
 }
 

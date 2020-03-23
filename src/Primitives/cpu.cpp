@@ -1,5 +1,16 @@
 #include "../../include/Primitives/cpu.hpp"
 
+#ifdef _MSC_VER //Windows
+#include <Windows.h>
+#else // *nix
+#include "unistd.h"
+#endif
+
+#include <intrin.h>
+#include <vector>
+#include <array>
+#include <bitset>
+
 namespace glasssix
 {
 #ifdef x86
