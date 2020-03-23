@@ -60,7 +60,6 @@
     <ClInclude Include="..\..\include\Julius\julius_nrm2.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_scal.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_sdot.hpp" />
-    <ClInclude Include="..\..\include\Julius\simd_helper.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Julius\julius.cpp" />
