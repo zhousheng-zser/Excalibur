@@ -39,13 +39,28 @@
     <ClInclude Include="..\..\include\Primitives\cpu.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\compiler.hpp">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\gpu.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\logger.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\compiler.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\basic_math.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\blas.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\simd_types.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,6 +72,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Primitives\gpu.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\simd_types.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

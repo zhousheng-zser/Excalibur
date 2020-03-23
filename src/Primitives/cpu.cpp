@@ -15,7 +15,7 @@ namespace glasssix
 {
 #ifdef x86
 
-	static std::string cpu_vendor()
+	std::string cpu_vendor()
 	{
 		int eax[4];
 		__cpuidex(eax, 0, 0);
@@ -28,19 +28,19 @@ namespace glasssix
 		return vendor_;
 	}
 
-	static bool isIntel()
+	bool isIntel()
 	{
 		const std::string vendor_ = cpu_vendor();
 		return vendor_ == "GenuineIntel";
 	}
 
-	static bool isAMD()
+	bool isAMD()
 	{
 		const std::string vendor_ = cpu_vendor();
 		return vendor_ == "AMDisbetter!" || vendor_ == "AuthenticAMD";
 	}
 
-	static std::string cpu_brand()
+	std::string cpu_brand()
 	{
 		std::string brand_;
 		int eax[4];
@@ -71,7 +71,7 @@ namespace glasssix
 		return brand_;
 	}
 
-	static bool support_MMX()
+	bool support_MMX()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -79,7 +79,7 @@ namespace glasssix
 		return f_1_EDX_[23];
 	}
 
-	static bool support_SSE()
+	bool support_SSE()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -87,7 +87,7 @@ namespace glasssix
 		return f_1_EDX_[25];
 	}
 
-	static bool support_SSE2()
+	bool support_SSE2()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -95,7 +95,7 @@ namespace glasssix
 		return f_1_EDX_[26];
 	}
 
-	static bool support_SSE3()
+	bool support_SSE3()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -103,7 +103,7 @@ namespace glasssix
 		return f_1_ECX_[0];
 	}
 
-	static bool support_SSSE3()
+	bool support_SSSE3()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -111,7 +111,7 @@ namespace glasssix
 		return f_1_ECX_[9];
 	}
 
-	static bool support_FMA()
+	bool support_FMA()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -119,7 +119,7 @@ namespace glasssix
 		return f_1_ECX_[12];
 	}
 
-	static bool support_SSE41()
+	bool support_SSE41()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -127,7 +127,7 @@ namespace glasssix
 		return f_1_ECX_[19];
 	}
 
-	static bool support_SSE42()
+	bool support_SSE42()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -135,7 +135,7 @@ namespace glasssix
 		return f_1_ECX_[20];
 	}
 
-	static bool support_AVX()
+	bool support_AVX()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -143,7 +143,7 @@ namespace glasssix
 		return f_1_ECX_[28];
 	}
 
-	static bool support_F16C()
+	bool support_F16C()
 	{
 		int eax[4];
 		__cpuidex(eax, 1, 0);
@@ -151,7 +151,7 @@ namespace glasssix
 		return f_1_ECX_[29];
 	}
 
-	static bool support_AVX2()
+	bool support_AVX2()
 	{
 		int eax[4];
 		__cpuidex(eax, 7, 0);
@@ -159,7 +159,7 @@ namespace glasssix
 		return f_7_EBX_[5];
 	}
 
-	static bool support_AVX512F()
+	bool support_AVX512F()
 	{
 		int eax[4];
 		__cpuidex(eax, 7, 0);
@@ -168,7 +168,7 @@ namespace glasssix
 	}
 
 	/// Intel® Xeon Phi only
-	static bool support_AVX512PF()
+	bool support_AVX512PF()
 	{
 		int eax[4];
 		__cpuidex(eax, 7, 0);
@@ -177,7 +177,7 @@ namespace glasssix
 	}
 
 	/// Intel® Xeon Phi only
-	static bool support_AVX512ER()
+	bool support_AVX512ER()
 	{
 		int eax[4];
 		__cpuidex(eax, 7, 0);
@@ -185,7 +185,7 @@ namespace glasssix
 		return f_7_EBX_[27];
 	}
 
-	static bool support_AVX512CD()
+	bool support_AVX512CD()
 	{
 		int eax[4];
 		__cpuidex(eax, 7, 0);
@@ -193,7 +193,7 @@ namespace glasssix
 		return f_7_EBX_[28];
 	}
 
-	static void queryCacheSizes_intel_direct(int& l1, int& l2, int& l3)
+	void queryCacheSizes_intel_direct(int& l1, int& l2, int& l3)
 	{
 		int abcd[4];
 		l1 = l2 = l3 = 0;
@@ -226,7 +226,7 @@ namespace glasssix
 		} while (cache_type > 0 && cache_id < 16);
 	}
 
-	static void queryCacheSizes_intel_codes(int& l1, int& l2, int& l3)
+	void queryCacheSizes_intel_codes(int& l1, int& l2, int& l3)
 	{
 		int abcd[4];
 		abcd[0] = abcd[1] = abcd[2] = abcd[3] = 0;
@@ -306,7 +306,7 @@ namespace glasssix
 		l3 *= 1024;
 	}
 
-	static void queryCacheSizes_amd(int& l1, int& l2, int& l3)
+	void queryCacheSizes_amd(int& l1, int& l2, int& l3)
 	{
 		int abcd[4];
 		abcd[0] = abcd[1] = abcd[2] = abcd[3] = 0;
@@ -318,7 +318,7 @@ namespace glasssix
 		l3 = ((abcd[3] & 0xFFFC000) >> 18) * 512 * 1024; // D[31;18] = l3 cache size in 512KB
 	}
 
-	static void queryCacheSizes_intel(int& l1, int& l2, int& l3, int max_std_funcs)
+	void queryCacheSizes_intel(int& l1, int& l2, int& l3, int max_std_funcs)
 	{
 		if (max_std_funcs >= 4)
 			queryCacheSizes_intel_direct(l1, l2, l3);
@@ -329,7 +329,7 @@ namespace glasssix
 	/// For L1	cache, it returns size for each logical cores(Hyper Threading Technology) in Bytes;\n
 	/// For L2	cache, it returns size for each physical cores in Bytes;\n
 	/// For L3	cache, it returns size for the whole CPU in Bytes;\n
-	static void queryCacheSizes(int& l1, int& l2, int& l3)
+	void queryCacheSizes(int& l1, int& l2, int& l3)
 	{
 		int abcd[4];
 
@@ -351,7 +351,7 @@ namespace glasssix
 		}
 	}
 
-	static unsigned int queryLogicalProcessors()
+	unsigned int queryLogicalProcessors()
 	{
 #ifdef _MSC_VER
 		SYSTEM_INFO sysInfo;
@@ -367,7 +367,7 @@ namespace glasssix
 #ifdef __ANDROID__
 
 	// extract the ELF HW capabilities bitmap from /proc/self/auxv
-	static unsigned int get_elf_hwcap_from_proc_self_auxv()
+	unsigned int get_elf_hwcap_from_proc_self_auxv()
 	{
 		FILE* fp = fopen("/proc/self/auxv", "rb");
 		if (!fp)
@@ -407,7 +407,7 @@ namespace glasssix
 		return result;
 	}
 
-	static unsigned int g_hwcaps = get_elf_hwcap_from_proc_self_auxv();
+	unsigned int g_hwcaps = get_elf_hwcap_from_proc_self_auxv();
 
 #if __aarch64__
 	// from arch/arm64/include/uapi/asm/hwcap.h
@@ -422,7 +422,7 @@ namespace glasssix
 #endif // __ANDROID__
 
 #if __IOS__
-	static unsigned int get_hw_cpufamily()
+	unsigned int get_hw_cpufamily()
 	{
 		unsigned int value = 0;
 		size_t len = sizeof(value);
@@ -430,7 +430,7 @@ namespace glasssix
 		return value;
 	}
 
-	static cpu_type_t get_hw_cputype()
+	cpu_type_t get_hw_cputype()
 	{
 		cpu_type_t value = 0;
 		size_t len = sizeof(value);
@@ -438,7 +438,7 @@ namespace glasssix
 		return value;
 	}
 
-	static cpu_subtype_t get_hw_cpusubtype()
+	cpu_subtype_t get_hw_cpusubtype()
 	{
 		cpu_subtype_t value = 0;
 		size_t len = sizeof(value);
@@ -446,9 +446,9 @@ namespace glasssix
 		return value;
 	}
 
-	static unsigned int g_hw_cpufamily = get_hw_cpufamily();
-	static cpu_type_t g_hw_cputype = get_hw_cputype();
-	static cpu_subtype_t g_hw_cpusubtype = get_hw_cpusubtype();
+	unsigned int g_hw_cpufamily = get_hw_cpufamily();
+	cpu_type_t g_hw_cputype = get_hw_cputype();
+	cpu_subtype_t g_hw_cpusubtype = get_hw_cpusubtype();
 #endif // __IOS__
 
 	int cpu_support_arm_neon()
@@ -515,7 +515,7 @@ namespace glasssix
 #endif
 	}
 
-	static int get_cpucount()
+	int get_cpucount()
 	{
 #ifdef __ANDROID__
 		// get cpu count from /proc/cpuinfo
@@ -561,7 +561,7 @@ namespace glasssix
 #endif
 	}
 
-	static int g_cpucount = get_cpucount();
+	int g_cpucount = get_cpucount();
 
 	int get_cpu_count()
 	{
@@ -570,7 +570,7 @@ namespace glasssix
 
 #ifdef __ANDROID__
 
-	static int get_max_freq_khz(int cpuid)
+	int get_max_freq_khz(int cpuid)
 	{
 		// first try, for all possible cpu
 		char path[256];
@@ -641,7 +641,7 @@ namespace glasssix
 		return max_freq_khz;
 	}
 
-	static int set_sched_affinity(const std::vector<int>& cpuids)
+	int set_sched_affinity(const std::vector<int>& cpuids)
 	{
 		// cpu_set_t definition
 		// ref http://stackoverflow.com/questions/16319725/android-set-thread-affinity
@@ -685,7 +685,7 @@ namespace glasssix
 		return 0;
 	}
 
-	static int sort_cpuid_by_max_frequency(std::vector<int>& cpuids, int* little_cluster_offset)
+	int sort_cpuid_by_max_frequency(std::vector<int>& cpuids, int* little_cluster_offset)
 	{
 		const int cpu_count = cpuids.size();
 
@@ -745,7 +745,7 @@ namespace glasssix
 	}
 #endif // __ANDROID__
 
-	static int g_powersave = 0;
+	int g_powersave = 0;
 
 	int get_cpu_powersave()
 	{
@@ -755,8 +755,8 @@ namespace glasssix
 	int set_cpu_powersave(int powersave)
 	{
 #ifdef __ANDROID__
-		static std::vector<int> sorted_cpuids;
-		static int little_cluster_offset = 0;
+		std::vector<int> sorted_cpuids;
+		int little_cluster_offset = 0;
 
 		if (sorted_cpuids.empty())
 		{

@@ -74,74 +74,74 @@ namespace glasssix
 	/// SiS SiS SiS: SiS\n
 	/// UMC UMC UMC: UMC\n
 	/// NexGenDriven: NexGen\n
-	static std::string cpu_vendor();
+	std::string cpu_vendor();
 
 	/// Judge the CPU is INTEL series
-	static bool isIntel();
+	bool isIntel();
 
 	/// Judge the CPU is AMD series
-	static bool isAMD();
+	bool isAMD();
 
 	/// For specific cpu infomation
-	static std::string cpu_brand();
+	std::string cpu_brand();
 
 	//****** SIMD and other instructions support situation ********//
 
 	/// Judge if the CPU support MMX instruction
-	static bool support_MMX();
+	bool support_MMX();
 
 	/// Judge if the CPU support SSE instruction
-	static bool support_SSE();
+	bool support_SSE();
 
 	/// Judge if the CPU support SSE2 instruction
-	static bool support_SSE2();
+	bool support_SSE2();
 
 	/// Judge if the CPU support SSE3 instruction
-	static bool support_SSE3();
+	bool support_SSE3();
 
 	/// Judge if the CPU support SSSE3 instruction
-	static bool support_SSSE3();
+	bool support_SSSE3();
 
 	/// Judge if the CPU support FMA instruction
-	static bool support_FMA();
+	bool support_FMA();
 
 	/// Judge if the CPU support SSE4.1 instruction
-	static bool support_SSE41();
+	bool support_SSE41();
 
 	/// Judge if the CPU support SSE4.2 instruction
-	static bool support_SSE42();
+	bool support_SSE42();
 
 	/// Judge if the CPU support AVX instruction
-	static bool support_AVX();
+	bool support_AVX();
 
 	/// Judge if the CPU support F16C instruction
-	static bool support_F16C();
+	bool support_F16C();
 
 	/// Judge if the CPU support AVX2 instruction
-	static bool support_AVX2();
+	bool support_AVX2();
 
 	/// Judge if the CPU support AVX512F instruction
-	static bool support_AVX512F();
+	bool support_AVX512F();
 
 	/// Judge if the CPU support AVX512PF instruction
 	/// Intel® Xeon Phi only
-	static bool support_AVX512PF();
+	bool support_AVX512PF();
 
 	/// Judge if the CPU support AVX512ER instruction
 	/// Intel® Xeon Phi only
-	static bool support_AVX512ER();
+	bool support_AVX512ER();
 
 	/// Judge if the CPU support AVX512CD instruction
-	static bool support_AVX512CD();
+	bool support_AVX512CD();
 
 	/// Query the cache size of the CPU:\n
 	/// For L1	cache, it returns size for each logical cores(Hyper Threading Technology) in Bytes;\n
 	/// For L2	cache, it returns size for each physical cores in Bytes;\n
 	/// For L3	cache, it returns size for the whole CPU in Bytes;\n
-	static void queryCacheSizes(int& l1, int& l2, int& l3);
+	void queryCacheSizes(int& l1, int& l2, int& l3);
 
 	/// Query the number of the logical processor of the CPU
-	static unsigned int queryLogicalProcessors();
+	unsigned int queryLogicalProcessors();
 #endif //!x86
 
 #ifdef arm

@@ -96,6 +96,7 @@
       <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -141,6 +142,7 @@
       <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -151,6 +153,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
+    <ClInclude Include="..\..\include\Primitives\blas.hpp" />
     <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
     <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
     <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
@@ -161,11 +165,15 @@
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
+    <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
