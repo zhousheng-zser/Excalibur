@@ -62,11 +62,11 @@ namespace glasssix
 	static int get_cuda_device_capability(int device_id);
 
 	/// <summary>
-	/// Returns free and total respectively, the free and total amount of  memory available for allocation by the device in bytes.
+	/// Returns free and total respectively, the free and total amount of  memory available for allocation by the device in Mbytes.
 	/// </summary>
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
-	/// <param name="total_size">Total memory in bytes</param>
-	/// <param name="free_size">Free memory in bytes</param>
+	/// <param name="total_size">Total memory in Mb</param>
+	/// <param name="free_size">Free memory in Mb</param>
 	static void get_cuda_device_memory(int device_id, std::size_t &total_size, std::size_t &free_size);
 
 	static int get_cuda_device_cuda_core_num(int device_id);
