@@ -50,16 +50,17 @@ namespace glasssix
 		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size);
 
 		/// <summary>
-			/// Allocates a piece of memory with aligned size.
-			/// </summary>
-			/// <param name="size">The size in bytes</param>
-			/// <returns>The aligned-pointer</returns>
+		/// Allocates a piece of memory with aligned size.
+		/// </summary>
+		/// <param name="size">The size in bytes</param>
+		/// <param name="alignment">Pointer alignment size</param>
+		/// <returns>The aligned-pointer</returns>
 		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = MALLOC_ALIGN);
 
 		/// <summary>
 			/// Deallocates a piece of aligned memory.
 			/// </summary>
-			/// <param name="ptr">The aligned-pointer</param>
+			/// <param name="memblock">The aligned-pointer</param>
 		EXPORT_EXCALIBUR_PRIMITIVES void aligned_heap_free(void *memblock);
 
 		/// <summary>

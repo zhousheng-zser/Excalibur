@@ -71,7 +71,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -85,7 +85,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -93,7 +93,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
@@ -138,7 +138,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp14</LanguageStandard>
     </ClCompile>
@@ -153,15 +153,18 @@
     <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp" />
     <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
     <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
     <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\iterators.hpp" />
+    <ClInclude Include="..\..\include\Primitives\logger.hpp" />
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
