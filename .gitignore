@@ -72,3 +72,4 @@ src/PersonalReality/main.cpp
 /jni/Build/Android-ARM64-Debug
 include/Apollo/
 src/Apollo/
+windows/Apollo/

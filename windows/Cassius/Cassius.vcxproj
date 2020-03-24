@@ -153,12 +153,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Cassius\CassiusFeature.hpp" />
-    <ClInclude Include="..\..\include\Cassius\cassius_c.h" />
     <ClInclude Include="..\..\include\Cassius\unicorn.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp" />
-    <ClCompile Include="..\..\src\Cassius\cassius_c.cxx" />
     <ClCompile Include="..\..\src\Cassius\unicorn.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

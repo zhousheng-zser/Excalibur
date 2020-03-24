@@ -19,7 +19,7 @@ namespace glasssix
 			orderType order_;
 
 		public:
-			reshape(int dim1, int dim2, int dim3, int dim4);
+			reshape(int dimension1, int dimension2, int dimension3, int dimension4, int device = -1);
 
 			virtual ~reshape();
 

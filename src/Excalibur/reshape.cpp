@@ -2,17 +2,17 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
-
+#include "../../include/Julius/simd_helper.hpp"
 namespace glasssix
 {
 	namespace excalibur
 	{
-		reshape::reshape(int dim1, int dim2, int dim3, int dim4)
+		reshape::reshape(int dimension1, int dimension2, int dimension3, int dimension4, int device):device_(device)
 		{
-			shape_param_.push_back(dim1);
-			shape_param_.push_back(dim2);
-			shape_param_.push_back(dim3);
-			shape_param_.push_back(dim4);
+			shape_param_.push_back(dimension1);
+			shape_param_.push_back(dimension2);
+			shape_param_.push_back(dimension3);
+			shape_param_.push_back(dimension4);
 		}
 
 		reshape::~reshape()

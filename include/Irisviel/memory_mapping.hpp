@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <memory>
+#include <cstring>
 #include <fstream>
 #include <cstddef>
 
@@ -91,7 +92,7 @@ namespace glasssix
 			{
 				if ((offset + 1) * buffer.size() <= max_size_)
 				{
-					std::memcpy(buffer.data(), reinterpret_cast<const std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.size());
+					memcpy(buffer.data(), reinterpret_cast<const std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.size());
 				}
 			}
 
@@ -104,7 +105,7 @@ namespace glasssix
 
 				std::lock_guard<std::mutex> lock{ mutex_ };
 
-				std::memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.data(), buffer.size());
+				memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + offset * buffer.size(), buffer.data(), buffer.size());
 			}
 
 			// Get the entry in the mapping file.
@@ -129,7 +130,7 @@ namespace glasssix
 				}
 
 				auto obj = std::make_shared<Structure>();
-				std::memcpy(obj.get(), reinterpret_cast<Structure*>(file_data_) + offset, size);
+				memcpy(obj.get(), reinterpret_cast<Structure*>(file_data_) + offset, size);
 
 				return obj;
 			}
@@ -151,7 +152,7 @@ namespace glasssix
 				}
 
 				std::lock_guard<std::mutex> lock{ mutex_ };
-				std::memcpy(reinterpret_cast<Structure*>(file_data_) + offset, &obj, size);
+				memcpy(reinterpret_cast<Structure*>(file_data_) + offset, &obj, size);
 			}
 
 			// Overwrite the data with the structure at the offset.
@@ -172,7 +173,7 @@ namespace glasssix
 				}
 
 				std::lock_guard<std::mutex> lock{ mutex_ };
-				std::memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + byte_offset, &obj, sizeof(Structure));
+				memcpy(reinterpret_cast<std::uint8_t*>(file_data_) + byte_offset, &obj, sizeof(Structure));
 			}
 
 			// Flush all bytes to the disk.
