@@ -14,6 +14,10 @@ namespace glasssix
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
 
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});

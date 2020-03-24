@@ -1,5 +1,6 @@
 #include "../../include/Longinus/longinus_c.h"
-#include "Primitives/memory.hpp"
+#include "../../include/Primitives/memory.hpp"
+#include <cstring>
 
 using glasssix::memory::heap_free;
 using glasssix::memory::heap_alloc_elements;
@@ -336,7 +337,7 @@ bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector* instanc
 char* Longinus_getVersion()
 {
 	auto version = glasssix::longinus::LonginusDetector::getVersion();
-	std::size_t size = std::strlen(version) + 1;
+	std::size_t size = strlen(version) + 1;
 	auto str = glasssix::memory::heap_alloc_elements<char>(size);
 
 	return str;

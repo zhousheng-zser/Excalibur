@@ -5,9 +5,8 @@
 #else
 #include "retina_net_data.hpp"
 #endif
-#include "../../include/Excalibur/prune.hpp"
 #include <glasssix/timer.hpp>
-
+#include "../../include/Julius/simd_helper.hpp"
 //define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
@@ -26,6 +25,10 @@ namespace glasssix
 			{
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
+
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params

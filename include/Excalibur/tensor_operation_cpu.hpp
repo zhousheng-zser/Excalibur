@@ -7,6 +7,7 @@
 #include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
 #include <cstring>
+#include <climits>
 #include <cmath>
 
 #ifdef USE_OPENCV

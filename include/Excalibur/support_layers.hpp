@@ -211,8 +211,8 @@ concat_name = new concat(concat_axis, device_);
 #define Init_Sigmoid_Params(sigmoid_name)\
 sigmoid_name = new sigmoid();
 
-#define Init_Reshape_Params(reshape_name, dim1, dim2, dim3, dim4)\
-reshape_name = new reshape(dim1, dim2, dim3, dim4);
+#define Init_Reshape_Params(reshape_name, dimension1, dimension2, dimension3, dimension4)\
+reshape_name = new reshape(dimension1, dimension2, dimension3, dimension4, device_);
 
 #define Init_Slice_Params(slice_name, slice_axis)\
 slice_name = new slice(slice_axis, device_);

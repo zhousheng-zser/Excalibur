@@ -1,7 +1,7 @@
 #include "../../include/Irisviel/irisviel_c.h"
 
 #include "knn_service.hpp"
-#include "Primitives/memory.hpp"
+#include "../../include/Primitives/memory.hpp"
 
 using glasssix::memory::heap_alloc_objects;
 using glasssix::memory::heap_alloc_elements;

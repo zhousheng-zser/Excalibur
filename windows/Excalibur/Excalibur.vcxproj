@@ -186,7 +186,6 @@
     <ClInclude Include="..\..\include\Excalibur\pca.hpp" />
     <ClInclude Include="..\..\include\Excalibur\pooling.hpp" />
     <ClInclude Include="..\..\include\Excalibur\prelu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
     <ClInclude Include="..\..\include\Excalibur\reshape.hpp" />
     <ClInclude Include="..\..\include\Excalibur\scale.hpp" />
     <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp" />

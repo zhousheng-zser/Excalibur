@@ -111,9 +111,6 @@
     <ClInclude Include="..\..\include\Excalibur\prelu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\scale.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -1,4 +1,6 @@
 #include "deconv.hpp"
+#include <iostream>
+#include "../../include/Julius/simd_helper.hpp"
 
 namespace glasssix
 {
