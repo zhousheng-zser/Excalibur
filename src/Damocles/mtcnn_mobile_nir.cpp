@@ -8,6 +8,7 @@
 
 using namespace glasssix;
 using namespace glasssix::longinus;
+
 glasssix::longinus::mtcnn_mobile_nir::mtcnn_mobile_nir(int device_id, bool handle_big_face)
 {
 	device_id_ = device_id;
@@ -25,6 +26,19 @@ glasssix::longinus::mtcnn_mobile_nir::~mtcnn_mobile_nir()
 	delete ONet_;
 }
 
+
+/// <summary>
+/// detect humanface in an image
+/// </summary>
+/// <param name="img">image data</param>
+/// <param name="channels">image channel</param>
+/// <param name="height">image height</param>
+/// <param name="width">image width</param>
+/// <param name="minSize">minumum bbox window size</param>
+/// <param name="threshold">threshold values of P-NET/R-NET/O-NET</param>
+/// <param name="factor">scale factor between two near images</param>
+/// <param name="stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
 std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile_nir::Detect(const unsigned char* img, const int channels, const int height, const int width,
 	const int minSize, const float* threshold, const float factor, const int stage, int order)
 {
@@ -148,6 +162,15 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile_nir::Detect(const u
 	return faceInfo;
 }
 
+
+/// <summary>
+/// propose bboxes
+/// </summary>
+/// <param name="bgr_8uc3">tensor contains image data</param>
+/// <param name="thresh">score threshhold value</param>
+/// <param name="nms_thresh">nms threshold value</param>
+/// <param name="scales">scale factors</param>
+/// <param name="pnet_result">proposed bboxes</param>
 bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<unsigned char> > &bgr_8uc3, float thresh, float nms_thresh, std::vector<float> scales, std::vector<Longinus_CNN_BBox>& pnet_result)
 {
 	pnet_result.clear();
@@ -233,11 +256,27 @@ bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<u
 	return GenerateBoundingBox(pnet_result, maps, scales, mapH, mapW, thresh, nms_thresh, pnet_stride, pnet_size, width, height);
 }
 
+
+/// <summary>
+/// sort bboxes by score
+/// </summary>
+/// <param name="lsh">first box</param>
+/// <param name="rsh">second box</param>
 static bool _cmp_score(const Longinus_CNN_OrderScore& lsh, const Longinus_CNN_OrderScore& rsh)
 {
 	return lsh.score < rsh.score;
 }
 
+
+/// <summary>
+/// non-maximum suppression
+/// </summary>
+/// <param name="boundingBox">input boxes</param>
+/// <param name="bboxScore">input scores</param>
+/// <param name="overlap_threshold">threshold value decides whether suppress or not</param>
+/// <param name="modelname">'Union': intersection/union_box, 'Min':intersection/min_box</param>
+/// <param name="overlap_count_thresh">overlap_count_thresh</param>
+/// <param name="thread_num">number of thread on-using</param>
 static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longinus_CNN_OrderScore> &bboxScore, const float overlap_threshold,
 	const std::string& modelname = "Union", int overlap_count_thresh = 0, int thread_num = 1)
 {
@@ -366,6 +405,13 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 	}
 }
 
+
+/// <summary>
+/// refine bbox coordinates according to regreCoord
+/// </summary>
+/// <param name="vecBbox">input and output boxes</param>
+/// <param name="net">'p':P-NET, 'r':R-NET, 'o':O-NET</param>
+/// <param name="square">output square boxes</param>
 static void _refine_and_square_bbox(std::vector<Longinus_CNN_BBox> &vecBbox, char net, bool square)
 {
 	float bbw = 0, bbh = 0, bboxSize = 0;
@@ -422,7 +468,23 @@ static void _refine_and_square_bbox(std::vector<Longinus_CNN_BBox> &vecBbox, cha
 	}
 }
 
-bool glasssix::longinus::mtcnn_mobile_nir::GenerateBoundingBox(std::vector<Longinus_CNN_BBox>& bounding_bbox, std::vector<std::vector<float>>& maps, std::vector<float>& scales, std::vector<int>& mapH, std::vector<int>& mapW, float thresh, float nms_thresh, int stride, int cellSize, int image_width, int image_height)
+
+/// <summary>
+/// generate proposal bboxes according to P-NET result
+/// </summary>
+/// <param name="bounding_bbox">proposed boxes</param>
+/// <param name="maps">confidence score</param>
+/// <param name="scales">scale factors</param>
+/// <param name="mapH">scaled image height</param>
+/// <param name="mapW">scaled image width</param>
+/// <param name="thresh">score threshold</param>
+/// <param name="nms_thresh">nms threshold</param>
+/// <param name="stride">4</param>
+/// <param name="cellSize">20</param>
+/// <param name="image_width">original image width</param>
+/// <param name="image_height">original image height</param>
+bool glasssix::longinus::mtcnn_mobile_nir::GenerateBoundingBox(std::vector<Longinus_CNN_BBox>& bounding_bbox, std::vector<std::vector<float>>& maps, std::vector<float>& scales, 
+	std::vector<int>& mapH, std::vector<int>& mapW, float thresh, float nms_thresh, int stride, int cellSize, int image_width, int image_height)
 {
 	Longinus_CNN_OrderScore order;
 	std::vector<std::vector<Longinus_CNN_BBox>> bounding_boxes(scales.size());
@@ -605,7 +667,18 @@ bool glasssix::longinus::mtcnn_mobile_nir::GenerateBoundingBox(std::vector<Longi
 	return true;
 }
 
-bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN_BBox>& pnetBbox, std::vector<Longinus_CNN_BBox>& rnet_result, std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh)
+
+/// <summary>
+/// R-NET
+/// </summary>
+/// <param name="pnetBbox">input proposed boxes</param>
+/// <param name="rnet_result">output refined boxes</param>
+/// <param name="bgr_8uc3">image data</param>
+/// <param name="min_size">minimum box window</param>
+/// <param name="thresh">score threshold</param>
+/// <param name="nms_thresh">nms threshold</param>
+bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN_BBox>& pnetBbox, std::vector<Longinus_CNN_BBox>& rnet_result, 
+	std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh)
 {
 	if (pnetBbox.size() == 0)
 	{
@@ -826,7 +899,19 @@ bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN
 	return true;
 }
 
-bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN_BBox>& rnetBbox, std::vector<Longinus_CNN_BBox>& onet_result, std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark)
+
+/// <summary>
+/// O-NET
+/// </summary>
+/// <param name="rnetBbox">input refined boxes</param>
+/// <param name="onet_result">final output boxes</param>
+/// <param name="bgr_8uc3">image data</param>
+/// <param name="min_size">minimum box window</param>
+/// <param name="thresh">score threshold</param>
+/// <param name="nms_thresh">nms threshold</param>
+/// <param name="doLandmark">output landmarks</param>
+bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN_BBox>& rnetBbox, std::vector<Longinus_CNN_BBox>& onet_result, 
+	std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark)
 {
 	if (rnetBbox.size() == 0)
 	{
@@ -1063,4 +1148,3 @@ bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN
 
 	return true;
 }
-

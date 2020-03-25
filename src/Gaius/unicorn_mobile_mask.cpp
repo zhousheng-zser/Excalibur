@@ -19,13 +19,18 @@ namespace glasssix
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
 
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
+			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
 			float quantize_level = INT_MAX;
-
+			//copy float32_data directly
 			Copy_Params(conv1_weights, Unicorn_mobile_mask, quantize_level);
 			Copy_Params(conv1_bias, Unicorn_mobile_mask, quantize_level);
 			Copy_Params(relu1_weights, Unicorn_mobile_mask, quantize_level);
@@ -460,6 +465,7 @@ namespace glasssix
 			delete conv5_dw;
 			delete fc5;
 
+			//conv_weights and bias free automatically, prelu_weights need to free explicitly
 			FreeHost(relu1_weights, false);
 			FreeHost(relu1_dw_weights, false);
 			FreeHost(relu2_ex_weights, false);

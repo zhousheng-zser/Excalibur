@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -20,9 +20,9 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{6FCF7CB3-7523-442B-BA36-E65EF38A5598}</ProjectGuid>
-    <RootNamespace>CppExample</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <ProjectGuid>{70049867-7840-4450-A777-95364EB75146}</ProjectGuid>
+    <RootNamespace>Gaius</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -39,19 +39,17 @@
     <CharacterSet>MultiByte</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -74,14 +72,15 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <LibraryWPath>D:\setup\opencv\build\x64\vc15\lib;$(WindowsSDK_MetadataPath);</LibraryWPath>
+    <TargetName>$(ProjectName)d</TargetName>
+    <IncludePath>C:\Tools\vcpkg\installed\x64-windows\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;D:\projects\caffe\Caffe\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\$(ProjectName)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
-    <LibraryWPath>$(WindowsSDK_MetadataPath);</LibraryWPath>
+    <IncludePath>C:\Tools\vcpkg\installed\x64-windows\include;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\include;D:\projects\caffe\Caffe\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\$(ProjectName)</IncludePath>
+    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(NETFXKitsDir)Lib\um\x64</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -89,17 +88,22 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>true</OpenMPSupport>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>NOMINMAX;EXPORT_ATHENE;USE_OPENCV;USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>false</OpenMPSupport>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\*.lib;$(VCPackage)\lib\*.lib;$(CUDA_PATH)\lib\x64\*.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D:\projects\test\poseprofiler\netCamera\lib\*.lib;C:\Tools\vcpkg\installed\x64-windows\lib\*.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\lib\x64\*.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>C:\Tools\vcpkg\installed\x64-windows\lib\opencv_world341.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -113,15 +117,22 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>false</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;NOMINMAX;_MBCS;$(PROCESSOR_ARCHITECTURE);USE_OPENCV;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <OpenMPSupport>true</OpenMPSupport>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>NOMINMAX;EXPORT_ATHENE;USE_OPENCV;USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <OpenMPSupport>false</OpenMPSupport>
+      <LanguageStandard>stdcpp14</LanguageStandard>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\*.lib;$(VCPackage)\lib\*.lib;$(CUDA_PATH)\lib\x64\*.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>D:\projects\test\poseprofiler\netCamera\lib\*.lib;C:\Tools\vcpkg\installed\x64-windows\debug\lib\*.lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v9.2\lib\x64\*.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Lib>
+      <AdditionalDependencies>C:\Tools\vcpkg\installed\x64-windows\debug\lib\opencv_world341d.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -138,21 +149,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="LonginusCassiusMain.cpp" />
+    <ClInclude Include="..\..\include\Athene\apc.hpp" />
+    <ClInclude Include="..\..\include\Athene\athene.hpp" />
+    <ClInclude Include="..\..\include\Athene\legacy_callback_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Athene\simple_window.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\windows\Cassius\Cassius.vcxproj">
-      <Project>{ed436a1f-4a52-4974-850a-8f9ca9dfeb90}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\windows\Gaius\Gaius.vcxproj">
-      <Project>{a62873ee-5fa6-4729-bea1-8ba45c9127f8}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\windows\Irisviel\Irisviel.vcxproj">
-      <Project>{d73d41d7-9c35-4e48-a85a-aba45068223a}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\windows\Longinus\Longinus.vcxproj">
-      <Project>{9700e429-6846-4c83-89cf-1881147fe5d6}</Project>
-    </ProjectReference>
+    <ClCompile Include="..\..\src\Athene\apc.cpp" />
+    <ClCompile Include="..\..\src\Athene\athene.cpp" />
+    <ClCompile Include="..\..\src\Athene\simple_window.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

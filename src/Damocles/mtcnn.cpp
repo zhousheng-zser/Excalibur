@@ -1,12 +1,3 @@
-//#define PROFILER
-//#define PROFILER_PNET
-//#define PROFILER_RNET
-//#define PROFILER_ONET
-#ifdef PROFILER
-#include <opencv2/opencv.hpp>
-#define USE_OPENCV
-#endif // PROFILER
-
 #include "mtcnn.hpp"
 #include "../Excalibur/tensor_operation_cpu.hpp"
 #include "../Excalibur/tensor_operation_gpu.hpp"
@@ -18,10 +9,16 @@ namespace glasssix
 {
 	namespace longinus
 	{
+		/// <summary>
+        /// sort bboxes by score
+        /// </summary>
+        /// <param name="a">first box</param>
+        /// <param name="b">second box</param>
 		bool CompareBBox(const FaceInfomation & a, const FaceInfomation & b)
 		{
 			return a.bbox.score < b.bbox.score;
 		}
+
 
 		MTCNN::MTCNN(int device_id) {
 			device_id_ = device_id;
@@ -30,6 +27,13 @@ namespace glasssix
 			ONet_ = new mtcnn_onet(device_id_);
 		}
 
+
+		/// <summary>
+		/// non-maximum suppression
+		/// </summary>
+		/// <param name="bboxes">input boxes</param>
+		/// <param name="thresh">threshold value decides whether suppress or not</param>
+		/// <param name="methodType">'u': intersection/union_box, 'm':intersection/max_box</param>
 		std::vector<FaceInfomation> MTCNN::NMS(std::vector<FaceInfomation>& bboxes,
 			float thresh, char methodType) {
 			std::vector<FaceInfomation> bboxes_nms;
@@ -99,6 +103,14 @@ namespace glasssix
 			return bboxes_nms;
 		}
 
+
+		/// <summary>
+		/// refine bbox coordinates according to bbox_reg
+		/// </summary>
+		/// <param name="vecFaceInfomation">input boxes</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="square">output square boxes</param>
 		void MTCNN::refine(std::vector<FaceInfomation> &vecFaceInfomation, const int &height, const int &width, bool square) {
 			if (vecFaceInfomation.empty()) {
 				//cout << "FaceInfomation is empty!!" << endl;
@@ -137,6 +149,14 @@ namespace glasssix
 			}
 		}
 
+
+		/// <summary>
+        /// generate proposal bboxes according to P-NET result
+        /// </summary>
+        /// <param name="confidence">P-NET confidence</param>
+        /// <param name="reg_box">P-NET reg_box</param>
+        /// <param name="scale">scale factor</param>
+        /// <param name="thresh">confidence exceed threshold value will be proposed</param>
 		void MTCNN::GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box,
 			float scale, float thresh)
 		{
@@ -175,6 +195,15 @@ namespace glasssix
 			}
 		}
 
+
+		/// <summary>
+        /// propose bboxes
+        /// </summary>
+        /// <param name="image">tensor contains image data</param>
+        /// <param name="minSize">minimum size image can be scaled</param>
+        /// <param name="threshold">confidence exceed threshold value will be proposed</param>
+        /// <param name="factor">scale factor between two near images</param>
+		/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
 		std::vector<FaceInfomation> MTCNN::ProposalNet(const std::shared_ptr<tensor<float>> &image, int minSize, float threshold, float factor, orderType order) 
 		{
 			int channels = image->channels();
@@ -210,34 +239,9 @@ namespace glasssix
 #endif // USE_CUDA
 				}
 
-#ifdef PROFILER_PNET
-				cv::Mat pic = cv::imread("D:/720_12.bmp");
-				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
-				std::shared_ptr<tensor<unsigned char>> nchw_uch;
-				std::shared_ptr<tensor<float>> nchw_float;
-				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
-				float means[3] = { 127.5f,127.5f,127.5f };
-				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
-
-				PNet_->Forward(nchw_float);
-
-				std::shared_ptr<tensor<float>> tt = PNet_->get_conv4_1();
-				std::cout << tt->cpu_data()[0] << "," << tt->cpu_data()[1] << std::endl;
-
-				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
-				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
-
-				const float* confidence_data = confidence->cpu_data();
-				const float* reg_data = reg->cpu_data();
-				std::cout << "pnet: score:" << confidence_data[0] << ", reg:" << reg_data[0] << "," << reg_data[1] << "," << reg_data[2] << "," << reg_data[3] << std::endl;
-				std::cout << std::endl;
-#else
-
 				PNet_->Forward(input_layer);
-
 				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
 				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
-#endif // PROFILER_PNET
 
 				GenerateBBox(confidence, reg, scales[i], threshold);
 
@@ -249,6 +253,17 @@ namespace glasssix
 			return total_boxes_;
 		}
 
+
+		/// <summary>
+        /// R-NET and O-NET
+        /// </summary>
+        /// <param name="image">tensor contains image data</param>
+        /// <param name="pre_stage_res">bboxes generate by P-NET or R-NET</param>
+        /// <param name="input_w">R-NET: 24, O-NET: 48</param>
+        /// <param name="input_h">R-NET: 24, O-NET: 48</param>
+        /// <param name="stage_num">R-NET: 2, O-NET: 3</param>
+		/// <param name="threshold">confidence exceed threshold value will be retained</param>
+		/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
 		std::vector<FaceInfomation> MTCNN::NextStage(const std::shared_ptr<tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order)
 		{
 			std::vector<FaceInfomation> res;
@@ -340,59 +355,15 @@ namespace glasssix
 
 			switch (stage_num) {
 			case 2: {
-#ifdef PROFILER_RNET
-				cv::Mat pic = cv::imread("D:/720_24.bmp");
-				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
-				std::shared_ptr<tensor<unsigned char>> nchw_uch;
-				std::shared_ptr<tensor<float>> nchw_float;
-				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
-				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
-
-				RNet_->Forward(nchw_float);
-
-				confidence = RNet_->get_prob1();
-				reg_box = RNet_->get_conv5_2();
-
-				const float *confidence_data = confidence->cpu_data();
-				const float *reg_box_data = reg_box->cpu_data();
-				std::cout << "rnet: score:" << confidence_data[0] << ",reg:" << reg_box_data[0] << "," << reg_box_data[1] << "," << reg_box_data[2] << "," << reg_box_data[3] << std::endl;
-				std::cout << std::endl;
-#else
 				RNet_->Forward(input_layer);
 				confidence = RNet_->get_prob1();
 				reg_box = RNet_->get_conv5_2();
-#endif // PROFILER_RNET
 			}break;
 			case 3: {
-#ifdef PROFILER_ONET
-				cv::Mat pic = cv::imread("D:/720_48.bmp");
-				std::cout << "c:" << pic.channels() << ",h:" << pic.rows << ",w:" << pic.cols << std::endl;
-				std::shared_ptr<tensor<unsigned char>> nchw_uch;
-				std::shared_ptr<tensor<float>> nchw_float;
-				tensor_operation_cpu::mat2tensor_cpu(pic, nchw_uch, NCHW);
-				tensor_operation_cpu::preprocess_tensors_cpu(nchw_uch, nchw_float, means);
-
-				ONet_->Forward(nchw_float);
-
-				confidence = ONet_->get_prob1();
-				reg_box = ONet_->get_conv6_2();
-				reg_landmark = ONet_->get_conv6_3();
-
-				const float *confidence_data = confidence->cpu_data();
-				const float *reg_box_data = reg_box->cpu_data();
-				const float *reg_landmark_data = reg_landmark->cpu_data();
-				std::cout << "onet: score:" << confidence_data[0] << ",reg:" << reg_box_data[0] << "," << reg_box_data[1] << "," << reg_box_data[2] << "," << reg_box_data[3] << std::endl;
-				for (int i = 0; i < 10; i++)
-				{
-					std::cout << reg_landmark_data[i] << ",";
-				}
-				std::cout << std::endl;
-#else
 				ONet_->Forward(input_layer);
 				confidence = ONet_->get_prob1();
 				reg_box = ONet_->get_conv6_2();
 				reg_landmark = ONet_->get_conv6_3();
-#endif // PROFILER_ONET
 			}break;
 			}
 			const float* confidence_data = confidence->cpu_data();
@@ -427,6 +398,19 @@ namespace glasssix
 			return res;
 		}
 
+
+		/// <summary>
+        /// detect humanface in an image
+        /// </summary>
+        /// <param name="image">image data</param>
+        /// <param name="channels">image channel</param>
+        /// <param name="height">image height</param>
+        /// <param name="width">image width</param>
+        /// <param name="minSize">minumum bbox window size</param>
+        /// <param name="threshold">threshold values of P-NET/R-NET/O-NET</param>
+        /// <param name="factor">scale factor between two near images</param>
+		/// <param name="stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+		/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
 		std::vector<FaceInfomation> MTCNN::Detect(const unsigned char* image, const int channels, const int height, const int width, 
 			const int minSize, const float* threshold, const float factor, const int stage, int order)
 		{
@@ -538,6 +522,7 @@ namespace glasssix
 				return onet_res;
 			}
 		}
+
 
 		MTCNN::~MTCNN()
 		{
