@@ -22,7 +22,7 @@ namespace glasssix
 			virtual std::size_t feature_offset() const noexcept = 0;
 			std::shared_ptr<database_record> shared();
 
-			static std::size_t struct_size(int dimension) noexcept;
+			static std::size_t record_size(int dimension) noexcept;
 			static std::size_t feature_offset(int dimension) noexcept;
 			static std::shared_ptr<database_record> create(int dimension);
 			static std::shared_ptr<database_record> create(int dimension, std::uint8_t* ptr);

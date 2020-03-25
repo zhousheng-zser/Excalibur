@@ -1,180 +1,289 @@
 #include "database_manager.hpp"
+#include "database_header.hpp"
+#include "memory_mapping_operator.hpp"
 
+#include <cctype>
+#include <utility>
 #include <algorithm>
+#include <stdexcept>
+#include <unordered_map>
 
 namespace glasssix
 {
 	namespace irisviel
 	{
-		database_manager::database_manager(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, file_path_{ file_path }
+		namespace
 		{
-			mapping_ = std::make_shared<memory_mapping>(file_path, (max_items + 1UL) * database_record::struct_size(dimension));
-
-			auto header = mapping_->get_from<database_header>(0, database_header_traits::header_size);
-
-			if (!header)
+			constexpr int database_header_version = 1000;
+			constexpr auto case_insensitive_string_hasher = [](const std::string& value)
 			{
-				throw std::runtime_error{ "Some error occurs when reading the data header." };
-			}
 
-			header_ = std::move(*header);
+			};
 
-			if (header_.max_items <= 0)
+			constexpr auto case_insensitive_string_comparer = [](const std::string& left, const std::string& right)
 			{
-				header_.max_items = static_cast<int>(max_items);
-				header_.current_position = 1;
-				header_.version = IRISVIEL_VERSION;
-				mapping_->write_to(header_, 0, database_header_traits::header_size);
-			}
+				return left.size() == right.size() && std::equal(std::begin(left), std::end(left), std::begin(right), std::end(right), [](int left, int right) { return left == right || std::tolower(left) == std::tolower(right); });
+			};
 		}
 
-		std::vector<std::shared_ptr<database_record>> database_manager::get_all_data()
+		class database_manager::impl
 		{
-			std::vector<std::shared_ptr<database_record>> result;
-
-			if (header_.current_position > 0)
+		public:
+			impl(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (max_items + 1UL) * database_record::record_size(dimension) }
 			{
-				auto data = mapping_->const_data();
+				auto header = mapping_.locate_element_absolutely<database_header>(0);
 
-				for (int i = 0; i < header_.current_position; i++)
+				if (!header)
 				{
-					auto element = database_record::create(dimension_);
+					throw std::runtime_error{ "Some error occurs when reading the data header." };
+				}
 
-					mapping_->get_dynamic_buffer_from(i + 1, *element);
+				header_ = *header;
 
-					if (element && element->active())
+				if (header_.max_items <= 0)
+				{
+					header_.max_items = static_cast<int>(max_items);
+					header_.current_position = 1;
+					header_.version = database_header_version;
+					mapping_.write_element_absolutely(0, header_);
+				}
+
+				// Builds the index for the key.
+				build_index_core();
+			}
+
+			std::vector<std::shared_ptr<database_record>> get_all_data()
+			{
+				std::vector<std::shared_ptr<database_record>> result;
+
+				if (header_.current_position > 0)
+				{
+					auto data = mapping_.const_data();
+
+					for (int i = 0; i < header_.current_position; i++)
 					{
-						result.emplace_back(element);
+						auto element = database_record::create(dimension_);
+
+						mapping_.get_dynamic_buffer(i + 1, *element);
+
+						if (element && element->active())
+						{
+							result.emplace_back(element);
+						}
+					}
+				}
+
+				return result;
+			}
+
+			bool add(database_record& data)
+			{
+				if (full())
+				{
+					return false;
+				}
+
+				data.active(true);
+				mapping_.write_dynamic_buffer(header_.current_position, data);
+
+				// Writes the new position.
+				header_.current_position++;
+				mapping_.write_element_absolutely(database_header_traits::current_position_offset, header_.current_position);
+
+				return true;
+			}
+
+			bool contains(const std::string& key)
+			{
+				return record_entries_.find(key) != record_entries_.end();
+			}
+
+			std::size_t update(database_record& data)
+			{
+				auto iter = record_entries_.find(data.key());
+
+				if (iter == record_entries_.end())
+				{
+					return 0;
+				}
+
+				mapping_.write_dynamic_buffer(iter->second, data);
+
+				return 1;
+			}
+
+			std::size_t remove(const std::string& key)
+			{
+				return record_entries_.erase(key);
+			}
+
+			bool empty() const noexcept
+			{
+				return header_.current_position <= 1;
+			}
+
+			bool full() const noexcept
+			{
+				return header_.current_position > header_.max_items;
+			}
+
+			std::shared_ptr<database_feature_observer> create_feature_observer()
+			{
+				return std::make_shared<database_feature_observer>([this]
+					{
+						std::vector<const float*> result;
+
+						for (auto [key, index] : record_entries_)
+						{
+							auto entry = mapping_.locate_element_bytes(index, record_size_);
+							auto data_ref = database_record::create_ref(dimension_, entry);
+
+							result.emplace_back(data_ref->feature());
+						}
+
+						return result;
+					}, dimension_);
+			}
+
+			void save_changes() noexcept
+			{
+				std::size_t index = 0;
+
+				// Synchronizes the data.
+				for (auto [key, index] : record_entries_)
+				{
+					auto entry = mapping_.locate_element_bytes(index, record_size_);
+
+					mapping_.write_element_bytes(index, entry, record_size_);
+					index++;
+				}
+
+				header_.current_position = static_cast<int>(record_entries_.size());
+				mapping_.write_element_absolutely(database_header_traits::current_position_offset, header_.current_position);
+				mapping_.save_changes();
+			}
+
+			std::string file_path() const
+			{
+				return mapping_.path();
+			}
+
+		private:
+			void build_index_core()
+			{
+				record_entries_.clear();
+
+				for (int i = 1; i < header_.current_position; i++)
+				{
+					auto entry = mapping_.locate_element_bytes(i, record_size_);
+					auto data_ref = database_record::create_ref(dimension_, entry);
+
+					if (data_ref && data_ref->active())
+					{
+						record_entries_.emplace(data_ref->key(), i);
 					}
 				}
 			}
 
-			return result;
-		}
-
-		bool database_manager::add(database_record& data)
-		{
-			if (full())
+			template<typename Predicate, typename RecordHandler>
+			std::size_t search_core(Predicate&& predicate, RecordHandler&& handler, int start_position, bool only_first)
 			{
-				return false;
+				std::size_t count = 0;
+				auto data = database_record::create(dimension_);
+
+				for (int i = start_position + 1; i < header_.current_position; i++)
+				{
+					mapping_.get_dynamic_buffer(i, *data);
+
+					if (data && data->active() && std::forward<Predicate>(predicate)(*data))
+					{
+						std::forward<RecordHandler>(handler)(*data, i);
+						count++;
+
+						if (only_first)
+						{
+							break;
+						}
+					}
+				}
+
+				return count;
 			}
 
-			data.active(true);
-			mapping_->write_dynamic_buffer_to(header_.current_position, data);
+			template<typename Predicate, typename RecordHandler>
+			std::size_t search_core(Predicate&& predicate, RecordHandler&& handler, bool only_first)
+			{
+				return search_core(std::forward<Predicate>(predicate), std::forward<RecordHandler>(handler), 0, only_first);
+			}
 
-			// Writes the new position.
-			header_.current_position++;
-			mapping_->write_to_byte_offset(header_.current_position, database_header_traits::current_position_offset);
+			int dimension_;
+			std::size_t record_size_;
+			database_header header_;
+			memory_mapping_operator mapping_;
+			std::unordered_map<std::string, std::size_t> record_entries_;
+		};
 
-			return true;
+		database_manager::database_manager(const std::string& file_path, std::size_t max_items, int dimension) : impl_{ new impl{ file_path, max_items, dimension } }
+		{
+		}
+
+		database_manager::~database_manager()
+		{
+			if (impl_)
+			{
+				delete impl_;
+				impl_ = nullptr;
+			}
 		}
 
 		bool database_manager::contains(const std::string& key)
 		{
-			return search_core(
-				[&](const database_record& item) { return database_record::key_equals(key.c_str(), item.key()); },
-				[](database_record& item, int position) {},
-				true
-				) > 0;
+			return impl_->contains(key);
 		}
 
-		std::size_t database_manager::update(database_record& data)
+		std::size_t database_manager::update(database_record& record)
 		{
-			return search_core(
-				[&](const database_record& item) { return database_record::key_equals(data, item); },
-				[&](database_record& item, int position) { mapping_->write_dynamic_buffer_to(position, item); },
-				false
-				);
+			return impl_->update(record);
 		}
 
 		std::size_t database_manager::remove(const std::string& key)
 		{
-			return search_core(
-				[&](const database_record& item) { return database_record::key_equals(key.c_str(), item.key()); },
-				[&](database_record& item, int position) {	item.active(false); mapping_->write_dynamic_buffer_to(position, item); },
-				false
-				);
+			return impl_->remove(key);
 		}
 
 		bool database_manager::empty() const noexcept
 		{
-			return header_.current_position <= 1;
+			return impl_->empty();
 		}
 
 		bool database_manager::full() const noexcept
 		{
-			return header_.current_position > header_.max_items;
+			return impl_->full();
+		}
+
+		bool database_manager::add(database_record& record)
+		{
+			return impl_->add(record);
+		}
+
+		std::vector<std::shared_ptr<database_record>> database_manager::get_all_data()
+		{
+			return impl_->get_all_data();
 		}
 
 		std::shared_ptr<database_feature_observer> database_manager::create_feature_observer()
 		{
-			return std::make_shared<database_feature_observer>([this]
-				{
-					std::vector<const float*> result;
-					int current_position = header_.current_position;
-
-					for (int i = 1; i < current_position; i++)
-					{
-						auto data = mapping_->get_raw_buffer_from(i, database_record::struct_size(dimension_));
-						auto data_ref = database_record::create_ref(dimension_, data);
-
-						if (data_ref->active())
-						{
-							result.emplace_back(data_ref->feature());
-						}
-					}
-
-					return result;
-				}, dimension_);
+			return impl_->create_feature_observer();
 		}
 
-		bool database_manager::save_changes() const
+		void database_manager::save_changes() noexcept
 		{
-			return mapping_->save_changes();
-		}
-
-		void database_manager::update_index_file(const std::string& file_path)
-		{
-			char cache_name[512] = {};
-
-			file_path.copy(cache_name, file_path.size());
-			mapping_->write_to_byte_offset(cache_name, offsetof(database_header, index_file_name));
+			impl_->save_changes();
 		}
 
 		std::string database_manager::file_path() const
 		{
-			return file_path_;
-		}
-
-		std::size_t database_manager::search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& handler, int start_position, bool only_first)
-		{
-			std::size_t count = 0;
-			int current_position = header_.current_position;
-
-			for (int i = start_position + 1; i < current_position; i++)
-			{
-				auto data = database_record::create(dimension_);
-
-				mapping_->get_dynamic_buffer_from(i, *data);
-
-				if (data && data->active() && predicate(*data))
-				{
-					handler(*data, i);
-					count++;
-
-					if (only_first)
-					{
-						break;
-					}
-				}
-			}
-
-			return count;
-		}
-
-		std::size_t database_manager::search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& handler, bool only_first)
-		{
-			return search_core(predicate, handler, 0, only_first);
+			return impl_->file_path();
 		}
 	}
 }

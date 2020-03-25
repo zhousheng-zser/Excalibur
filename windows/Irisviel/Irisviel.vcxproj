@@ -69,6 +69,7 @@
     <ClInclude Include="..\..\include\Irisviel\database_search_result.hpp" />
     <ClInclude Include="..\..\include\Irisviel\face_service.hpp" />
     <ClInclude Include="..\..\include\Irisviel\memory_mapping.hpp" />
+    <ClInclude Include="..\..\include\Irisviel\memory_mapping_operator.hpp" />
     <ClInclude Include="..\..\include\Irisviel\neighbor.hpp" />
     <ClInclude Include="..\..\include\Irisviel\ngraph_internal.hpp" />
     <ClInclude Include="..\..\include\Irisviel\nsg_calculate_error.hpp" />
@@ -88,6 +89,8 @@
     <ClCompile Include="..\..\src\Irisviel\database_manager.cpp" />
     <ClCompile Include="..\..\src\Irisviel\database_business_wrapper.cpp" />
     <ClCompile Include="..\..\src\Irisviel\face_service.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\memory_mapping.cpp" />
+    <ClCompile Include="..\..\src\Irisviel\memory_mapping_operator.cpp" />
     <ClCompile Include="..\..\src\Irisviel\ngraph_internal.cpp" />
     <ClCompile Include="..\..\src\Irisviel\search.cpp" />
   </ItemGroup>
