@@ -1,7 +1,7 @@
 #pragma once
 
 #include "dllexport.hpp"
-
+#include <utility>
 #include <cstdint>
 #include <cstddef>
 #include <type_traits>
@@ -87,7 +87,7 @@ namespace glasssix
 		/// <param name="...args">The arguments</param>
 		/// <returns>The object pointer</returns>
 		template<typename Object, typename... Args>
-		auto heap_alloc_object(Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		auto heap_alloc_object(Args&&... args) -> std::enable_if_t<std::is_constructible<Object, Args...>::value, Object*>
 		{
 			auto result = static_cast<Object*>(heap_alloc(sizeof(Object)));
 

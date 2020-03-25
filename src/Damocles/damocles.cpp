@@ -6,14 +6,7 @@ namespace glasssix
 {
 	namespace longinus
 	{
-		//Damocles::Damocles(int device)
-		//{
-		//	diodorus_.reset(new MTCNN(device));
-		//}
-
-		Damocles::~Damocles()
-		{
-		};
+		Damocles::~Damocles() {}
 
 		std::vector<FaceInfomation> Damocles::Detect(const unsigned char* img, const int channels, const int height, const int width,
 			const int min_size, const float* threshold, const float factor, const int stage, int order) const

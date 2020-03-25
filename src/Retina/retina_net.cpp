@@ -5,9 +5,9 @@
 #else
 #include "retina_net_data.hpp"
 #endif
-
 #include <glasssix/timer.hpp>
-
+#include "../../include/Julius/simd_helper.hpp"
+//define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
 #endif
@@ -26,7 +26,12 @@ namespace glasssix
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
 
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
+			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
@@ -40,6 +45,7 @@ namespace glasssix
 #endif
 			
 			float quantize_level = INT_MAX;
+
 			if (int8_quantization_)
 			{
 				Copy_Int8_Params(mobilenet0_conv0_fwd, retina_net);
@@ -138,137 +144,66 @@ namespace glasssix
 				Copy_Params(face_rpn_bbox_pred_stride8_bias, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride8_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride8_bias, retina_net, quantize_level);
-
-				//Copy_Int8_Params(mobilenet0_conv0_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv1_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv1_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv2_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv3_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv3_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv4_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv5_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv5_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv6_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv7_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv7_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv8_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv9_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv9_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv10_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv11_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv11_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv12_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv13_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv13_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv14_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv15_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv15_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv16_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv17_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv17_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv18_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv19_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv19_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv20_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv21_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv21_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv22_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv23_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv23_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv24_fwd, retina_net);
-				//Copy_Params(mobilenet0_conv25_fwd_weights, retina_net, quantize_level);
-				//Copy_Params(mobilenet0_conv25_fwd_bias, retina_net, quantize_level);
-				//Copy_Int8_Params(mobilenet0_conv26_fwd, retina_net);
-				//Copy_Int8_Params(rf_c3_lateral, retina_net);
-				//Copy_Int8_Params(rf_c3_det_conv1, retina_net);
-				//Copy_Int8_Params(rf_c3_det_context_conv1, retina_net);
-				//Copy_Int8_Params(rf_c3_det_context_conv2, retina_net);
-				//Copy_Int8_Params(rf_c3_det_context_conv3_1, retina_net);
-				//Copy_Int8_Params(rf_c3_det_context_conv3_2, retina_net);
-				//Copy_Int8_Params(face_rpn_cls_score_stride32, retina_net);
-				//Copy_Int8_Params(face_rpn_bbox_pred_stride32, retina_net);
-				//Copy_Int8_Params(face_rpn_landmark_pred_stride32, retina_net);
-				//Copy_Int8_Params(rf_c2_lateral, retina_net);
-				//Copy_Params(rf_c3_upsampling_weights, retina_net, quantize_level);
-				//Copy_Int8_Params(rf_c2_aggr, retina_net);
-				//Copy_Int8_Params(rf_c2_det_conv1, retina_net);
-				//Copy_Int8_Params(rf_c2_det_context_conv1, retina_net);
-				//Copy_Int8_Params(rf_c2_det_context_conv2, retina_net);
-				//Copy_Int8_Params(rf_c2_det_context_conv3_1, retina_net);
-				//Copy_Int8_Params(rf_c2_det_context_conv3_2, retina_net);
-				//Copy_Int8_Params(face_rpn_cls_score_stride16, retina_net);
-				//Copy_Int8_Params(face_rpn_bbox_pred_stride16, retina_net);
-				//Copy_Int8_Params(face_rpn_landmark_pred_stride16, retina_net);
-				//Copy_Int8_Params(rf_c1_red_conv, retina_net);
-				//Copy_Params(rf_c2_upsampling_weights, retina_net, quantize_level);
-				//Copy_Int8_Params(rf_c1_aggr, retina_net);
-				//Copy_Int8_Params(rf_c1_det_conv1, retina_net);
-				//Copy_Int8_Params(rf_c1_det_context_conv1, retina_net);
-				//Copy_Int8_Params(rf_c1_det_context_conv2, retina_net);
-				//Copy_Int8_Params(rf_c1_det_context_conv3_1, retina_net);
-				//Copy_Int8_Params(rf_c1_det_context_conv3_2, retina_net);
-				//Copy_Int8_Params(face_rpn_cls_score_stride8, retina_net);
-				//Copy_Int8_Params(face_rpn_bbox_pred_stride8, retina_net);
-				//Copy_Int8_Params(face_rpn_landmark_pred_stride8, retina_net);
 			}
 			else
 			{
 #ifdef INT8_DATA
+			    //already have retina_net_int8_data.hpp
 				Copy_Int8_to_FP32_Params(mobilenet0_conv0_fwd, retina_net);
 				Copy_Params(mobilenet0_conv0_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv1_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv1_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv2_fwd, retina_net);
+				Copy_Params(mobilenet0_conv2_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv2_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv3_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv3_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv4_fwd, retina_net);
+				Copy_Params(mobilenet0_conv4_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv4_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv5_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv5_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv6_fwd, retina_net);
+				Copy_Params(mobilenet0_conv6_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv6_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv7_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv7_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv8_fwd, retina_net);
+				Copy_Params(mobilenet0_conv8_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv8_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv9_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv9_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv10_fwd, retina_net);
+				Copy_Params(mobilenet0_conv10_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv10_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv11_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv11_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv12_fwd, retina_net);
+				Copy_Params(mobilenet0_conv12_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv12_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv13_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv13_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv14_fwd, retina_net);
+				Copy_Params(mobilenet0_conv14_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv14_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv15_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv15_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv16_fwd, retina_net);
+				Copy_Params(mobilenet0_conv16_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv16_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv17_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv17_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv18_fwd, retina_net);
+				Copy_Params(mobilenet0_conv18_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv18_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv19_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv19_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv20_fwd, retina_net);
+				Copy_Params(mobilenet0_conv20_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv20_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv21_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv21_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv22_fwd, retina_net);
+				Copy_Params(mobilenet0_conv22_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv22_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv23_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv23_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv24_fwd, retina_net);
+				Copy_Params(mobilenet0_conv24_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv24_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv25_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv25_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(mobilenet0_conv26_fwd, retina_net);
+				Copy_Params(mobilenet0_conv26_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv26_fwd_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(rf_c3_lateral, retina_net);
+				Copy_Params(rf_c3_lateral_weights, retina_net, quantize_level);
 				Copy_Params(rf_c3_lateral_bias, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c3_det_conv1, retina_net);
 				Copy_Params(rf_c3_det_conv1_bias, retina_net, quantize_level);
@@ -280,13 +215,13 @@ namespace glasssix
 				Copy_Params(rf_c3_det_context_conv3_1_bias, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c3_det_context_conv3_2, retina_net);
 				Copy_Params(rf_c3_det_context_conv3_2_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_cls_score_stride32, retina_net);
+				Copy_Params(face_rpn_cls_score_stride32_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_cls_score_stride32_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_bbox_pred_stride32, retina_net);
+				Copy_Params(face_rpn_bbox_pred_stride32_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_bbox_pred_stride32_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_landmark_pred_stride32, retina_net);
+				Copy_Params(face_rpn_landmark_pred_stride32_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride32_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(rf_c2_lateral, retina_net);
+				Copy_Params(rf_c2_lateral_weights, retina_net, quantize_level);
 				Copy_Params(rf_c2_lateral_bias, retina_net, quantize_level);
 				Copy_Params(rf_c3_upsampling_weights, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c2_aggr, retina_net);
@@ -301,13 +236,13 @@ namespace glasssix
 				Copy_Params(rf_c2_det_context_conv3_1_bias, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c2_det_context_conv3_2, retina_net);
 				Copy_Params(rf_c2_det_context_conv3_2_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_cls_score_stride16, retina_net);
+				Copy_Params(face_rpn_cls_score_stride16_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_cls_score_stride16_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_bbox_pred_stride16, retina_net);
+				Copy_Params(face_rpn_bbox_pred_stride16_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_bbox_pred_stride16_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_landmark_pred_stride16, retina_net);
+				Copy_Params(face_rpn_landmark_pred_stride16_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride16_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(rf_c1_red_conv, retina_net);
+				Copy_Params(rf_c1_red_conv_weights, retina_net, quantize_level);
 				Copy_Params(rf_c1_red_conv_bias, retina_net, quantize_level);
 				Copy_Params(rf_c2_upsampling_weights, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c1_aggr, retina_net);
@@ -322,13 +257,14 @@ namespace glasssix
 				Copy_Params(rf_c1_det_context_conv3_1_bias, retina_net, quantize_level);
 				Copy_Int8_to_FP32_Params(rf_c1_det_context_conv3_2, retina_net);
 				Copy_Params(rf_c1_det_context_conv3_2_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_cls_score_stride8, retina_net);
+				Copy_Params(face_rpn_cls_score_stride8_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_cls_score_stride8_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_bbox_pred_stride8, retina_net);
+				Copy_Params(face_rpn_bbox_pred_stride8_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_bbox_pred_stride8_bias, retina_net, quantize_level);
-				Copy_Int8_to_FP32_Params(face_rpn_landmark_pred_stride8, retina_net);
+				Copy_Params(face_rpn_landmark_pred_stride8_weights, retina_net, quantize_level);
 				Copy_Params(face_rpn_landmark_pred_stride8_bias, retina_net, quantize_level);
 #else
+                //copy float32_data directly
 				Copy_Params(mobilenet0_conv0_fwd_weights, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv0_fwd_bias, retina_net, quantize_level);
 				Copy_Params(mobilenet0_conv1_fwd_weights, retina_net, quantize_level);

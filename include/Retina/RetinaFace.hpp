@@ -45,13 +45,8 @@ namespace glasssix
 
 			~RetinaFace();
 
-			//Test in GTX1060:
-			// | model | speed | input size | preprocess time | inference | postprocess time |
-			//	| :------ : | : ---- : | : -------- : | : ------------ - : | : ------ - : | : -------------- : |
-			//	|  caffe | ????ms | 1920x1080 | ????ms | 61ms | ????ms      |
-			//	|  caffe | ????ms | 1280ｘ720 | ????ms | 44ms | ????ms      |
-			//	|  caffe | 17.3ms | 640ｘ480 | 3.9ms | 13.4ms | 1.0ms |
 			std::vector<FaceInfomation> detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold = 0.5, float scales = 1.0);
+		
 		private:
 			FaceBox bbox_pred(FaceBox anchor, std::vector<float> regress);
 			static bool CompareBBox(const FaceInfomation &a, const FaceInfomation &b);
@@ -74,12 +69,11 @@ namespace glasssix
 			std::vector<anchor_cfg> cfg;
 
 			std::vector<int> _feat_stride_fpn;
-			//每一层fpn的anchor形状
+			//shape of anchor in different fpn
 			std::map<std::string, std::vector<FaceBox>> _anchors_fpn;
-			//每一层所有点的anchor
+			//all anchors of each fpn
 			std::map<std::string, std::vector<FaceBox>> _anchors;
-			//每一层fpn有几种形状的anchor
-			//也就是ratio个数乘以scales个数
+			//number of different shapes in each fpn, ratio times scales
 			std::map<std::string, int> _num_anchors;
 
 			int device_ = -1;

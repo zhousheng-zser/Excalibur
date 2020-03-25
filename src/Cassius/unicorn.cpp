@@ -9,6 +9,7 @@
 #include "unicorn_data.hpp"
 #endif//INT8_DATA
 
+//define CALC_LAYERS, calculate time_consuming layer by layer
 //#define CALC_LAYERS
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
@@ -26,7 +27,12 @@ namespace glasssix
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
 
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
+			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
@@ -40,7 +46,6 @@ namespace glasssix
 #endif
 
 			float quantize_level = INT_MAX;
-
 			if (int8_quantization_)//false, doesn't use
 			{
 				Copy_Int8_Params(conv1a, Unicorn);//64
@@ -104,7 +109,8 @@ namespace glasssix
 			}
 			else
 			{
-#ifdef INT8_DATA
+#ifdef INT8_DATA 
+				//already have unicorn_int8_data.hpp
 				Copy_Int8_to_FP32_Params(conv1a, Unicorn);//18432
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
@@ -192,6 +198,7 @@ namespace glasssix
 				Copy_Params(conv5_dw_weights, Unicorn, quantize_level);//64
 				Copy_Params(conv5_dw_bias, Unicorn, quantize_level);//1024
 #else				
+			    //copy float32_data directly
 				Copy_Params(conv1a_weights, Unicorn, quantize_level);//864
 				Copy_Params(conv1a_bias, Unicorn, quantize_level);//64
 				Copy_Params(relu1a_weights, Unicorn, quantize_level);//32
@@ -512,6 +519,7 @@ namespace glasssix
 			delete conv5_dw;
 			delete normalizer;
 
+			//conv_weights and bias free automatically, prelu_weights need to free explicitly
 			FreeHost(relu1a_weights, false);
 			FreeHost(relu1b_weights, false);
 			FreeHost(relu2_1_weights, false);

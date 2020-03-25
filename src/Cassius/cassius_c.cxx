@@ -1,5 +1,5 @@
 #include "../../include/Cassius/cassius_c.h"
-#include "Primitives/memory.hpp"
+#include "../../include/Primitives/memory.hpp"
 
 #include <cstring>
 

@@ -15,18 +15,27 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Cassius\CassiusFeature.hpp">
+    <ClInclude Include="..\..\include\Athene\athene.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Cassius\unicorn.hpp">
+    <ClInclude Include="..\..\include\Athene\apc.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Athene\legacy_callback_wrapper.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Athene\simple_window.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp">
+    <ClCompile Include="..\..\src\Athene\athene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Cassius\unicorn.cpp">
+    <ClCompile Include="..\..\src\Athene\apc.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Athene\simple_window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
