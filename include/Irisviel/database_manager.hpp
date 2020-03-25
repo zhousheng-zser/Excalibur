@@ -1,17 +1,12 @@
 #pragma once
 
-#include "memory_mapping.hpp"
 #include "database_record.hpp"
-#include "database_header.hpp"
 #include "database_feature_observer.hpp"
 
 #include <string>
 #include <memory>
 #include <vector>
 #include <cstddef>
-#include <functional>
-
-#define IRISVIEL_VERSION 1000
 
 namespace glasssix
 {
@@ -22,8 +17,10 @@ namespace glasssix
 		class database_manager
 		{
 		public:
+			class impl;
+
 			database_manager(const std::string& file_path, std::size_t max_items, int dimension);
-			virtual ~database_manager() = default;
+			virtual ~database_manager();
 			bool contains(const std::string& key);
 			std::size_t update(database_record& record);
 			std::size_t remove(const std::string& key);
@@ -32,17 +29,10 @@ namespace glasssix
 			bool add(database_record& record);
 			std::vector<std::shared_ptr<database_record>> get_all_data();
 			std::shared_ptr<database_feature_observer> create_feature_observer();
-			bool save_changes() const;
-			void update_index_file(const std::string& file_path);
+			void save_changes() noexcept;
 			std::string file_path() const;
 		private:
-			std::size_t search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& action, int start_position, bool only_first);
-			std::size_t search_core(const std::function<bool(const database_record&)>& predicate, const std::function<void(database_record&, int)>& action, bool only_first);
-
-			int dimension_;
-			std::string file_path_;
-			database_header header_;
-			std::shared_ptr<memory_mapping> mapping_;
+			impl* impl_;
 		};
 	}
 }

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include <functional>
-#include <type_traits>
 
 namespace glasssix
 {

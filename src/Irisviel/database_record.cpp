@@ -19,65 +19,65 @@ namespace glasssix
 		class database_record_ref_impl : public database_record
 		{
 		public:
-			using data_type = basic_database_record<Dimension>;
+			using record_type = basic_database_record<Dimension>;
 
-			database_record_ref_impl(data_type* data) : data_{ data }
+			database_record_ref_impl(record_type* record) : record_{ record }
 			{
 			}
 
 			virtual std::size_t size() const noexcept override
 			{
-				return sizeof(*data_);
+				return sizeof(*record_);
 			}
 
 			virtual std::uint8_t* data() noexcept override
 			{
-				return reinterpret_cast<uint8_t*>(data_);
+				return reinterpret_cast<uint8_t*>(record_);
 			}
 
 			virtual const std::uint8_t* data() const noexcept override
 			{
-				return reinterpret_cast<const uint8_t*>(data_);
+				return reinterpret_cast<const uint8_t*>(record_);
 			}
 
 			virtual bool active() const noexcept override
 			{
-				return data_->active;
+				return record_->active;
 			}
 
 			virtual void active(bool value) noexcept override
 			{
-				data_->active = value;
+				record_->active = value;
 			}
 
 			virtual char* key() noexcept override
 			{
-				return data_->key;
+				return record_->key;
 			}
 
 			virtual const char* key() const noexcept override
 			{
-				return data_->key;
+				return record_->key;
 			}
 
 			virtual void key(const char* value) noexcept override
 			{
-				std::strcpy(data_->key, value);
+				std::strcpy(record_->key, value);
 			}
 
 			virtual float* feature() noexcept override
 			{
-				return data_->feature;
+				return record_->feature;
 			}
 
 			virtual const float* feature() const noexcept override
 			{
-				return data_->feature;
+				return record_->feature;
 			}
 
 			virtual void feature(const float* value) noexcept override
 			{
-				std::memcpy(data_->feature, value, sizeof(data_type::feature));
+				std::memcpy(record_->feature, value, sizeof(record_type::feature));
 			}
 
 			virtual std::size_t feature_offset() const noexcept override
@@ -85,88 +85,88 @@ namespace glasssix
 				return offsetof(basic_database_record<Dimension>, feature);
 			}
 		private:
-			data_type* data_;
+			record_type* record_;
 		};
 
 		template<int Dimension>
 		class database_record_impl : public database_record
 		{
 		public:
-			using data_type = basic_database_record<Dimension>;
+			using record_type = basic_database_record<Dimension>;
 
-			database_record_impl() : data_{ }
+			database_record_impl() : record_{}
 			{
 			}
 
-			database_record_impl(const data_type& data) : data_{ data }
+			database_record_impl(const record_type& record) : record_{ record }
 			{
 			}
 
-			database_record_impl(data_type&& data) : data_{ data }
+			database_record_impl(record_type&& data) : record_{ data }
 			{
 			}
 
 			virtual std::size_t size() const noexcept override
 			{
-				return sizeof(data_);
+				return sizeof(record_);
 			}
 
 			virtual std::uint8_t* data() noexcept override
 			{
-				return reinterpret_cast<uint8_t*>(&data_);
+				return reinterpret_cast<uint8_t*>(&record_);
 			}
 
 			virtual const std::uint8_t* data() const noexcept override
 			{
-				return reinterpret_cast<const uint8_t*>(&data_);
+				return reinterpret_cast<const uint8_t*>(&record_);
 			}
 
 			virtual bool active() const noexcept override
 			{
-				return data_.active;
+				return record_.active;
 			}
 
 			virtual void active(bool value) noexcept override
 			{
-				data_.active = value;
+				record_.active = value;
 			}
 
 			virtual char* key() noexcept override
 			{
-				return data_.key;
+				return record_.key;
 			}
 
 			virtual const char* key() const noexcept override
 			{
-				return data_.key;
+				return record_.key;
 			}
 
 			virtual void key(const char* value) noexcept override
 			{
-				std::strcpy(data_.key, value);
+				std::strcpy(record_.key, value);
 			}
 
 			virtual float* feature() noexcept override
 			{
-				return data_.feature;
+				return record_.feature;
 			}
 
 			virtual const float* feature() const noexcept override
 			{
-				return data_.feature;
+				return record_.feature;
 			}
 
 			virtual void feature(const float* value) noexcept override
 			{
-				std::memcpy(data_.feature, value, sizeof(data_type::feature));
+				std::memcpy(record_.feature, value, sizeof(record_type::feature));
 			}
 
 			virtual std::size_t feature_offset() const noexcept override
 			{
-				return offsetof(data_type, feature);
+				return offsetof(record_type, feature);
 			}
 		private:
-			data_type data_;
+			record_type record_;
 		};
 
 		std::shared_ptr<database_record> database_record::shared()
@@ -174,16 +174,16 @@ namespace glasssix
 			return shared_from_this();
 		}
 
-		std::size_t database_record::struct_size(int dimension) noexcept
+		std::size_t database_record::record_size(int dimension) noexcept
 		{
 			switch (dimension)
 			{
 			case 128:
-				return sizeof(database_record_impl<128>::data_type);
+				return sizeof(database_record_impl<128>::record_type);
 			case 512:
-				return sizeof(database_record_impl<512>::data_type);
+				return sizeof(database_record_impl<512>::record_type);
 			default:
-				return sizeof(database_record_impl<128>::data_type);
+				return sizeof(database_record_impl<128>::record_type);
 			}
 		}
 

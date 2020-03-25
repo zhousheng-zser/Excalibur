@@ -19,7 +19,6 @@ namespace glasssix
 
 		struct database_header_traits
 		{
-			static constexpr std::size_t header_size = sizeof(database_header);
 			static constexpr std::size_t current_position_offset = offsetof(database_header, current_position);
 		};
 	}
