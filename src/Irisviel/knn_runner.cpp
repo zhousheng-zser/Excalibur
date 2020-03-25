@@ -36,13 +36,11 @@ namespace glasssix
 		bool knn_runner::build(const std::string& map_file_name, bool rebuild)
 		{
 			map_file_path_ = map_file_name;
-			auto data = (*features_)();
-			if (data.size() < 1)
+			current_data_ = (*features_)();
+			if (current_data_.size() < 1)
 			{
 				return false;
 			}
-
-			current_data_ = std::move(data);
 
 			auto dimension = features_->dimension();
 			// auto uuid = boost::uuids::random_generator{}();
