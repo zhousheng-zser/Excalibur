@@ -45,7 +45,7 @@ namespace glasssix
 
 			~RetinaFace();
 
-			std::vector<FaceInfomation> detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold = 0.5, float scales = 1.0);
+			std::vector<FaceInfomation> detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold = 0.5);
 		
 		private:
 			FaceBox bbox_pred(FaceBox anchor, std::vector<float> regress);
