@@ -85,6 +85,7 @@ namespace glasssix
 
 				data.active(true);
 				mapping_.write_dynamic_buffer(header_.current_position, data);
+				record_entries_.emplace(data.key(), header_.current_position);
 
 				// Writes the new position.
 				header_.current_position++;
