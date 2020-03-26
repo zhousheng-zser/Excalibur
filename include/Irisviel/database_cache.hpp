@@ -19,9 +19,9 @@ namespace glasssix
 			}
 
 			database_cache() = default;
+			virtual ~database_cache();
 			operator bool() const noexcept;
 			void commit() const;
-			void remove_disk_files() const noexcept;
 		};
 	}
 }

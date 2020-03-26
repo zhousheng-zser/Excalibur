@@ -22,8 +22,8 @@ namespace glasssix
 			database_manager(const std::string& file_path, std::size_t max_items, int dimension);
 			virtual ~database_manager();
 			bool contains(const std::string& key);
-			std::size_t update(database_record& record);
-			std::size_t remove(const std::string& key);
+			bool update(database_record& record);
+			bool remove(const std::string& key);
 			bool empty() const noexcept;
 			bool full() const noexcept;
 			bool add(database_record& record);
