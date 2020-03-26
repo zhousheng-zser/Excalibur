@@ -37,6 +37,11 @@ namespace glasssix
 			mapping_.flush();
 		}
 
+		void memory_mapping_operator::mark_for_deletion() noexcept
+		{
+			mapping_.mark_for_deletion();
+		}
+
 		std::uint8_t* memory_mapping_operator::locate_bytes(std::size_t offset) const noexcept
 		{
 			return offset < mapping_.size() ? mapping_.data() + offset : nullptr;

@@ -22,6 +22,7 @@ namespace glasssix
 			std::size_t size() const noexcept;
 			std::string path() const;
 			void save_changes() noexcept;
+			void mark_for_deletion() noexcept;
 			std::uint8_t* locate_bytes(std::size_t offset) const noexcept;
 			std::uint8_t* locate_element_bytes(std::size_t index, std::size_t element_size) const noexcept;
 			void write_bytes(std::size_t offset, const std::uint8_t* buffer, std::size_t size);

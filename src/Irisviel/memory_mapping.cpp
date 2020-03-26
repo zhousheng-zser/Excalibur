@@ -1,4 +1,5 @@
 #include "memory_mapping.hpp"
+#include "filesystem_utils.hpp"
 
 #include <algorithm>
 
@@ -44,7 +45,7 @@ namespace glasssix
 	public:
 		using linux_stat_type = struct stat64;
 
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
 		{
 			file_descriptor_ = open64(path_.c_str(), O_RDWR);
 
@@ -71,7 +72,7 @@ namespace glasssix
 			record_ = static_cast<std::uint8_t*>(mmap64(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor_, 0));
 		}
 
-		virtual ~impl()
+		~impl()
 		{
 			if (*this)
 			{
@@ -84,6 +85,11 @@ namespace glasssix
 			{
 				close(file_descriptor_);
 				file_descriptor_ = linux_general_error_code;
+			}
+
+			if (mark_for_deletion_)
+			{
+				utils::safe_remove_file(path_);
 			}
 		}
 
@@ -114,17 +120,23 @@ namespace glasssix
 				msync(record_, size_, MS_SYNC);
 			}
 		}
+
+		void mark_for_deletion() noexcept
+		{
+			mark_for_deletion_ = true;
+		}
 	private:
 		std::string path_;
 		std::size_t size_;
 		std::uint8_t* record_;
 		int file_descriptor_;
+		bool mark_for_deletion_;
 	};
 #elif defined(_MSC_VER)
 	class memory_mapping::impl
 	{
 	public:
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
 		{
 			file_handle_ = CreateFileA(path_.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 
@@ -165,7 +177,7 @@ namespace glasssix
 			data_ = static_cast<std::uint8_t*>(MapViewOfFileEx(mapping_handle_, FILE_MAP_ALL_ACCESS, 0, 0, 0, nullptr));
 		}
 
-		virtual ~impl()
+		~impl()
 		{
 			if (data_)
 			{
@@ -184,6 +196,11 @@ namespace glasssix
 			{
 				CloseHandle(file_handle_);
 				file_handle_ = nullptr;
+			}
+
+			if (mark_for_deletion_)
+			{
+				utils::safe_remove_file(path_);
 			}
 		}
 
@@ -214,12 +231,18 @@ namespace glasssix
 				FlushViewOfFile(data_, 0);
 			}
 		}
+
+		void mark_for_deletion() noexcept
+		{
+			mark_for_deletion_ = true;
+		}
 	private:
 		std::string path_;
 		std::size_t size_;
 		std::uint8_t* data_;
 		HANDLE file_handle_;
 		HANDLE mapping_handle_;
+		bool mark_for_deletion_;
 	};
 #endif
 	memory_mapping::memory_mapping(const std::string& path, std::size_t size) noexcept : impl_{ new impl{ path, size } }
@@ -258,5 +281,10 @@ namespace glasssix
 	void memory_mapping::flush() noexcept
 	{
 		impl_->flush();
+	}
+
+	void memory_mapping::mark_for_deletion() noexcept
+	{
+		impl_->mark_for_deletion();
 	}
 }

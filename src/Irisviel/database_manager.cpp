@@ -120,6 +120,11 @@ namespace glasssix
 				return header_.current_position > header_.max_items || record_entries_.size() >= header_.max_items;
 			}
 
+			void mark_for_deletion() noexcept
+			{
+				mapping_.mark_for_deletion();
+			}
+
 			std::shared_ptr<database_feature_observer> create_feature_observer()
 			{
 				return std::make_shared<database_feature_observer>([this]
@@ -183,8 +188,8 @@ namespace glasssix
 			}
 
 			int dimension_;
-			std::size_t record_size_;
 			database_header header_;
+			std::size_t record_size_;
 			memory_mapping_operator mapping_;
 			std::unordered_map<std::string, int, case_insensitive_string_hash, case_insensitive_string_comparer> record_entries_;
 		};
@@ -230,6 +235,11 @@ namespace glasssix
 		bool database_manager::add(database_record& record)
 		{
 			return impl_->add(record);
+		}
+
+		void database_manager::mark_for_deletion() noexcept
+		{
+			impl_->mark_for_deletion();
 		}
 
 		std::vector<std::shared_ptr<database_record>> database_manager::get_all_data()

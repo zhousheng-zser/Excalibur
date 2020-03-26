@@ -27,6 +27,7 @@ namespace glasssix
 			bool empty() const noexcept;
 			bool full() const noexcept;
 			bool add(database_record& record);
+			void mark_for_deletion() noexcept;
 			std::vector<std::shared_ptr<database_record>> get_all_data();
 			std::shared_ptr<database_feature_observer> create_feature_observer();
 			void save_changes() noexcept;
