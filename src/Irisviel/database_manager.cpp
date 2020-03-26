@@ -1,6 +1,7 @@
 #include "database_manager.hpp"
 #include "database_header.hpp"
 #include "memory_mapping_operator.hpp"
+#include "Primitives/hash_utils.hpp"
 
 #include <cctype>
 #include <utility>
@@ -15,15 +16,6 @@ namespace glasssix
 		namespace
 		{
 			constexpr int database_header_version = 1000;
-			constexpr auto case_insensitive_string_hasher = [](const std::string& value)
-			{
-
-			};
-
-			constexpr auto case_insensitive_string_comparer = [](const std::string& left, const std::string& right)
-			{
-				return left.size() == right.size() && std::equal(std::begin(left), std::end(left), std::begin(right), std::end(right), [](int left, int right) { return left == right || std::tolower(left) == std::tolower(right); });
-			};
 		}
 
 		class database_manager::impl
@@ -78,18 +70,18 @@ namespace glasssix
 
 			bool add(database_record& data)
 			{
-				if (full())
+				if (full() || contains(data.key()))
 				{
 					return false;
 				}
 
+				// Appends an new item at the end.
 				data.active(true);
 				mapping_.write_dynamic_buffer(header_.current_position, data);
 				record_entries_.emplace(data.key(), header_.current_position);
 
 				// Writes the new position.
-				header_.current_position++;
-				mapping_.write_element_absolutely(database_header_traits::current_position_offset, header_.current_position);
+				update_current_position_core([](int& position) { position++; });
 
 				return true;
 			}
@@ -99,33 +91,33 @@ namespace glasssix
 				return record_entries_.find(key) != record_entries_.end();
 			}
 
-			std::size_t update(database_record& data)
+			bool update(database_record& data)
 			{
 				auto iter = record_entries_.find(data.key());
 
 				if (iter == record_entries_.end())
 				{
-					return 0;
+					return false;
 				}
 
 				mapping_.write_dynamic_buffer(iter->second, data);
 
-				return 1;
+				return true;
 			}
 
-			std::size_t remove(const std::string& key)
+			bool remove(const std::string& key)
 			{
-				return record_entries_.erase(key);
+				return record_entries_.erase(key) > 0;
 			}
 
 			bool empty() const noexcept
 			{
-				return header_.current_position <= 1;
+				return header_.current_position <= 1 && record_entries_.empty();
 			}
 
 			bool full() const noexcept
 			{
-				return header_.current_position > header_.max_items;
+				return header_.current_position > header_.max_items || record_entries_.size() >= header_.max_items;
 			}
 
 			std::shared_ptr<database_feature_observer> create_feature_observer()
@@ -148,19 +140,17 @@ namespace glasssix
 
 			void save_changes() noexcept
 			{
-				std::size_t index = 0;
+				int new_index = 1;
 
 				// Synchronizes the data.
 				for (auto [key, index] : record_entries_)
 				{
 					auto entry = mapping_.locate_element_bytes(index, record_size_);
 
-					mapping_.write_element_bytes(index, entry, record_size_);
-					index++;
+					mapping_.write_element_bytes(new_index++, entry, record_size_);
 				}
 
-				header_.current_position = static_cast<int>(record_entries_.size());
-				mapping_.write_element_absolutely(database_header_traits::current_position_offset, header_.current_position);
+				update_current_position_core([&](int& position) { position = new_index; });
 				mapping_.save_changes();
 			}
 
@@ -168,8 +158,14 @@ namespace glasssix
 			{
 				return mapping_.path();
 			}
-
 		private:
+			template<typename Handler>
+			void update_current_position_core(Handler&& handler)
+			{
+				std::forward<Handler>(handler)(header_.current_position);
+				mapping_.write_element_absolutely(database_header_traits::current_position_offset, header_.current_position);
+			}
+
 			void build_index_core()
 			{
 				record_entries_.clear();
@@ -186,42 +182,11 @@ namespace glasssix
 				}
 			}
 
-			template<typename Predicate, typename RecordHandler>
-			std::size_t search_core(Predicate&& predicate, RecordHandler&& handler, int start_position, bool only_first)
-			{
-				std::size_t count = 0;
-				auto data = database_record::create(dimension_);
-
-				for (int i = start_position + 1; i < header_.current_position; i++)
-				{
-					mapping_.get_dynamic_buffer(i, *data);
-
-					if (data && data->active() && std::forward<Predicate>(predicate)(*data))
-					{
-						std::forward<RecordHandler>(handler)(*data, i);
-						count++;
-
-						if (only_first)
-						{
-							break;
-						}
-					}
-				}
-
-				return count;
-			}
-
-			template<typename Predicate, typename RecordHandler>
-			std::size_t search_core(Predicate&& predicate, RecordHandler&& handler, bool only_first)
-			{
-				return search_core(std::forward<Predicate>(predicate), std::forward<RecordHandler>(handler), 0, only_first);
-			}
-
 			int dimension_;
 			std::size_t record_size_;
 			database_header header_;
 			memory_mapping_operator mapping_;
-			std::unordered_map<std::string, std::size_t> record_entries_;
+			std::unordered_map<std::string, int, case_insensitive_string_hash, case_insensitive_string_comparer> record_entries_;
 		};
 
 		database_manager::database_manager(const std::string& file_path, std::size_t max_items, int dimension) : impl_{ new impl{ file_path, max_items, dimension } }
@@ -242,12 +207,12 @@ namespace glasssix
 			return impl_->contains(key);
 		}
 
-		std::size_t database_manager::update(database_record& record)
+		bool database_manager::update(database_record& record)
 		{
 			return impl_->update(record);
 		}
 
-		std::size_t database_manager::remove(const std::string& key)
+		bool database_manager::remove(const std::string& key)
 		{
 			return impl_->remove(key);
 		}

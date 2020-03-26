@@ -3,6 +3,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <fstream>
+#include <utility>
 #include <algorithm>
 #include <unordered_set>
 #include <unordered_map>
@@ -26,6 +27,32 @@ namespace glasssix
 {
 	namespace irisviel
 	{
+		namespace
+		{
+			const fs::path database_extension{ ".map" };
+
+			template<typename Predicate>
+			void delete_if_core(std::vector<database_cache>& cache, Predicate&& predicate)
+			{
+				for (size_t i = 0; i < cache.size(); i++)
+				{
+					auto& item = cache[i];
+
+					if (std::forward<Predicate>(predicate)(item))
+					{
+						item.commit();
+					}
+
+					// Deletes the database if it is empty.
+					if (item.manager->empty())
+					{
+						cache.erase(cache.begin() + i);
+					}
+
+				}
+			}
+		}
+
 		face_service::face_service(int max_items, int dimension, const std::string& database_path, const std::string& cache_path) : max_items_{ max_items }, dimension_{ dimension }, database_path_{ database_path }, cache_path_{ cache_path }
 		{
 		}
@@ -49,7 +76,7 @@ namespace glasssix
 		{
 			for (auto& item : fs::directory_iterator{ database_path_, fs::directory_options::skip_permission_denied })
 			{
-				if (item.path().filename().extension() == ".map")
+				if (item.path().filename().extension() == database_extension)
 				{
 					auto pair = create_new_database_core(item.path().string());
 
@@ -86,38 +113,12 @@ namespace glasssix
 
 		void face_service::delete_features(const std::vector<std::string>& keys)
 		{
-			for (auto& item : cache_)
-			{
-				std::ptrdiff_t count = std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) > 0 && !item.manager->empty(); });
-
-				if (count > 0)
-				{
-					item.commit();
-				}
-
-				// Deletes the database if it is empty.
-				if (item.manager->empty())
-				{
-					item.remove_disk_files();
-				}
-			}
+			delete_if_core(cache_, [&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
 		}
 
 		void face_service::delete_feature(const std::string& key)
 		{
-			for (auto& item : cache_)
-			{
-				if (item.manager->remove(key) > 0 && !item.manager->empty())
-				{
-					item.commit();
-				}
-
-				// Deletes the database if it is empty.
-				if (item.manager->empty())
-				{
-					item.remove_disk_files();
-				}
-			}
+			delete_if_core(cache_, [&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
 		}
 
 		void face_service::add_features(const std::vector<std::shared_ptr<database_record>>& records)
@@ -155,7 +156,7 @@ namespace glasssix
 		{
 			for (auto& item : cache_)
 			{
-				if (item.manager->update(record) > 0)
+				if (item.manager->update(record))
 				{
 					item.commit();
 				}
@@ -166,7 +167,7 @@ namespace glasssix
 		{
 			for (auto& item : cache_)
 			{
-				std::ptrdiff_t count = std::count_if(records.begin(), records.end(), [&](const std::shared_ptr<database_record>& record) { return item.manager->update(*record) > 0; });
+				std::ptrdiff_t count = std::count_if(records.begin(), records.end(), [&](const std::shared_ptr<database_record>& record) { return item.manager->update(*record); });
 
 				if (count > 0)
 				{
@@ -189,7 +190,7 @@ namespace glasssix
 			else if (!already_contains)
 			{
 				auto uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
-				auto file_path = database_path_ / fmt::format("{}.map", uuid);
+				auto file_path = database_path_ / fmt::format("{}{}", uuid, database_extension.string());
 				std::ofstream{ file_path, std::ios::trunc | std::ios::binary };
 
 				return create_new_database_core(file_path.string());
