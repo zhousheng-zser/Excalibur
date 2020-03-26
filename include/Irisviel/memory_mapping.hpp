@@ -17,6 +17,7 @@ namespace glasssix
 		std::size_t size() const noexcept;
 		std::string path() const;
 		void flush() noexcept;
+		void mark_for_deletion() noexcept;
 	private:
 		impl* impl_;
 	};

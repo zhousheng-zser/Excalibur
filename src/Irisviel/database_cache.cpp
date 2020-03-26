@@ -10,7 +10,7 @@ namespace glasssix
 			// Deletes the disk file if they are empty.
 			if (manager && manager->empty())
 			{
-				utils::safe_remove_file(manager->file_path());
+				manager->mark_for_deletion();
 
 				if (wrapper)
 				{

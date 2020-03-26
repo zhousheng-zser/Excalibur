@@ -34,21 +34,22 @@ namespace glasssix
 			template<typename Predicate>
 			void delete_if_core(std::vector<database_cache>& cache, Predicate&& predicate)
 			{
-				for (size_t i = 0; i < cache.size(); i++)
+				for (auto iter = cache.begin(); iter != cache.end(); )
 				{
-					auto& item = cache[i];
-
-					if (std::forward<Predicate>(predicate)(item))
+					if (std::forward<Predicate>(predicate)(*iter))
 					{
-						item.commit();
+						iter->commit();
 					}
 
 					// Deletes the database if it is empty.
-					if (item.manager->empty())
+					if (iter->manager->empty())
 					{
-						cache.erase(cache.begin() + i);
+						iter = cache.erase(iter);
 					}
-
+					else
+					{
+						iter++;
+					}
 				}
 			}
 		}
