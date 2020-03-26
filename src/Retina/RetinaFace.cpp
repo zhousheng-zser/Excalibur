@@ -492,7 +492,7 @@ std::vector<FaceInfomation> RetinaFace::nms(std::vector<FaceInfomation>& bboxes,
 /// <param name="img_order">order type of image: NCHW(0) / NHWC(1)</param>
 /// <param name="threshold">threshold value, 0.5f by default</param>
 /// <param name="scales">scale value, 1.0f by default</param>
-std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold, float scales)
+std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold)
 {
 #ifdef SPLIT_TIME
 	glasssix::Timer calcTime;
@@ -514,6 +514,10 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 		img_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, img_height, img_width, img_channel}, device_, NHWC));
 	}
 
+	float scale = 1.0f;
+	int limit_height = 1080;
+	int limit_width = 1920;
+
 	int ws = (img_width + 31) / 32 * 32;
 	int hs = (img_height + 31) / 32 * 32;
 	std::shared_ptr<tensor<unsigned char>> img_bordered;
@@ -525,7 +529,18 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 	if (device_ < 0)
 	{
 		memcpy(img_tensor->mutable_cpu_data(), img_data, img_channel * img_height * img_width * sizeof(unsigned char));
-		tensor_operation_cpu::make_border_cpu(img_tensor, img_bordered, 0, hs - img_height, 0, ws - img_width);
+		if (img_height > limit_height || img_width > limit_width)
+		{
+			float scale_h = float(img_height) / limit_height;
+			float scale_w = float(img_width) / limit_width;
+			scale = scale_h > scale_w ? scale_h : scale_w;
+
+			tensor_operation_cpu::resize_cpu(img_tensor, img_tensor, int(img_height / scale), int(img_width / scale));
+			ws = (int(img_width / scale) + 31) / 32 * 32;
+			hs = (int(img_height / scale) + 31) / 32 * 32;
+		}
+
+		tensor_operation_cpu::make_border_cpu(img_tensor, img_bordered, 0, hs - int(img_height / scale), 0, ws - int(img_width / scale));
 
 		if (img_order != 0)
 		{
@@ -554,7 +569,18 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 
 #ifdef USE_CUDA
 		cudaMemcpy(img_tensor->mutable_gpu_data(), img_data, img_channel * img_height * img_width * sizeof(unsigned char), cudaMemcpyDefault);
-		tensor_operation_gpu::make_border_gpu(img_tensor, img_bordered, 0, hs - img_height, 0, ws - img_width);
+		if (img_height > limit_height || img_width > limit_width)
+		{
+			float scale_h = float(img_height) / limit_height;
+			float scale_w = float(img_width) / limit_width;
+			scale = scale_h > scale_w ? scale_h : scale_w;
+
+			tensor_operation_gpu::resize_gpu(img_tensor, img_tensor, int(img_height / scale), int(img_width / scale));
+			ws = (int(img_width / scale) + 31) / 32 * 32;
+			hs = (int(img_height / scale) + 31) / 32 * 32;
+		}
+
+		tensor_operation_gpu::make_border_gpu(img_tensor, img_bordered, 0, hs - int(img_height / scale), 0, ws - int(img_width / scale));
 
 		if (img_order != 0)
 		{
@@ -668,6 +694,19 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 				{
 					tmp.landmark[2 * k] = tmp.landmark[2 * k] * box_width + ctr_x;
 					tmp.landmark[2 * k + 1] = tmp.landmark[2 * k + 1] * box_height + ctr_y;
+				}
+
+				if (scale != 1.0f)
+				{
+					tmp.bbox.xmin *= scale;
+					tmp.bbox.xmax *= scale;
+					tmp.bbox.ymin *= scale;
+					tmp.bbox.ymax *= scale;
+
+					for (size_t k = 0; k < 10; k++)
+					{
+						tmp.landmark[k] *= scale;
+					}
 				}
 
 				faceInfo.push_back(tmp);
