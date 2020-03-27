@@ -59,7 +59,7 @@ namespace glasssix
 				throw std::out_of_range{ "The offset is out of range." };
 			}
 
-			std::memcpy(mapping_.data() + offset, buffer, size);
+			std::memmove(mapping_.data() + offset, buffer, size);
 		}
 
 		void memory_mapping_operator::write_element_bytes(std::size_t index, const std::uint8_t* buffer, std::size_t element_size)
@@ -69,14 +69,14 @@ namespace glasssix
 				throw std::out_of_range{ "The index is out of range." };
 			}
 
-			std::memcpy(mapping_.data() + index * element_size, buffer, element_size);
+			std::memmove(mapping_.data() + index * element_size, buffer, element_size);
 		}
 
 		void memory_mapping_operator::get_dynamic_buffer(std::size_t index, dynamic_buffer& buffer) const
 		{
 			if (auto ptr = locate_element_bytes(index, buffer.size()))
 			{
-				std::memcpy(buffer.data(), ptr, buffer.size());
+				std::memmove(buffer.data(), ptr, buffer.size());
 			}
 		}
 

@@ -6,9 +6,9 @@
 using glasssix::memory::heap_alloc_objects;
 using glasssix::memory::heap_alloc_elements;
 
-glasssix::irisviel::face_service *Irisviel_NewInstance(int max_items, int dimension, char * new_save_path, char *cache_path)
+glasssix::irisviel::face_service *Irisviel_NewInstance(int max_items, int dimension, char * working_directory)
 {
-	return new glasssix::irisviel::face_service(max_items, dimension, new_save_path, cache_path);
+	return new glasssix::irisviel::face_service(max_items, dimension, working_directory);
 }
 
 void Irisviel_ReleaseInstance(glasssix::irisviel::face_service *instance)

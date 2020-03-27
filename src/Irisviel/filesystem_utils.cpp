@@ -4,11 +4,19 @@ namespace glasssix
 {
 	namespace utils
 	{
+		namespace
+		{
+			thread_local std::error_code last_error_code;
+		}
+
 		bool safe_remove_file(const fs::path& path) noexcept
 		{
-			std::error_code code;
+			return fs::exists(path, last_error_code) ? fs::remove(path, last_error_code) : false;
+		}
 
-			return fs::exists(path, code) ? fs::remove(path, code) : false;
+		bool safe_create_directories(const fs::path& path) noexcept
+		{
+			return fs::create_directories(path, last_error_code);
 		}
 	}
 }

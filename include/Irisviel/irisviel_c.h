@@ -14,7 +14,7 @@ namespace glasssix
 	}
 }
 
-extern "C" IRISVIEL_C_EXPORT glasssix::irisviel::face_service *Irisviel_NewInstance(int max_items, int dimension, char * new_save_path, char *cache_path);
+extern "C" IRISVIEL_C_EXPORT glasssix::irisviel::face_service *Irisviel_NewInstance(int max_items, int dimension, char * working_directory);
 
 extern "C" IRISVIEL_C_EXPORT void Irisviel_ReleaseInstance(glasssix::irisviel::face_service *instance);
 

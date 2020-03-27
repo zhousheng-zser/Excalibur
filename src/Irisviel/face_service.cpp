@@ -1,8 +1,11 @@
 #include "face_service.hpp"
+#include "database_cache.hpp"
+#include "filesystem_utils.hpp"
 
+#include <list>
 #include <chrono>
-#include <cstdlib>
 #include <fstream>
+#include <cstddef>
 #include <utility>
 #include <algorithm>
 #include <unordered_set>
@@ -12,39 +15,160 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 
-namespace std
-{
-	template<> struct hash<glasssix::irisviel::database_cache>
-	{
-		std::size_t operator()(const glasssix::irisviel::database_cache& obj) const noexcept
-		{
-			return std::hash<decltype(obj.manager)>{}(obj.manager);
-		}
-	};
-}
-
 namespace glasssix
 {
 	namespace irisviel
 	{
 		namespace
 		{
+			const fs::path cache_folder{ "tmp" };
+			const fs::path database_folder{ "data" };
 			const fs::path database_extension{ ".map" };
+		}
 
-			template<typename Predicate>
-			void delete_if_core(std::vector<database_cache>& cache, Predicate&& predicate)
+		class face_service::impl
+		{
+		public:
+			impl(int max_items, int dimension, const fs::path& working_directory) : max_items_{ max_items }, dimension_{ dimension }, database_path_{ working_directory / database_folder }, cache_path_{ working_directory / cache_folder }
 			{
-				for (auto iter = cache.begin(); iter != cache.end(); )
+				utils::safe_create_directories(database_path_);
+				utils::safe_create_directories(cache_path_);
+			}
+
+			std::string database_path() const
+			{
+				return database_path_.string();
+			}
+
+			std::string cache_path() const
+			{
+				return cache_path_.string();
+			}
+
+			void clear()
+			{
+				cache_.clear();
+			}
+
+			void load_databases()
+			{
+				for (auto& item : fs::directory_iterator{ database_path_, fs::directory_options::skip_permission_denied })
 				{
-					if (std::forward<Predicate>(predicate)(*iter))
+					if (item.path().filename().extension() == database_extension)
 					{
-						iter->commit();
+						auto cache = create_new_database_core(item.path().string());
+
+						// Builds the existing database.
+						cache->wrapper->build(false);
+					}
+				}
+			}
+
+			std::vector<database_search_result> search(const float* feature, int top) const
+			{
+				std::chrono::milliseconds total_time;
+				std::vector<database_search_result> result;
+
+				for (auto& item : cache_)
+				{
+					std::chrono::milliseconds elapsed_time;
+					auto search_result = item->wrapper->search(feature, elapsed_time, top);
+
+					if (!search_result.empty())
+					{
+						auto single_result = search_result.front();
+						std::copy(single_result.begin(), single_result.end(), std::back_inserter(result));
+					}
+
+					total_time += elapsed_time;
+				}
+
+				std::sort(result.begin(), result.end(), [](const database_search_result& left, database_search_result& right) { return left.distance_in_percentage > right.distance_in_percentage; });
+				result.resize(std::min(static_cast<size_t>(top), result.size()));
+
+				return result;
+			}
+
+			void delete_features(const std::vector<std::string>& keys)
+			{
+				remove_if_core([&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
+			}
+
+			void delete_feature(const std::string& key)
+			{
+				remove_if_core([&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
+			}
+
+			void add_features(const std::vector<std::shared_ptr<database_record>>& records)
+			{
+				std::unordered_set<std::shared_ptr<database_cache>> changed_databases;
+
+				for (auto& record : records)
+				{
+					auto item = find_available_database_core(record->key());
+
+					if (item && item->manager->add(*record))
+					{
+						changed_databases.emplace(std::move(item));
+					}
+				}
+
+				// Builds the changed databases.
+				for (auto& item : changed_databases)
+				{
+					item->commit();
+				}
+			}
+
+			void add_feature(database_record& record)
+			{
+				auto item = find_available_database_core(record.key());
+
+				if (item && item->manager->add(record))
+				{
+					item->commit();
+				}
+			}
+
+			void update(database_record& record)
+			{
+				for (auto& item : cache_)
+				{
+					if (item->manager->update(record))
+					{
+						item->commit();
+					}
+				}
+			}
+
+			void update_more(const std::vector<std::shared_ptr<database_record>>& records)
+			{
+				for (auto& item : cache_)
+				{
+					std::ptrdiff_t count = std::count_if(records.begin(), records.end(), [&](const std::shared_ptr<database_record>& record) { return item->manager->update(*record); });
+
+					if (count > 0)
+					{
+						item->commit();
+					}
+				}
+			}
+
+		private:
+			template<typename Predicate>
+			void remove_if_core(Predicate&& predicate)
+			{
+				for (auto iter = cache_.begin(); iter != cache_.end(); )
+				{
+					if (std::forward<Predicate>(predicate)(**iter))
+					{
+						(*iter)->commit();
 					}
 
 					// Deletes the database if it is empty.
-					if (iter->manager->empty())
+					if ((*iter)->manager->empty())
 					{
-						iter = cache.erase(iter);
+						iter = cache_.erase(iter);
 					}
 					else
 					{
@@ -52,144 +176,25 @@ namespace glasssix
 					}
 				}
 			}
-		}
 
-		face_service::face_service(int max_items, int dimension, const std::string& database_path, const std::string& cache_path) : max_items_{ max_items }, dimension_{ dimension }, database_path_{ database_path }, cache_path_{ cache_path }
-		{
-		}
-
-		std::string face_service::database_path() const
-		{
-			return database_path_.string();
-		}
-
-		std::string face_service::cache_path() const
-		{
-			return cache_path_.string();
-		}
-
-		void face_service::clear()
-		{
-			cache_.clear();
-		}
-
-		void face_service::load_databases()
-		{
-			for (auto& item : fs::directory_iterator{ database_path_, fs::directory_options::skip_permission_denied })
+			std::shared_ptr<database_cache> find_available_database_core(const std::string& key)
 			{
-				if (item.path().filename().extension() == database_extension)
+				// Finds a database that can accommodate at least one record and ensures there is no repeated key among the databases.
+				for (auto& item : cache_)
 				{
-					auto pair = create_new_database_core(item.path().string());
+					// Ensures the uniqueness of the key.
+					if (item->manager->contains(key))
+					{
+						return nullptr;
+					}
 
-					// Builds the existing database.
-					pair.wrapper->build(false);
+					if (!item->manager->full())
+					{
+						return item;
+					}
 				}
-			}
-		}
 
-		std::vector<database_search_result> face_service::search(const float* feature, int top) const
-		{
-			std::chrono::milliseconds total_time;
-			std::vector<database_search_result> result;
-
-			for (auto& item : cache_)
-			{
-				std::chrono::milliseconds elapsed_time;
-				auto search_result = item.wrapper->search(feature, elapsed_time, top);
-
-				if (!search_result.empty())
-				{
-					auto single_result = search_result.front();
-					std::copy(single_result.begin(), single_result.end(), std::back_inserter(result));
-				}
-				
-				total_time += elapsed_time;
-			}
-
-			std::sort(result.begin(), result.end(), [](const database_search_result& left, database_search_result& right) { return left.distance_in_percentage > right.distance_in_percentage; });
-			result.resize(std::min(static_cast<size_t>(top), result.size()));
-
-			return result;
-		}
-
-		void face_service::delete_features(const std::vector<std::string>& keys)
-		{
-			delete_if_core(cache_, [&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
-		}
-
-		void face_service::delete_feature(const std::string& key)
-		{
-			delete_if_core(cache_, [&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
-		}
-
-		void face_service::add_features(const std::vector<std::shared_ptr<database_record>>& records)
-		{
-			std::unordered_set<database_cache> changed_databases;
-
-			for (auto& record : records)
-			{
-				auto item = find_available_database_core(record->key());
-
-				if (item && item.manager->add(*record))
-				{
-					changed_databases.emplace(std::move(item));
-				}
-			}
-
-			// Builds the changed databases.
-			for (auto& item : changed_databases)
-			{
-				item.commit();
-			}
-		}
-
-		void face_service::add_feature(database_record& record)
-		{
-			auto item = find_available_database_core(record.key());
-
-			if (item && item.manager->add(record))
-			{
-				item.commit();
-			}
-		}
-
-		void face_service::update(database_record& record)
-		{
-			for (auto& item : cache_)
-			{
-				if (item.manager->update(record))
-				{
-					item.commit();
-				}
-			}
-		}
-
-		void face_service::update_more(const std::vector<std::shared_ptr<database_record>>& records)
-		{
-			for (auto& item : cache_)
-			{
-				std::ptrdiff_t count = std::count_if(records.begin(), records.end(), [&](const std::shared_ptr<database_record>& record) { return item.manager->update(*record); });
-
-				if (count > 0)
-				{
-					item.commit();
-				}
-			}
-		}
-
-		database_cache face_service::find_available_database_core(const std::string& key)
-		{
-			// Finds a database that can accommodate at least one record and ensures there is no repeated key among the databases.
-			bool already_contains = false;
-			auto item = std::find_if(cache_.begin(), cache_.end(), [&](const database_cache& item) { return !(already_contains = item.manager->contains(key)) && !item.manager->full(); });
-
-			if (item != cache_.end())
-			{
-				return *item;
-			}
-			// Creates a new database if all the databases are full.
-			else if (!already_contains)
-			{
+				// Generates a new empty database.
 				auto uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
 				auto file_path = database_path_ / fmt::format("{}{}", uuid, database_extension.string());
 				std::ofstream{ file_path, std::ios::trunc | std::ios::binary };
@@ -197,15 +202,87 @@ namespace glasssix
 				return create_new_database_core(file_path.string());
 			}
 
-			return database_cache{};
+			std::shared_ptr<database_cache> create_new_database_core(const std::string& path)
+			{
+				auto manager = std::make_shared<database_manager>(path, max_items_, dimension_);
+				auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_path_.string());
+
+				return cache_.emplace_back(std::make_shared<database_cache>(std::move(manager), std::move(wrapper)));
+			}
+
+			int max_items_;
+			int dimension_;
+			fs::path cache_path_;
+			fs::path database_path_;
+			std::list<std::shared_ptr<database_cache>> cache_;
+		};
+
+		face_service::face_service(int max_items, int dimension, const std::string& working_directory) : impl_{ new impl{ max_items, dimension, working_directory } }
+		{
 		}
 
-		database_cache face_service::create_new_database_core(const std::string& path)
+		face_service::~face_service()
 		{
-			auto manager = std::make_shared<database_manager>(path, max_items_, dimension_);
-			auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_path_.string());
+			if (impl_)
+			{
+				delete impl_;
+				impl_ = nullptr;
+			}
+		}
 
-			return cache_.emplace_back(std::move(manager), std::move(wrapper));
+		void face_service::clear()
+		{
+			impl_->clear();
+		}
+
+		std::string face_service::database_path() const
+		{
+			return impl_->database_path();
+		}
+
+		std::string face_service::cache_path() const
+		{
+			return impl_->cache_path();
+		}
+
+		void face_service::load_databases()
+		{
+			impl_->load_databases();
+		}
+
+		std::vector<database_search_result> face_service::search(const float* feature, int top) const
+		{
+			return impl_->search(feature, top);
+		}
+
+		void face_service::delete_features(const std::vector<std::string>& keys)
+		{
+			impl_->delete_features(keys);
+		}
+
+		void face_service::delete_feature(const std::string& key)
+		{
+			impl_->delete_feature(key);
+		}
+
+		void face_service::add_features(const std::vector<std::shared_ptr<database_record>>& records)
+		{
+			impl_->add_features(records);
+		}
+
+		void face_service::add_feature(database_record& record)
+		{
+			impl_->add_feature(record);
+		}
+
+		void face_service::update(database_record& record)
+		{
+			impl_->update(record);
+		}
+
+		void face_service::update_more(const std::vector<std::shared_ptr<database_record>>& records)
+		{
+			impl_->update_more(records);
 		}
 	}
 }

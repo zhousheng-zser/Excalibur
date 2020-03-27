@@ -3,7 +3,6 @@
 #include "memory_mapping_operator.hpp"
 #include "Primitives/hash_utils.hpp"
 
-#include <cctype>
 #include <utility>
 #include <algorithm>
 #include <stdexcept>
@@ -21,7 +20,7 @@ namespace glasssix
 		class database_manager::impl
 		{
 		public:
-			impl(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (max_items + 1UL) * database_record::record_size(dimension) }
+			impl(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, removal_pending_{}, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (max_items + 1UL) * database_record::record_size(dimension) }
 			{
 				auto header = mapping_.locate_element_absolutely<database_header>(0);
 
@@ -44,28 +43,9 @@ namespace glasssix
 				build_index_core();
 			}
 
-			std::vector<std::shared_ptr<database_record>> get_all_data()
+			~impl()
 			{
-				std::vector<std::shared_ptr<database_record>> result;
-
-				if (header_.current_position > 0)
-				{
-					auto data = mapping_.const_data();
-
-					for (int i = 0; i < header_.current_position; i++)
-					{
-						auto element = database_record::create(dimension_);
-
-						mapping_.get_dynamic_buffer(i + 1, *element);
-
-						if (element && element->active())
-						{
-							result.emplace_back(element);
-						}
-					}
-				}
-
-				return result;
+				save_changes();
 			}
 
 			bool add(database_record& data)
@@ -107,7 +87,14 @@ namespace glasssix
 
 			bool remove(const std::string& key)
 			{
-				return record_entries_.erase(key) > 0;
+				if (record_entries_.erase(key) > 0)
+				{
+					removal_pending_ = true;
+
+					return true;
+				}
+
+				return false;
 			}
 
 			bool empty() const noexcept
@@ -145,17 +132,26 @@ namespace glasssix
 
 			void save_changes() noexcept
 			{
-				int new_index = 1;
-
-				// Synchronizes the data.
-				for (auto [key, index] : record_entries_)
+				// Synchronizes the data if any removal operation is pending.
+				if (removal_pending_)
 				{
-					auto entry = mapping_.locate_element_bytes(index, record_size_);
+					int new_index = 1;
 
-					mapping_.write_element_bytes(new_index++, entry, record_size_);
+					for (int i = 1; i < header_.current_position && new_index <= record_entries_.size(); i++)
+					{
+						auto entry = mapping_.locate_element_bytes(i, record_size_);
+						auto data_ref = database_record::create_ref(dimension_, entry);
+
+						if (data_ref && data_ref->active() && record_entries_.find(data_ref->key()) != record_entries_.end())
+						{
+							mapping_.write_element_bytes(new_index++, entry, record_size_);
+						}
+					}
+
+					update_current_position_core([&](int& position) { position = new_index; });
+					removal_pending_ = false;
 				}
-
-				update_current_position_core([&](int& position) { position = new_index; });
+				
 				mapping_.save_changes();
 			}
 
@@ -188,6 +184,7 @@ namespace glasssix
 			}
 
 			int dimension_;
+			bool removal_pending_;
 			database_header header_;
 			std::size_t record_size_;
 			memory_mapping_operator mapping_;
@@ -240,11 +237,6 @@ namespace glasssix
 		void database_manager::mark_for_deletion() noexcept
 		{
 			impl_->mark_for_deletion();
-		}
-
-		std::vector<std::shared_ptr<database_record>> database_manager::get_all_data()
-		{
-			return impl_->get_all_data();
 		}
 
 		std::shared_ptr<database_feature_observer> database_manager::create_feature_observer()

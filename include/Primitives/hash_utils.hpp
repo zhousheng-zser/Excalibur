@@ -1,5 +1,7 @@
 #pragma once
 
+#include "environment.hpp"
+
 #include <cctype>
 #include <string>
 #include <cstddef>
@@ -10,7 +12,7 @@ namespace glasssix
 {
 	namespace utils
 	{
-#if defined(_MSC_VER) && !defined(_WIN64)
+#ifdef GLASSSIX_ENVIRONMENT_32_BITS
 		template<typename T>
 		void hash_combine(std::size_t& result, T&& value)
 		{
@@ -21,7 +23,7 @@ namespace glasssix
 
 			result ^= hash + magic_factor + (result << 6) + (result >> 2);
 		}
-#elif defined(_MSC_VER) && defined(_WIN64)
+#elif defined(GLASSSIX_ENVIRONMENT_64_BITS)
 		template<typename T>
 		void hash_combine(std::size_t& result, T&& value)
 		{
@@ -60,7 +62,7 @@ namespace glasssix
 		{
 			std::size_t result = 0;
 
-			std::for_each(value.cbegin(), value.cend(), [&](int c) { utils::hash_combine(result, std::tolower(c)); });
+			std::for_each(value.begin(), value.end(), [&](int c) { utils::hash_combine(result, std::tolower(c)); });
 
 			return result;
 		}
@@ -73,7 +75,7 @@ namespace glasssix
 	{
 		bool operator()(const std::string& left, const std::string& right) const
 		{
-			return left.size() == right.size() && std::equal(std::begin(left), std::end(left), std::begin(right), std::end(right), [](int left, int right) { return left == right || std::tolower(left) == std::tolower(right); });
+			return left.size() == right.size() && std::equal(std::begin(left), std::end(left), std::begin(right), std::end(right), [](int c1, int c2) { return c1 == c2 || std::tolower(c1) == std::tolower(c2); });
 		}
 	};
 }
