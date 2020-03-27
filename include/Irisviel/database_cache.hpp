@@ -22,6 +22,7 @@ namespace glasssix
 			virtual ~database_cache();
 			operator bool() const noexcept;
 			void commit() const;
+			void mark_for_deletion() noexcept;
 		};
 	}
 }

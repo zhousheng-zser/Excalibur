@@ -12,7 +12,7 @@ namespace glasssix
 		{
 		public:
 			template<typename Retriever>
-			database_feature_observer(Retriever&& retriever, int dimension) : retriever_{ std::forward<Retriever>(retriever) }, dimension_{ dimension }
+			database_feature_observer(Retriever&& retriever, int dimension) : dimension_{ dimension }, retriever_{ std::forward<Retriever>(retriever) }
 			{
 			}
 

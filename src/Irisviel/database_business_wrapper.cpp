@@ -1,4 +1,5 @@
 #include "database_business_wrapper.hpp"
+#include "filesystem_utils.hpp"
 #include "irisviel_search.hpp"
 #include "nsg_calculate_error.hpp"
 
@@ -11,173 +12,237 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_path) : observer_{ observer }, map_file_path_{ map_file_path }, cache_path_{ cache_path }, cache_file_path_{ cache_path_ / fmt::format("{}.idx", map_file_path_.filename().replace_extension().string()) }, valid_state_{ false }
+		class database_business_wrapper::impl
 		{
-		}
-
-		std::string database_business_wrapper::cache_file_path() const
-		{
-			return cache_file_path_.string();
-		}
-
-		bool database_business_wrapper::build(bool rebuild)
-		{
-			current_data_ = (*observer_)();
-
-			if (current_data_.size() < 1)
+		public:
+			impl(const std::shared_ptr<database_feature_observer>& observer, const fs::path& map_file_path, const fs::path& cache_path) : valid_state_{}, mark_for_deletion_{}, cache_path_{ cache_path }, map_file_path_{ map_file_path }, cache_file_path_{ cache_path_ / fmt::format("{}.idx", map_file_path_.filename().replace_extension().string()) }, observer_{ observer }
 			{
-				return false;
 			}
 
-			auto safe_handler = [&](auto&& handler)
+			~impl()
 			{
-				valid_state_ = false;
-
-				try
+				if (mark_for_deletion_)
 				{
-					std::forward<decltype(handler)>(handler)();
-					valid_state_ = true;
-
-					return valid_state_;
+					utils::safe_remove_file(cache_file_path_);
 				}
-				catch (nsg_calculate_error&)
+			}
+
+			std::string cache_file_path() const
+			{
+				return cache_file_path_.string();
+			}
+
+			void mark_for_deletion() noexcept
+			{
+				mark_for_deletion_ = true;
+			}
+
+			bool build(bool rebuild)
+			{
+				current_data_ = (*observer_)();
+
+				if (current_data_.size() < 1)
 				{
 					return false;
 				}
-				catch (std::bad_alloc&)
+
+				auto safe_handler = [&](auto&& handler)
+				{
+					valid_state_ = false;
+
+					try
+					{
+						std::forward<decltype(handler)>(handler)();
+						valid_state_ = true;
+
+						return valid_state_;
+					}
+					catch (nsg_calculate_error&)
+					{
+						return false;
+					}
+					catch (std::bad_alloc&)
+					{
+						return false;
+					}
+				};
+
+				auto dimension = observer_->dimension();
+
+				// Build the data.
+				// We must catch the exceptions of infinite numbers here.
+				if (!safe_handler([&] { searcher_ = std::make_shared<irisviel_search>(current_data_, dimension); }))
 				{
 					return false;
 				}
-			};
 
-			auto dimension = observer_->dimension();
-
-			// Build the data.
-			// We must catch the exceptions of infinite numbers here.
-			if (!safe_handler([&] { searcher_ = std::make_shared<irisviel_search>(current_data_, dimension); }))
-			{
-				return false;
-			}
-
-			if (current_data_.size() > 1)
-			{
-				auto cache_file_path = cache_file_path_.string();
-
-				// rebuild only if the file does not exist.
-				if (rebuild || !std::ifstream{ cache_file_path, std::ios::binary }.is_open())
+				if (current_data_.size() > 1)
 				{
+					auto cache_file_path = cache_file_path_.string();
 
-					if (!safe_handler([&] { searcher_->build_graph(); }))
+					// rebuild only if the file does not exist.
+					if (rebuild || !std::ifstream{ cache_file_path, std::ios::binary }.is_open())
+					{
+
+						if (!safe_handler([&] { searcher_->build_graph(); }))
+						{
+							return false;
+						}
+
+						searcher_->save_graph(cache_file_path.c_str());
+					}
+
+					// Load the searcher.
+					try
+					{
+						searcher_->load_graph(cache_file_path.c_str());
+					}
+					// Note: we check the file very strictly to ensure that it is a valid file.
+					// So there should almost be an exception if the file was created when the power shut down unexpectedly.
+					catch (nsg_calculate_error&)
+					{
+						if (!safe_handler([&] { searcher_->build_graph(); }))
+						{
+							return false;
+						}
+
+						searcher_->save_graph(cache_file_path.c_str());
+						searcher_->load_graph(cache_file_path.c_str());
+					}
+
+					if (!safe_handler([&] { searcher_->optimize_graph(); }))
 					{
 						return false;
 					}
 
-					searcher_->save_graph(cache_file_path.c_str());
 				}
 
-				// Load the searcher.
-				try
-				{
-					searcher_->load_graph(cache_file_path.c_str());
-				}
-				// Note: we check the file very strictly to ensure that it is a valid file.
-				// So there should almost be an exception if the file was created when the power shut down unexpectedly.
-				catch (nsg_calculate_error&)
-				{
-					if (!safe_handler([&] { searcher_->build_graph(); }))
-					{
-						return false;
-					}
-
-					searcher_->save_graph(cache_file_path.c_str());
-					searcher_->load_graph(cache_file_path.c_str());
-				}
-
-				if (!safe_handler([&] { searcher_->optimize_graph(); }))
-				{
-					return false;
-				}
-
+				return true;
 			}
 
-			return true;
-		}
-
-		std::vector<std::vector<database_search_result>> database_business_wrapper::search(const float* feature, std::chrono::milliseconds& elapsed_time, int top) const
-		{
-			return search_many({ feature }, elapsed_time, top);
-		}
-
-		std::vector<std::vector<database_search_result>> database_business_wrapper::search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top) const
-		{
-			int dimension = observer_->dimension();
-			std::vector<std::vector<database_search_result>> result;
-
-			// We only search the result when the current state is valid.
-			if (!valid_state_)
+			std::vector<std::vector<database_search_result>> search(const float* feature, std::chrono::milliseconds& elapsed_time, int top) const
 			{
-				return result;
+				return search_many({ feature }, elapsed_time, top);
 			}
 
-			try
+			std::vector<std::vector<database_search_result>> search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top) const
 			{
-				if (current_data_.size() < 1 || !searcher_)
+				int dimension = observer_->dimension();
+				std::vector<std::vector<database_search_result>> result;
+
+				// We only search the result when the current state is valid.
+				if (!valid_state_)
 				{
 					return result;
 				}
 
-				top = std::min(static_cast<int>(current_data_.size()), top);
-
-				// Start timing.
-				auto start = std::chrono::high_resolution_clock::now();
-
-				vector2d<uint32_t> ids;
-				vector2d<float> distances;
-
-				std::tie(ids, distances) = searcher_->search_vector(features, top);
-
-				// Construct results.
-				for (std::size_t i = 0; i < distances.size(); i++)
+				try
 				{
-					std::vector<database_search_result> inner;
-
-					for (std::size_t j = 0; j < distances[i].size(); j++)
+					if (current_data_.size() < 1 || !searcher_)
 					{
-						// Check if the index is out of range.
-						std::size_t index = ids[i][j];
-
-						if (current_data_.size() == 1)
-						{
-							index = std::min<std::size_t>(index, 0);
-						}
-
-						if (index >= current_data_.size())
-						{
-							continue;
-						}
-
-						// Retrieve the orginal data in the mapping file.
-						auto offset = reinterpret_cast<const std::uint8_t*>(current_data_[index]) - database_record::feature_offset(dimension);
-						auto result = database_record::create(dimension, const_cast<std::uint8_t*>(offset));
-						auto orginal_data = reinterpret_cast<const database_record*>(reinterpret_cast<const std::uint8_t*>(current_data_[index]) - database_record::feature_offset(dimension));
-
-						inner.emplace_back(database_search_result{ result, distances[i][j] });
+						return result;
 					}
 
-					result.emplace_back(inner);
-				}
+					top = std::min(static_cast<int>(current_data_.size()), top);
 
-				// End timing.
-				auto end = std::chrono::high_resolution_clock::now();
-				elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+					// Start timing.
+					auto start = std::chrono::high_resolution_clock::now();
+
+					vector2d<uint32_t> ids;
+					vector2d<float> distances;
+
+					std::tie(ids, distances) = searcher_->search_vector(features, top);
+
+					// Construct results.
+					for (std::size_t i = 0; i < distances.size(); i++)
+					{
+						std::vector<database_search_result> inner;
+
+						for (std::size_t j = 0; j < distances[i].size(); j++)
+						{
+							// Check if the index is out of range.
+							std::size_t index = ids[i][j];
+
+							if (current_data_.size() == 1)
+							{
+								index = std::min<std::size_t>(index, 0);
+							}
+
+							if (index >= current_data_.size())
+							{
+								continue;
+							}
+
+							// Retrieve the orginal data in the mapping file.
+							auto offset = reinterpret_cast<const std::uint8_t*>(current_data_[index]) - database_record::feature_offset(dimension);
+							auto result = database_record::create(dimension, const_cast<std::uint8_t*>(offset));
+							auto orginal_data = reinterpret_cast<const database_record*>(reinterpret_cast<const std::uint8_t*>(current_data_[index]) - database_record::feature_offset(dimension));
+
+							inner.emplace_back(database_search_result{ result, distances[i][j] });
+						}
+
+						result.emplace_back(inner);
+					}
+
+					// End timing.
+					auto end = std::chrono::high_resolution_clock::now();
+					elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+
+					return result;
+				}
+				catch (...)
+				{
+				}
 
 				return result;
 			}
-			catch (...)
-			{
-			}
+		private:
+			bool valid_state_;
+			bool mark_for_deletion_;
+			fs::path cache_path_;
+			fs::path map_file_path_;
+			fs::path cache_file_path_;
+			std::vector<const float*> current_data_;
+			std::shared_ptr<irisviel_search> searcher_;
+			std::shared_ptr<database_feature_observer> observer_;
+		};
 
-			return result;
+		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_path) : impl_{ new impl{ observer, map_file_path, cache_path } }
+		{
+		}
+
+		database_business_wrapper::~database_business_wrapper()
+		{
+			if (impl_)
+			{
+				delete impl_;
+				impl_ = nullptr;
+			}
+		}
+
+		bool database_business_wrapper::build(bool rebuild)
+		{
+			return impl_->build(rebuild);
+		}
+
+		void database_business_wrapper::mark_for_deletion() noexcept
+		{
+			impl_->mark_for_deletion();
+		}
+
+		std::string database_business_wrapper::cache_file_path() const
+		{
+			return impl_->cache_file_path();
+		}
+
+		std::vector<std::vector<database_search_result>> database_business_wrapper::search(const float* feature, std::chrono::milliseconds& elapsed_time, int top) const
+		{
+			return impl_->search(feature, elapsed_time, top);
+		}
+
+		std::vector<std::vector<database_search_result>> database_business_wrapper::search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top) const
+		{
+			return impl_->search_many(features, elapsed_time, top);
 		}
 	}
 }
