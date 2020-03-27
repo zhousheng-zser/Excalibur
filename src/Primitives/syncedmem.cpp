@@ -1,4 +1,11 @@
 #include "../../include/Primitives/syncedmem.hpp"
+/*
+* If CUDA is available and in GPU mode, host memory will be allocated pinned,
+* using cudaMallocHost. It avoids dynamic pinning for transfers (DMA).
+* The improvement in performance seems negligible in the single GPU case,
+* but might be more significant for parallel training. Most importantly,
+* it improved stability for large models on many GPUs.
+*/
 
 namespace glasssix
 {
@@ -188,12 +195,12 @@ namespace glasssix
 			CHECK(head_ == HEAD_AT_CPU);
 			if (gpu_ptr_ == nullptr) {
 
-				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
 
 				own_gpu_data_ = true;
 			}
 			const cudaMemcpyKind put = cudaMemcpyHostToDevice;
-			CUDA_CHECK(cudaMemcpyAsync(gpu_ptr_, cpu_ptr_, size_, put, stream));
+			CUDA_CHECK(cudaMemcpyAsync(gpu_ptr_, cpu_ptr_, size_ * sizeof(Dtype), put, stream));
 			// Assume caller will synchronize on the stream before use
 			head_ = SYNCED;
 		}
@@ -225,7 +232,7 @@ namespace glasssix
 				//MallocHost(&cpu_ptr_, size_, &cpu_malloc_use_cuda_, device_);
 				if (allocator_)
 				{
-					cpu_ptr_ = allocator_->fastMalloc(size_, device_);
+					cpu_ptr_ = static_cast<Dtype*>(allocator_->fastMalloc(size_ * sizeof(Dtype), device_));
 				}
 				else
 				{
@@ -233,17 +240,17 @@ namespace glasssix
 					{
 #ifdef USE_CUDA
 						CUDA_CHECK(cudaSetDevice(device_));
-						CUDA_CHECK(cudaMallocHost(&cpu_ptr_, size_));
+						CUDA_CHECK(cudaMallocHost(&cpu_ptr_, size_ * sizeof(Dtype)));
 #else
 						NO_GPU;
 #endif
 					}
 					else
 					{
-						cpu_ptr_ = aligned_heap_alloc(size_);
+						cpu_ptr_ = aligned_heap_alloc(size_ * sizeof(Dtype));
 					}
 				}
-				memset(cpu_ptr_, 0, size_);
+				memset(cpu_ptr_, 0, size_ * sizeof(Dtype));
 				head_ = HEAD_AT_CPU;
 				own_cpu_data_ = true;
 				break;
@@ -254,7 +261,7 @@ namespace glasssix
 					//MallocHost(&cpu_ptr_, size_, &cpu_malloc_use_cuda_, device_);
 					if (allocator_)
 					{
-						cpu_ptr_ = allocator_->fastMalloc(size_, device_);
+						cpu_ptr_ = static_cast<Dtype*>(allocator_->fastMalloc(size_ * sizeof(Dtype), device_));
 					}
 					else
 					{
@@ -262,21 +269,21 @@ namespace glasssix
 						{
 #ifdef USE_CUDA
 							CUDA_CHECK(cudaSetDevice(device_));
-							CUDA_CHECK(cudaMallocHost(&cpu_ptr_, size_));
+							CUDA_CHECK(cudaMallocHost(&cpu_ptr_, size_ * sizeof(Dtype)));
 #else
 							NO_GPU;
 #endif
 						}
 						else
 						{
-							cpu_ptr_ = aligned_heap_alloc(size_);
+							cpu_ptr_ = aligned_heap_alloc(size_ * sizeof(Dtype));
 						}
 					}
 					own_cpu_data_ = true;
 				}
 				if (gpu_ptr_ != cpu_ptr_)
 				{
-					CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_, cudaMemcpyDefault));
+					CUDA_CHECK(cudaMemcpy(cpu_ptr_, gpu_ptr_, size_ * sizeof(Dtype), cudaMemcpyDefault));
 				}
 				head_ = SYNCED;
 #else
@@ -296,18 +303,18 @@ namespace glasssix
 			switch (head_)
 			{
 			case UNINITIALIZED:
-				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
-				cudaMemset(gpu_ptr_, 0, size_);
+				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
+				cudaMemset(gpu_ptr_, 0, size_ * sizeof(Dtype));
 				head_ = HEAD_AT_GPU;
 				own_gpu_data_ = true;
 				break;
 			case HEAD_AT_CPU:
 				if (gpu_ptr_ == nullptr)
 				{
-					CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_));
+					CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
 					own_gpu_data_ = true;
 				}
-				CUDA_CHECK(cudaMemcpy(gpu_ptr_, cpu_ptr_, size_, cudaMemcpyDefault));
+				CUDA_CHECK(cudaMemcpy(gpu_ptr_, cpu_ptr_, size_ * sizeof(Dtype), cudaMemcpyDefault));
 				head_ = SYNCED;
 				break;
 			case HEAD_AT_GPU:
