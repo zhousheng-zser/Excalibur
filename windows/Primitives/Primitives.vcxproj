@@ -169,12 +169,14 @@
     <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
     <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
+    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
