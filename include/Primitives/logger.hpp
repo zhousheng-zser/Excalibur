@@ -141,7 +141,7 @@ namespace glasssix
 		}
 	};
 
-#define LOG(Level) glasssix::ConsoleLogger{}(__FILE__, __LINE__, glasssix::GLASSSIX_LOG_##Level)
+#define LOG(Level) glasssix::ConsoleLogger{}(__FILE__, __LINE__, glasssix::LogLevel::GLASSSIX_LOG_##Level)
 
 	//#define LOG(Level) std::cout << "[" << glasssix::LevelStr.find(glasssix::GLASSSIX_LOG_##Level)->second << "] "
 
