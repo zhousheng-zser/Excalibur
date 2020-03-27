@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp" />
+    <ClInclude Include="..\..\include\Primitives\environment.hpp" />
     <ClInclude Include="..\..\include\Primitives\hash_utils.hpp" />
     <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />

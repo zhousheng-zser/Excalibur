@@ -123,7 +123,7 @@ namespace glasssix
 			{
 				if (current_data_.size() < 1 || !searcher_)
 				{
-					return std::vector<std::vector<database_search_result>>{};
+					return result;
 				}
 
 				top = std::min(static_cast<int>(current_data_.size()), top);
@@ -137,18 +137,18 @@ namespace glasssix
 				std::tie(ids, distances) = searcher_->search_vector(features, top);
 
 				// Construct results.
-				for (size_t i = 0; i < distances.size(); i++)
+				for (std::size_t i = 0; i < distances.size(); i++)
 				{
 					std::vector<database_search_result> inner;
 
-					for (size_t j = 0; j < distances[i].size(); j++)
+					for (std::size_t j = 0; j < distances[i].size(); j++)
 					{
 						// Check if the index is out of range.
-						auto index = ids[i][j];
+						std::size_t index = ids[i][j];
 
 						if (current_data_.size() == 1)
 						{
-							index = std::min(index, 0U);
+							index = std::min<std::size_t>(index, 0);
 						}
 
 						if (index >= current_data_.size())
