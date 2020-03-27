@@ -28,14 +28,14 @@ namespace glasssix
 	/// Get the number of CUDA support compute-capable devices
 	/// </summary>
 	/// <returns>The number of devices</returns>
-	static int get_cuda_device_count();
+	int get_cuda_device_count();
 
 	/// <summary>
 	/// Get the ASCII string identifying of the device_id
 	/// </summary>
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
 	/// <returns>The number of compute-capable devices</returns>
-	static std::string get_cuda_device_name(int device_id);
+	std::string get_cuda_device_name(int device_id);
 
 	/// <summary>
 	/// Get the latest version of CUDA supported by the driver.
@@ -45,21 +45,21 @@ namespace glasssix
 	/// </summary>
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
 	/// <returns>Returns the CUDA driver version.</returns>
-	static int get_cuda_device_driver_version(int device_id);
+	int get_cuda_device_driver_version(int device_id);
 
 	/// <summary>
 	/// Get the version number of the current CUDA Runtime instance
 	/// </summary>
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
 	/// <returns>Returns the CUDA Runtime version.</returns>
-	static int get_cuda_device_runtime_version(int device_id);
+	int get_cuda_device_runtime_version(int device_id);
 
 	/// <summary>
 	/// Get are the major and minor revision numbers defining the device's compute capability.
 	/// </summary>
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
 	/// <returns>Returns 10 * major + minor</returns>
-	static int get_cuda_device_capability(int device_id);
+	int get_cuda_device_capability(int device_id);
 
 	/// <summary>
 	/// Returns free and total respectively, the free and total amount of  memory available for allocation by the device in Mbytes.
@@ -67,9 +67,9 @@ namespace glasssix
 	/// <param name="device_id">The 0-indexed id of the cuda device</param>
 	/// <param name="total_size">Total memory in Mb</param>
 	/// <param name="free_size">Free memory in Mb</param>
-	static void get_cuda_device_memory(int device_id, std::size_t &total_size, std::size_t &free_size);
+	void get_cuda_device_memory(int device_id, std::size_t &total_size, std::size_t &free_size);
 
-	static int get_cuda_device_cuda_core_num(int device_id);
+	int get_cuda_device_cuda_core_num(int device_id);
 #endif //!USE_CUDA
 #endif //!x86
 }
