@@ -1,0 +1,34 @@
+#pragma once
+
+#include "dynamic_buffer.hpp"
+
+#include <memory>
+#include <cstddef>
+
+namespace glasssix
+{
+	namespace irisviel
+	{
+		struct database_record : dynamic_buffer, std::enable_shared_from_this<database_record>
+		{
+			virtual bool active() const noexcept = 0;
+			virtual void active(bool value) noexcept = 0;
+			virtual char* key() noexcept = 0;
+			virtual const char* key() const noexcept = 0;
+			virtual void key(const char* value) noexcept = 0;
+			virtual float* feature() noexcept = 0;
+			virtual const float* feature() const noexcept = 0;
+			virtual void feature(const float* value) noexcept = 0;
+			virtual std::size_t feature_offset() const noexcept = 0;
+			std::shared_ptr<database_record> shared();
+
+			static std::size_t record_size(int dimension) noexcept;
+			static std::size_t feature_offset(int dimension) noexcept;
+			static std::shared_ptr<database_record> create(int dimension);
+			static std::shared_ptr<database_record> create(int dimension, std::uint8_t* ptr);
+			static std::shared_ptr<database_record> create_ref(int dimension, std::uint8_t* ptr);
+			static bool key_equals(const char* left, const char* right);
+			static bool key_equals(const database_record& left, const database_record& right);
+		};
+	}
+}
