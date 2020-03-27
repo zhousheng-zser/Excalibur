@@ -66,6 +66,9 @@
     <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\memory.cpp">
@@ -78,6 +81,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Primitives\simd_types.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

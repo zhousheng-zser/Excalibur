@@ -95,7 +95,6 @@ namespace glasssix
 #ifdef USE_CUDA
 					cudaSetDevice(device_id);
 					CUDA_CHECK(cudaMallocHost(&ptr, size));
-					return;
 #else
 					NO_GPU;
 #endif
@@ -134,7 +133,6 @@ namespace glasssix
 				{
 #ifdef USE_CUDA
 					CUDA_CHECK(cudaFreeHost(ptr));
-					return;
 #else
 					NO_GPU;
 #endif
