@@ -241,7 +241,11 @@ namespace glasssix
 
 		bool database_record::key_equals(const char* left, const char* right)
 		{
-			return !_stricmp(left, right);
+#ifdef _MSC_VER
+			return _stricmp(left, right) == 0;
+#else
+			return strcasecmp(left, right) == 0;
+#endif
 		}
 
 		bool database_record::key_equals(const database_record& left, const database_record& right)

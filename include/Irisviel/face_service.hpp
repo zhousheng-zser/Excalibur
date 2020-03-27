@@ -18,7 +18,8 @@ namespace glasssix
 
 			face_service(int max_items, int dimension, const std::string& working_directory);
 			virtual ~face_service();
-			void clear();
+			void clear() noexcept;
+			void remove_all() noexcept;
 			std::string database_path() const;
 			std::string cache_path() const;
 			void load_databases();

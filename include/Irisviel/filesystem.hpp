@@ -1,6 +1,9 @@
 #pragma once
- 
-#if defined(__has_include) && __has_include(<filesystem>)
+
+#ifdef __ANDROID__
+#include <glasssix/ghc/filesystem.hpp>
+namespace fs = ghc::filesystem;
+#elif defined(__has_include) && __has_include(<filesystem>)
 #include <filesystem>
 #if __cpp_lib_filesystem >= 201703L
 namespace fs = std::filesystem;

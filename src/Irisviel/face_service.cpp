@@ -45,8 +45,14 @@ namespace glasssix
 				return cache_path_.string();
 			}
 
-			void clear()
+			void clear() noexcept
 			{
+				cache_.clear();
+			}
+
+			void remove_all()
+			{
+				std::for_each(cache_.begin(), cache_.end(), [](const std::shared_ptr<database_cache> item) { item->mark_for_deletion(); });
 				cache_.clear();
 			}
 
@@ -230,9 +236,14 @@ namespace glasssix
 			}
 		}
 
-		void face_service::clear()
+		void face_service::clear() noexcept
 		{
 			impl_->clear();
+		}
+
+		void face_service::remove_all() noexcept
+		{
+			impl_->remove_all();
 		}
 
 		std::string face_service::database_path() const

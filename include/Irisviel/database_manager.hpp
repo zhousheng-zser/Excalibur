@@ -12,8 +12,6 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		// Note: the header length is sizeof(database_record) including the padding zero.
-		// The first record is beginning at sizeof(database_record).
 		class database_manager
 		{
 		public:

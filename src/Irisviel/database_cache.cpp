@@ -1,5 +1,4 @@
 #include "database_cache.hpp"
-#include "filesystem_utils.hpp"
 
 namespace glasssix
 {
@@ -10,12 +9,7 @@ namespace glasssix
 			// Deletes the disk file if they are empty.
 			if (manager && manager->empty())
 			{
-				manager->mark_for_deletion();
-
-				if (wrapper)
-				{
-					utils::safe_remove_file(wrapper->cache_file_path());
-				}
+				mark_for_deletion();
 			}
 		}
 
@@ -28,6 +22,19 @@ namespace glasssix
 		{
 			manager->save_changes();
 			wrapper->build(true);
+		}
+
+		void database_cache::mark_for_deletion() noexcept
+		{
+			if (manager)
+			{
+				manager->mark_for_deletion();
+			}
+
+			if (wrapper)
+			{
+				wrapper->mark_for_deletion();
+			}
 		}
 	}
 }
