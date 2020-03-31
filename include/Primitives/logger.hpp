@@ -185,8 +185,9 @@ LOG(FATAL) << "CHECK" << #name << " FAILED(" << #a << " " << #op << " " << #b <<
 
 	// A simple macro to mark codes that are not implemented, so that when the code
 // is executed we will see a fatal log.
-#define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet"
+#define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet."
 #define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Mode: check mode."
+#define DEPRECATED LOG(FATAL) << "Module has already deprecated. Transfer to new module is required."
 }
 
 #endif

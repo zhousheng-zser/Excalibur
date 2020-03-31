@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #ifndef _TENSOR_HPP_
 #define _TENSOR_HPP_
 #include "syncedmem.hpp"
@@ -40,27 +40,36 @@ namespace glasssix
 		template <typename Dtype>
 		class tensor : public tensor_
 		{
+			// Data pointer
 			syncedmem<Dtype>* data_;
+			// Allocator from outside
 			pool_allocator<Dtype>* allocator_;
+			// The 4-dim shape of the tensor in" NCHW/NHWC
 			std::vector<int> shape_;
-			int count_;
-			int device_;
-			orderType order_;
-			// packed count inside element
-			// c/1-h-w-1  h/1-w-1  w/1-1  scalar
-			// c/4-h-w-4  h/4-w-4  w/4-4  sse/neon
-			// c/8-h-w-8  h/8-w-8  w/8-8  avx/fp16
-			int elempack_;
-			// real size of the data_offset c*h*w
-			size_t nstep_;
+			// For NCHW: n * c * step_
+			// For NHWC: n * h * step_
+			size_t count_;
 
-			void set_elempack();
-			int get_pack_axis_size(int ori_size);
+			// Pick CUDA support device
+			int device_;
+			// Data arrange order
+			orderType order_;
+			// Size of the data_offset(step_ * sizeof(Dtype) is aligned to 16):
+			// h * w in NCHW order
+			// w * c in NHWC order
+			size_t step_;
+
+			// disable copy and assign
+			tensor(const tensor& t);
+			tensor& operator=(const tensor& t);
+
+			/*void set_elempack();
+			int get_pack_axis_size(int ori_size);*/
 		public:
 			// empty tensor
 			tensor(orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
 			// vector
-			tensor(const int c, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			tensor(const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
 			// matrix/gray image
 			tensor(const int h, const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
 			// external matrix/gray image
@@ -72,15 +81,143 @@ namespace glasssix
 			// 4-dimension/any dimention tensor
 			tensor(const std::vector<int>& shape, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
 
-			tensor(const tensor& t);
-			tensor& operator=(const tensor& t);
-			~tensor() {};
+			~tensor();
 
+			// Deep copy
 			tensor clone() const;
-			virtual bool empty() const override;
+			// Check empty
+			virtual bool empty() const override
+			{
+				return data_ == nullptr || count() == 0;
+			}
 
-			tensor channel_tensor_ptr(int c);
+			// DEPTRCATED!
+			tensor channel_tensor_ptr(int c) 
+			{
+				DEPRECATED;
+			};
 
+			const Dtype* cpu_data() const;
+
+			const Dtype* gpu_data() const;
+
+			Dtype* mutable_cpu_data() const;
+
+			Dtype* mutable_gpu_data() const;
+
+			// DEPTRCATED!
+			void set_cpu_data(Dtype* data)
+			{
+				DEPRECATED;
+			}
+
+			// DEPRECATED!
+			void set_gpu_data(Dtype* data)
+			{
+				DEPRECATED;
+			}
+
+			virtual void* cpu_data_any() const override
+			{
+				return mutable_cpu_data();
+			}
+
+			virtual void* gpu_data_any() const override
+			{
+				return mutable_gpu_data();
+			}
+
+			virtual void* data_auto() const override
+			{
+				return device_ >= 0 ? gpu_data_any() : cpu_data_any();
+			}
+
+			virtual void copy_from(const void* data, size_t size);
+
+			virtual int num() const override
+			{
+				return shape_[0];
+			}
+
+			virtual int channels() const override
+			{
+				return order_ == NCHW ? shape_[1] : shape_[3];
+			}
+
+			virtual int height() const override
+			{
+				return order_ == NCHW ? shape_[2] : shape_[1];
+			}
+
+			virtual int width() const override
+			{
+				return order_ == NCHW ? shape_[3] : shape_[2];
+			}
+
+			virtual int count(int start_axis, int end_axis) const override
+			{
+				int count = 1;
+				for (int i = start_axis; i < end_axis; ++i) {
+					count *= shape_[i];
+				}
+				return count;
+			}
+
+			virtual int count() const override
+			{
+				return count(0, static_cast<int>(shape_.size()));
+			}
+
+			virtual int device() const override
+			{
+				return device_;
+			}
+
+			virtual orderType order() const override
+			{
+				return order_;
+			}
+
+			virtual int offset(const int n, const int c = 0,
+				const int h = 0, const int w = 0) const override
+			{
+				if (order_ == NCHW)
+				{
+					return ((n * channels() + c) * height() + h) * width() + w;
+				}
+				else
+				{
+					return ((n * height() + h) * width() + w) * channels() + c;
+				}
+			}
+
+			virtual std::vector<int> data_shape() const override
+			{
+				return shape_;
+			}
+
+			// data reference
+			tensor channel(int c);
+			const tensor channel(int c) const;
+			float* row(int y);
+			const float* row(int y) const;
+			Dtype* row(int y);
+			const Dtype* row(int y) const;
+			// range reference
+			tensor channel_range(int c, int channels);
+			const tensor channel_range(int c, int channels) const;
+			tensor row_range(int y, int rows);
+			const tensor row_range(int y, int rows) const;
+			tensor range(int x, int n);
+			const tensor range(int x, int n) const;
+
+			// access raw data
+			operator Dtype*();
+			operator const Dtype*() const;
+
+			// convenient access float vec element
+			float& operator[](size_t i);
+			const float& operator[](size_t i) const;
 		};
 	}
 }

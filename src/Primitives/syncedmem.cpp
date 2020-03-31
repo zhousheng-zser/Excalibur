@@ -104,38 +104,6 @@ namespace glasssix
 			return static_cast<const Dtype*>(cpu_ptr_);
 		}
 
-//		template <typename Dtype>
-//		void syncedmem<Dtype>::set_cpu_data(Dtype* data)
-//		{
-//			CHECK(data);
-//			if (own_cpu_data_)
-//			{
-//				//FreeHost(cpu_ptr_, cpu_malloc_use_cuda_);
-//				if (allocator_)
-//				{
-//					allocator_->fastFree(cpu_ptr_, device_);
-//				}
-//				else
-//				{
-//					if (device_ >= 0)
-//					{
-//#ifdef USE_CUDA
-//						CUDA_CHECK(cudaFreeHost(cpu_ptr_));
-//#else
-//						NO_GPU;
-//#endif
-//					}
-//					else
-//					{
-//						aligned_heap_free(cpu_ptr_);
-//					}
-//				}
-//			}
-//			cpu_ptr_ = data;
-//			head_ = HEAD_AT_CPU;
-//			own_cpu_data_ = true;
-//		}
-
 		template <typename Dtype>
 		const Dtype* syncedmem<Dtype>::gpu_data()
 		{
@@ -147,24 +115,6 @@ namespace glasssix
 			return nullptr;
 #endif
 		}
-
-//		template <typename Dtype>
-//		void syncedmem<Dtype>::set_gpu_data(Dtype* data)
-//		{
-//			//check_device();
-//#ifdef USE_CUDA
-//			CHECK(data);
-//			if (own_gpu_data_)
-//			{
-//				CUDA_CHECK(cudaFree(gpu_ptr_));
-//			}
-//			gpu_ptr_ = data;
-//			head_ = HEAD_AT_GPU;
-//			own_gpu_data_ = true;
-//#else
-//			NO_GPU;
-//#endif
-//		}
 
 		template <typename Dtype>
 		Dtype* syncedmem<Dtype>::mutable_cpu_data()
@@ -193,10 +143,9 @@ namespace glasssix
 		{
 			check_device();
 			CHECK(head_ == HEAD_AT_CPU);
-			if (gpu_ptr_ == nullptr) {
-
+			if (gpu_ptr_ == nullptr) 
+			{
 				CUDA_CHECK(cudaMalloc(&gpu_ptr_, size_ * sizeof(Dtype)));
-
 				own_gpu_data_ = true;
 			}
 			const cudaMemcpyKind put = cudaMemcpyHostToDevice;
