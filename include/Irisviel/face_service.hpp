@@ -16,7 +16,7 @@ namespace glasssix
 		public:
 			class impl;
 
-			face_service(int max_items, int dimension, const std::string& working_directory);
+			face_service(int single_database_capacity, int dimension, const std::string& working_directory);
 			virtual ~face_service();
 			void clear() noexcept;
 			void remove_all() noexcept;

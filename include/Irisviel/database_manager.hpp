@@ -17,7 +17,7 @@ namespace glasssix
 		public:
 			class impl;
 
-			database_manager(const std::string& file_path, std::size_t max_items, int dimension);
+			database_manager(const std::string& file_path, std::size_t capacity, int dimension);
 			virtual ~database_manager();
 			bool contains(const std::string& key);
 			bool update(database_record& record);
