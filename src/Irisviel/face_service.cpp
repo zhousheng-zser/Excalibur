@@ -29,20 +29,20 @@ namespace glasssix
 		class face_service::impl
 		{
 		public:
-			impl(int max_items, int dimension, const fs::path& working_directory) : max_items_{ max_items }, dimension_{ dimension }, database_path_{ working_directory / database_folder }, cache_path_{ working_directory / cache_folder }
+			impl(int max_items, int dimension, const fs::path& working_directory) : max_items_{ max_items }, dimension_{ dimension }, database_directory_{ working_directory / database_folder }, cache_directory_{ working_directory / cache_folder }
 			{
-				utils::safe_create_directories(database_path_);
-				utils::safe_create_directories(cache_path_);
+				utils::safe_create_directories(database_directory_);
+				utils::safe_create_directories(cache_directory_);
 			}
 
-			std::string database_path() const
+			std::string database_diectory() const
 			{
-				return database_path_.string();
+				return database_directory_.string();
 			}
 
-			std::string cache_path() const
+			std::string cache_directory() const
 			{
-				return cache_path_.string();
+				return cache_directory_.string();
 			}
 
 			void clear() noexcept
@@ -58,7 +58,7 @@ namespace glasssix
 
 			void load_databases()
 			{
-				for (auto& item : fs::directory_iterator{ database_path_, fs::directory_options::skip_permission_denied })
+				for (auto& item : fs::directory_iterator{ database_directory_, fs::directory_options::skip_permission_denied })
 				{
 					if (item.path().filename().extension() == database_extension)
 					{
@@ -202,7 +202,7 @@ namespace glasssix
 
 				// Generates a new empty database.
 				auto uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
-				auto file_path = database_path_ / fmt::format("{}{}", uuid, database_extension.string());
+				auto file_path = database_directory_ / fmt::format("{}{}", uuid, database_extension.string());
 				std::ofstream{ file_path, std::ios::trunc | std::ios::binary };
 
 				return create_new_database_core(file_path.string());
@@ -211,15 +211,15 @@ namespace glasssix
 			std::shared_ptr<database_cache> create_new_database_core(const std::string& path)
 			{
 				auto manager = std::make_shared<database_manager>(path, max_items_, dimension_);
-				auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_path_.string());
+				auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_directory_.string());
 
 				return cache_.emplace_back(std::make_shared<database_cache>(std::move(manager), std::move(wrapper)));
 			}
 
 			int max_items_;
 			int dimension_;
-			fs::path cache_path_;
-			fs::path database_path_;
+			fs::path cache_directory_;
+			fs::path database_directory_;
 			std::list<std::shared_ptr<database_cache>> cache_;
 		};
 
@@ -246,14 +246,14 @@ namespace glasssix
 			impl_->remove_all();
 		}
 
-		std::string face_service::database_path() const
+		std::string face_service::database_directory() const
 		{
-			return impl_->database_path();
+			return impl_->database_diectory();
 		}
 
-		std::string face_service::cache_path() const
+		std::string face_service::cache_directory() const
 		{
-			return impl_->cache_path();
+			return impl_->cache_directory();
 		}
 
 		void face_service::load_databases()

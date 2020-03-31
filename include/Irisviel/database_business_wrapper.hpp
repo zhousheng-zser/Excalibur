@@ -17,7 +17,7 @@ namespace glasssix
 		public:
 			class impl;
 
-			database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_path);
+			database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_directory);
 			virtual ~database_business_wrapper();
 			bool build(bool rebuild);
 			void mark_for_deletion() noexcept;
