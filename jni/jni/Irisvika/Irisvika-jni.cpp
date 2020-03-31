@@ -2,7 +2,9 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
-#include "knn_service.hpp"
+#include <string>
+
+#include "face_service.hpp"
 
 static const char *knn_search_result_path = "com/glasssix/Irisvika/knn_search_result";
 static const char *knn_mapping_data_path = "com/glasssix/Irisvika/knn_mapping_data";
@@ -141,7 +143,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_Irisvika_Irisvika_search(JNIEnv
 	
 	env->GetFloatArrayRegion(query_feature, 0, feature_size, &feature_vec[0]);
 	
-	std::vector<glasssix::irisviel::knn_search_result> result_vec = pknn_service->search(feature_vec, top);
+	std::vector<glasssix::irisviel::database_search_result> result_vec = pknn_service->search(feature_vec, top);
 	size_t result_size = result_vec.size();
 	
 	jclass knn_search_result_clazz = env->FindClass(knn_search_result_path);
