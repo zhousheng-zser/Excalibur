@@ -1,5 +1,7 @@
 #include "memory_mapping_operator.hpp"
 
+#include <stdexcept>
+
 namespace glasssix
 {
 	namespace irisviel
