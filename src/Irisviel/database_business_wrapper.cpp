@@ -6,16 +6,19 @@
 #include <fstream>
 #include <algorithm>
 
-#include <glasssix/fmt/format.h>
-
 namespace glasssix
 {
 	namespace irisviel
 	{
+		namespace
+		{
+			const fs::path cache_extension{ ".idx" };
+		}
+
 		class database_business_wrapper::impl
 		{
 		public:
-			impl(const std::shared_ptr<database_feature_observer>& observer, const fs::path& map_file_path, const fs::path& cache_path) : valid_state_{}, mark_for_deletion_{}, cache_path_{ cache_path }, map_file_path_{ map_file_path }, cache_file_path_{ cache_path_ / fmt::format("{}.idx", map_file_path_.filename().replace_extension().string()) }, observer_{ observer }
+			impl(const std::shared_ptr<database_feature_observer>& observer, const fs::path& map_file_path, const fs::path& cache_directory) : valid_state_{}, mark_for_deletion_{}, map_file_path_{ map_file_path }, cache_file_path_{ cache_directory / map_file_path_.filename().replace_extension(cache_extension) }, cache_directory_{ cache_directory }, observer_{ observer }
 			{
 			}
 
@@ -83,7 +86,6 @@ namespace glasssix
 					// rebuild only if the file does not exist.
 					if (rebuild || !std::ifstream{ cache_file_path, std::ios::binary }.is_open())
 					{
-
 						if (!safe_handler([&] { searcher_->build_graph(); }))
 						{
 							return false;
@@ -199,15 +201,15 @@ namespace glasssix
 		private:
 			bool valid_state_;
 			bool mark_for_deletion_;
-			fs::path cache_path_;
 			fs::path map_file_path_;
 			fs::path cache_file_path_;
+			fs::path cache_directory_;
 			std::vector<const float*> current_data_;
 			std::shared_ptr<irisviel_search> searcher_;
 			std::shared_ptr<database_feature_observer> observer_;
 		};
 
-		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_path) : impl_{ new impl{ observer, map_file_path, cache_path } }
+		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_directory) : impl_{ new impl{ observer, map_file_path, cache_directory } }
 		{
 		}
 

@@ -21,21 +21,21 @@ void irisviel_release_instance(glasssix::irisviel::face_service* instance)
 
 char* irisviel_database_path(glasssix::irisviel::face_service* instance)
 {
-	std::string database_path = instance->database_path();
-	size_t len = database_path.length();
+	std::string database_directory = instance->database_directory();
+	size_t len = database_directory.length();
 	char* str = heap_alloc_elements<char>(len + 1);
 	str[len] = '\0';
-	std::copy(database_path.begin(), database_path.end(), str);
+	std::copy(database_directory.begin(), database_directory.end(), str);
 	return str;
 }
 
 char* irisviel_cache_path(glasssix::irisviel::face_service* instance)
 {
-	std::string cache_path = instance->cache_path();
-	size_t len = cache_path.length();
+	std::string cache_directory = instance->cache_directory();
+	size_t len = cache_directory.length();
 	char* str = heap_alloc_elements<char>(len + 1);
 	str[len] = '\0';
-	std::copy(cache_path.begin(), cache_path.end(), str);
+	std::copy(cache_directory.begin(), cache_directory.end(), str);
 	return str;
 }
 

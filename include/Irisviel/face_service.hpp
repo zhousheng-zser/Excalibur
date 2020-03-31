@@ -20,8 +20,8 @@ namespace glasssix
 			virtual ~face_service();
 			void clear() noexcept;
 			void remove_all() noexcept;
-			std::string database_path() const;
-			std::string cache_path() const;
+			std::string database_directory() const;
+			std::string cache_directory() const;
 			void load_databases();
 			std::vector<database_search_result> search(const float* feature, int top) const;
 			void delete_features(const std::vector<std::string>& keys);
