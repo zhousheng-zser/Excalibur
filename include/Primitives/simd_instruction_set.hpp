@@ -98,9 +98,13 @@
 #define __SSSE3__
 #define __SSE4_1__
 #define __SSE4_2__
+#ifndef __AVX__
 #define __AVX__
+#endif // !__AVX__
 #define __FMA__
+#ifndef __AVX2__
 #define __AVX2__
+#endif // !__AVX2__
 #endif
 //#if _MSC_VER >= 19?? (vs2019 16.16 LATER)
 //define __AVX512__
