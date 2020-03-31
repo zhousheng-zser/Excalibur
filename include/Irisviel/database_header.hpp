@@ -11,7 +11,7 @@ namespace glasssix
 	{
 		struct database_header
 		{
-			int max_items;
+			int capacity;
 			int current_position;
 			int version;
 			char index_file_name[128] = {};

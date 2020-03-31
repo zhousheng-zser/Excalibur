@@ -29,7 +29,7 @@ namespace glasssix
 		class face_service::impl
 		{
 		public:
-			impl(int max_items, int dimension, const fs::path& working_directory) : max_items_{ max_items }, dimension_{ dimension }, database_directory_{ working_directory / database_folder }, cache_directory_{ working_directory / cache_folder }
+			impl(int single_database_capacity, int dimension, const fs::path& working_directory) : dimension_{ dimension }, single_database_capacity_{ single_database_capacity }, database_directory_{ working_directory / database_folder }, cache_directory_{ working_directory / cache_folder }
 			{
 				utils::safe_create_directories(database_directory_);
 				utils::safe_create_directories(cache_directory_);
@@ -210,20 +210,20 @@ namespace glasssix
 
 			std::shared_ptr<database_cache> create_new_database_core(const std::string& path)
 			{
-				auto manager = std::make_shared<database_manager>(path, max_items_, dimension_);
+				auto manager = std::make_shared<database_manager>(path, single_database_capacity_, dimension_);
 				auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_directory_.string());
 
 				return cache_.emplace_back(std::make_shared<database_cache>(std::move(manager), std::move(wrapper)));
 			}
 
-			int max_items_;
 			int dimension_;
+			int single_database_capacity_;
 			fs::path cache_directory_;
 			fs::path database_directory_;
 			std::list<std::shared_ptr<database_cache>> cache_;
 		};
 
-		face_service::face_service(int max_items, int dimension, const std::string& working_directory) : impl_{ new impl{ max_items, dimension, working_directory } }
+		face_service::face_service(int single_database_capacity, int dimension, const std::string& working_directory) : impl_{ new impl{ single_database_capacity, dimension, working_directory } }
 		{
 		}
 

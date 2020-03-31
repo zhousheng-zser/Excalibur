@@ -20,7 +20,7 @@ namespace glasssix
 		class database_manager::impl
 		{
 		public:
-			impl(const std::string& file_path, std::size_t max_items, int dimension) : dimension_{ dimension }, removal_pending_{}, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (max_items + 1UL) * database_record::record_size(dimension) }
+			impl(const std::string& file_path, std::size_t capacity, int dimension) : dimension_{ dimension }, removal_pending_{}, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (capacity + 1UL) * database_record::record_size(dimension) }
 			{
 				auto header = mapping_.locate_element_absolutely<database_header>(0);
 
@@ -31,9 +31,9 @@ namespace glasssix
 
 				header_ = *header;
 
-				if (header_.max_items <= 0)
+				if (header_.capacity <= 0)
 				{
-					header_.max_items = static_cast<int>(max_items);
+					header_.capacity = static_cast<int>(capacity);
 					header_.current_position = 1;
 					header_.version = database_header_version;
 					mapping_.write_element_absolutely(0, header_);
@@ -104,7 +104,7 @@ namespace glasssix
 
 			bool full() const noexcept
 			{
-				return header_.current_position > header_.max_items || record_entries_.size() >= header_.max_items;
+				return header_.current_position > header_.capacity || record_entries_.size() >= header_.capacity;
 			}
 
 			void mark_for_deletion() noexcept
@@ -191,7 +191,7 @@ namespace glasssix
 			std::unordered_map<std::string, int, case_insensitive_string_hash, case_insensitive_string_comparer> record_entries_;
 		};
 
-		database_manager::database_manager(const std::string& file_path, std::size_t max_items, int dimension) : impl_{ new impl{ file_path, max_items, dimension } }
+		database_manager::database_manager(const std::string& file_path, std::size_t capacity, int dimension) : impl_{ new impl{ file_path, capacity, dimension } }
 		{
 		}
 
