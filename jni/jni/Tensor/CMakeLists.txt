@@ -3,7 +3,9 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
+include_directories(../JavaInterop)
 add_compile_options(-I${EXCALIBUR_INCLUDE_CXX}/Infrastructure)
 
 file(GLOB TENSOR_SOURCE_FILES *.cpp)
 add_library(Tensor SHARED ${TENSOR_SOURCE_FILES})
+add_dependencies(Tensor JavaInterop)

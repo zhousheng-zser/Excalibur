@@ -15,4 +15,6 @@ add_compile_options(
 option(USE_ANDROID_NDK "Sets whether to use the Android NDK." on)
 
 # 包含子项目。
-add_subdirectory ("Tensor")
+add_subdirectory("JavaInterop")
+add_subdirectory("Tensor")
+add_subdirectory("Irisvika")
