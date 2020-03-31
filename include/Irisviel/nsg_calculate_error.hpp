@@ -3,10 +3,11 @@
 #include <stdexcept>
 #include <string>
 
-namespace glasssix {
-	namespace irisviel {
-		class nsg_calculate_error
-			: public std::exception
+namespace glasssix
+{
+	namespace irisviel
+	{
+		class nsg_calculate_error : public std::exception
 		{	// base of all runtime-error exceptions
 
 			std::string message_;
@@ -18,7 +19,7 @@ namespace glasssix {
 			{	// construct from message string				
 			}
 
-			explicit nsg_calculate_error(const char *_Message)
+			explicit nsg_calculate_error(const char* _Message)
 				: _Mybase(), message_(_Message)
 			{	// construct from message string
 			}
