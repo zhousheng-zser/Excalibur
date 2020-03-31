@@ -69,13 +69,13 @@ void Irisviel_delete_features(glasssix::irisviel::face_service* instance, int ke
 		for (int i = 0; i < keys_num; i++)
 			keys_vec.emplace_back(keys[i]);
 
-		instance->delete_features(keys_vec);
+		instance->remove(keys_vec);
 	}
 }
 
 void Irisviel_delete_feature(glasssix::irisviel::face_service* instance, char* key)
 {
-	instance->delete_feature(key);
+	instance->remove(key);
 }
 
 void Irisviel_add_features(glasssix::irisviel::face_service* instance, int data_num, glasssix::irisviel::database_record* data)
@@ -89,13 +89,13 @@ void Irisviel_add_features(glasssix::irisviel::face_service* instance, int data_
 			data_vec.emplace_back(data[i].shared());
 		}
 
-		instance->add_features(data_vec);
+		instance->add(data_vec);
 	}
 }
 
 void Irisviel_add_feature(glasssix::irisviel::face_service* instance, glasssix::irisviel::database_record& data)
 {
-	instance->add_feature(data);
+	instance->add(data);
 }
 
 void Irisviel_update_feature(glasssix::irisviel::face_service* instance, glasssix::irisviel::database_record& data)
@@ -114,6 +114,6 @@ void Irisviel_update_more(glasssix::irisviel::face_service* instance, int data_n
 			data_vec.emplace_back(data[i].shared());
 		}
 
-		instance->update_more(data_vec);
+		instance->update(data_vec);
 	}
 }
