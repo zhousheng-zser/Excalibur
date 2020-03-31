@@ -95,17 +95,17 @@ namespace glasssix
 				return result;
 			}
 
-			void delete_features(const std::vector<std::string>& keys)
+			void remove(const std::vector<std::string>& keys)
 			{
 				remove_if_core([&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
 			}
 
-			void delete_feature(const std::string& key)
+			void remove(const std::string& key)
 			{
 				remove_if_core([&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
 			}
 
-			void add_features(const std::vector<std::shared_ptr<database_record>>& records)
+			void add(const std::vector<std::shared_ptr<database_record>>& records)
 			{
 				std::unordered_set<std::shared_ptr<database_cache>> changed_databases;
 
@@ -126,7 +126,7 @@ namespace glasssix
 				}
 			}
 
-			void add_feature(database_record& record)
+			void add(database_record& record)
 			{
 				auto item = find_available_database_core(record.key());
 
@@ -266,24 +266,24 @@ namespace glasssix
 			return impl_->search(feature, top);
 		}
 
-		void face_service::delete_features(const std::vector<std::string>& keys)
+		void face_service::remove(const std::vector<std::string>& keys)
 		{
-			impl_->delete_features(keys);
+			impl_->remove(keys);
 		}
 
-		void face_service::delete_feature(const std::string& key)
+		void face_service::remove(const std::string& key)
 		{
-			impl_->delete_feature(key);
+			impl_->remove(key);
 		}
 
-		void face_service::add_features(const std::vector<std::shared_ptr<database_record>>& records)
+		void face_service::add(const std::vector<std::shared_ptr<database_record>>& records)
 		{
-			impl_->add_features(records);
+			impl_->add(records);
 		}
 
-		void face_service::add_feature(database_record& record)
+		void face_service::add(database_record& record)
 		{
-			impl_->add_feature(record);
+			impl_->add(record);
 		}
 
 		void face_service::update(database_record& record)
@@ -291,7 +291,7 @@ namespace glasssix
 			impl_->update(record);
 		}
 
-		void face_service::update_more(const std::vector<std::shared_ptr<database_record>>& records)
+		void face_service::update(const std::vector<std::shared_ptr<database_record>>& records)
 		{
 			impl_->update_more(records);
 		}
