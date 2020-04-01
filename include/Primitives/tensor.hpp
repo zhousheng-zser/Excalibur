@@ -38,7 +38,7 @@ namespace glasssix
 		/// The four dimension tensor in N, C, H, W
 		/// </summary>
 		template <typename Dtype>
-		class tensor : public tensor_
+		class EXPORT_EXCALIBUR_PRIMITIVES tensor : public tensor_
 		{
 			// Data pointer
 			syncedmem<Dtype>* data_;
@@ -59,29 +59,27 @@ namespace glasssix
 			// w * c in NHWC order
 			size_t step_;
 
+		public:
+			// empty tensor
+			explicit tensor(orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// vector
+			explicit tensor(const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// matrix/gray image
+			explicit tensor(const int h, const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// external matrix/gray image
+			explicit tensor(const int h, const int w, Dtype* data, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// 3-dimension tensor/multi-channel image
+			explicit tensor(const int c, const int h, const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// external 3-dimension tensor/multi-channel image
+			explicit tensor(const int c, const int h, const int w, Dtype* data, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+			// 4-dimension/any dimention tensor
+			explicit tensor(const std::vector<int>& shape, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
+
+			~tensor();
+
 			// disable copy and assign
 			tensor(const tensor& t);
 			tensor& operator=(const tensor& t);
-
-			/*void set_elempack();
-			int get_pack_axis_size(int ori_size);*/
-		public:
-			// empty tensor
-			tensor(orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// vector
-			tensor(const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// matrix/gray image
-			tensor(const int h, const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// external matrix/gray image
-			tensor(const int h, const int w, Dtype* data, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// 3-dimension tensor/multi-channel image
-			tensor(const int c, const int h, const int w, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// external 3-dimension tensor/multi-channel image
-			tensor(const int c, const int h, const int w, Dtype* data, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-			// 4-dimension/any dimention tensor
-			tensor(const std::vector<int>& shape, int device = -1, orderType order = NCHW, pool_allocator<Dtype>* allocator = nullptr);
-
-			~tensor();
 
 			// Deep copy
 			tensor clone() const;
@@ -90,11 +88,22 @@ namespace glasssix
 			{
 				return data_ == nullptr || count() == 0;
 			}
+			
+			virtual tensor_* clone_new() override
+			{
+				return new tensor<Dtype>{ clone() };
+			}
+
+			virtual std::shared_ptr<tensor_> clone_shared() override
+			{
+				return std::make_shared<tensor<Dtype>>(clone());
+			}
 
 			// DEPTRCATED!
 			tensor channel_tensor_ptr(int c) 
 			{
 				DEPRECATED;
+				return tensor();
 			};
 
 			const Dtype* cpu_data() const;
@@ -116,6 +125,10 @@ namespace glasssix
 			{
 				DEPRECATED;
 			}
+
+			void fill(Dtype v);
+
+			void convert_order();
 
 			virtual void* cpu_data_any() const override
 			{
@@ -199,25 +212,18 @@ namespace glasssix
 			// data reference
 			tensor channel(int c);
 			const tensor channel(int c) const;
-			float* row(int y);
-			const float* row(int y) const;
+
 			Dtype* row(int y);
 			const Dtype* row(int y) const;
-			// range reference
-			tensor channel_range(int c, int channels);
-			const tensor channel_range(int c, int channels) const;
-			tensor row_range(int y, int rows);
-			const tensor row_range(int y, int rows) const;
-			tensor range(int x, int n);
-			const tensor range(int x, int n) const;
 
 			// access raw data
 			operator Dtype*();
 			operator const Dtype*() const;
 
 			// convenient access float vec element
-			float& operator[](size_t i);
-			const float& operator[](size_t i) const;
+			Dtype& operator[](size_t i);
+			const Dtype& operator[](size_t i) const;
+			
 		};
 	}
 }
