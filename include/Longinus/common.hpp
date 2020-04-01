@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <memory> 
+#include <cfloat>
 
 #ifdef EXPORT_LONGINUS
 #undef EXPORT_LONGINUS

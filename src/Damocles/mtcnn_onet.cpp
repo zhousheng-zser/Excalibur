@@ -12,7 +12,12 @@ namespace glasssix
 				int8_quantization_ = false;//do not use int8 in GPU mode
 			}
 
+#ifdef __ARM_NEON
+			int8_quantization_ = false;//do not use int8 in ARM mode
+#endif
+
 #if SIMD_TYPE >= SIMDTYPE_SSE
+			//use for Copy_Int8_Params
 			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
@@ -40,6 +45,7 @@ namespace glasssix
 			}
 			else
 			{
+				//copy float32_data directly
 				Copy_Params(conv1_weights, mtcnn_onet, quantize_level);
 				Copy_Params(conv1_bias, mtcnn_onet, quantize_level);
 				Copy_Params(prelu1_weights, mtcnn_onet, quantize_level);
@@ -133,6 +139,7 @@ namespace glasssix
 			delete conv6_3;
 			delete prob1;
 
+			//conv_weights and bias free automatically, prelu_weights need to free explicitly
 			FreeHost(prelu1_weights, false);
 			FreeHost(prelu2_weights, false);
 			FreeHost(prelu3_weights, false);
@@ -153,141 +160,6 @@ namespace glasssix
 #endif
 		}
 
-//#define CALC_LAYERS
-
-#ifdef CALC_LAYERS
-#include <glasssix/timer.hpp>
-		void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
-		{
-			std::cout << "onet:" << std::endl << std::endl;
-			int loop = 1000;
-			glasssix::Timer calcTime;
-			double elapseTime;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv1->Forward(input_data, conv1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv1  :" << std::setw(5) << elapseTime << std::endl;
-
-			
-			prelu1->Forward_cpu(conv1_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				pool1->Forward_cpu(conv1_top_data, pool1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-pool1  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv2->Forward(pool1_top_data, conv2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv2  :" << std::setw(5) << elapseTime << std::endl;
-
-			
-			prelu2->Forward_cpu(conv2_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				pool2->Forward_cpu(conv2_top_data, pool2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-pool2  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv3->Forward(pool2_top_data, conv3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv3  :" << std::setw(5) << elapseTime << std::endl;
-
-			
-			prelu3->Forward_cpu(conv3_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				pool3->Forward_cpu(conv3_top_data, pool3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-pool3  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv4->Forward(pool3_top_data, conv4_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv4  :" << std::setw(5) << elapseTime << std::endl;
-
-			
-			prelu4->Forward_cpu(conv4_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv5->Forward_cpu(conv4_top_data, conv5_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv5  :" << std::setw(5) << elapseTime << std::endl;
-
-			
-			prelu5->Forward_cpu(conv5_top_data);
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv6_1  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv6_2  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-conv6_3  :" << std::setw(5) << elapseTime << std::endl;
-
-			calcTime.Start();
-			for (int i = 0; i < loop; i++)
-			{
-				prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
-			}
-			calcTime.Stop();
-			elapseTime = calcTime.GetElapsedMilliseconds() / loop;
-			std::cout << "layer-prob1  :" << std::setw(5) << elapseTime << std::endl;
-		}
-#else
 		void mtcnn_onet::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
@@ -306,10 +178,8 @@ namespace glasssix
 			conv6_1->Forward_cpu(conv5_top_data, conv6_1_top_data);
 			conv6_2->Forward_cpu(conv5_top_data, conv6_2_top_data);
 			conv6_3->Forward_cpu(conv5_top_data, conv6_3_top_data);
-			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);			
+			prob1->Forward_cpu(conv6_1_top_data, prob1_top_data);
 		}
-
-#endif
 
 #ifdef USE_CUDA
 		void mtcnn_onet::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)

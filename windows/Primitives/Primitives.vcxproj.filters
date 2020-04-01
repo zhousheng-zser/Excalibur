@@ -70,6 +70,10 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\tensor.hpp">
+    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\environment.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

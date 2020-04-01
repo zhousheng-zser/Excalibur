@@ -1,5 +1,6 @@
 #include "../../include/Longinus/longinus_c.h"
-#include "Primitives/memory.hpp"
+#include "../../include/Primitives/memory.hpp"
+#include <cstring>
 
 using glasssix::memory::heap_free;
 using glasssix::memory::heap_alloc_elements;
@@ -120,6 +121,24 @@ int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector* instance, glass
 			std::copy(vec[i].id.begin(), vec[i].id.end(), (*ptr)[i].id);
 			(*ptr)[i].is_new = vec[i].is_new;
 		}
+	}
+	else
+	{
+		*ptr = nullptr;
+	}
+
+	return num;
+}
+
+int Longinus_detectRetina(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int order, float threshold)
+{
+	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectRetina(image, 3, height, width, order, threshold);
+	int num = vec.size();
+	if (num)
+	{
+		sort_descend(vec);
+		*ptr = heap_alloc_elements<glasssix::longinus::face_rect_with_face_info>(num);
+		std::copy(vec.begin(), vec.end(), *ptr);
 	}
 	else
 	{
@@ -318,7 +337,7 @@ bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector* instanc
 char* Longinus_getVersion()
 {
 	auto version = glasssix::longinus::LonginusDetector::getVersion();
-	std::size_t size = std::strlen(version) + 1;
+	std::size_t size = strlen(version) + 1;
 	auto str = glasssix::memory::heap_alloc_elements<char>(size);
 
 	return str;

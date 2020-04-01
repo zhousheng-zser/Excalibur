@@ -12,6 +12,19 @@ namespace glasssix
 		Black_white_vsl::Black_white_vsl(int device) {};
 		Black_white_vsl::~Black_white_vsl() {};
 
+
+
+		/// <summary>
+		/// detect on visible image, whether black and white photo detected, return true if pass(not black and white photo)
+		/// </summary>
+		/// <param name="vsl_color_image">visible image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of black-white-judge, 30 by default; thresh[1]: not in use</param>
+		/// <param name="value">value[0]: return value of black-white-judge score; value[1]: not in use</param>
+		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		bool Black_white_vsl::judge(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order)
 		{
 			std::shared_ptr<tensor<unsigned char>> face_vsl;
@@ -60,17 +73,11 @@ namespace glasssix
 
 				if (value[0] < thresh[0])
 				{
-#ifdef TEST_CAFFE
-					std::cout << "black_white, attack:" << value << std::endl;
-#endif
-					return false;
+					return false;//black and white photo detected
 				}
 				else
 				{
-#ifdef TEST_CAFFE
-					std::cout << "black_white, human:" << value << std::endl;
-#endif
-					return true;
+					return true;//real human or color photo detected
 				}
 			}
 		}

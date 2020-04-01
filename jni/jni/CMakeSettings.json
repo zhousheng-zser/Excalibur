@@ -10,9 +10,22 @@
   ],
   "configurations": [
     {
+      "name": "x64-Release",
+      "generator": "Visual Studio 16 2019 Win64",
+      "configurationType": "RelWithDebInfo",
+      "buildRoot": "${projectDir}/../../Build/${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DUSE_ANDROID_NDK=OFF",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "intelliSenseMode": "windows-msvc-x64",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
       "buildCommandArgs": "-v",
       "buildRoot": "${projectDir}/../../Build/${name}",
-      "cmakeCommandArgs": "",
+      "cmakeCommandArgs": "-DUSE_ANDROID_NDK=ON",
       "cmakeToolchain": "${env.androidNdkDir}/build/cmake/android.toolchain.cmake",
       "configurationType": "Debug",
       "ctestCommandArgs": "",
@@ -65,11 +78,6 @@
           "name": "ANDROID_INCLUDE_PLATFORM",
           "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
           "type": "STRING"
-        },
-        {
-          "name": "EXCALIBUR_INCLUDE_CXX",
-          "value": "../../include",
-          "type": "FILEPATH"
         }
       ],
       "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",
@@ -77,8 +85,8 @@
     },
     {
       "buildCommandArgs": "-v",
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "cmakeCommandArgs": "",
+      "buildRoot": "${projectDir}/../../Build/${name}",
+      "cmakeCommandArgs": "-DUSE_ANDROID_NDK=ON",
       "cmakeToolchain": "${env.androidNdkDir}/build/cmake/android.toolchain.cmake",
       "configurationType": "Release",
       "ctestCommandArgs": "",
@@ -131,11 +139,6 @@
           "name": "ANDROID_INCLUDE_PLATFORM",
           "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
           "type": "STRING"
-        },
-        {
-          "name": "EXCALIBUR_INCLUDE_CXX",
-          "value": "../../include",
-          "type": "FILEPATH"
         }
       ],
       "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",

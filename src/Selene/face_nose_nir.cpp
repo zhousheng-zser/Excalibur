@@ -16,11 +16,22 @@ namespace glasssix
 			nose_nir_net_.reset(new Nose_nir_net(device));
 		}
 
-		Face_nose_nir::~Face_nose_nir()
-		{
-		}
 
-		void Face_nose_nir::face_nose_area(const std::shared_ptr<tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, std::vector<std::shared_ptr<tensor<unsigned char>>> &face_nir, std::shared_ptr<tensor<unsigned char>> &nose_nir)
+
+		Face_nose_nir::~Face_nose_nir() {}
+
+
+
+		/// <summary>
+		/// get area of face and nose
+		/// </summary>
+		/// <param name="image_nir">near-infrared image data</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="face_nir">face area in near-infrared image</param>
+		/// <param name="nose_nir">nose area in near-infrared image</param>
+		void Face_nose_nir::face_nose_area(const std::shared_ptr<tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, 
+			std::vector<std::shared_ptr<tensor<unsigned char>>> &face_nir, std::shared_ptr<tensor<unsigned char>> &nose_nir)
 		{
 			CHECK_EQ(bbox.size(), 1);
 			CHECK_EQ(landmarks.size(), 1);
@@ -74,56 +85,21 @@ namespace glasssix
 				tensor_operation_cpu::lbp_feature_cpu(temp, temp);
 				face_nir.push_back(temp);
 			}
-
-#ifdef TEST_CAFFE
-			//mclc compare
-			{
-				caffe::CaffeBinding mclc = caffe::CaffeBinding();
-				int id = mclc.AddNet("D:/projects/data/antiSpoofingModel/20191212/faceSigmoid.prototxt", "D:/projects/data/antiSpoofingModel/20191212/face_antispoofing_iter_783050.caffemodel", -1);
-				float thresh = 0.9;
-
-				std::vector<cv::Mat> img;
-				tensor_operation_cpu::tensor2mat_cpu(face_nir[0], img);
-				cv::imshow("face_nir", img[0]);
-				cv::waitKey(1);
-				auto res = mclc.Forward({ img[0] }, id);
-				const float *prob = res["cls_loss"].data;
-
-				if (prob[0] > thresh)
-				{
-					std::cout << "face_nir, mclc, human:" << prob[0] << std::endl;
-				}
-				else
-				{
-					std::cout << "face_nir, mclc, attack:" << prob[0] << std::endl;
-				}
-			}
-
-			//mclc compare
-			{
-				caffe::CaffeBinding mclc = caffe::CaffeBinding();
-				int id = mclc.AddNet("D:/projects/data/antiSpoofingModel/20191212/noseSigmoid.prototxt", "D:/projects/data/antiSpoofingModel/20191212/nose_antispoofing_iter_54275.caffemodel", -1);
-				float thresh = 0.85;
-
-				std::vector<cv::Mat> img;
-				tensor_operation_cpu::tensor2mat_cpu(nose_nir, img);
-				cv::imshow("nose_nir", img[0]);
-				cv::waitKey(1);
-				auto res = mclc.Forward({ img[0] }, id);
-				const float *prob = res["cls_loss"].data;
-
-				if (prob[0] > thresh)
-				{
-					std::cout << "nose_nir, mclc, human:" << prob[0] << std::endl;
-				}
-				else
-				{
-					std::cout << "nose_nir, mclc, attack:" << prob[0] << std::endl;
-				}
-			}
-#endif
 		}
 
+
+
+		/// <summary>
+		/// detect on near-infrared image, whether color photo detected, return true if pass(not color photo)
+		/// </summary>
+		/// <param name="nir_color_image">near-infrared image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of face-judge-model, 0.9 by default; thresh[1]: threshold value of nose-judge-model, 0.85 by default</param>
+		/// <param name="value">value[0]: return value of face-judge-model; value[1]: return value of nose-judge-model</param>
+		/// <param name="order">order type of near-infrared image: NCHW(0) / NHWC(1)</param>
 		bool Face_nose_nir::judge(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order)
 		{
 			std::shared_ptr<tensor<unsigned char>> image_nir, gray_nir;
@@ -158,34 +134,13 @@ namespace glasssix
 			value[1] = nose_prob_data[0];
 			bool nose_judge_nir = value[1] > thresh[1] ? true : false;
 
-
-#ifdef TEST_CAFFE
-			if (face_prob > 0.9)
-			{
-				std::cout << "face_nir, prob, human:" << face_prob << std::endl;
-			}
-			else
-			{
-				std::cout << "face_nir, prob, attack:" << face_prob << std::endl;
-			}
-
-			if (nose_prob > 0.85)
-			{
-				std::cout << "nose_nir, prob, human:" << nose_prob << std::endl << std::endl;
-			}
-			else
-			{
-				std::cout << "nose_nir, prob, attack:" << nose_prob << std::endl << std::endl;
-			}
-#endif
-
 			if (face_judge_nir && nose_judge_nir)
 			{
-				return true;
+				return true;//real human detected
 			}
 			else
 			{
-				return false;
+				return false;//color photo detected
 			}
 		}
 	}
