@@ -6,26 +6,12 @@
 #include <tuple>
 #include <vector>
 #include <memory>
-//#include <Windows.h>
 
 #ifdef EXPORT_IRISVIEL
 #undef EXPORT_IRISVIEL
-#ifdef _MSC_VER // For Windows
-#ifdef _WINDLL // Dynamic lib
-#define EXPORT_IRISVIEL __declspec(dllexport)
-#else // Static lib
-#define EXPORT_IRISVIEL
-#endif // !_WINDLL
-#elif defined(__linux__) // For Linux
-#define EXPORT_IRISVIEL
 #endif
-#else
-#ifdef _MSC_VER
-#define EXPORT_IRISVIEL __declspec(dllimport)
-#elif defined(__linux__)
+
 #define EXPORT_IRISVIEL
-#endif
-#endif
 
 namespace glasssix
 {

@@ -47,7 +47,7 @@ namespace glasssix::jni
 		{
 			if (*this)
 			{
-				utils::set_field_value(env_, obj, field_, std::forward<U>(value));
+				utils::set_field_value<T>(env_, obj, field_, std::forward<U>(value));
 			}
 		}
 
@@ -56,9 +56,11 @@ namespace glasssix::jni
 		/// </summary>
 		/// <typeparam name="Source">The source type</typeparam>
 		/// <returns>The current value</returns>
-		T get(jobject obj) const
+		auto get(jobject obj) const
 		{
-			return *this ? utils::get_field_value<T>(env_, obj, field_) : T{};
+			using return_type = std::decay_t<decltype(utils::get_field_value<T>(env_, obj, field_))>;
+
+			return *this ? utils::get_field_value<T>(env_, obj, field_) : return_type{};
 		}
 	private:
 		JNIEnv* env_;
@@ -112,9 +114,11 @@ namespace glasssix::jni
 		/// Gets the current value.
 		/// </summary>
 		/// <returns>The current value</returns>
-		T get() const
+		auto get() const
 		{
-			return *this ? utils::get_field_value<T>(env_, clazz_, field_) : T{};
+			using return_type = std::decay_t<decltype(utils::get_field_value<T>(env_, obj, field_))>;
+
+			return *this ? utils::get_field_value<T>(env_, clazz_, field_) : return_type{};
 		}
 	private:
 		JNIEnv* env_;

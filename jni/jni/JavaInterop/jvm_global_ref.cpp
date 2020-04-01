@@ -62,4 +62,9 @@ namespace glasssix::jni
 
 		return *this;
 	}
+
+	jobject jvm_global_ref::get() const noexcept
+	{
+		return ref_;
+	}
 }

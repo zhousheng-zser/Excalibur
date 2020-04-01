@@ -9,7 +9,7 @@ namespace glasssix
 		struct database_search_result
 		{
 			std::shared_ptr<database_record> data;
-			float distance_in_percentage;
+			float similarity;
 		};
 	}
 }

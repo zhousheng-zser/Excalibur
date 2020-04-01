@@ -18,7 +18,7 @@ namespace glasssix::jni
 	{
 	public:
 		class impl;
-		friend class singleton;
+		friend singleton;
 
 		virtual ~jvm_runtime_info();
 		int version() const noexcept;

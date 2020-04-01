@@ -57,7 +57,7 @@ namespace glasssix::jni
 
 		jclass get_class_cache(int key) const
 		{
-			return get_item_cache_internal<jvm_global_ref, jclass>(key);
+			return get_item_cache_internal<jvm_global_ref_ex<jclass>, jclass>(key).get();
 		}
 
 		jfieldID get_field_cache(int key) const
@@ -78,11 +78,11 @@ namespace glasssix::jni
 			}
 
 			// Finds the class.
-			jvm_local_ref clazz{ env_, env_->FindClass(name.data()), true };
+			jvm_local_ref_ex<jclass> clazz{ env_, env_->FindClass(name.data()), true };
 
 			if (clazz)
 			{
-				cache_.emplace(utils::make_cache_key<jclass>(key), jvm_global_ref{ env_, clazz });
+				cache_.insert_or_assign(utils::make_cache_key<jclass>(key), jvm_global_ref_ex<jclass>{ env_, clazz.get() });
 			}
 		}
 
@@ -116,16 +116,16 @@ namespace glasssix::jni
 
 			if (iter != cache_.end())
 			{
-				auto clazz = std::get<jvm_global_ref>(iter->second);
+				auto clazz = std::get<jvm_global_ref_ex<jclass>>(iter->second);
 
 				// Adds the items.
 				for (auto [item_key, item_name, item_signature] : items)
 				{
-					auto item_id = handler(env_, clazz, item_name.data(), item_signature.data());
+					auto item_id = handler(env_, clazz.get(), item_name.data(), item_signature.data());
 
 					if (item_id)
 					{
-						cache_.emplace(utils::make_cache_key<T>(item_key), item_id);
+						cache_.insert_or_assign(utils::make_cache_key<T>(item_key), item_id);
 					}
 				}
 			}
@@ -133,7 +133,7 @@ namespace glasssix::jni
 
 		int version_;
 		JNIEnv* env_;
-		std::unordered_map<cache_key, std::variant<jvm_global_ref, jfieldID, jmethodID>> cache_;
+		std::unordered_map<cache_key, std::variant<jvm_global_ref_ex<jclass>, jfieldID, jmethodID>> cache_;
 	};
 
 	jvm_runtime_info::~jvm_runtime_info()

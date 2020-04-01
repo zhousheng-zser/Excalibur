@@ -24,14 +24,56 @@ namespace glasssix::jni
 		operator bool() const noexcept;
 		jvm_global_ref& operator=(const jvm_global_ref& right);
 		jvm_global_ref& operator=(jvm_global_ref&& right) noexcept;
-
-		template<typename JObject, typename = std::enable_if_t<!std::is_same_v<JObject, bool>>>
-		operator JObject() noexcept
-		{
-			return utils::jobject_as<JObject>(ref_);
-		}
+		jobject get() const noexcept;
 	private:
 		JNIEnv* env_;
 		jobject ref_;
+	};
+
+	template<typename JObject, typename = std::enable_if_t<utils::is_derived_from_jobject_v<JObject>, JObject>>
+	class jvm_global_ref_ex : public jvm_global_ref
+	{
+	public:
+		jvm_global_ref_ex() noexcept = default;
+		jvm_global_ref_ex(std::nullptr_t) noexcept : jvm_global_ref{ nullptr }
+		{
+		}
+
+		jvm_global_ref_ex(JNIEnv* env, JObject obj) : jvm_global_ref{ env, obj }
+		{
+		}
+
+		jvm_global_ref_ex(JNIEnv* env, JObject obj, bool takeOverOnly) : jvm_global_ref{ env, obj, takeOverOnly }
+		{
+		}
+
+		jvm_global_ref_ex(const jvm_global_ref_ex& other) : jvm_global_ref{ other }
+		{
+		}
+
+		jvm_global_ref_ex(jvm_global_ref_ex&& other) noexcept : jvm_global_ref{ other }
+		{
+		}
+
+		virtual ~jvm_global_ref_ex() = default;
+
+		jvm_global_ref_ex& operator=(const jvm_global_ref_ex& right)
+		{
+			static_cast<jvm_global_ref&>(*this) = right;
+
+			return *this;
+		}
+
+		jvm_global_ref_ex& operator=(jvm_global_ref_ex&& right)
+		{
+			static_cast<jvm_global_ref&>(*this) = std::move(right);
+
+			return *this;
+		}
+
+		JObject get() const noexcept
+		{
+			return utils::jobject_as<JObject>(static_cast<const jvm_global_ref&>(*this).get());
+		}
 	};
 }

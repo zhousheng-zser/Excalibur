@@ -89,7 +89,7 @@ namespace glasssix
 					total_time += elapsed_time;
 				}
 
-				std::sort(result.begin(), result.end(), [](const database_search_result& left, database_search_result& right) { return left.distance_in_percentage > right.distance_in_percentage; });
+				std::sort(result.begin(), result.end(), [](const database_search_result& left, database_search_result& right) { return left.similarity > right.similarity; });
 				result.resize(std::min(static_cast<size_t>(top), result.size()));
 
 				return result;
@@ -266,14 +266,9 @@ namespace glasssix
 			return impl_->search(feature, top);
 		}
 
-		void face_service::remove(const std::vector<std::string>& keys)
+		void face_service::add(database_record& record)
 		{
-			impl_->remove(keys);
-		}
-
-		void face_service::remove(const std::string& key)
-		{
-			impl_->remove(key);
+			impl_->add(record);
 		}
 
 		void face_service::add(const std::vector<std::shared_ptr<database_record>>& records)
@@ -281,9 +276,14 @@ namespace glasssix
 			impl_->add(records);
 		}
 
-		void face_service::add(database_record& record)
+		void face_service::remove(const std::string& key)
 		{
-			impl_->add(record);
+			impl_->remove(key);
+		}
+
+		void face_service::remove(const std::vector<std::string>& keys)
+		{
+			impl_->remove(keys);
 		}
 
 		void face_service::update(database_record& record)

@@ -27,7 +27,7 @@ namespace glasssix
 
 			virtual std::size_t size() const noexcept override
 			{
-				return sizeof(*record_);
+				return Dimension;
 			}
 
 			virtual std::uint8_t* data() noexcept override
@@ -38,6 +38,11 @@ namespace glasssix
 			virtual const std::uint8_t* data() const noexcept override
 			{
 				return reinterpret_cast<const uint8_t*>(record_);
+			}
+
+			virtual int dimension() const noexcept override
+			{
+				return Dimension;
 			}
 
 			virtual bool active() const noexcept override
@@ -119,6 +124,11 @@ namespace glasssix
 			virtual const std::uint8_t* data() const noexcept override
 			{
 				return reinterpret_cast<const uint8_t*>(&record_);
+			}
+
+			virtual int dimension() const noexcept override
+			{
+				return Dimension;
 			}
 
 			virtual bool active() const noexcept override
