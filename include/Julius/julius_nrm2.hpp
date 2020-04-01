@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _JULIUS_NRM2_HPP_
 #define _JULIUS_NRM2_HPP_
-#include "simd_helper.hpp"
 
 namespace glasssix
 {
