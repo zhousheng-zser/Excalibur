@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Excalibur", "Excalibur\Excalibur.vcxproj", "{546E42E9-516A-4D09-BBE0-D3D567AC1328}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Julius", "Julius\Julius.vcxproj", "{E28B3350-1F2D-473D-83B7-1BDE8E56CD6E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{8DA2420A-7980-4FEB-B6B0-A58430C950FF} = {8DA2420A-7980-4FEB-B6B0-A58430C950FF}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Cassius", "Cassius\Cassius.vcxproj", "{ED436A1F-4A52-4974-850A-8F9CA9DFEB90}"
 EndProject

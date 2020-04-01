@@ -1,4 +1,5 @@
 #include "julius_dot.hpp"
+#include "../../include/Primitives/simd_types.hpp"
 
 namespace glasssix
 {
