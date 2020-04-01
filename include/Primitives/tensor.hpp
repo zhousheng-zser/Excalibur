@@ -77,7 +77,6 @@ namespace glasssix
 
 			~tensor();
 
-			// disable copy and assign
 			tensor(const tensor& t);
 			tensor& operator=(const tensor& t);
 
