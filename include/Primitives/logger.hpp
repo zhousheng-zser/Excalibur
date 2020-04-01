@@ -188,6 +188,13 @@ LOG(FATAL) << "CHECK" << #name << " FAILED(" << #a << " " << #op << " " << #b <<
 #define NOT_IMPLEMENTED LOG(FATAL) << "Not Implemented Yet."
 #define NO_GPU LOG(FATAL) << "Cannot use GPU in CPU-only Mode: check mode."
 #define DEPRECATED LOG(FATAL) << "Module has already deprecated. Transfer to new module is required."
+// Disable the copy and assignment operator for a class.
+#define DISABLE_COPY_AND_ASSIGN(classname)\
+private:\
+  classname(const classname&) = delete;\
+  classname(classname&&) = delete;\
+  classname& operator=(const classname&) = delete;\
+  classname& operator=(classname&&) = delete
 }
 
 #endif
