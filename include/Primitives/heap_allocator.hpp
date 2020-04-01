@@ -2,7 +2,6 @@
 
 #include "memory.hpp"
 #include "basic_allocator.hpp"
-
 #include <type_traits>
 
 namespace glasssix

@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _JULIUS_AXPBY_HPP_
 #define _JULIUS_AXPBY_HPP_
-#include "simd_helper.hpp"
 
 namespace glasssix
 {

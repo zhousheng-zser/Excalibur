@@ -1,6 +1,5 @@
 #include "distance.hpp"
 #include "../../include/Julius/simd_helper.hpp"
-
 #include <cmath>
 
 #ifdef __ARM_NEON
