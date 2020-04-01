@@ -23,7 +23,7 @@ if (USE_ANDROID_NDK)
 		-I${ANDROID_INCLUDE_PLATFORM})
 
 	add_subdirectory("JavaInterop")
-	add_subdirectory("Tensor")
+	#add_subdirectory("Tensor")
 	add_subdirectory("Irisvika")
 else()
 	add_compile_options(
