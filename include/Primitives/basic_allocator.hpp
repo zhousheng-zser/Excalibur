@@ -78,6 +78,7 @@ namespace glasssix
 					ptr->~Individual();
 				}
 			}
+
 		private:
 			/// <summary>
 			/// Allocates a piece of memory.
