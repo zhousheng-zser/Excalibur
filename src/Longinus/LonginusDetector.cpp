@@ -20,7 +20,19 @@
 #include "InternalLonginusCascade.hpp"
 #endif // !TRIAL
 
-const float mask_param[59] = { -0.356874f, -0.317302f, 1.10015f, 0.203173f, 0.91378f, 0.734194f, 3.34722f, 0.905967f, 2.24634f, -2.46884f, -1.68401f, 0.0891612f, 0.926708f, -0.53775f, 0.317807f, -0.286258f, 2.25947f, -2.57434f, 3.58891f, -0.452248f, -0.20355f, -4.43465f, 2.19633f, 0.881652f, 2.57983f, -0.0162699f, 0.361714f, 0.681337f, 1.21092f, 1.28893f, 2.22137f, -0.156652f, -2.70496f, 0.188347f, -5.69427f, 0.872288f, -1.04805f, -0.441653f, 0.366482f, -0.41308f, 4.03894f, -0.251758f, 0.495999f, 0.0838288f, -0.296292f, -4.56964f, 0.39035f, -1.49526f, 0.194758f, 0.539041f, 3.21483f, 0.61976f, -6.02826f, 1.90285f, -1.08749f, 1.31174f, 1.28299f, -1.32005f, 8.10837f };
+//use for mask judge
+const float mask_param[59] = { -0.356874f, -0.317302f,  1.10015f,   0.203173f,   0.91378f, 
+                                0.734194f,  3.34722f,   0.905967f,  2.24634f,   -2.46884f, 
+                               -1.68401f,   0.0891612f, 0.926708f, -0.53775f,    0.317807f, 
+                               -0.286258f,  2.25947f,  -2.57434f,   3.58891f,   -0.452248f, 
+                               -0.20355f,  -4.43465f,   2.19633f,   0.881652f,   2.57983f, 
+                               -0.0162699f, 0.361714f,  0.681337f,  1.21092f,    1.28893f, 
+                                2.22137f,  -0.156652f, -2.70496f,   0.188347f,  -5.69427f, 
+                                0.872288f, -1.04805f,  -0.441653f,  0.366482f,  -0.41308f, 
+                                4.03894f,  -0.251758f,  0.495999f,  0.0838288f, -0.296292f, 
+                               -4.56964f,   0.39035f,  -1.49526f,   0.194758f,   0.539041f, 
+                                3.21483f,   0.61976f,  -6.02826f,   1.90285f,   -1.08749f, 
+                                1.31174f,   1.28299f,  -1.32005f,   8.10837f };
 
 namespace glasssix
 {
@@ -49,7 +61,7 @@ namespace glasssix
 			std::vector<unsigned char> alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const;
 
 			std::vector<face_rect_with_face_info> detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, 
-			    int img_order, float threshold = 0.5, float scales = 1.0) const;
+			    int img_order, float threshold = 0.5) const;
 				
 #ifndef TRIAL
 			std::vector<face_rect_with_face_info> detectEx(const unsigned char* image, const int channels, const int height, const int width,
@@ -409,12 +421,28 @@ namespace glasssix
 			}
 #endif //!TRIAL
 		}
+		
 
+
+		/// <summary>
+		/// whether detected humanfaces in neighbouring frame are belong to same person 
+		/// </summary>
+		/// <param name="faceRect">detected humanface</param>
+		/// <param name="frame_extract_frequency">interval frames of two neighbouring frame</param>
+		/// <param name="distance_fractor">threshold value</param>
 		std::vector<Match_Retval> LonginusDetector::impl::match(std::vector<face_rect_basic>& faceRect, const int frame_extract_frequency, float distance_fractor) const
 		{
 			return matcher_->match(faceRect, frame_extract_frequency, distance_fractor);
 		}
+		
 
+
+		/// <summary>
+		/// whether detected humanfaces in neighbouring frame are belong to same person 
+		/// </summary>
+		/// <param name="faceRectInfo">detected humanface</param>
+		/// <param name="frame_extract_frequency">interval frames of two neighbouring frame</param>
+		/// <param name="distance_fractor">threshold value</param>
 		std::vector<Match_Retval> LonginusDetector::impl::match(std::vector<face_rect_with_face_info>& faceRectInfo, const int frame_extract_frequency, float distance_fractor) const
 		{
 			std::vector<face_rect_basic> faceRect;
@@ -425,7 +453,20 @@ namespace glasssix
 			}
 			return matcher_->match(faceRect, frame_extract_frequency, distance_fractor);
 		}
+		
 
+
+		/// <summary>
+		/// align detected face, generate n * 3 * 128 * 128 vector, ordered in NCHW pattern
+		/// bbox and landmarks are provided explicitly, so it's fast
+		/// </summary>
+		/// <param name="ori_image">ori_image data, ordered in NCHW pattern</param>
+		/// <param name="n">number of detected humanface</param>
+		/// <param name="channels">ori_image channel</param>
+		/// <param name="height">ori_image height</param>
+		/// <param name="width">ori_image width</param>
+		/// <param name="bbox">bboxes of detected humanface</param>
+		/// <param name="landmarks">landmarks of detected humanface</param>
 		std::vector<unsigned char> LonginusDetector::impl::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width,
 			std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const
 		{
@@ -438,7 +479,18 @@ namespace glasssix
 			return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
 #endif
 		}
+		
+		
 
+		/// <summary>
+		/// align detected face, generate n * 3 * 128 * 128 vector, ordered in NCHW pattern
+		/// bbox and landmarks are calculated in this method, so it would be a little slow
+		/// </summary>
+		/// <param name="ori_image">ori_image data, ordered in NCHW pattern</param>
+		/// <param name="n">number of detected humanface</param>
+		/// <param name="channels">ori_image channel</param>
+		/// <param name="height">ori_image height</param>
+		/// <param name="width">ori_image width</param>
 		std::vector<unsigned char> LonginusDetector::impl::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const
 		{
 #ifdef __ANDROID__
@@ -451,16 +503,28 @@ namespace glasssix
 #endif
 		}
 
-		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold, float scales) const
+
+
+		/// <summary>
+        /// detect humanface using RetinaFace
+        /// </summary>
+        /// <param name="image">image data</param>
+        /// <param name="channels">image channel</param>
+        /// <param name="height">image height</param>
+        /// <param name="width">image width</param>
+        /// <param name="order">order type of image: NCHW(0) / NHWC(1)</param>
+        /// <param name="threshold">threshold value, 0.5f by default</param>
+        /// <param name="scales">scale value, 1.0f by default</param>
+		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold) const
 		{
 			std::vector<face_rect_with_face_info> output;
 
 #ifdef __ANDROID__
 			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=] {
-				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
+				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
 			}).get();
 #else
-			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold, scales);
+			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
 #endif
 
 			for (auto i = 0; i < res.size(); i++)
@@ -484,6 +548,19 @@ namespace glasssix
 
 
 #ifndef TRIAL
+
+		/// <summary>
+        /// detect humanface using MTCNN
+        /// </summary>
+        /// <param name="image">image data</param>
+        /// <param name="channels">image channel</param>
+        /// <param name="height">image height</param>
+        /// <param name="width">image width</param>
+        /// <param name="minSize">minumum bbox window size</param>
+        /// <param name="threshold">threshold values of P-NET/R-NET/O-NET</param>
+        /// <param name="factor">scale factor between two near images</param>
+        /// <param name="stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+        /// <param name="order">order type of image: NCHW(0) / NHWC(1)</param>
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx(const unsigned char* image, const int channels, const int height, const int width,
 			const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
@@ -598,6 +675,19 @@ namespace glasssix
 		}
 
 
+
+		/// <summary>
+		/// detect humanface on visible image
+		/// </summary>
+		/// <param name="image">visible image data</param>
+		/// <param name="channels">visible image channel</param>
+		/// <param name="height">visible image height</param>
+		/// <param name="width">visible image width</param>
+		/// <param name="minSize">visible minumum bbox window size</param>
+		/// <param name="threshold">visible threshold values of P-NET/R-NET/O-NET</param>
+		/// <param name="factor">scale factor between two near visible images</param>
+		/// <param name="stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx_mobile(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			std::vector<face_rect_with_face_info> output;
@@ -633,6 +723,19 @@ namespace glasssix
 		}
 
 
+
+		/// <summary>
+		/// detect humanface on near-infrared image
+		/// </summary>
+		/// <param name="image">near-infrared image data</param>
+		/// <param name="channels">image channel</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="minSize">minumum bbox window size</param>
+		/// <param name="threshold">threshold values of P-NET/R-NET/O-NET</param>
+		/// <param name="factor">scale factor between two near images</param>
+		/// <param name="stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+		/// <param name="order">order type of near-infrared image: NCHW(0) / NHWC(1)</param>
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx_mobile_nir(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			std::vector<face_rect_with_face_info> output;
@@ -666,6 +769,29 @@ namespace glasssix
 			return output;
 		}
 
+
+
+		/// <summary>
+		/// detect humanface on pair images captured by Binocular camera
+		/// </summary>
+		/// <param name="vsl_image">visible image data</param>
+		/// <param name="vsl_channels">visible image channel</param>
+		/// <param name="vsl_height">visible image height</param>
+		/// <param name="vsl_width">visible image width</param>
+		/// <param name="vsl_minSize">visible minumum bbox window size</param>
+		/// <param name="vsl_threshold">visible threshold values of P-NET/R-NET/O-NET</param>
+		/// <param name="vsl_factor">scale factor between two near visible images</param>
+		/// <param name="vsl_stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+		/// <param name="vsl_order">order type of visible image: NCHW(0) / NHWC(1)</param>
+		/// <param name="nir_image">near-infrared image data</param>
+		/// <param name="nir_channels">near-infrared image channel</param>
+		/// <param name="nir_height">near-infrared image height</param>
+		/// <param name="nir_width">near-infrared image width</param>
+		/// <param name="nir_minSize">near-infrared minumum bbox window size</param>
+		/// <param name="nir_threshold">near-infrared threshold values of P-NET/R-NET/O-NET</param>
+		/// <param name="nir_factor">scale factor between two near near-infrared images</param>
+		/// <param name="nir_stage">1:P-NET, 2:P-NET/R-NET, 3:P-NET/R-NET/O-NET</param>
+		/// <param name="nir_order">order type of near-infrared image: NCHW(0) / NHWC(1)</param>
 		std::vector<std::vector<face_rect_with_face_info>> LonginusDetector::impl::detectEx_mobile_pair(const unsigned char* vsl_image, const int vsl_channels, const int vsl_height, const int vsl_width,
 			const int vsl_minSize, const float* vsl_threshold, const float vsl_factor, const int vsl_stage, const int vsl_order,
 			const unsigned char* nir_image, int nir_channels, int nir_height, int nir_width,
@@ -694,16 +820,53 @@ namespace glasssix
 		}
 #endif
 
+		/// <summary>
+		/// detect on visible image, whether motion-blur happens, return true if pass(no motion-blur happens)
+		/// </summary>
+		/// <param name="vsl_color_image">visible image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of blur-judge-model, 0.6 by default; thresh[1]: not in use</param>
+		/// <param name="value">value[0]: return value of blur-judge-model score; value[1]: not in use</param>
+		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		bool LonginusDetector::impl::blur_judge_vsl(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const
 		{
 			return selene_blur_vsl_->judge(vsl_color_image, height, width, bbox, landmarks, thresh, value, order);
 		}
 
+
+
+		/// <summary>
+		/// detect on visible image, whether black and white photo detected, return true if pass(not black and white photo)
+		/// </summary>
+		/// <param name="vsl_color_image">visible image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of black-white-judge, 30 by default; thresh[1]: not in use</param>
+		/// <param name="value">value[0]: return value of black-white-judge score; value[1]: not in use</param>
+		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		bool LonginusDetector::impl::black_white_judge_vsl(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const
 		{
 			return selene_black_white_vsl_->judge(vsl_color_image, height, width, bbox, landmarks, thresh, value, order);
 		}
 
+
+
+		/// <summary>
+		/// detect on near-infrared image, whether color photo detected, return true if pass(not color photo)
+		/// </summary>
+		/// <param name="nir_color_image">near-infrared image data</param>
+		/// <param name="height">image height</param>
+		/// <param name="width">image width</param>
+		/// <param name="bbox">detected humanface bboxes</param>
+		/// <param name="landmarks">detected humanface landmarks</param>
+		/// <param name="thresh">thresh[0]: threshold value of face-judge-model, 0.9 by default; thresh[1]: threshold value of nose-judge-model, 0.85 by default</param>
+		/// <param name="value">value[0]: return value of face-judge-model; value[1]: return value of nose-judge-model</param>
+		/// <param name="order">order type of near-infrared image: NCHW(0) / NHWC(1)</param>
 		bool LonginusDetector::impl::face_nose_judge_nir(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) const
 		{
 			return selene_face_nose_nir_->judge(nir_color_image, height, width, bbox, landmarks, thresh, value, order);
@@ -763,12 +926,13 @@ namespace glasssix
 			return impl_->alignFace(ori_image, n, channels, height, width);
 		}
 
-		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int channels, int height, int width, int order, float threshold, float scales) const
+		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int channels, int height, int width, int order, float threshold) const
 		{
-			return impl_->detectRetina(image, channels, height, width, order, threshold, scales);
+			return impl_->detectRetina(image, channels, height, width, order, threshold);
 		}
 
 #ifndef TRIAL
+		
 		std::vector<face_rect_with_face_info> LonginusDetector::detectEx(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			return impl_->detectEx(image, channels, height, width, minSize, threshold, factor, stage, order);
@@ -784,7 +948,8 @@ namespace glasssix
 			return impl_->detectEx_mobile_nir(image, channels, height, width, minSize, threshold, factor, stage, order);
 		}
 
-		std::vector<std::vector<face_rect_with_face_info>> LonginusDetector::detectEx_mobile_pair(const unsigned char* vsl_image, const int vsl_channels, const int vsl_height, const int vsl_width, const int vsl_minSize, const float* vsl_threshold, const float vsl_factor, const int vsl_stage, const int vsl_order, const unsigned char* nir_image, int nir_channels, int nir_height, int nir_width, int nir_minSize, const float* nir_threshold, float nir_factor, int nir_stage, int nir_order) const
+		std::vector<std::vector<face_rect_with_face_info>> LonginusDetector::detectEx_mobile_pair(const unsigned char* vsl_image, const int vsl_channels, const int vsl_height, const int vsl_width, const int vsl_minSize, const float* vsl_threshold, const float vsl_factor, const int vsl_stage, const int vsl_order, 
+			const unsigned char* nir_image, int nir_channels, int nir_height, int nir_width, int nir_minSize, const float* nir_threshold, float nir_factor, int nir_stage, int nir_order) const
 		{
 			return impl_->detectEx_mobile_pair(
 				vsl_image, vsl_channels, vsl_height, vsl_width, vsl_minSize, vsl_threshold, vsl_factor, vsl_stage, vsl_order,
@@ -825,6 +990,11 @@ namespace glasssix
 			return impl::getVersion();
 		}
 
+		/// <summary>
+        /// judge whether masked
+        /// </summary>
+        /// <param name="aligned_data">aligned face data, n * 3 * 128 * 128</param>
+        /// <param name="n">number of detected humanface</param>
 		std::vector<bool> LonginusDetector::maskJudge(const std::vector<unsigned char> &aligned_data, int n)
 		{
 			std::vector<bool> result;

@@ -6,10 +6,13 @@
 using namespace glasssix::excalibur;
 using namespace glasssix::longinus;
 
-//processing
+
+/// <summary>
+/// calculate (width, height, x_center, and y_center) from (xmin, ymin, xmax, and ymax)
+/// </summary>
+/// <param name="anchor">input bbox</param>
 anchor_win  _whctrs(FaceBox anchor)
 {
-    //Return width, height, x center, and y center for an anchor (window).
     anchor_win win;
     win.w = anchor.xmax - anchor.xmin + 1;
     win.h = anchor.ymax - anchor.ymin + 1;
@@ -19,6 +22,12 @@ anchor_win  _whctrs(FaceBox anchor)
     return win;
 }
 
+
+
+/// <summary>
+/// calculate (xmin, ymin, xmax, and ymax) from (width, height, x_center, and y_center)
+/// </summary>
+/// <param name="win">input anchor_win</param>
 FaceBox _mkanchors(anchor_win win)
 {
     //Given a vector of widths (ws) and heights (hs) around a center
@@ -32,9 +41,16 @@ FaceBox _mkanchors(anchor_win win)
     return anchor;
 }
 
+
+
+/// <summary>
+/// Enumerate a set of anchors for each aspect ratio wrt an anchor.
+/// scale box while center fixed, height and width may have different scale ratio
+/// </summary>
+/// <param name="anchor">input bbox</param>
+/// <param name="ratios">assigned scale ratios</param>
 std::vector<FaceBox> _ratio_enum(FaceBox anchor, std::vector<float> ratios)
 {
-    //Enumerate a set of anchors for each aspect ratio wrt an anchor.
 	std::vector<FaceBox> anchors;
     for(size_t i = 0; i < ratios.size(); i++) 
 	{
@@ -52,9 +68,16 @@ std::vector<FaceBox> _ratio_enum(FaceBox anchor, std::vector<float> ratios)
     return anchors;
 }
 
+
+
+/// <summary>
+/// Enumerate a set of anchors for each scale wrt an anchor.
+/// scale box while center fixed, height and width share same scale ratio
+/// </summary>
+/// <param name="anchor">input bbox</param>
+/// <param name="scales">assigned scale ratios</param>
 std::vector<FaceBox> _scale_enum(FaceBox anchor, std::vector<int> scales)
 {
-    //Enumerate a set of anchors for each scale wrt an anchor.
 	std::vector<FaceBox> anchors;
     for(size_t i = 0; i < scales.size(); i++) 
 	{
@@ -70,6 +93,16 @@ std::vector<FaceBox> _scale_enum(FaceBox anchor, std::vector<int> scales)
     return anchors;
 }
 
+
+
+/// <summary>
+/// generate a bunch of bboxes
+/// </summary>
+/// <param name="base_size">base bbox size</param>
+/// <param name="ratios">scale ratio</param>
+/// <param name="scales">expand ratio</param>
+/// <param name="stride">offset in x and y direction</param>
+/// <param name="dense_anchor">whether offset stride in x and y direction</param>
 std::vector<FaceBox> generate_anchors(int base_size = 16, std::vector<float> ratios = {0.5, 1, 2},
                                          std::vector<int> scales = {8, 64}, int stride = 16, bool dense_anchor = false)
 {
@@ -108,6 +141,13 @@ std::vector<FaceBox> generate_anchors(int base_size = 16, std::vector<float> rat
     return anchors;
 }
 
+
+
+/// <summary>
+/// generate a bunch of bboxes
+/// </summary>
+/// <param name="dense_anchor">whether offset stride in x and y direction</param>
+/// <param name="cfg">configuration</param>
 std::vector<std::vector<FaceBox>> generate_anchors_fpn(bool dense_anchor = false, std::vector<anchor_cfg> cfg = {})
 {
     //Generate anchor (reference) windows by enumerating aspect ratios X
@@ -116,7 +156,6 @@ std::vector<std::vector<FaceBox>> generate_anchors_fpn(bool dense_anchor = false
 	std::vector<std::vector<FaceBox>> anchors;
     for(size_t i = 0; i < cfg.size(); i++) 
 	{
-        //stride从小到大[32 16 8]
         anchor_cfg tmp = cfg[i];
         int bs = tmp.BASE_SIZE;
 		std::vector<float> ratios = tmp.RATIOS;
@@ -130,6 +169,15 @@ std::vector<std::vector<FaceBox>> generate_anchors_fpn(bool dense_anchor = false
     return anchors;
 }
 
+
+
+/// <summary>
+/// generate a bunch of anchors, offset in x and y direction
+/// </summary>
+/// <param name="height">height of plane</param>
+/// <param name="width">width of plane</param>
+/// <param name="stride">stride ot the original image</param>
+/// <param name="base_anchors">a base set of anchors</param>
 std::vector<FaceBox> anchors_plane(int height, int width, int stride, std::vector<FaceBox> base_anchors)
 {
     /*
@@ -159,6 +207,14 @@ std::vector<FaceBox> anchors_plane(int height, int width, int stride, std::vecto
     return all_anchors;
 }
 
+
+
+/// <summary>
+/// clip boxes to image boundaries, x:[0, width), y:[0, height)
+/// </summary>
+/// <param name="boxes">input and output boxes</param>
+/// <param name="width">width</param>
+/// <param name="height">height</param>
 void clip_boxes(std::vector<FaceBox> &boxes, int width, int height)
 {
     //Clip boxes to image boundaries.
@@ -187,6 +243,14 @@ void clip_boxes(std::vector<FaceBox> &boxes, int width, int height)
     }
 }
 
+
+
+/// <summary>
+/// clip box to image boundaries, x:[0, width), y:[0, height)
+/// </summary>
+/// <param name="box">input and output box</param>
+/// <param name="width">width</param>
+/// <param name="height">height</param>
 void clip_boxes(FaceBox &box, int width, int height)
 {
     //Clip boxes to image boundaries.
@@ -209,15 +273,13 @@ void clip_boxes(FaceBox &box, int width, int height)
 
 }
 
-//######################################################################
-//retinaface
-//######################################################################
+
 
 RetinaFace::RetinaFace(int device) : device_(device)
 {
 	retina_net_.reset(new Retina_net(device_));
 
-	//主干网络选择
+	//choose network
 	int fmc = 3;
 
 	std::string network = "net3";
@@ -262,7 +324,7 @@ RetinaFace::RetinaFace(int device) : device_(device)
 		std::cout << "network setting error" << network << std::endl;
 	}
 
-	//anchor配置
+	//anchor configuration
 	if (fmc == 3)
 	{
 		_feat_stride_fpn = { 32, 16, 8 };
@@ -303,11 +365,20 @@ RetinaFace::RetinaFace(int device) : device_(device)
 	}
 }
 
+
+
 RetinaFace::~RetinaFace()
 {
 	
 }
 
+
+
+/// <summary>
+/// refine anchor based on regress
+/// </summary>
+/// <param name="anchor">input box</param>
+/// <param name="regress">parameter to refine box</param>
 FaceBox RetinaFace::bbox_pred(FaceBox anchor, std::vector<float> regress)
 {
 	CHECK_EQ(regress.size(), 4);
@@ -331,11 +402,25 @@ FaceBox RetinaFace::bbox_pred(FaceBox anchor, std::vector<float> regress)
     return rect;
 }
 
+
+
+/// <summary>
+/// sort bboxes by score
+/// </summary>
+/// <param name="a">first box</param>
+/// <param name="b">second box</param>
 bool RetinaFace::CompareBBox(const FaceInfomation & a, const FaceInfomation & b)
 {
     return a.bbox.score > b.bbox.score;
 }
 
+
+
+/// <summary>
+/// non-maximum suppression
+/// </summary>
+/// <param name="bboxes">input boxes</param>
+/// <param name="threshold">threshold value decides whether suppress or not</param>
 std::vector<FaceInfomation> RetinaFace::nms(std::vector<FaceInfomation>& bboxes, float threshold)
 {
     std::vector<FaceInfomation> bboxes_nms;
@@ -350,7 +435,7 @@ std::vector<FaceInfomation> RetinaFace::nms(std::vector<FaceInfomation>& bboxes,
 	{
         while (select_idx < num_bbox && mask_merged[select_idx] == 1)
             select_idx++;
-        //如果全部执行完则返回
+        //all bboxes are finished
         if (select_idx == num_bbox) 
 		{
             all_merged = true;
@@ -376,7 +461,7 @@ std::vector<FaceInfomation> RetinaFace::nms(std::vector<FaceInfomation>& bboxes,
             FaceBox& bbox_i = bboxes[i].bbox;
             float x = std::max<float>(xmin, static_cast<float>(bbox_i.xmin));
             float y = std::max<float>(ymin, static_cast<float>(bbox_i.ymin));
-            float w = std::min<float>(xmax, static_cast<float>(bbox_i.xmax)) - x + 1;   //<- float 型不加1
+            float w = std::min<float>(xmax, static_cast<float>(bbox_i.xmax)) - x + 1;
             float h = std::min<float>(ymax, static_cast<float>(bbox_i.ymax)) - y + 1;
             if (w <= 0 || h <= 0)
                 continue;
@@ -395,7 +480,19 @@ std::vector<FaceInfomation> RetinaFace::nms(std::vector<FaceInfomation>& bboxes,
     return bboxes_nms;
 }
 
-std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold, float scales)
+
+
+/// <summary>
+/// detect humanface using RetinaFace
+/// </summary>
+/// <param name="img_data">image data</param>
+/// <param name="img_channel">image channel</param>
+/// <param name="img_height">image height</param>
+/// <param name="img_width">image width</param>
+/// <param name="img_order">order type of image: NCHW(0) / NHWC(1)</param>
+/// <param name="threshold">threshold value, 0.5f by default</param>
+/// <param name="scales">scale value, 1.0f by default</param>
+std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold)
 {
 #ifdef SPLIT_TIME
 	glasssix::Timer calcTime;
@@ -417,18 +514,33 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 		img_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, img_height, img_width, img_channel}, device_, NHWC));
 	}
 
+	float scale = 1.0f;
+	int limit_height = 1080;
+	int limit_width = 1920;
+
 	int ws = (img_width + 31) / 32 * 32;
 	int hs = (img_height + 31) / 32 * 32;
 	std::shared_ptr<tensor<unsigned char>> img_bordered;
 	std::vector<std::vector<std::tuple<std::vector<int>, const float*>>> tuple_result;
 
-	//TODO: uncomment this line, and open MACRO 'SPLIT_TIME', you will find infer_time(gpu version) is 35ms faster on 1920*1080 image, both CUDNN and native-gpu
+	//TODO: uncomment next line, and open MACRO 'SPLIT_TIME', you will find infer_time(gpu version) is 35ms faster on 1920*1080 image, both CUDNN and native-gpu
 	//retina_net_.reset(new Retina_net(device_));
 
 	if (device_ < 0)
 	{
 		memcpy(img_tensor->mutable_cpu_data(), img_data, img_channel * img_height * img_width * sizeof(unsigned char));
-		tensor_operation_cpu::make_border_cpu(img_tensor, img_bordered, 0, hs - img_height, 0, ws - img_width);
+		if (img_height > limit_height || img_width > limit_width)
+		{
+			float scale_h = float(img_height) / limit_height;
+			float scale_w = float(img_width) / limit_width;
+			scale = scale_h > scale_w ? scale_h : scale_w;
+
+			tensor_operation_cpu::resize_cpu(img_tensor, img_tensor, int(img_height / scale), int(img_width / scale));
+			ws = (int(img_width / scale) + 31) / 32 * 32;
+			hs = (int(img_height / scale) + 31) / 32 * 32;
+		}
+
+		tensor_operation_cpu::make_border_cpu(img_tensor, img_bordered, 0, hs - int(img_height / scale), 0, ws - int(img_width / scale));
 
 		if (img_order != 0)
 		{
@@ -457,7 +569,18 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 
 #ifdef USE_CUDA
 		cudaMemcpy(img_tensor->mutable_gpu_data(), img_data, img_channel * img_height * img_width * sizeof(unsigned char), cudaMemcpyDefault);
-		tensor_operation_gpu::make_border_gpu(img_tensor, img_bordered, 0, hs - img_height, 0, ws - img_width);
+		if (img_height > limit_height || img_width > limit_width)
+		{
+			float scale_h = float(img_height) / limit_height;
+			float scale_w = float(img_width) / limit_width;
+			scale = scale_h > scale_w ? scale_h : scale_w;
+
+			tensor_operation_gpu::resize_gpu(img_tensor, img_tensor, int(img_height / scale), int(img_width / scale));
+			ws = (int(img_width / scale) + 31) / 32 * 32;
+			hs = (int(img_height / scale) + 31) / 32 * 32;
+		}
+
+		tensor_operation_gpu::make_border_gpu(img_tensor, img_bordered, 0, hs - int(img_height / scale), 0, ws - int(img_width / scale));
 
 		if (img_order != 0)
 		{
@@ -525,14 +648,14 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 		size_t count = width * height;
 		size_t num_anchor = _num_anchors[key];
 
-		//存储顺序 h * w * num_anchor
+		//conserved in order: h * w * num_anchor
 		std::vector<FaceBox> anchors = anchors_plane(height, width, stride, _anchors_fpn[key]);
 
 		for (size_t num = 0; num < num_anchor; num++)
 		{
 			for (size_t j = 0; j < count; j++)
 			{
-				//置信度小于阈值跳过
+				//cotinue while score is lower than threshold
 				float conf = score[j + count * num];
 				if (conf <= threshold)
 				{
@@ -545,9 +668,9 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 				float dh = bbox_delta[j + count * (3 + num * 4)];
 				std::vector<float> regress = { dx, dy, dw, dh };
 
-				//回归人脸框
+				//get bbox
 				FaceBox rect = bbox_pred(anchors[j + count * num], regress);
-				//越界处理
+				//deal with exceed boundray
 				clip_boxes(rect, ws, hs);
 
 				FaceInfomation tmp;
@@ -559,7 +682,7 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 					tmp.landmark[2 * k] = landmark_delta[j + count * (num * 10 + k * 2)];
 					tmp.landmark[2 * k + 1] = landmark_delta[j + count * (num * 10 + k * 2 + 1)];
 				}
-				//回归人脸关键点
+				//get landmarks
 
 				FaceBox anchor = anchors[j + count * num];
 				float box_width = anchor.xmax - anchor.xmin + 1;
@@ -573,12 +696,25 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 					tmp.landmark[2 * k + 1] = tmp.landmark[2 * k + 1] * box_height + ctr_y;
 				}
 
+				if (scale != 1.0f)
+				{
+					tmp.bbox.xmin *= scale;
+					tmp.bbox.xmax *= scale;
+					tmp.bbox.ymin *= scale;
+					tmp.bbox.ymax *= scale;
+
+					for (size_t k = 0; k < 10; k++)
+					{
+						tmp.landmark[k] *= scale;
+					}
+				}
+
 				faceInfo.push_back(tmp);
 			}
 		}
 	}
 
-	//排序nms
+	//sort nms
 	faceInfo = nms(faceInfo, nms_threshold);
 
 #ifdef SPLIT_TIME

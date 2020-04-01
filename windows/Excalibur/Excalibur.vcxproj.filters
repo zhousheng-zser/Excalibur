@@ -111,9 +111,6 @@
     <ClInclude Include="..\..\include\Excalibur\prelu.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\scale.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -295,6 +292,9 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\reshape.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\deconv_arm.cpp">
+      <Filter>Source Files\arm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
