@@ -116,7 +116,7 @@ namespace glasssix::jni
 		/// <returns>The current value</returns>
 		auto get() const
 		{
-			using return_type = std::decay_t<decltype(utils::get_field_value<T>(env_, obj, field_))>;
+			using return_type = std::decay_t<decltype(utils::get_field_value<T>(env_, clazz_, field_))>;
 
 			return *this ? utils::get_field_value<T>(env_, clazz_, field_) : return_type{};
 		}
