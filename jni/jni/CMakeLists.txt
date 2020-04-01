@@ -8,7 +8,9 @@ project ("Excalibur")
 option(USE_ANDROID_NDK "Sets whether to use the Android NDK." off)
 
 set(CMAKE_CXX_STANDARD 17)
-set(GLASSSIX_COMMAND_HEADER_INCLUDE C:/Tools/vcpkg/installed/x64-windows/include)
+get_filename_component(GLASSSIX_COMMAND_HEADER_INCLUDE C:/Tools/vcpkg/installed/x64-windows/include ABSOLUTE)
+get_filename_component(GLASSSIX_EXCALIBUR_INCLUDE ../../include ABSOLUTE)
+get_filename_component(GLASSSIX_EXCALIBUR_SOURCE ../../src ABSOLUTE)
 
 add_compile_options(-I${GLASSSIX_COMMAND_HEADER_INCLUDE})
 

@@ -24,10 +24,10 @@ namespace glasssix
 			std::string cache_directory() const;
 			void load_databases();
 			std::vector<database_search_result> search(const float* feature, int top) const;
-			void remove(const std::vector<std::string>& keys);
-			void remove(const std::string& key);
-			void add(const std::vector<std::shared_ptr<database_record>>& records);
 			void add(database_record& record);
+			void add(const std::vector<std::shared_ptr<database_record>>& records);
+			void remove(const std::string& key);
+			void remove(const std::vector<std::string>& keys);
 			void update(database_record& record);
 			void update(const std::vector<std::shared_ptr<database_record>>& records);
 		private:

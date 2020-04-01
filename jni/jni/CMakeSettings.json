@@ -11,7 +11,7 @@
   "configurations": [
     {
       "name": "x64-Release",
-      "generator": "Visual Studio 16 2019 Win64",
+      "generator": "Ninja",
       "configurationType": "RelWithDebInfo",
       "buildRoot": "${projectDir}/../../Build/${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",

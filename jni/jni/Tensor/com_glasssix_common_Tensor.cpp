@@ -30,7 +30,7 @@ namespace
 	jmethodID method_tensor_constructor;
 	jmethodID method_clazz_get_type_parameters;
 
-	std::shared_ptr<jvm_field_accessor<jlong, jobject>> field_m_impl;
+	std::shared_ptr<jvm_field_accessor<jlong>> field_tensor_m_impl;
 
 	template<typename T = void>
 	auto throw_null_pointer_exception(JNIEnv* env)
@@ -49,81 +49,79 @@ namespace
 
 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_close(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
-
-	if (impl)
+	if (auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj)))
 	{
 		delete impl;
-		field_m_impl->set(obj, 0);
+		field_tensor_m_impl->set(obj, 0);
 	}
 }
 
 JNIEXPORT jboolean JNICALL Java_com_glasssix_common_Tensor_empty(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? utils::to_jboolean(impl->empty()) : throw_null_pointer_exception<jboolean>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_num(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->num() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_channels(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->channels() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_width(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->width() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_height(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->height() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_count__II(JNIEnv* env, jobject obj, jint start_axis, jint end_axis)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->count(start_axis, end_axis) : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_count__(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->count() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_device(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->device() : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_offset(JNIEnv* env, jobject obj, jint n, jint c, jint h, jint w)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->offset(n, c, h, w) : throw_null_pointer_exception<jint>(env);
 }
 
 JNIEXPORT jintArray JNICALL Java_com_glasssix_common_Tensor_dataShape(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
@@ -146,7 +144,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_copyFrom(JNIEnv* env, job
 		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The buffer cannot be null.");
 	}
 
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
@@ -177,7 +175,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_copyFrom(JNIEnv* env, job
 
 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_convertToInternal(JNIEnv* env, jobject obj, jbyteArray buffer, jint layout_ordinal)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
@@ -188,17 +186,17 @@ JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_convertToInternal(JNIEnv*
 JNIEXPORT void JNICALL Java_com_glasssix_common_Tensor_initialize(JNIEnv* env, jobject obj)
 {
 	// Gets the implementation pointer.
-	field_m_impl = std::make_shared<jvm_field_accessor<jlong, jobject>>(env, jvm_runtime_info::instance().get_field_cache(arg_enum_v<tensor_field_key::tensor_m_impl>));
 	clazz_null_pointer_exception = jvm_runtime_info::instance().get_class_cache(arg_enum_v<tensor_class_key::null_pointer_exception>);
 	clazz_illegal_argument_exception = jvm_runtime_info::instance().get_class_cache(arg_enum_v<tensor_class_key::illegal_argument_exception>);
 	clazz_index_out_of_bounds_exception = jvm_runtime_info::instance().get_class_cache(arg_enum_v<tensor_class_key::index_out_of_bounds_exception>);
 	method_tensor_constructor = jvm_runtime_info::instance().get_method_cache(arg_enum_v<tensor_method_key::tensor_constructor>);
 	method_clazz_get_type_parameters = jvm_runtime_info::instance().get_method_cache(arg_enum_v<tensor_method_key::clazz_get_type_parameters>);
+	field_tensor_m_impl = std::make_shared<jvm_field_accessor<jlong>>(env, jvm_runtime_info::instance().get_field_cache(arg_enum_v<tensor_field_key::tensor_m_impl>));
 }
 
 JNIEXPORT jint JNICALL Java_com_glasssix_common_Tensor_layoutInternal(JNIEnv* env, jobject obj)
 {
-	auto impl = reinterpret_cast<tensor_base*>(field_m_impl->get(obj));
+	auto impl = reinterpret_cast<tensor_base*>(field_tensor_m_impl->get(obj));
 
 	return impl ? impl->order() : throw_null_pointer_exception<jint>(env);
 }

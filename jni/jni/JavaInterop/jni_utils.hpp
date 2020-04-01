@@ -1,11 +1,25 @@
 #pragma once
 
+#include <string>
 #include <variant>
-#include <string_view>
+#include <utility>
 #include <type_traits>
+#include <string_view>
 #include <unordered_map>
 
 #include <jni.h>
+
+namespace glasssix::jni::utils
+{
+	template<typename JObject>
+	inline constexpr bool is_derived_from_jobject_v = std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>;
+}
+
+namespace glasssix::jni
+{
+	template<typename JObject, typename = std::enable_if_t<utils::is_derived_from_jobject_v<JObject>>>
+	class jvm_local_ref_ex;
+}
 
 namespace glasssix::jni::utils
 {
@@ -22,18 +36,18 @@ namespace glasssix::jni::utils
 
 		template<typename T, typename = void>
 		struct jvm_field_operator;
-		
+
 		/// <summary>
-		/// jboolean
+		/// jobject
 		/// </summary>
-		template<typename JObject> struct jvm_field_operator<JObject, std::enable_if_t<std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>, JObject>>
+		template<typename JObject> struct jvm_field_operator<JObject, std::enable_if_t<is_derived_from_jobject_v<JObject>>>
 		{
 			static auto get(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
 			{
 				return std::visit(functor_package
 					{
-						[&](jobject obj) { return env->GetObjectField(obj, field); },
-						[&](jclass clazz) { return env->GetStaticObjectField(clazz, field); }
+						[&](jobject obj) { return jvm_local_ref_ex<JObject>{ env, static_cast<JObject>(env->GetObjectField(obj, field)), true }; },
+						[&](jclass clazz) { return jvm_local_ref_ex<JObject>{ env, static_cast<JObject>(env->GetStaticObjectField(clazz, field)), true }; }
 					}, source);
 			}
 
@@ -217,7 +231,7 @@ namespace glasssix::jni::utils
 	}
 
 	template<typename JObject>
-	constexpr auto jobject_as(jobject obj) noexcept -> std::enable_if_t<std::conjunction_v<std::is_pointer<JObject>, std::is_base_of<std::remove_pointer_t<jobject>, std::remove_pointer_t<JObject>>>, JObject>
+	constexpr auto jobject_as(jobject obj) noexcept -> std::enable_if_t<is_derived_from_jobject_v<JObject>, JObject>
 	{
 		return obj ? static_cast<JObject>(obj) : nullptr;
 	}
@@ -231,14 +245,18 @@ namespace glasssix::jni::utils
 		// Thus, we just return the default value here.
 		if constexpr (!std::is_void_v<T>)
 		{
-			return T{ std::forward<Args>(args...) };
+			return T{ std::forward<Args>(args)... };
 		}
 	}
 
+	std::string to_string(JNIEnv* env, jstring str);
+	jstring to_jstring(JNIEnv* env, std::string_view str);
+	
 	constexpr jboolean to_jboolean(bool value) noexcept
 	{
 		return value ? JNI_TRUE : JNI_FALSE;
 	}
+
 
 	template<typename T>
 	auto get_field_value(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)

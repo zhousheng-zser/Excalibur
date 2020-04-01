@@ -45,7 +45,7 @@ namespace glasssix
 	public:
 		using linux_stat_type = struct stat64;
 
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, data_{}, mark_for_deletion_{}
 		{
 			file_descriptor_ = open64(path_.c_str(), O_RDWR);
 
@@ -136,7 +136,7 @@ namespace glasssix
 	class memory_mapping::impl
 	{
 	public:
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, data_{}, mark_for_deletion_{}
 		{
 			file_handle_ = CreateFileA(path_.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 

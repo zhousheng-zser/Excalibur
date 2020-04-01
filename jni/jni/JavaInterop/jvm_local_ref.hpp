@@ -2,6 +2,7 @@
 
 #include "jni_utils.hpp"
 
+#include <utility>
 #include <type_traits>
 
 #include <jni.h>
@@ -24,14 +25,56 @@ namespace glasssix::jni
 		operator bool() const noexcept;
 		jvm_local_ref& operator=(const jvm_local_ref& right);
 		jvm_local_ref& operator=(jvm_local_ref&& right) noexcept;
-
-		template<typename JObject, typename = std::enable_if_t<!std::is_same_v<JObject, bool>>>
-		operator JObject() noexcept
-		{
-			return utils::jobject_as<JObject>(ref_);
-		}
+		jobject get() const noexcept;
 	private:
 		JNIEnv* env_;
 		jobject ref_;
+	};
+
+	template<typename JObject, typename>
+	class jvm_local_ref_ex : public jvm_local_ref
+	{
+	public:
+		jvm_local_ref_ex() noexcept = default;
+		jvm_local_ref_ex(std::nullptr_t) noexcept : jvm_local_ref{ nullptr }
+		{
+		}
+
+		jvm_local_ref_ex(JNIEnv* env, JObject obj) : jvm_local_ref{ env, obj }
+		{
+		}
+
+		jvm_local_ref_ex(JNIEnv* env, JObject obj, bool takeOverOnly) : jvm_local_ref{ env, obj, takeOverOnly }
+		{
+		}
+
+		jvm_local_ref_ex(const jvm_local_ref_ex& other) : jvm_local_ref{ other }
+		{
+		}
+
+		jvm_local_ref_ex(jvm_local_ref_ex&& other) noexcept : jvm_local_ref{ other }
+		{
+		}
+
+		virtual ~jvm_local_ref_ex() = default;
+
+		jvm_local_ref_ex& operator=(const jvm_local_ref_ex& right)
+		{
+			static_cast<jvm_local_ref&>(*this) = right;
+
+			return *this;
+		}
+
+		jvm_local_ref_ex& operator=(jvm_local_ref_ex&& right)
+		{
+			static_cast<jvm_local_ref&>(*this) = std::move(right);
+
+			return *this;
+		}
+
+		JObject get() const noexcept
+		{
+			return utils::jobject_as<JObject>(static_cast<const jvm_local_ref&>(*this).get());
+		}
 	};
 }
