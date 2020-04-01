@@ -196,7 +196,7 @@ namespace glasssix
 					}
 					else
 					{
-						cpu_ptr_ = aligned_heap_alloc(size_ * sizeof(Dtype));
+						cpu_ptr_ = static_cast<Dtype*>(aligned_heap_alloc(size_ * sizeof(Dtype)));
 					}
 				}
 				memset(cpu_ptr_, 0, size_ * sizeof(Dtype));
@@ -225,7 +225,7 @@ namespace glasssix
 						}
 						else
 						{
-							cpu_ptr_ = aligned_heap_alloc(size_ * sizeof(Dtype));
+							cpu_ptr_ = static_cast<Dtype*>(aligned_heap_alloc(size_ * sizeof(Dtype)));
 						}
 					}
 					own_cpu_data_ = true;
@@ -274,5 +274,8 @@ namespace glasssix
 			NO_GPU;
 #endif
 		}
+
+		// instantiate class
+		template class syncedmem<float>;
 	}
 }
