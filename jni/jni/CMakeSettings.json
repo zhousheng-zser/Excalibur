@@ -82,7 +82,7 @@
       "configurationType": "Release",
       "ctestCommandArgs": "",
       "generator": "Ninja",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
       "intelliSenseMode": "android-clang-arm64",
       "name": "Android-ARM64-Release",
       "variables": [
