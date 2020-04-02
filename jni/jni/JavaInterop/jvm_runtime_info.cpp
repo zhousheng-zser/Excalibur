@@ -55,9 +55,9 @@ namespace glasssix::jni
 			return true;
 		}
 
-		jclass get_class_cache(int key) const
+		jvm_global_ref_ex<jclass> get_class_cache(int key) const
 		{
-			return get_item_cache_internal<jvm_global_ref_ex<jclass>, jclass>(key).get();
+			return get_item_cache_internal<jvm_global_ref_ex<jclass>, jclass>(key);
 		}
 
 		jfieldID get_field_cache(int key) const
@@ -100,7 +100,7 @@ namespace glasssix::jni
 		auto get_item_cache_internal(int key) const -> std::enable_if_t<std::is_constructible_v<T, std::nullptr_t>, T>
 		{
 			auto iter = cache_.find(utils::make_cache_key<Category>(key));
-
+			
 			return iter != cache_.end() ? std::get<T>(iter->second) : T{ nullptr };
 		}
 
@@ -112,7 +112,7 @@ namespace glasssix::jni
 				return;
 			}
 
-			auto iter = cache_.find(cache_key{ class_key });
+			auto iter = cache_.find(utils::make_cache_key<jclass>(class_key));
 
 			if (iter != cache_.end())
 			{
@@ -160,7 +160,7 @@ namespace glasssix::jni
 		return impl_->env(handler);
 	}
 
-	jclass jvm_runtime_info::get_class_cache(int key) const
+	jvm_global_ref_ex<jclass> jvm_runtime_info::get_class_cache(int key) const
 	{
 		return impl_->get_class_cache(key);
 	}

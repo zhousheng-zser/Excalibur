@@ -22,10 +22,10 @@ using glasssix::scope_guard;
 
 namespace
 {
-	jclass clazz_database_record;
-	jclass clazz_database_search_result;
-	jclass clazz_null_pointer_exception;
-	jclass clazz_illegal_argument_exception;
+	jvm_global_ref_ex<jclass> clazz_database_record;
+	jvm_global_ref_ex<jclass> clazz_database_search_result;
+	jvm_global_ref_ex<jclass> clazz_null_pointer_exception;
+	jvm_global_ref_ex<jclass> clazz_illegal_argument_exception;
 
 	jmethodID method_database_record_constructor;
 	jmethodID method_database_search_result_constructor;
@@ -37,13 +37,13 @@ namespace
 	template<typename T = void>
 	auto throw_null_pointer_exception(JNIEnv* env)
 	{
-		return utils::throw_new_exception<T>(env, clazz_null_pointer_exception, "The underlying implementation is null.");
+		return utils::throw_new_exception<T>(env, clazz_null_pointer_exception.get(), "The underlying implementation is null.");
 	}
 
 	std::shared_ptr<database_record> get_database_record(JNIEnv* env, jobject obj, jobject record)
 	{
-		auto feature = field_database_record_m_feature->get(obj);
-		auto native_key = utils::to_string(env, field_database_record_m_key->get(obj).get());
+		auto feature = field_database_record_m_feature->get(record);
+		auto native_key = utils::to_string(env, field_database_record_m_key->get(record).get());
 		auto native_feature = env->GetFloatArrayElements(feature.get(), nullptr);
 		auto dimension = static_cast<int>(env->GetArrayLength(feature.get()));
 		scope_guard guard{ [&] { env->ReleaseFloatArrayElements(feature.get(), native_feature, JNI_ABORT); } };
@@ -120,7 +120,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNI
 {
 	if (feature == nullptr)
 	{
-		return utils::throw_new_exception<jobjectArray>(env, clazz_null_pointer_exception, "The feature cannot be null.");
+		return utils::throw_new_exception<jobjectArray>(env, clazz_null_pointer_exception.get(), "The feature cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -133,7 +133,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNI
 	auto native_feature = env->GetFloatArrayElements(feature, nullptr);
 	scope_guard guard{ [&] { env->ReleaseFloatArrayElements(feature, native_feature, JNI_ABORT); } };
 	auto native_result = impl->search(native_feature, top);
-	auto result = env->NewObjectArray(native_result.size(), clazz_database_search_result, nullptr);
+	auto result = env->NewObjectArray(native_result.size(), clazz_database_search_result.get(), nullptr);
 
 	// Fills in the items.
 	for (jsize i = 0; i < native_result.size(); i++)
@@ -147,8 +147,8 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNI
 		env->SetFloatArrayRegion(record_feature.get(), 0, record_dimension, native_record_feature);
 
 		// Create a record and searching result.
-		jvm_local_ref record{ env,  env->NewObject(clazz_database_record, method_database_record_constructor, utils::to_jstring(env, native_item.data->key()), record_feature.get()), true };
-		auto item = env->NewObject(clazz_database_search_result, method_database_search_result_constructor, record.get(), native_item.similarity);
+		jvm_local_ref record{ env,  env->NewObject(clazz_database_record.get(), method_database_record_constructor, utils::to_jstring(env, native_item.data->key()), record_feature.get()), true };
+		auto item = env->NewObject(clazz_database_search_result.get(), method_database_search_result_constructor, record.get(), native_item.similarity);
 		
 		env->SetObjectArrayElement(result, i, item);
 	}
@@ -160,7 +160,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add__Lcom_glasssix
 {
 	if (record == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The record cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The record cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -177,7 +177,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add___3Lcom_glasss
 {
 	if (records == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The records cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The records cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -194,7 +194,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove__Ljava_lang
 {
 	if (key == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The key cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The key cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -211,7 +211,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove___3Ljava_la
 {
 	if (keys == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The keys cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The keys cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -226,8 +226,8 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove___3Ljava_la
 
 	for (jsize i = 0; i < size; i++)
 	{
-		auto item = env->GetObjectArrayElement(keys, i);
-		auto native_key = utils::to_string(env, field_database_record_m_key->get(item).get());
+		auto item = utils::jobject_as<jstring>(env->GetObjectArrayElement(keys, i));
+		auto native_key = utils::to_string(env, item);
 		
 		native_keys.emplace_back(native_key);
 	}
@@ -239,7 +239,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update__Lcom_glass
 {
 	if (record == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The record cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The record cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -256,7 +256,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update___3Lcom_gla
 {
 	if (records == nullptr)
 	{
-		return utils::throw_new_exception(env, clazz_null_pointer_exception, "The records cannot be null.");
+		return utils::throw_new_exception(env, clazz_null_pointer_exception.get(), "The records cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));

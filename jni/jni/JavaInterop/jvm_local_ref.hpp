@@ -52,7 +52,7 @@ namespace glasssix::jni
 		{
 		}
 
-		jvm_local_ref_ex(jvm_local_ref_ex&& other) noexcept : jvm_local_ref{ other }
+		jvm_local_ref_ex(jvm_local_ref_ex&& other) noexcept : jvm_local_ref{ std::move(other) }
 		{
 		}
 
