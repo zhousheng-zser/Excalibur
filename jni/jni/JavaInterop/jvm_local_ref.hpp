@@ -2,9 +2,6 @@
 
 #include "jni_utils.hpp"
 
-#include <utility>
-#include <type_traits>
-
 #include <jni.h>
 
 namespace glasssix::jni
@@ -65,7 +62,7 @@ namespace glasssix::jni
 			return *this;
 		}
 
-		jvm_local_ref_ex& operator=(jvm_local_ref_ex&& right)
+		jvm_local_ref_ex& operator=(jvm_local_ref_ex&& right) noexcept
 		{
 			static_cast<jvm_local_ref&>(*this) = std::move(right);
 
