@@ -9,6 +9,18 @@
   ],
   "configurations": [
     {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}/../../Build/${name}",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
+      "cmakeCommandArgs": "-DUSE_ANDROID_NDK=OFF",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
       "name": "x64-Release",
       "generator": "Ninja",
       "configurationType": "Release",

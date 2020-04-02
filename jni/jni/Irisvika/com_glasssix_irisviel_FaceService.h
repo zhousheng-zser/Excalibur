@@ -53,7 +53,7 @@ extern "C" {
 	/*
 	 * Class:     com_glasssix_irisviel_FaceService
 	 * Method:    search
-	 * Signature: ([FI)[Lcom/glasssix/irisviel/DatabaseRecord;
+	 * Signature: ([FI)[Lcom/glasssix/irisviel/DatabaseSearchResult;
 	 */
 	JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNIEnv* env, jobject obj, jfloatArray feature, jint top);
 

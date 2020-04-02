@@ -20,7 +20,7 @@ namespace glasssix::jni
 	{
 	}
 
-	jvm_local_ref::jvm_local_ref(const jvm_local_ref& other) : env_{ other.env_ }, ref_{ env_ && other.ref_ ? env_ ->NewLocalRef(other.ref_) : nullptr }
+	jvm_local_ref::jvm_local_ref(const jvm_local_ref& other) : env_{ other.env_ }, ref_{ env_ && other.ref_ ? env_->NewLocalRef(other.ref_) : nullptr }
 	{
 	}
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "jvm_global_ref.hpp"
+
 #include <tuple>
 #include <memory>
 #include <functional>
@@ -24,7 +26,7 @@ namespace glasssix::jni
 		int version() const noexcept;
 		JNIEnv* env() const noexcept;
 		bool env(const std::function<int(void**, int)>& handler);
-		jclass get_class_cache(int key) const;
+		jvm_global_ref_ex<jclass> get_class_cache(int key) const;
 		jfieldID get_field_cache(int key) const;
 		jmethodID get_method_cache(int key) const;
 		void add_class_cache(int key, std::string_view name);
