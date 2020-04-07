@@ -2,9 +2,8 @@
 
 #include "hash_utils.hpp"
 
-#include <array>
+#include <cstddef>
 #include <numeric>
-#include <functional>
 #include <type_traits>
 
 #include <jni.h>

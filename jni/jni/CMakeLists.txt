@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.8)
 
 project("Excalibur")
 
-option(USE_ANDROID_NDK "Sets whether to use the Android NDK." off)
+option(USE_ANDROID_NDK "Sets whether to use the Android NDK." ON)
 set(CMAKE_CXX_STANDARD 17)
 
 get_filename_component(GLASSSIX_COMMAND_HEADER_INCLUDE C:/Tools/vcpkg/installed/x64-windows/include ABSOLUTE)
@@ -16,15 +16,18 @@ add_compile_options(-I${GLASSSIX_COMMAND_HEADER_INCLUDE})
 
 # Provides support for NDK or x86-64 JDK.
 if(USE_ANDROID_NDK)
-	get_filename_component(ANDROID_NDK_CLANG_INCLUDE ${ANDROID_TOOLCHAIN_ROOT}/lib64/clang/8.0.7/include ABSOLUTE)
 	get_filename_component(ANDROID_NDK_SYSROOT_USER_INCLUDE ${CMAKE_SYSROOT}/usr/include ABSOLUTE)
-	get_filename_component(ANDROID_NDK_SYSROOT_CXX_INCLUDE ${ANDROID_NDK_SYSROOT_USER_INCLUDE}/c++/v1 ABSOLUTE)
+	get_filename_component(ANDROID_NDK_CLANG_INCLUDE ${ANDROID_TOOLCHAIN_ROOT}/lib64/clang/8.0.7/include ABSOLUTE)
 	get_filename_component(ANDROID_NDK_SYSROOT_PLATFORM_INCLUDE ${ANDROID_NDK_SYSROOT_USER_INCLUDE}/${CMAKE_SYSTEM_PROCESSOR}-linux-android ABSOLUTE)
-	
+	get_filename_component(ANDROID_NDK_SYSROOT_CXX_INCLUDE ${ANDROID_TOOLCHAIN_ROOT}/sysroot/usr/include/c++/v1 ABSOLUTE)
+
 	add_compile_options(
+		#"-I${ANDROID_NDK}/sources/cxx-stl/llvm-libc++/include"
+		#"-I${ANDROID_NDK}/sources/android/support/include"
+		#"-I${ANDROID_NDK}/sources/cxx-stl/llvm-libc++abi/include"
+		-I${ANDROID_NDK_SYSROOT_CXX_INCLUDE}
 		-I${ANDROID_NDK_CLANG_INCLUDE}
 		-I${ANDROID_NDK_SYSROOT_USER_INCLUDE}
-		-I${ANDROID_NDK_SYSROOT_CXX_INCLUDE}
 		-I${ANDROID_NDK_SYSROOT_PLATFORM_INCLUDE})
 
 	# Creates a stripping function.
