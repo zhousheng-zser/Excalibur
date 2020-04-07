@@ -13,9 +13,8 @@ namespace glasssix::jni
 	{
 	public:
 		jvm_global_ref() noexcept;
-		jvm_global_ref(std::nullptr_t) noexcept;
-		jvm_global_ref(JNIEnv* env, jobject obj);
-		jvm_global_ref(JNIEnv* env, jobject obj, bool takeOverOnly);
+		jvm_global_ref(jobject obj);
+		jvm_global_ref(jobject obj, bool takeOverOnly);
 		jvm_global_ref(const jvm_global_ref& other);
 		jvm_global_ref(jvm_global_ref&& other) noexcept;
 		virtual ~jvm_global_ref();
@@ -24,7 +23,6 @@ namespace glasssix::jni
 		jvm_global_ref& operator=(jvm_global_ref&& right) noexcept;
 		jobject get() const noexcept;
 	private:
-		JNIEnv* env_;
 		jobject ref_;
 	};
 
@@ -33,15 +31,12 @@ namespace glasssix::jni
 	{
 	public:
 		jvm_global_ref_ex() noexcept = default;
-		jvm_global_ref_ex(std::nullptr_t) noexcept : jvm_global_ref{ nullptr }
+
+		jvm_global_ref_ex(JObject obj) : jvm_global_ref{ obj }
 		{
 		}
 
-		jvm_global_ref_ex(JNIEnv* env, JObject obj) : jvm_global_ref{ env, obj }
-		{
-		}
-
-		jvm_global_ref_ex(JNIEnv* env, JObject obj, bool takeOverOnly) : jvm_global_ref{ env, obj, takeOverOnly }
+		jvm_global_ref_ex(JObject obj, bool takeOverOnly) : jvm_global_ref{ obj, takeOverOnly }
 		{
 		}
 

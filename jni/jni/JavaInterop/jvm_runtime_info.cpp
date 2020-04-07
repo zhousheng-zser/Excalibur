@@ -1,5 +1,5 @@
 #include "jvm_runtime_info.hpp"
-#include "jvm_global_ref.hpp"
+#include "jvm_thread_env.hpp"
 #include "jvm_local_ref.hpp"
 #include "cache_key.hpp"
 
@@ -12,7 +12,7 @@ namespace glasssix::jni
 	class jvm_runtime_info::impl
 	{
 	public:
-		impl() : version_{}, env_{}
+		impl() noexcept : version_{}, jvm_{}
 		{
 		}
 
@@ -21,12 +21,7 @@ namespace glasssix::jni
 			return version_;
 		}
 
-		JNIEnv* env() const noexcept
-		{
-			return env_;
-		}
-
-		bool env(const std::function<int(void**, int)>& handler)
+		bool initialize(JavaVM* jvm)
 		{
 			static constexpr int available_versions[] =
 			{
@@ -36,20 +31,19 @@ namespace glasssix::jni
 				JNI_VERSION_1_1
 			};
 
-			if (!handler)
+			if (jvm == nullptr)
 			{
 				return false;
 			}
 
 			JNIEnv* env = nullptr;
-			auto result = std::find_if(std::begin(available_versions), std::end(available_versions), [&](int value) { return handler(reinterpret_cast<void**>(&env), value) == JNI_OK; });
+			auto result = std::find_if(std::begin(available_versions), std::end(available_versions), [&](int value) { return jvm->GetEnv(reinterpret_cast<void**>(&env), value) == JNI_OK; });
 
 			if (result == std::end(available_versions))
 			{
 				return false;
 			}
-
-			env_ = env;
+			
 			version_ = *result;
 
 			return true;
@@ -72,28 +66,34 @@ namespace glasssix::jni
 
 		void add_class_cache(int key, std::string_view name)
 		{
-			if (env_ == nullptr)
+			auto env = jvm_thread_env::instance().value();
+
+			if (env == nullptr)
 			{
 				return;
 			}
 
 			// Finds the class.
-			jvm_local_ref_ex<jclass> clazz{ env_, env_->FindClass(name.data()), true };
-
-			if (clazz)
+			if (jvm_local_ref_ex<jclass> clazz{ env->FindClass(name.data()), true })
 			{
-				cache_.insert_or_assign(utils::make_cache_key<jclass>(key), jvm_global_ref_ex<jclass>{ env_, clazz.get() });
+				cache_.insert_or_assign(utils::make_cache_key<jclass>(key), jvm_global_ref_ex<jclass>{ clazz.get() });
 			}
 		}
 
 		void add_field_caches(int class_key, std::initializer_list<std::tuple<int, std::string_view, std::string_view>> fields)
 		{
-			add_item_caches_internal<jfieldID>(class_key, env_->functions->GetFieldID, fields);
+			if (auto env = jvm_thread_env::instance().value())
+			{
+				add_item_caches_internal<jfieldID>(env, class_key, env->functions->GetFieldID, fields);
+			}
 		}
 
 		void add_method_caches(int class_key, std::initializer_list<std::tuple<int, std::string_view, std::string_view>> methods)
 		{
-			add_item_caches_internal<jmethodID>(class_key, env_->functions->GetMethodID, methods);
+			if (auto env = jvm_thread_env::instance().value())
+			{
+				add_item_caches_internal<jmethodID>(env, class_key, env->functions->GetMethodID, methods);
+			}
 		}
 	private:
 		template<typename T, typename Category = T>
@@ -105,25 +105,16 @@ namespace glasssix::jni
 		}
 
 		template<typename T>
-		void add_item_caches_internal(int class_key, T(*handler)(JNIEnv*, jclass, const char*, const char*), std::initializer_list<std::tuple<int, std::string_view, std::string_view>> items)
+		void add_item_caches_internal(JNIEnv* env, int class_key, T(*handler)(JNIEnv*, jclass, const char*, const char*), std::initializer_list<std::tuple<int, std::string_view, std::string_view>> items)
 		{
-			if (env_ == nullptr)
-			{
-				return;
-			}
-
-			auto iter = cache_.find(utils::make_cache_key<jclass>(class_key));
-
-			if (iter != cache_.end())
+			if (auto iter = cache_.find(utils::make_cache_key<jclass>(class_key)); iter != cache_.end())
 			{
 				auto clazz = std::get<jvm_global_ref_ex<jclass>>(iter->second);
 
 				// Adds the items.
 				for (auto [item_key, item_name, item_signature] : items)
 				{
-					auto item_id = handler(env_, clazz.get(), item_name.data(), item_signature.data());
-
-					if (item_id)
+					if (auto item_id = handler(env, clazz.get(), item_name.data(), item_signature.data()))
 					{
 						cache_.insert_or_assign(utils::make_cache_key<T>(item_key), item_id);
 					}
@@ -132,7 +123,7 @@ namespace glasssix::jni
 		}
 
 		int version_;
-		JNIEnv* env_;
+		JavaVM* jvm_;
 		std::unordered_map<cache_key, std::variant<jvm_global_ref_ex<jclass>, jfieldID, jmethodID>> cache_;
 	};
 
@@ -150,14 +141,9 @@ namespace glasssix::jni
 		return impl_->version();
 	}
 
-	JNIEnv* jvm_runtime_info::env() const noexcept
+	bool jvm_runtime_info::initialize(JavaVM* jvm)
 	{
-		return impl_->env();
-	}
-
-	bool jvm_runtime_info::env(const std::function<int(void**, int)>& handler)
-	{
-		return impl_->env(handler);
+		return impl_->initialize(jvm);
 	}
 
 	jvm_global_ref_ex<jclass> jvm_runtime_info::get_class_cache(int key) const
@@ -190,7 +176,7 @@ namespace glasssix::jni
 		impl_->add_method_caches(class_key, methods);
 	}
 
-	jvm_runtime_info::jvm_runtime_info() : impl_{ new impl }
+	jvm_runtime_info::jvm_runtime_info() noexcept : impl_{ new impl }
 	{
 	}
 }

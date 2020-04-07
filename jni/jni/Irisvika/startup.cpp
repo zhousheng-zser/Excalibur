@@ -1,21 +1,22 @@
 #include "cache_key.hpp"
+#include "jvm_thread_env.hpp"
 #include "jvm_runtime_info.hpp"
 #include "irisvika_cache_key.hpp"
-
-#include <functional>
 
 #include <jni.h>
 
 using namespace glasssix::jni;
 using utils::arg_enum_v;
 
-JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
+JNIEXPORT jint JNI_OnLoad(JavaVM* jvm, void* reserved)
 {
-	if (!jvm_runtime_info::instance().env(std::bind(&JavaVM::GetEnv, vm, std::placeholders::_1, std::placeholders::_2)))
+	if (!jvm_runtime_info::instance().initialize(jvm))
 	{
 		return JNI_ERR;
 	}
 
+	jvm_thread_env::instance().initialize(jvm, jvm_runtime_info::instance().version());
+	
 	jvm_runtime_info::instance().add_class_cache(arg_enum_v<irisvika_class_key::face_service>, "com/glasssix/irisviel/FaceService");
 	jvm_runtime_info::instance().add_class_cache(arg_enum_v<irisvika_class_key::database_record>, "com/glasssix/irisviel/DatabaseRecord");
 	jvm_runtime_info::instance().add_class_cache(arg_enum_v<irisvika_class_key::database_search_result>, "com/glasssix/irisviel/DatabaseSearchResult");

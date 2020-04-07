@@ -1,5 +1,7 @@
 #pragma once
 
+#include "jvm_thread_env.hpp"
+
 #include <string>
 #include <variant>
 #include <utility>
@@ -46,8 +48,8 @@ namespace glasssix::jni::utils
 			{
 				return std::visit(functor_package
 					{
-						[&](jobject obj) { return jvm_local_ref_ex<JObject>{ env, static_cast<JObject>(env->GetObjectField(obj, field)), true }; },
-						[&](jclass clazz) { return jvm_local_ref_ex<JObject>{ env, static_cast<JObject>(env->GetStaticObjectField(clazz, field)), true }; }
+						[&](jobject obj) { return jvm_local_ref_ex<JObject>{ static_cast<JObject>(env->GetObjectField(obj, field)), true }; },
+						[&](jclass clazz) { return jvm_local_ref_ex<JObject>{ static_cast<JObject>(env->GetStaticObjectField(clazz, field)), true }; }
 					}, source);
 			}
 
@@ -237,9 +239,12 @@ namespace glasssix::jni::utils
 	}
 
 	template<typename T = void, typename... Args>
-	auto throw_new_exception(JNIEnv* env, jclass clazz, std::string_view message, Args&&... args) -> std::enable_if_t<std::is_void_v<T> || std::is_constructible_v<T, Args...>, T>
+	auto throw_new_exception(jclass clazz, std::string_view message, Args&&... args) -> std::enable_if_t<std::is_void_v<T> || std::is_constructible_v<T, Args...>, T>
 	{
-		env->ThrowNew(clazz, message.data());
+		if (auto env = jvm_thread_env::instance().value())
+		{
+			env->ThrowNew(clazz, message.data());
+		}
 
 		// Throwing a java exception does not imply omitting the return value in native code.
 		// Thus, we just return the default value here.
@@ -249,24 +254,29 @@ namespace glasssix::jni::utils
 		}
 	}
 
-	std::string to_string(JNIEnv* env, jstring str);
-	jstring to_jstring(JNIEnv* env, std::string_view str);
-	
+	std::string to_string(jstring str);
+	jstring to_jstring(std::string_view str);
+
 	constexpr jboolean to_jboolean(bool value) noexcept
 	{
 		return value ? JNI_TRUE : JNI_FALSE;
 	}
 
-
 	template<typename T>
-	auto get_field_value(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field)
+	auto get_field_value(const std::variant<jobject, jclass>& source, jfieldID field)
 	{
-		return details::jvm_field_operator<T>::get(env, source, field);
+		auto env = jvm_thread_env::instance().value();
+		using result_type = decltype(details::jvm_field_operator<T>::get(env, source, field));
+
+		return env ? details::jvm_field_operator<T>::get(env, source, field) : result_type{};
 	}
 
 	template<typename T>
-	auto set_field_value(JNIEnv* env, const std::variant<jobject, jclass>& source, jfieldID field, T&& value)
+	void set_field_value(const std::variant<jobject, jclass>& source, jfieldID field, T&& value)
 	{
-		details::jvm_field_operator<T>::set(env, source, field, std::forward<T>(value));
+		if (auto env = jvm_thread_env::instance().value())
+		{
+			details::jvm_field_operator<T>::set(env, source, field, std::forward<T>(value));
+		}
 	}
 }

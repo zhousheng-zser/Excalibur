@@ -250,9 +250,7 @@ namespace glasssix
 				}
 			}
 
-			std::tuple<vector2d<uint32_t>, vector2d<float>> result(ids, similarities);
-			return result;
-			//return { ids, similarities };
+			return std::tuple<vector2d<uint32_t>, vector2d<float>>{ ids, similarities };
 		}
 
 		void irisviel_search_internal::search_with_opt_graph(const float* single_query_data, uint32_t top_k, std::vector<uint32_t>& return_ids, std::vector<float>& return_similarities)
