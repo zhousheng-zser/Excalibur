@@ -53,7 +53,7 @@ namespace Glasssix.Irisviel
 
     internal class NativeLibs
     {
-        public const string DLL_NAME = "libIrisviel.so";
+        public const string DLL_NAME = "Irisviel";
 
         /// <summary>
         /// Creates an instance of the face searching module.

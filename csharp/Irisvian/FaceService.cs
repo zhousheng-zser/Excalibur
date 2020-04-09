@@ -39,6 +39,9 @@ namespace Glasssix.Irisviel
             _instance = NativeLibs.IrisvielCreateInstance(singleDatabaseCapacity, model == FeatureModel.Small ? 128 : 512, workingDirectory);
         }
 
+        /// <summary>
+        /// The finalizer.
+        /// </summary>
         ~FaceService()
         {
             Dispose(false);
@@ -229,6 +232,10 @@ namespace Glasssix.Irisviel
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Disposes all managed and unmanaged resources. 
+        /// </summary>
+        /// <param name="disposing">Indicates whether disposing managed resources is scheduled</param>
         protected void Dispose(bool disposing)
         {
             if (!_disposed)
