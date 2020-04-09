@@ -97,6 +97,7 @@
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
