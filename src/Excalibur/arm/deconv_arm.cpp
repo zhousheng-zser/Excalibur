@@ -8,7 +8,7 @@
 
 //#define __ARM_NEON
 
-void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
 {
 	int n = bottom->num();
 	int w = bottom->width();
@@ -19,16 +19,16 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 	int outh = (h - 1) * stride_ + kernelSize_;
 	int top_cstep = outw * outh;
 
-	top.reset(new tensor<float>(std::vector<int> {n, output_Channel_, outh, outw }, -1, NCHW));
+	top.reset(new memory::tensor<float>(std::vector<int> {n, output_Channel_, outh, outw }, -1, memory::NCHW));
 
 	order_ = bottom->order();
-	if (!((order_ == NCHW) || (order_ == NHWC)))
+	if (!((order_ == memory::NCHW) || (order_ == memory::NHWC)))
 	{
 		NOT_IMPLEMENTED;
 	}
 
-	std::shared_ptr<tensor<float>> bottom_nchw;
-	if (order_ == NHWC)
+	std::shared_ptr<memory::tensor<float>> bottom_nchw;
+	if (order_ == memory::NHWC)
 	{
 		tensor_operation_cpu::nhwc2nchw_cpu(bottom, bottom_nchw);
 	}
@@ -40,7 +40,7 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 //#ifdef __ARM_NEON
 //		if (input_Channel_ % 4 == 0)
 //		{
-//			std::shared_ptr<tensor<float> > bottom_pack4 = std::make_shared<tensor<float> >(std::vector<int>{n, input_Channel_ / 4, h, w * 4}, -1, NCHW);
+//			std::shared_ptr<memory::tensor<float> > bottom_pack4 = std::make_shared<memory::tensor<float> >(std::vector<int>{n, input_Channel_ / 4, h, w * 4}, -1, NCHW);
 //			for (int num_i = 0; num_i < n; num_i++)
 //			{
 //				const float *bottom_nchw_data = bottom_nchw->cpu_data() + num_i * input_Channel_ * bottom_cstep;
@@ -77,7 +77,7 @@ void glasssix::excalibur::deconv_arm::Forward(const std::shared_ptr<tensor<float
 //				}
 //			}
 //
-//			std::shared_ptr<tensor<float>> top_pack4 = std::make_shared<tensor<float> >(std::vector<int>{n, output_Channel_ / 4, outh, outw * 4}, -1, NCHW);
+//			std::shared_ptr<memory::tensor<float>> top_pack4 = std::make_shared<memory::tensor<float> >(std::vector<int>{n, output_Channel_ / 4, outh, outw * 4}, -1, NCHW);
 //
 //			const float *weight_data_pack4 = weights_pack4_->cpu_data();
 //			for (int num_i = 0; num_i < n; num_i++)

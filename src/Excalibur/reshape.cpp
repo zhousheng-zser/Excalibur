@@ -2,7 +2,9 @@
 #include <memory>
 #include <algorithm>
 #include <iostream>
-#include "../../include/Julius/simd_helper.hpp"
+
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

@@ -1,6 +1,7 @@
 #include "conv_native_cpu.hpp"
 #include <iostream>
-#include "../../include/Julius/simd_helper.hpp"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

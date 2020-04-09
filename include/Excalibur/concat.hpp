@@ -2,7 +2,7 @@
 #ifndef _CONCAT_HPP_
 #define _CONCAT_HPP_
 
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 namespace glasssix
@@ -19,10 +19,10 @@ namespace glasssix
 		public:
 			concat(int concat_axis, int device);
 			~concat();
-			void Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::vector<std::shared_ptr<memory::tensor<float>>> bottom, std::shared_ptr<memory::tensor<float>>& top);
 
 #ifdef USE_CUDA
-			void Forward_gpu_native(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(const std::vector<std::shared_ptr<memory::tensor<float>>> bottom, std::shared_ptr<memory::tensor<float>>& top);
 #endif
 		};
 	}

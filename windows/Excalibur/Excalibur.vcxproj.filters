@@ -75,9 +75,6 @@
     <ClInclude Include="..\..\include\Excalibur\flip.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\ftensor.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\im2col.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -91,12 +88,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\mkl_alternate.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\normalize.hpp">
@@ -130,9 +121,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\utensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp">
@@ -179,6 +167,9 @@
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\arm\deconv_arm.hpp">
       <Filter>Header Files\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\hswish.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -296,6 +287,9 @@
     <ClCompile Include="..\..\src\Excalibur\arm\deconv_arm.cpp">
       <Filter>Source Files\arm</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\hswish.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\axpy.cu">
@@ -362,6 +356,9 @@
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
     <CudaCompile Include="..\..\src\Excalibur\deconv.cu">
+      <Filter>Source Files\cu</Filter>
+    </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\hswish.cu">
       <Filter>Source Files\cu</Filter>
     </CudaCompile>
   </ItemGroup>

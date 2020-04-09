@@ -14,7 +14,7 @@ namespace glasssix
 
 			virtual ~conv_native_cpu() {}
 
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 
 
 		private:
@@ -26,12 +26,12 @@ namespace glasssix
 			void forward_bias(float* output, const float* bias) override;
 
 #ifdef USE_CUDA
-			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) {}
 			void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) {}
 			void forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
 			void forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias) {}
 #ifdef USE_CUDNN
-			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) {}
 #endif //!USE_CUDNN
 #endif // !USE_CUDA
 		};

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
-#include "../../include/Julius/simd_helper.hpp"
+#include "../../include/Primitives/simd_types.hpp"
 #include "base_conv.hpp"
 #include "conv_cudnn_gpu.hpp"
 #include "conv_native_cpu.hpp"
@@ -25,6 +25,7 @@
 #include "deconv.hpp"
 #include "upsample.hpp"
 #include "reshape.hpp"
+#include "hswish.hpp"
 
 #include "arm/conv_arm.hpp"
 #include "arm/inner_product_arm.hpp"

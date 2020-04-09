@@ -36,7 +36,7 @@ namespace glasssix
 					for (; it != payouts.end(); it++)
 					{
 						void* ptr = it->second;
-						LOG(ERROR) << ptr << "  still in use";
+						LOG(FATAL) << ptr << "  still in use";
 					}
 				}
 			}
@@ -47,7 +47,7 @@ namespace glasssix
 			{
 				if (scr < 0.f || scr > 1.f)
 				{
-					LOG(FATLA) << "invalid size compare ratio " << scr;
+					LOG(FATAL) << "invalid size compare ratio " << scr;
 					return;
 				}
 				size_compare_ratio = (unsigned int)(scr * 256);
