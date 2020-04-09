@@ -36,7 +36,7 @@ namespace
 	std::shared_ptr<jvm_field_accessor<jfloatArray>> field_database_record_m_feature;
 
 	template<typename T = void>
-	auto throw_null_pointer_exception(JNIEnv* env)
+	auto throw_null_pointer_exception()
 	{
 		return utils::throw_new_exception<T>(clazz_null_pointer_exception.get(), "The underlying implementation is null.");
 	}
@@ -85,7 +85,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_clear(JNIEnv* env,
 {
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
-	return impl ? impl->clear() : throw_null_pointer_exception(env);
+	return impl ? impl->clear() : throw_null_pointer_exception();
 
 }
 
@@ -93,28 +93,28 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_removeAll(JNIEnv* 
 {
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
-	return impl ? impl->remove_all() : throw_null_pointer_exception(env);
+	return impl ? impl->remove_all() : throw_null_pointer_exception();
 }
 
 JNIEXPORT jstring JNICALL Java_com_glasssix_irisviel_FaceService_databaseDirectory(JNIEnv* env, jobject obj)
 {
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
-	return impl ? utils::to_jstring(impl->database_directory()) : throw_null_pointer_exception<jstring>(env);
+	return impl ? utils::to_jstring(impl->database_directory()) : throw_null_pointer_exception<jstring>();
 }
 
 JNIEXPORT jstring JNICALL Java_com_glasssix_irisviel_FaceService_cacheDirectory(JNIEnv* env, jobject obj)
 {
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
-	return impl ? utils::to_jstring(impl->cache_directory()) : throw_null_pointer_exception<jstring>(env);
+	return impl ? utils::to_jstring(impl->cache_directory()) : throw_null_pointer_exception<jstring>();
 }
 
 JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_loadDatabases(JNIEnv* env, jobject obj)
 {
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
-	return impl ? impl->load_databases() : throw_null_pointer_exception(env);
+	return impl ? impl->load_databases() : throw_null_pointer_exception();
 }
 
 JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNIEnv* env, jobject obj, jfloatArray feature, jint top)
@@ -128,7 +128,7 @@ JNIEXPORT jobjectArray JNICALL Java_com_glasssix_irisviel_FaceService_search(JNI
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception<jobjectArray>(env);
+		return throw_null_pointer_exception<jobjectArray>();
 	}
 
 	auto native_feature = env->GetFloatArrayElements(feature, nullptr);
@@ -168,7 +168,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add__Lcom_glasssix
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	impl->add(*get_database_record(env, obj, record));
@@ -185,7 +185,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add___3Lcom_glasss
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	impl->add(get_database_records(env, obj, records));
@@ -202,7 +202,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove__Ljava_lang
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	impl->remove(utils::to_string(key));
@@ -219,7 +219,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove___3Ljava_la
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	std::vector<std::string> native_keys;
@@ -247,7 +247,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update__Lcom_glass
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	impl->update(*get_database_record(env, obj, record));
@@ -264,7 +264,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update___3Lcom_gla
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception(env);
+		return throw_null_pointer_exception();
 	}
 
 	impl->update(get_database_records(env, obj, records));

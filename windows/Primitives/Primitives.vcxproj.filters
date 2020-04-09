@@ -42,6 +42,9 @@
     <ClInclude Include="..\..\include\Primitives\environment.hpp">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\memory.cpp">
