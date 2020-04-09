@@ -10,7 +10,7 @@ namespace glasssix {
 		{
 		public:
 			pooling_arm(int kernel, int stride, int pad, int type, int device) : pooling(kernel, stride, pad, type, -1) {}
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 		};
 	}
 }

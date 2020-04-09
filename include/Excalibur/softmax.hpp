@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SOFTMAX_HPP_
 #define _SOFTMAX_HPP_
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "math_functions.hpp"
 #ifdef USE_CUDNN
 #include "cudnn.hpp"
@@ -19,20 +19,20 @@ namespace glasssix
 			int softmax_axis_;
 
 			/// sum_multiplier is used to carry out sum using BLAS
-			std::shared_ptr<tensor<float>> sum_multiplier_;
+			std::shared_ptr<memory::tensor<float>> sum_multiplier_;
 			/// scale is an intermediate Blob to hold temporary results.
-			std::shared_ptr<tensor<float>> scale_;
+			std::shared_ptr<memory::tensor<float>> scale_;
 
 			int device_;
-			orderType order_;
+			memory::orderType order_;
 
 		public:
 			softmax(int input_channel, int device);
 			virtual ~softmax();
 
-			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			virtual void Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 #ifdef USE_CUDA
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 #ifdef USE_CUDNN
 		private:
 			float one = 1.0, zero = 0.0;
@@ -40,7 +40,7 @@ namespace glasssix
 			cudnnTensorDescriptor_t bottom_desc_;
 			cudnnTensorDescriptor_t top_desc_;
 		public:
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 #endif
 #endif
 		};

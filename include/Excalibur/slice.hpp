@@ -2,7 +2,7 @@
 #ifndef _SLICE_HPP_
 #define _SLICE_HPP_
 
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 namespace glasssix
@@ -23,11 +23,11 @@ namespace glasssix
 
 			~slice();
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> bottom, std::vector<std::shared_ptr<memory::tensor<float>>>& top);
 
-			void Forward_cpu(const std::shared_ptr<tensor<float>> bottom, std::shared_ptr<tensor<float>>& top1, std::shared_ptr<tensor<float>>& top2);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> bottom, std::shared_ptr<memory::tensor<float>>& top1, std::shared_ptr<memory::tensor<float>>& top2);
 #ifdef USE_CUDA
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::vector<std::shared_ptr<tensor<float>>>& top);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>>& bottom, std::vector<std::shared_ptr<memory::tensor<float>>>& top);
 #endif
 		};
 	}

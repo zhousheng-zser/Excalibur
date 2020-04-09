@@ -15,7 +15,7 @@ namespace glasssix
 			virtual ~conv_native_gpu() {}
 
 #ifdef USE_CUDA
-			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 
 		private:
 			void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) override;
@@ -24,12 +24,12 @@ namespace glasssix
 
 #ifdef USE_CUDNN
 		private:
-			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) {}
 #endif //!USE_CUDNN
 #endif // !USE_CUDA
 
 		private:
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) {}
+			void Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) {}
 			void forward_gemm(const float* input, const float* weights, float* output, bool skip_im2col = false) {}
 			void forward_gemm(const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) {}
 			void forward_bias(float* output, const float* bias) {}

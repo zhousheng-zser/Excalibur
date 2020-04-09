@@ -1,6 +1,8 @@
 #include "softmax.hpp"
 #include <algorithm>
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

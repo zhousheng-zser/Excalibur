@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _ELTWISE_HPP_
 #define _ELTWISE_HPP_
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 
@@ -21,10 +21,10 @@ namespace glasssix
 
 			virtual ~eltwise();
 
-			virtual void Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			virtual void Forward_cpu(const std::vector<std::shared_ptr<memory::tensor<float>>> bottom, std::shared_ptr<memory::tensor<float>>& top);
 
 #ifdef USE_CUDA
-			void Forward_gpu_native(cublasHandle_t &cublas_handle_, const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(cublasHandle_t &cublas_handle_, const std::vector<std::shared_ptr<memory::tensor<float>>> bottom, std::shared_ptr<memory::tensor<float>>& top);
 #endif
 		};
 	}

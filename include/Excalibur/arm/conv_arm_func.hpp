@@ -1,9 +1,8 @@
 #ifndef _CONV_ARM_FUNC_HPP_
 #define _CONV_ARM_FUNC_HPP_
-#include <glasssix/tensor.hpp>
-
+#include "../../Primitives/tensor.hpp"
 #include "tensor_operation_cpu.hpp"
-#include "../../Julius/simd_helper.hpp"
+#include "../../Primitives/simd_types.hpp"
 #include <iostream>
 
 #ifdef _OPENMP
@@ -88,14 +87,14 @@ namespace glasssix
 			}
 		}
 
-		static void conv1x1s1_sgemm_transform_kernel_neon(std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
+		static void conv1x1s1_sgemm_transform_kernel_neon(std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int inch, int outch)
 		{
 			const float* kernel = _kernel->cpu_data();
 			// interleave
 #if __ARM_NEON && __aarch64__
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, inch / 4 + inch % 4, 4 * 8}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, inch / 4 + inch % 4, 4 * 8}, -1, memory::NCHW));
 #else
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 4 * 4}, -1, memory::NCHW));
 #endif // __ARM_NEON && __aarch64__
 
 			int p = 0;
@@ -184,7 +183,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv1x1s1_sgemm_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv1x1s1_sgemm_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int w = bottom_blob->width();
@@ -203,7 +202,7 @@ namespace glasssix
 			int kernel_cstep = kernel->width() * kernel->height();
 
 			// interleave
-			tensor<float> tmp(std::vector<int>{1, size / 8 + (size % 8) / 4 + size % 4, inch / 4 + inch % 4, 8 * 4}, -1, NCHW);
+			memory::tensor<float> tmp(std::vector<int>{1, size / 8 + (size % 8) / 4 + size % 4, inch / 4 + inch % 4, 8 * 4}, -1, memory::NCHW);
 			float *tmp_data = tmp.mutable_cpu_data();
 			int tmp_cstep = tmp.width() * tmp.height();
 
@@ -1836,8 +1835,8 @@ namespace glasssix
 							kptr += 4;
 						}
 
-						std::shared_ptr<tensor<float>> out;
-						out.reset(new tensor<float>(std::vector<int>{4}));
+						std::shared_ptr<memory::tensor<float>> out;
+						out.reset(new memory::tensor<float>(std::vector<int>{4}));
 						float *out_data = out->mutable_cpu_data();
 						_mm_storeu_ps(out_data, sum);
 
@@ -2394,7 +2393,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv1x1s1_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv1x1s1_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -4471,9 +4470,9 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s2_transform_kernel_neon(std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
+		static void conv3x3s2_transform_kernel_neon(std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int inch, int outch)
 		{
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch / 8 + outch % 8, inch, 8 * 9}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch / 8 + outch % 8, inch, 8 * 9}, -1, memory::NCHW));
 
 			const float* kernel = _kernel->cpu_data();
 
@@ -4535,7 +4534,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s2_packed_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s2_packed_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			const float *kernel_data = _kernel->cpu_data();
 			int kernel_cstep = _kernel->width() * _kernel->height();
@@ -5825,17 +5824,17 @@ namespace glasssix
 			}
 		}
 	
-		static void conv_im2col_sgemm_transform_kernel_neon(std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch, int kernel_size)
+		static void conv_im2col_sgemm_transform_kernel_neon(std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int inch, int outch, int kernel_size)
 		{
 
 			const float* kernel = _kernel->cpu_data();
 
 #if __ARM_NEON && __aarch64__
 			// kernel memory packed 8 x 8
-			kernel_tm.reset(new tensor<float>(std::vector<int>{ 1, outch / 8 + (outch % 8) / 4 + outch % 4, inch,  8 * kernel_size}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{ 1, outch / 8 + (outch % 8) / 4 + outch % 4, inch,  8 * kernel_size}, -1, memory::NCHW));
 #else    
 			// kernel memory packed 4 x 8
-			kernel_tm.reset(new tensor<float>( std::vector<int>{1, outch / 4 + outch % 4, inch, 4 * kernel_size}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>( std::vector<int>{1, outch / 4 + outch % 4, inch, 4 * kernel_size}, -1, memory::NCHW));
 #endif
 			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
 			int kernel_tm_cstep = kernel_tm->width() * kernel_tm->height();
@@ -5938,7 +5937,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv_im2col_sgemm_neon(std::shared_ptr<tensor<float> > &bottom_blob, std::shared_ptr<tensor<float> > &top_blob, const std::shared_ptr<tensor<float> > & kernel_tm, const std::shared_ptr<tensor<float> >& _bias,
+		static void conv_im2col_sgemm_neon(std::shared_ptr<memory::tensor<float> > &bottom_blob, std::shared_ptr<memory::tensor<float> > &top_blob, const std::shared_ptr<memory::tensor<float> > & kernel_tm, const std::shared_ptr<memory::tensor<float> >& _bias,
 			const int kernel_w, const int kernel_h, const int stride_w, const int stride_h, bool bias_term_)
 		{
 			int num = bottom_blob->num();
@@ -5961,7 +5960,7 @@ namespace glasssix
 			int top_cstep = top_blob->width() * top_blob->height();
 
 			// im2col
-			tensor<float> bottom_im2col(std::vector<int>{1, 1, kernel_h*kernel_w*inch, outw*outh}, -1, NCHW);
+			memory::tensor<float> bottom_im2col(std::vector<int>{1, 1, kernel_h*kernel_w*inch, outw*outh}, -1, memory::NCHW);
 			float* ret = bottom_im2col.mutable_cpu_data();
 
 			int kernel_size = kernel_w * kernel_h;
@@ -5969,7 +5968,7 @@ namespace glasssix
 			const float *bottom_im2col_data = bottom_im2col.cpu_data();
 
 			// bottom_im2col memory packed 8 x 8
-			tensor<float> bottom_tm(std::vector<int>{1, out_size / 8 + out_size % 8, inch, 8 * kernel_size}, -1, NCHW);
+			memory::tensor<float> bottom_tm(std::vector<int>{1, out_size / 8 + out_size % 8, inch, 8 * kernel_size}, -1, memory::NCHW);
 			float *bottom_tm_data = bottom_tm.mutable_cpu_data();
 			int bottom_tm_cstep = bottom_tm.width() * bottom_tm.height();
 
@@ -7861,11 +7860,11 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s1_winograd64_transform_kernel_neon5(std::shared_ptr<tensor<float> >& kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
+		static void conv3x3s1_winograd64_transform_kernel_neon5(std::shared_ptr<memory::tensor<float> >& kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int inch, int outch)
 		{
 			const float *kernel_data = kernel->cpu_data();
 
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch, inch, 8 * 8}, -1, NCHW));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch, inch, 8 * 8}, -1, memory::NCHW));
 			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
 			int kernel_tm_w = kernel_tm->width();
 			int kernel_tm_h = kernel_tm->height();
@@ -7925,9 +7924,9 @@ namespace glasssix
 			//     Mat kernel_tm2(8*8, inch, outch);
 			//     Mat kernel_tm2(inch, 64, outch);
 #if __ARM_NEON && __aarch64__
-			tensor<float> kernel_tm2(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, 64, 8 * 4 * (inch / 4) + 8 * (inch % 4)}, -1, NCHW);
+			memory::tensor<float> kernel_tm2(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, 64, 8 * 4 * (inch / 4) + 8 * (inch % 4)}, -1, memory::NCHW);
 #else
-			tensor<float> kernel_tm2(std::vector<int>{1, outch / 4 + outch % 4, 64, 4 * 4 * (inch / 4) + 4 * (inch % 4)}, -1, NCHW);
+			memory::tensor<float> kernel_tm2(std::vector<int>{1, outch / 4 + outch % 4, 64, 4 * 4 * (inch / 4) + 4 * (inch % 4)}, -1, memory::NCHW);
 #endif
 			float *kernel_tm2_data = kernel_tm2.mutable_cpu_data();
 			int kernel_tm2_w = kernel_tm2.width();
@@ -8039,7 +8038,7 @@ namespace glasssix
 			*kernel_tm = kernel_tm2;
 		}
 
-		static void conv3x3s1_winograd64_neon5(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, std::shared_ptr<tensor<float> >& kernel_tm, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_winograd64_neon5(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, std::shared_ptr<memory::tensor<float> >& kernel_tm, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			const float *kernel_tm_data = kernel_tm->cpu_data();
 			int kernel_tm_w = kernel_tm->width();
@@ -8056,7 +8055,7 @@ namespace glasssix
 			int outch = top_blob->channels();
 
 			// pad to 6n+2
-			std::shared_ptr<tensor<float> > bottom_blob_bordered;
+			std::shared_ptr<memory::tensor<float> > bottom_blob_bordered;
 
 			outw = (outw + 5) / 6 * 6;
 			outh = (outh + 5) / 6 * 6;
@@ -8071,7 +8070,7 @@ namespace glasssix
 			if(bias_term_)
 				bias = _bias->cpu_data();
 
-			tensor<float> top_blob_bordered(std::vector<int>{num, outch, outh, outw}, -1, NCHW);
+			memory::tensor<float> top_blob_bordered(std::vector<int>{num, outch, outh, outw}, -1, memory::NCHW);
 			int top_bordered_w = top_blob_bordered.width();
 			int top_bordered_h = top_blob_bordered.height();
 			int top_borderd_cstep = top_bordered_w * top_bordered_h;
@@ -8079,19 +8078,19 @@ namespace glasssix
 			int w_tm = outw / 6 * 8;
 			int h_tm = outh / 6 * 8;
 			const int tiles = w_tm / 8 * h_tm / 8;
-			tensor<float> bottom_blob_tm = tensor<float>(std::vector<int>{1, inch, 64 * tiles, 1}, -1, NCHW);
+			memory::tensor<float> bottom_blob_tm = memory::tensor<float>(std::vector<int>{1, inch, 64 * tiles, 1}, -1, memory::NCHW);
 			float *bottom_tm_data = bottom_blob_tm.mutable_cpu_data();
 			int bottom_tm_w = bottom_blob_tm.width();
 			int bottom_tm_h = bottom_blob_tm.height();
 			int bottom_tm_cstep = bottom_tm_w * bottom_tm_h;
 
-			tensor<float> bottom_blob_tm2(std::vector<int>{1, 64, tiles / 8 + (tiles % 8) / 4 + tiles % 4, 8 * inch}, -1, NCHW);
+			memory::tensor<float> bottom_blob_tm2(std::vector<int>{1, 64, tiles / 8 + (tiles % 8) / 4 + tiles % 4, 8 * inch}, -1, memory::NCHW);
 			float *bottom_tm2_data = bottom_blob_tm2.mutable_cpu_data();
 			int bottom_tm2_w = bottom_blob_tm2.width();
 			int bottom_tm2_h = bottom_blob_tm2.height();
 			int bottom_tm2_cstep = bottom_tm2_w * bottom_tm2_h;
 
-			tensor<float> top_blob_tm = tensor<float>(std::vector<int>{1, outch, 64 * tiles, 1}, -1, NCHW);
+			memory::tensor<float> top_blob_tm = memory::tensor<float>(std::vector<int>{1, outch, 64 * tiles, 1}, -1, memory::NCHW);
 			int top_tm_w = top_blob_tm.width();
 			int top_tm_h = top_blob_tm.height();
 			int top_tm_cstep = top_tm_w * top_tm_h;
@@ -11650,7 +11649,7 @@ namespace glasssix
 			tensor_operation_cpu::cut_border_cpu(top_blob_bordered, *top_blob, 0, top_blob_bordered.height() - top_blob->height(), 0, top_blob_bordered.width() - top_blob->width());
 		}
 	
-		static void conv3x3s1_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int w = bottom_blob->width();
@@ -12924,7 +12923,7 @@ namespace glasssix
 			}
 		}
 
-		static void convdw3x3s1_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void convdw3x3s1_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int w = bottom_blob->width();
@@ -13754,7 +13753,7 @@ namespace glasssix
 			}
 		}
 	
-		static void convdw3x3s2_neon(std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, std::shared_ptr<tensor<float> >& _kernel, std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void convdw3x3s2_neon(std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, std::shared_ptr<memory::tensor<float> >& _kernel, std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int w = bottom_blob->width();
@@ -14031,7 +14030,7 @@ namespace glasssix
 
 
 		//ncnn sse
-		static void conv1x1s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv1x1s1_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14183,7 +14182,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv1x1s2_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv1x1s2_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14337,7 +14336,7 @@ namespace glasssix
 			}
 		}
 
-		static void convdw3x3s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void convdw3x3s1_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14500,7 +14499,7 @@ namespace glasssix
 			}
 		}
 
-		static void convdw3x3s2_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void convdw3x3s2_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14607,7 +14606,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s1_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& _kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& _kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14772,7 +14771,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s2_sse(const std::shared_ptr<tensor<float> > &bottom_blob, std::shared_ptr<tensor<float> > &top_blob, const std::shared_ptr<tensor<float> > &_kernel, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s2_sse(const std::shared_ptr<memory::tensor<float> > &bottom_blob, std::shared_ptr<memory::tensor<float> > &top_blob, const std::shared_ptr<memory::tensor<float> > &_kernel, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int inch = bottom_blob->channels();
@@ -14876,10 +14875,10 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s1_winograd23_transform_kernel_sse(const std::shared_ptr<tensor<float> >& kernel, std::shared_ptr<tensor<float> >& kernel_tm, int inch, int outch)
+		static void conv3x3s1_winograd23_transform_kernel_sse(const std::shared_ptr<memory::tensor<float> >& kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int inch, int outch)
 		{
 			const float *kernel_data = kernel->cpu_data();
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch, inch, 4 * 4}));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch, inch, 4 * 4}));
 			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
 			int kernel_tm_w = kernel_tm->width();
 			int kernel_tm_h = kernel_tm->height();
@@ -14931,7 +14930,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s1_winograd23_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& kernel_tm, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_winograd23_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& kernel_tm, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 #ifdef CALC_INDIVIDUAL
 			int loop = 100;
@@ -14949,7 +14948,7 @@ namespace glasssix
 			int outch = top_blob->channels();
 
 			// pad to 2n+2, winograd F(2,3)
-			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+			std::shared_ptr<memory::tensor<float> > bottom_blob_bordered = bottom_blob;
 
 			outw = (outw + 1) / 2 * 2;
 			outh = (outh + 1) / 2 * 2;
@@ -14967,8 +14966,8 @@ namespace glasssix
 				bias = _bias->cpu_data();
 			}
 
-			std::shared_ptr<tensor<float> > top_blob_bordered;
-			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			std::shared_ptr<memory::tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new memory::tensor<float>(std::vector<int>{num, outch, outh, outw}));
 			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
 
 			for (int n = 0; n < num; n++)
@@ -14976,7 +14975,7 @@ namespace glasssix
 				float *bottom_blob_bordered_data_n = bottom_blob_bordered_data + n * inch * bordered_h * bordered_w;
 
 				// BEGIN transform input
-				std::shared_ptr<tensor<float> > bottom_blob_tm;
+				std::shared_ptr<memory::tensor<float> > bottom_blob_tm;
 #ifdef CALC_INDIVIDUAL
 				calcTime.Start();
 				for (int i = 0; i < loop; i++)
@@ -14991,7 +14990,7 @@ namespace glasssix
 
 					const int tiles = nColBlocks * nRowBlocks;
 
-					bottom_blob_tm.reset(new tensor<float>(std::vector<int>{1, inch, tiles, 16}));
+					bottom_blob_tm.reset(new memory::tensor<float>(std::vector<int>{1, inch, tiles, 16}));
 					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
 
 					// BT
@@ -15111,7 +15110,7 @@ namespace glasssix
 #endif
 
 				// BEGIN dot
-				std::shared_ptr<tensor<float> > top_blob_tm;
+				std::shared_ptr<memory::tensor<float> > top_blob_tm;
 #ifdef CALC_INDIVIDUAL
 				calcTime.Start();
 				for (int i = 0; i < loop; i++)
@@ -15128,7 +15127,7 @@ namespace glasssix
 
 					const int tiles = nColBlocks * nRowBlocks;
 
-					top_blob_tm.reset(new tensor<float>(std::vector<int>{1, outch, tiles, 16}));
+					top_blob_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch, tiles, 16}));
 					float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
 					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
 
@@ -15988,9 +15987,9 @@ namespace glasssix
 		}
 
 		//fp32
-		static void calculate_GgGT2(const std::shared_ptr<tensor<float> >& kernel, std::shared_ptr<tensor<float> >& kernel_tm, int output_channel, int input_channel)
+		static void calculate_GgGT2(const std::shared_ptr<memory::tensor<float> >& kernel, std::shared_ptr<memory::tensor<float> >& kernel_tm, int output_channel, int input_channel)
 		{
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, output_channel, input_channel, 16}));
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, output_channel, input_channel, 16}));
 			float *u_data_ori = kernel_tm->mutable_cpu_data();
 			const float *weight_data_ori = kernel->cpu_data();
 
@@ -16063,7 +16062,7 @@ namespace glasssix
 			result[3] = m_data[5] - m_data[6] - m_data[7] - m_data[9] + m_data[10] + m_data[11] - m_data[13] + m_data[14] + m_data[15];
 		}
 
-		static void conv3x3s1_winograd23_sse2(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::shared_ptr<tensor<float> >& kernel_tm, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_winograd23_sse2(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::shared_ptr<memory::tensor<float> >& kernel_tm, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 #ifdef CALC_INDIVIDUAL
 			int loop = 100;
@@ -16081,7 +16080,7 @@ namespace glasssix
 			int outch = top_blob->channels();
 
 			// pad to 2n+2, winograd F(2,3)
-			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+			std::shared_ptr<memory::tensor<float> > bottom_blob_bordered = bottom_blob;
 
 			outw = (outw + 1) / 2 * 2;
 			outh = (outh + 1) / 2 * 2;
@@ -16099,8 +16098,8 @@ namespace glasssix
 				bias = _bias->cpu_data();
 			}
 
-			std::shared_ptr<tensor<float> > top_blob_bordered;
-			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			std::shared_ptr<memory::tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new memory::tensor<float>(std::vector<int>{num, outch, outh, outw}));
 			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
 			int top_dim_ = top_blob_bordered->count(1, 4);
 			float *top_data = top_blob_bordered->mutable_cpu_data();
@@ -16122,12 +16121,12 @@ namespace glasssix
 			int m_length_ = 4;
 			int output_dim_w_ = top_blob_bordered->width();
 			
-			std::shared_ptr<tensor<float>> V_;
-			V_.reset(new tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
+			std::shared_ptr<memory::tensor<float>> V_;
+			V_.reset(new memory::tensor<float>(std::vector<int>{1, input_Channel_, total_tile_num, tile_length_}));
 			float *V_data = V_->mutable_cpu_data();
 
-			std::shared_ptr<tensor<float>> Mult_;
-			Mult_.reset(new tensor<float>(std::vector<int>{1, output_Channel_, total_tile_num, tile_length_}));
+			std::shared_ptr<memory::tensor<float>> Mult_;
+			Mult_.reset(new memory::tensor<float>(std::vector<int>{1, output_Channel_, total_tile_num, tile_length_}));
 			float *Mult_data = Mult_->mutable_cpu_data();
 
 			int U_offset_single_och = input_Channel_ * tile_length_;
@@ -16156,8 +16155,8 @@ namespace glasssix
 							int bottom_offset_num_ich = bottom_offset_num + ich * input_spatial_dim_;
 							int V_offset_ich = ich * h_w_tile_stride;
 
-							std::shared_ptr<tensor<float>> TILE_;
-							TILE_.reset(new tensor<float>(std::vector<int>{tile_length_}));
+							std::shared_ptr<memory::tensor<float>> TILE_;
+							TILE_.reset(new memory::tensor<float>(std::vector<int>{tile_length_}));
 							float *tile_data = TILE_->mutable_cpu_data();
 
 							for (int i = 0; i < total_tile_num; i++)
@@ -17036,8 +17035,8 @@ namespace glasssix
 						for (int och = 0; och < output_Channel_; och++)
 						{
 							const float bias0 = bias ? bias[och] : 0.f;
-							std::shared_ptr<tensor<float>> RESULT_;
-							RESULT_.reset(new tensor<float>(std::vector<int>{m_length_}));
+							std::shared_ptr<memory::tensor<float>> RESULT_;
+							RESULT_.reset(new memory::tensor<float>(std::vector<int>{m_length_}));
 							float *result = RESULT_->mutable_cpu_data();
 
 							int Mult_offset_och = och * h_w_tile_stride;
@@ -17078,11 +17077,11 @@ namespace glasssix
 
 #ifdef _MSC_VER
 
-		static void conv3x3s1_winograd43_transform_kernel_sse(const std::shared_ptr<tensor<float> >& kernel, std::vector<std::shared_ptr<tensor<float> >> &kernel_tm2, int inch, int outch)
+		static void conv3x3s1_winograd43_transform_kernel_sse(const std::shared_ptr<memory::tensor<float> >& kernel, std::vector<std::shared_ptr<memory::tensor<float> >> &kernel_tm2, int inch, int outch)
 		{
 			const float *kernel_data = kernel->cpu_data();
-			std::shared_ptr<tensor<float> > kernel_tm;
-			kernel_tm.reset(new tensor<float>(std::vector<int>{1, outch, inch, 6 * 6}));
+			std::shared_ptr<memory::tensor<float> > kernel_tm;
+			kernel_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch, inch, 6 * 6}));
 			float *kernel_tm_data = kernel_tm->mutable_cpu_data();
 
 			// G
@@ -17360,8 +17359,8 @@ namespace glasssix
 
 			for (int r = 0; r < 9; r++)
 			{
-				std::shared_ptr<tensor<float> > kernel_tm_test;
-				kernel_tm_test.reset(new tensor<float>(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, inch, 4 * 8}));
+				std::shared_ptr<memory::tensor<float> > kernel_tm_test;
+				kernel_tm_test.reset(new memory::tensor<float>(std::vector<int>{1, outch / 8 + (outch % 8) / 4 + outch % 4, inch, 4 * 8}));
 				float *kernel_tm_test_data = kernel_tm_test->mutable_cpu_data();
 
 				int p = 0;
@@ -17543,7 +17542,7 @@ namespace glasssix
 			}
 		}
 
-		static void conv3x3s1_winograd43_sse(const std::shared_ptr<tensor<float> >& bottom_blob, std::shared_ptr<tensor<float> >& top_blob, const std::vector<std::shared_ptr<tensor<float> >> &kernel_tm_test, const std::shared_ptr<tensor<float> >& _bias, bool bias_term_)
+		static void conv3x3s1_winograd43_sse(const std::shared_ptr<memory::tensor<float> >& bottom_blob, std::shared_ptr<memory::tensor<float> >& top_blob, const std::vector<std::shared_ptr<memory::tensor<float> >> &kernel_tm_test, const std::shared_ptr<memory::tensor<float> >& _bias, bool bias_term_)
 		{
 			int num = bottom_blob->num();
 			int w = bottom_blob->width();
@@ -17555,7 +17554,7 @@ namespace glasssix
 			int outch = top_blob->channels();
 
 			// pad to 4n+2, winograd F(4,3)
-			std::shared_ptr<tensor<float> > bottom_blob_bordered = bottom_blob;
+			std::shared_ptr<memory::tensor<float> > bottom_blob_bordered = bottom_blob;
 
 			outw = (outw + 3) / 4 * 4;
 			outh = (outh + 3) / 4 * 4;
@@ -17578,8 +17577,8 @@ namespace glasssix
 				kernel_tm_test_data.push_back(kernel_tm_test[i]->cpu_data());
 			}
 
-			std::shared_ptr<tensor<float> > top_blob_bordered;
-			top_blob_bordered.reset(new tensor<float>(std::vector<int>{num, outch, outh, outw}));
+			std::shared_ptr<memory::tensor<float> > top_blob_bordered;
+			top_blob_bordered.reset(new memory::tensor<float>(std::vector<int>{num, outch, outh, outw}));
 			float *top_blob_bordered_data = top_blob_bordered->mutable_cpu_data();
 
 			for (int n = 0; n < num; n++)
@@ -17588,7 +17587,7 @@ namespace glasssix
 				float *top_blob_bordered_data_n = top_blob_bordered_data + n * outch * outh * outw;
 
 				// BEGIN transform input
-				std::shared_ptr<tensor<float> > bottom_blob_tm;
+				std::shared_ptr<memory::tensor<float> > bottom_blob_tm;
 				{
 					int w_tm = outw / 4 * 6;
 					int h_tm = outh / 4 * 6;
@@ -17598,7 +17597,7 @@ namespace glasssix
 
 					const int tiles = nColBlocks * nRowBlocks;
 
-					bottom_blob_tm.reset(new tensor<float>(std::vector<int>{1, tiles * 9, inch, 4}));
+					bottom_blob_tm.reset(new memory::tensor<float>(std::vector<int>{1, tiles * 9, inch, 4}));
 					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
 
 					// BT
@@ -17998,7 +17997,7 @@ namespace glasssix
 				}
 
 				// BEGIN dot
-				std::shared_ptr<tensor<float> > top_blob_tm;
+				std::shared_ptr<memory::tensor<float> > top_blob_tm;
 				{
 					int w_tm = outw / 4 * 6;
 					int h_tm = outh / 4 * 6;
@@ -18007,7 +18006,7 @@ namespace glasssix
 					int nRowBlocks = w_tm / 6;
 
 					const int tiles = nColBlocks * nRowBlocks;
-					top_blob_tm.reset(new tensor<float>(std::vector<int>{1, outch, tiles, 36}));
+					top_blob_tm.reset(new memory::tensor<float>(std::vector<int>{1, outch, tiles, 36}));
 					float *top_blob_tm_data = top_blob_tm->mutable_cpu_data();
 					float *bottom_blob_tm_data = bottom_blob_tm->mutable_cpu_data();
 
@@ -18298,8 +18297,8 @@ namespace glasssix
 
 						// for (int p=0; p<outch; p++)
 						// {
-						//     std::shared_ptr<tensor<float> > out0_tm = top_blob_tm->channels()hannel(p);
-						//     const std::shared_ptr<tensor<float> > kernel0_tm = kernel_tm->channels()hannel(p);
+						//     std::shared_ptr<memory::tensor<float> > out0_tm = top_blob_tm->channels()hannel(p);
+						//     const std::shared_ptr<memory::tensor<float> > kernel0_tm = kernel_tm->channels()hannel(p);
 
 						//     for (int i=0; i<tiles; i++)
 						//     {

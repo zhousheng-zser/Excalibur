@@ -1,5 +1,7 @@
 #include "concat.hpp"
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

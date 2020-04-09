@@ -73,13 +73,13 @@ void glasssix::excalibur::conv_arm::set_weights(float * weights)
 	}
 }
 
-void glasssix::excalibur::conv_arm::Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+void glasssix::excalibur::conv_arm::Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
 {
 	int n = bottom->num();
 	int w = bottom->width();
 	int h = bottom->height();
 	int c = bottom->channels();
-	std::shared_ptr<tensor<float> > bottom_bordered = bottom;
+	std::shared_ptr<memory::tensor<float> > bottom_bordered = bottom;
 
 	if (pad_ > 0)
 	{
@@ -90,15 +90,15 @@ void glasssix::excalibur::conv_arm::Forward(const std::shared_ptr<tensor<float>>
 	int outw = (w - kernelSize_) / stride_ + 1;
 	int outh = (h - kernelSize_) / stride_ + 1;
 
-	top.reset(new tensor<float>(std::vector<int> {n, output_Channel_, outh, outw }, -1, NCHW));
+	top.reset(new memory::tensor<float>(std::vector<int> {n, output_Channel_, outh, outw }, -1, memory::NCHW));
 
 	order_ = bottom->order();
-	if (!((order_ == NCHW) || (order_ == NHWC)))
+	if (!((order_ == memory::NCHW) || (order_ == memory::NHWC)))
 	{
 		NOT_IMPLEMENTED;
 	}
 
-	if (order_ == NHWC)
+	if (order_ == memory::NHWC)
 	{
 		tensor_operation_cpu::nhwc2nchw_cpu(bottom_bordered, bottom_bordered);
 	}
