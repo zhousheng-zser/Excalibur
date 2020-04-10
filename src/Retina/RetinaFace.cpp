@@ -6,6 +6,51 @@
 using namespace glasssix::excalibur;
 using namespace glasssix::longinus;
 
+namespace
+{
+	void refine(std::vector<FaceInfomation>& vecFaceInfomation, const int& height, const int& width, bool square)
+	{
+		if (vecFaceInfomation.empty())
+		{
+			//cout << "FaceInfomation is empty!!" << endl;
+			return;
+		}
+
+		float bbw = 0, bbh = 0, maxSide = 0;
+		float h = 0, w = 0;
+		float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+		for (auto it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++)
+		{
+			bbw = (*it).bbox.xmax - (*it).bbox.xmin/* + 1*/;
+			bbh = (*it).bbox.ymax - (*it).bbox.ymin/* + 1*/;
+			x1 = (*it).bbox.xmin + (*it).bbox_reg[0] * bbw;
+			y1 = (*it).bbox.ymin + (*it).bbox_reg[1] * bbh;
+			x2 = (*it).bbox.xmax + (*it).bbox_reg[2] * bbw;
+			y2 = (*it).bbox.ymax + (*it).bbox_reg[3] * bbh;
+
+
+
+			if (square)
+			{
+				w = x2 - x1/* + 1*/;
+				h = y2 - y1/* + 1*/;
+				maxSide = (h > w) ? h : w;
+				x1 = x1 + w * 0.5 - maxSide * 0.5;
+				y1 = y1 + h * 0.5 - maxSide * 0.5;
+				(*it).bbox.xmax = round(x1 + maxSide/* - 1*/);
+				(*it).bbox.ymax = round(y1 + maxSide/* - 1*/);
+				(*it).bbox.xmin = round(x1);
+				(*it).bbox.ymin = round(y1);
+			}
+
+			//boundary check
+			if ((*it).bbox.xmin < 0)(*it).bbox.xmin = 0;
+			if ((*it).bbox.ymin < 0)(*it).bbox.ymin = 0;
+			if ((*it).bbox.xmax > width)(*it).bbox.xmax = width - 1;
+			if ((*it).bbox.ymax > height)(*it).bbox.ymax = height - 1;
+		}
+	}
+}
 
 /// <summary>
 /// calculate (width, height, x_center, and y_center) from (xmin, ymin, xmax, and ymax)
@@ -716,6 +761,7 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char *img_data, in
 
 	//sort nms
 	faceInfo = nms(faceInfo, nms_threshold);
+	refine(faceInfo, img_height, img_width, true);
 
 #ifdef SPLIT_TIME
 	calcTime.Stop();
