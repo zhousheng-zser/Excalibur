@@ -74,3 +74,5 @@ include/Apollo/
 src/Apollo/
 windows/Apollo/
 /csharp/Irisvian/obj
+/cmake/out/build/x64-Debug
+/Excalibur__bug_fix.rar
