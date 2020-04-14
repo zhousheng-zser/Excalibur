@@ -116,7 +116,7 @@
     <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
-    <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
