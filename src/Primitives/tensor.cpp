@@ -1,5 +1,5 @@
-#include "../../include/Primitives/tensor.hpp"
-#include "../../include/Primitives/simd_instruction_set.hpp"
+#include "tensor.hpp"
+#include "simd_instruction_set.hpp"
 
 namespace glasssix
 {

@@ -1,4 +1,4 @@
-#include "../../include/Primitives/gpu.hpp"
+#include "gpu.hpp"
 
 namespace glasssix
 {
@@ -63,8 +63,8 @@ namespace glasssix
 	{
 		CUDA_CHECK(cudaSetDevice(dev));
 		CUDA_CHECK(cudaMemGetInfo(&free_size, &total_size));
-		total_size /= 1048576.0f;
-		free_size /= 1048576.0f;
+		total_size /= 1048576;
+		free_size /= 1048576;
 	}
 
 	int get_cuda_device_cuda_core_num(int dev)
