@@ -1,5 +1,5 @@
-#include "../../include/Primitives/simd_types.hpp"
-#include "../../include/Primitives/cpu.hpp"
+#include "simd_types.hpp"
+#include "cpu.hpp"
 
 namespace glasssix
 {

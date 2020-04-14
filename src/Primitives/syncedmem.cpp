@@ -1,4 +1,4 @@
-#include "../../include/Primitives/syncedmem.hpp"
+#include "syncedmem.hpp"
 /*
 * If CUDA is available and in GPU mode, host memory will be allocated pinned,
 * using cudaMallocHost. It avoids dynamic pinning for transfers (DMA).

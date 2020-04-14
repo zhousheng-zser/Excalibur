@@ -37,7 +37,7 @@
 #endif
 
 #ifdef x86
-//This file is written according to <Intel® 64 and IA-32 Architectures Software Developer's Manual(Volum 2A: Instruction Set Reference)>
+//This file is written according to <Intel?64 and IA-32 Architectures Software Developer's Manual(Volum 2A: Instruction Set Reference)>
 #if defined(__GNUC__) && ( defined(__i386__) || defined(__x86_64__) )
 #    if defined(__PIC__) && defined(__i386__)
 	// Case for x86 with PIC
@@ -124,11 +124,11 @@ namespace glasssix
 	bool support_AVX512F();
 
 	/// Judge if the CPU support AVX512PF instruction
-	/// Intel® Xeon Phi only
+	/// Intel?Xeon Phi only
 	bool support_AVX512PF();
 
 	/// Judge if the CPU support AVX512ER instruction
-	/// Intel® Xeon Phi only
+	/// Intel?Xeon Phi only
 	bool support_AVX512ER();
 
 	/// Judge if the CPU support AVX512CD instruction
