@@ -1,5 +1,7 @@
 #ifdef USE_CUDA
-#include "concat.hpp"
+#include "../../include/excalibur/concat.hpp"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

@@ -4,15 +4,15 @@
 #include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include <glasssix/tensor.hpp>
 #include "math_functions.hpp"
 #include <iostream>
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
-#include <glasssix/timer.hpp>
-#include "tensor_operation_gpu.hpp"
+#include "../../include/Excalibur/tensor_operation_gpu.hpp"
 #include <algorithm>
+
+using namespace glasssix::memory;
 
 #define PI 3.1415926
 extern const unsigned char LBPMAP[][256];
@@ -986,7 +986,7 @@ namespace glasssix
 
 			if (fabs(theta) <= 1e-6)
 			{
-				dst = std::make_shared<excalibur::tensor<Dtype>>(src->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 			}
 
 			int num = src->num();
@@ -1007,11 +1007,11 @@ namespace glasssix
 			std::shared_ptr<tensor<Dtype>> dst_temp;
 			if (src->order() == NCHW)
 			{
-				dst_temp.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 			}
 			else if (src->order() == NHWC)
 			{
-				dst_temp.reset(new excalibur::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 			}
 			else
 			{
@@ -4328,7 +4328,7 @@ namespace glasssix
 			Dtype* dst_data = dst_temp->mutable_gpu_data();
 
 			std::shared_ptr<tensor<unsigned char>> gpu_LBPMAP;
-			gpu_LBPMAP.reset(new tensor<unsigned char>(256, 0));
+			gpu_LBPMAP.reset(new tensor<unsigned char>(256, 0, NCHW));
 			unsigned char *gpu_LBPMAP_data = gpu_LBPMAP->mutable_gpu_data();
 			cudaMemcpy(gpu_LBPMAP_data, LBPMAP[0], 256 * sizeof(unsigned char), cudaMemcpyDefault);
 

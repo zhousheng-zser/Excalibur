@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <cfloat>
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

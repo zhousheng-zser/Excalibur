@@ -1,5 +1,7 @@
 #include "inner_product.hpp"
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

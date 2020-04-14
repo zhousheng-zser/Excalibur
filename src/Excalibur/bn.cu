@@ -1,6 +1,9 @@
 #ifdef USE_CUDA
 #include "scale.hpp"
+#include "../../include/Primitives/tensor.hpp"
 #include <iostream>
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _IM2COL_HPP_
 #define _IM2COL_HPP_
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 
 namespace glasssix
 {
@@ -18,13 +18,13 @@ namespace glasssix
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w, const int stride_h,
 			const int stride_w, const int dilation_h, const int dilation_w,
-			float* data_col, orderType order = NCHW, int num = 1);
+			float* data_col, memory::orderType order = memory::NCHW, int num = 1);
 
 		void im2col_cpu(const signed char* data_im, const int channels,
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w, const int stride_h,
 			const int stride_w, const int dilation_h, const int dilation_w,
-			signed char* data_col, orderType order = NCHW, int num = 1);
+			signed char* data_col, memory::orderType order = memory::NCHW, int num = 1);
 
 		void col2im_nd_cpu(const float* data_col, const int num_spatial_axes,
 			const int* im_shape, const int* col_shape,
@@ -48,7 +48,7 @@ namespace glasssix
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w, const int stride_h,
 			const int stride_w, const int dilation_h, const int dilation_w,
-			Dtype* data_col, orderType order = NCHW, int num = 1);
+			Dtype* data_col, memory::orderType order = memory::NCHW, int num = 1);
 
 
 		template <typename Dtype>

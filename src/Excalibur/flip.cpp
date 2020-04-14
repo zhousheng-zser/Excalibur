@@ -16,9 +16,9 @@ namespace glasssix
 		{
 		}
 
-		void flip::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+		void flip::Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
 		{
-			top.reset(new tensor<float>(bottom->data_shape(), device_));
+			top.reset(new memory::tensor<float>(bottom->data_shape(), device_));
 			const float* bottom_data = bottom->cpu_data();
 			float* top_data = top->mutable_cpu_data();
 			int num = bottom->num();
@@ -27,7 +27,7 @@ namespace glasssix
 			int height = bottom->height();
 			order_ = bottom->order();
 
-			if (order_ == NCHW)
+			if (order_ == memory::NCHW)
 			{
 				for (int n = 0; n < num; n++) {
 					for (int c = 0; c < channels; c++) {
@@ -40,7 +40,7 @@ namespace glasssix
 					}
 				}
 			}
-			else if (order_ == NHWC)
+			else if (order_ == memory::NHWC)
 			{
 				for (int n = 0; n < num; n++) {
 					for (int h = 0; h < height; h++) {

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _MATH_FUNCTIONS_HPP_
 #define _MATH_FUNCTIONS_HPP_
-#include "mkl_alternate.hpp"
+#include "../../include/Primitives/basic_math.hpp"
 #include <vector>
 
 namespace glasssix

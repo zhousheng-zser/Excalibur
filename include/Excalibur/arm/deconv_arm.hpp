@@ -25,7 +25,7 @@ namespace glasssix
 
 				if (input_Channel_ == group_ && output_Channel_ == group_)
 				{
-					weights_reversed_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_ * kernel_length_ / group_}, device_));
+					weights_reversed_.reset(new memory::tensor<float>(std::vector<int>{input_Channel_*output_Channel_ * kernel_length_ / group_}, device_));
 					float *pt = weights_reversed_->mutable_cpu_data();
 					for (int i = 0; i < (input_Channel_ / group_)*(output_Channel_ / group_)*group_; i++)
 					{
@@ -41,7 +41,7 @@ namespace glasssix
 #ifdef __ARM_NEON
 					if (input_Channel_ % 4 == 0)
 					{
-						weights_pack4_.reset(new tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernel_length_ / group_}, device_));
+						weights_pack4_.reset(new memory::tensor<float>(std::vector<int>{input_Channel_*output_Channel_*kernel_length_ / group_}, device_));
 
 						float *weights_pack4_data = weights_pack4_->mutable_cpu_data();
 #ifdef _OPENMP
@@ -73,11 +73,11 @@ namespace glasssix
 				}
 			}
 
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 		private:
-			std::shared_ptr<tensor<float>> weights_reversed_;
+			std::shared_ptr<memory::tensor<float>> weights_reversed_;
 #ifdef __ARM_NEON
-			std::shared_ptr<tensor<float>> weights_pack4_;
+			std::shared_ptr<memory::tensor<float>> weights_pack4_;
 #endif
 
 			void forward_gemm(const float* input, const float* weights_packed, float* output, bool skip_im2col = false) override {}
@@ -85,12 +85,12 @@ namespace glasssix
 			void forward_bias(float* output, const float* bias) override {}
 
 #ifdef USE_CUDA
-			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override {}
+			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override {}
 			void forward_gemm(cublasHandle_t &cublas_handle_, const float* input, const float* weights, float* output, bool skip_im2col = false) override {}
 			void forward_gemm(cublasHandle_t &cublas_handle_, const signed char* input, const signed char* weights, int* output, bool skip_im2col = false) override {}
 			void forward_bias(cublasHandle_t &cublas_handle_, float* output, const float* bias) override {}
 #ifdef USE_CUDNN
-			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override {}
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override {}
 #endif //!USE_CUDNN
 #endif // !USE_CUDA
 		};

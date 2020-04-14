@@ -2,6 +2,9 @@
 #include <algorithm>
 #include <cfloat>
 #include <cmath>
+
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

@@ -1,6 +1,8 @@
 #include "im2col.hpp"
 #include <vector>
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

@@ -2,7 +2,7 @@
 #ifndef _DECONV_HPP_
 #define _DECONV_HPP_
 #include "base_conv.hpp"
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>
@@ -30,12 +30,12 @@ namespace glasssix
 
 			virtual ~deconv() {}
 
-			void Forward(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 
 #ifdef USE_CUDA
-			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(cublasHandle_t &cublas_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 #ifdef USE_CUDNN
-			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top) override;
+			void Forward(cudnnHandle_t cudnn_handle_, const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top) override;
 #endif // USE_CUDNN
 #endif // !USE_CUDA
 

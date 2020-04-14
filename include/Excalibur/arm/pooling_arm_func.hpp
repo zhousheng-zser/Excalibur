@@ -1,6 +1,6 @@
 #ifndef _POOLING_ARM_FUNC_HPP_
 #define _POOLING_ARM_FUNC_HPP_
-#include <glasssix/tensor.hpp>
+#include "../../Primitives/tensor.hpp"
 
 #include "tensor_operation_cpu.hpp"
 
@@ -12,7 +12,7 @@ namespace glasssix
 {
 	namespace excalibur
 	{
-		static void pooling2x2s2_max_neon(std::shared_ptr<tensor<float> >& bottom, std::shared_ptr<tensor<float> >& top)
+		static void pooling2x2s2_max_neon(std::shared_ptr<memory::tensor<float> >& bottom, std::shared_ptr<memory::tensor<float> >& top)
 		{
 			int num = bottom->num();
 			int w = bottom->width();
@@ -125,7 +125,7 @@ namespace glasssix
 			}
 		}
 
-		static void pooling3x3s2_max_neon(std::shared_ptr<tensor<float> >& bottom, std::shared_ptr<tensor<float> >& top)
+		static void pooling3x3s2_max_neon(std::shared_ptr<memory::tensor<float> >& bottom, std::shared_ptr<memory::tensor<float> >& top)
 		{
 			int num = bottom->num();
 			int w = bottom->width();

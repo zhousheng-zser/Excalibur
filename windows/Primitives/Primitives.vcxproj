@@ -14,24 +14,25 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{8DA2420A-7980-4FEB-B6B0-A58430C950FF}</ProjectGuid>
     <RootNamespace>Primitives</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
@@ -60,7 +61,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -77,7 +78,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -107,6 +108,14 @@
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
+    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
     <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -119,5 +128,6 @@
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
   </ImportGroup>
 </Project>
