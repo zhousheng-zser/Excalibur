@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Primitives/pure_c_interface_utils.h"
+#include "Primitives/pure_c_handle_utils.h"
 
 #ifdef __cplusplus
 extern "C"
