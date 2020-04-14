@@ -25,6 +25,10 @@ if(COSINE_DISTANCE)
 	add_definitions(-DCOSINE_DISTANCE)
 endif()
 
+if(FMT_HEADER_ONLY)
+	add_definitions(-DFMT_HEADER_ONLY)
+endif()
+
 if(USE_CUDA)
 	find_package(CUDA REQUIRED)
 	include_directories(SYSTEM ${CUDA_INCLUDE_DIRS})

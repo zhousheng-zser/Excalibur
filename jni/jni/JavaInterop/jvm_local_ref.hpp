@@ -2,9 +2,6 @@
 
 #include "jni_utils.hpp"
 
-#include <utility>
-#include <type_traits>
-
 #include <jni.h>
 
 namespace glasssix::jni
@@ -16,9 +13,8 @@ namespace glasssix::jni
 	{
 	public:
 		jvm_local_ref() noexcept;
-		jvm_local_ref(std::nullptr_t) noexcept;
-		jvm_local_ref(JNIEnv* env, jobject obj);
-		jvm_local_ref(JNIEnv* env, jobject obj, bool takeOverOnly);
+		jvm_local_ref(jobject obj);
+		jvm_local_ref(jobject obj, bool takeOverOnly);
 		jvm_local_ref(const jvm_local_ref& other);
 		jvm_local_ref(jvm_local_ref&& other) noexcept;
 		virtual ~jvm_local_ref();
@@ -27,7 +23,6 @@ namespace glasssix::jni
 		jvm_local_ref& operator=(jvm_local_ref&& right) noexcept;
 		jobject get() const noexcept;
 	private:
-		JNIEnv* env_;
 		jobject ref_;
 	};
 
@@ -36,15 +31,12 @@ namespace glasssix::jni
 	{
 	public:
 		jvm_local_ref_ex() noexcept = default;
-		jvm_local_ref_ex(std::nullptr_t) noexcept : jvm_local_ref{ nullptr }
+
+		jvm_local_ref_ex(JObject obj) : jvm_local_ref{ obj }
 		{
 		}
 
-		jvm_local_ref_ex(JNIEnv* env, JObject obj) : jvm_local_ref{ env, obj }
-		{
-		}
-
-		jvm_local_ref_ex(JNIEnv* env, JObject obj, bool takeOverOnly) : jvm_local_ref{ env, obj, takeOverOnly }
+		jvm_local_ref_ex(JObject obj, bool takeOverOnly) : jvm_local_ref{ obj, takeOverOnly }
 		{
 		}
 
@@ -52,7 +44,7 @@ namespace glasssix::jni
 		{
 		}
 
-		jvm_local_ref_ex(jvm_local_ref_ex&& other) noexcept : jvm_local_ref{ other }
+		jvm_local_ref_ex(jvm_local_ref_ex&& other) noexcept : jvm_local_ref{ std::move(other) }
 		{
 		}
 
@@ -65,7 +57,7 @@ namespace glasssix::jni
 			return *this;
 		}
 
-		jvm_local_ref_ex& operator=(jvm_local_ref_ex&& right)
+		jvm_local_ref_ex& operator=(jvm_local_ref_ex&& right) noexcept
 		{
 			static_cast<jvm_local_ref&>(*this) = std::move(right);
 

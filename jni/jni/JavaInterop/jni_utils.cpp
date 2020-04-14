@@ -6,17 +6,24 @@
 
 namespace glasssix::jni::utils
 {
-	std::string to_string(JNIEnv* env, jstring str)
+	std::string to_string(jstring str)
 	{
-		auto chars = env->GetStringUTFChars(str, nullptr);
-		auto size = static_cast<std::size_t>(env->GetStringUTFLength(str));
-		scope_guard guard{ [&] { env->ReleaseStringUTFChars(str, chars); } };
+		if (auto env = jvm_thread_env::instance().value())
+		{
+			auto chars = env->GetStringUTFChars(str, nullptr);
+			auto size = static_cast<std::size_t>(env->GetStringUTFLength(str));
+			scope_guard guard{ [&] { env->ReleaseStringUTFChars(str, chars); } };
 
-		return std::string{ chars, size };
+			return std::string(chars, size);
+		}
+
+		return std::string{};
 	}
 
-	jstring to_jstring(JNIEnv* env, std::string_view str)
+	jstring to_jstring(std::string_view str)
 	{
-		return env->NewStringUTF(str.data());
+		auto env = jvm_thread_env::instance().value();
+
+		return env ? env->NewStringUTF(str.data()) : nullptr;
 	}
 }

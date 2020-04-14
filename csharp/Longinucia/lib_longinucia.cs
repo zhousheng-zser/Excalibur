@@ -158,6 +158,19 @@ namespace G6.Algorithm.Lib
         [DllImport(@"libLonginus")]
         public static extern int Longinus_detectEx(IntPtr instance, out IntPtr rect_ptr, byte[] image, int height, int width, int minSize, float[] threshold, float factor, int stage, int order);
 
+        /// <summary>
+        /// 人脸检测(新版)
+        /// </summary>
+        /// <param name="instance"></param>
+        /// <param name="rect_ptr">一个IntPtr变量的地址, 接收输出的检测结果, 此变量指向了FaceRectwithInfo数组, 非托管内存需释放</param>
+        /// <param name="image">只能是灰度图</param>
+        /// <param name="height"></param>
+        /// <param name="width"></param>
+        /// <param name="order">数据排列格式(NHWC:1 ,MCHW:0)</param>
+        /// <param name="threshold">门限，取0.5</param>
+        /// <returns>检测到的人脸个数</returns>
+        [DllImport(@"libLonginus")]
+        public static extern int Longinus_detectRetina(IntPtr instance, out IntPtr rect_ptr, byte[] image, int height, int width, int order, int threshold);
 
         /// <summary>
         /// MTCNN，lite版本
