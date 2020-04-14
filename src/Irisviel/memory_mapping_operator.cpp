@@ -1,5 +1,6 @@
 #include "memory_mapping_operator.hpp"
 
+#include <cstring>
 #include <stdexcept>
 
 namespace glasssix

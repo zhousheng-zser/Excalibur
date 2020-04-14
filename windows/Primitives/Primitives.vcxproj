@@ -107,12 +107,7 @@
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
-    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
-    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
-    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
-    <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
-    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
-    <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />

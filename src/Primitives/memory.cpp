@@ -30,7 +30,7 @@ namespace glasssix
 		{
 			if (memory != nullptr)
 			{
-				::delete[] memory;
+				::operator delete[](memory);
 			}
 		}
 
