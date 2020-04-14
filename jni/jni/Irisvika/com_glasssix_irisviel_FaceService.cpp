@@ -161,14 +161,14 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add__Lcom_glasssix
 {
 	if (record == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The record cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The record cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception();
+		throw_null_pointer_exception();
 	}
 
 	impl->add(*get_database_record(env, obj, record));
@@ -178,14 +178,14 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_add___3Lcom_glasss
 {
 	if (records == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The records cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The records cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception();
+		throw_null_pointer_exception();
 	}
 
 	impl->add(get_database_records(env, obj, records));
@@ -195,14 +195,14 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove__Ljava_lang
 {
 	if (key == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The key cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The key cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception();
+		throw_null_pointer_exception();
 	}
 
 	impl->remove(utils::to_string(key));
@@ -212,14 +212,14 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove___3Ljava_la
 {
 	if (keys == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The keys cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The keys cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception();
+		throw_null_pointer_exception();
 	}
 
 	std::vector<std::string> native_keys;
@@ -240,7 +240,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update__Lcom_glass
 {
 	if (record == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The record cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The record cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
@@ -257,14 +257,14 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update___3Lcom_gla
 {
 	if (records == nullptr)
 	{
-		return utils::throw_new_exception(clazz_null_pointer_exception.get(), "The records cannot be null.");
+		utils::throw_new_exception(clazz_null_pointer_exception.get(), "The records cannot be null.");
 	}
 
 	auto impl = reinterpret_cast<face_service*>(field_face_service_m_impl->get(obj));
 
 	if (impl == nullptr)
 	{
-		return throw_null_pointer_exception();
+		throw_null_pointer_exception();
 	}
 
 	impl->update(get_database_records(env, obj, records));
