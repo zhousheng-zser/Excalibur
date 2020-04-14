@@ -44,6 +44,8 @@ extern "C" LONGINUS_C_EXPORT int Longinus_match(glasssix::longinus::LonginusDete
 
 extern "C" LONGINUS_C_EXPORT int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::Match_Retval_C** ptr, glasssix::longinus::face_rect_with_face_info* rects, int rect_num, int frame_extract_frequency, float distance_factor);
 
+extern "C" LONGINUS_C_EXPORT int Longinus_detectRetina(glasssix::longinus::LonginusDetector * instance, glasssix::longinus::face_rect_with_face_info * *ptr, unsigned char* image, int height, int width, int order, float threshold);
+
 extern "C" LONGINUS_C_EXPORT int Longinus_detectEx(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::face_rect_with_face_info **ptr, unsigned char *image, int height, int width, int minSize, float *threshold, float factor, int stage, int order);
 
 extern "C" LONGINUS_C_EXPORT int Longinus_detectEx_Mobile(glasssix::longinus::LonginusDetector *instance, glasssix::longinus::face_rect_with_face_info **ptr, unsigned char *image, int height, int width, int minSize, float *threshold, float factor, int stage, int order);

@@ -45,7 +45,7 @@ namespace glasssix
 	public:
 		using linux_stat_type = struct stat64;
 
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, data_{}, mark_for_deletion_{}
 		{
 			file_descriptor_ = open64(path_.c_str(), O_RDWR);
 
@@ -69,7 +69,7 @@ namespace glasssix
 				return;
 			}
 
-			record_ = static_cast<std::uint8_t*>(mmap64(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor_, 0));
+			data_ = static_cast<std::uint8_t*>(mmap64(nullptr, size_, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor_, 0));
 		}
 
 		~impl()
@@ -77,8 +77,8 @@ namespace glasssix
 			if (*this)
 			{
 				flush();
-				munmap(record_, size_);
-				record_ = nullptr;
+				munmap(data_, size_);
+				data_ = nullptr;
 			}
 
 			if (LINUX_SUCCESS(file_descriptor_))
@@ -95,12 +95,12 @@ namespace glasssix
 
 		operator bool() const noexcept
 		{
-			return record_ && record_ != MAP_FAILED;
+			return data_ && data_ != MAP_FAILED;
 		}
 
 		std::uint8_t* data() const noexcept
 		{
-			return record_;
+			return data_;
 		}
 
 		std::size_t size() const noexcept
@@ -117,7 +117,7 @@ namespace glasssix
 		{
 			if (*this)
 			{
-				msync(record_, size_, MS_SYNC);
+				msync(data_, size_, MS_SYNC);
 			}
 		}
 
@@ -128,7 +128,7 @@ namespace glasssix
 	private:
 		std::string path_;
 		std::size_t size_;
-		std::uint8_t* record_;
+		std::uint8_t* data_;
 		int file_descriptor_;
 		bool mark_for_deletion_;
 	};
@@ -136,7 +136,7 @@ namespace glasssix
 	class memory_mapping::impl
 	{
 	public:
-		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, mark_for_deletion_{}
+		impl(const std::string& path, std::size_t size) noexcept : path_{ path }, size_{ size }, data_{}, mark_for_deletion_{}
 		{
 			file_handle_ = CreateFileA(path_.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
 

@@ -1,0 +1,323 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Glasssix.Irisviel</name>
+    </assembly>
+    <members>
+        <member name="T:Glasssix.Irisviel.DatabaseRecord">
+            <summary>
+            A database record.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.DatabaseRecord.Key">
+            <summary>
+            The key.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.DatabaseRecord.Feature">
+            <summary>
+            The feature.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.DatabaseRecord.#ctor">
+            <summary>
+            Create an instance.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.DatabaseRecord.#ctor(System.String,System.Single[])">
+            <summary>
+            Create an instance.
+            </summary>
+            <param name="key">The key</param>
+            <param name="feature">The feature</param>
+        </member>
+        <member name="T:Glasssix.Irisviel.DatabaseSearchResult">
+            <summary>
+            A search result.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.DatabaseSearchResult.Record">
+            <summary>
+            The record.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.DatabaseSearchResult.Similarity">
+            <summary>
+            The similarity.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.DatabaseSearchResult.#ctor(Glasssix.Irisviel.DatabaseRecord,System.Single)">
+            <summary>
+            Create an instance.
+            </summary>
+            <param name="record">The record</param>
+            <param name="similarity">The similarity</param>
+        </member>
+        <member name="T:Glasssix.Irisviel.FaceService">
+            <summary>
+            A face service for quick searching and databasing.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.FaceService.FeatureModel">
+            <summary>
+            Gets the feature model.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.FaceService.DatabaseDirectory">
+            <summary>
+            Gets the database directory.
+            </summary>
+        </member>
+        <member name="P:Glasssix.Irisviel.FaceService.CacheDirectory">
+            <summary>
+            Gets the cache directory.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.#ctor(Glasssix.Irisviel.FeatureModel,System.Int32,System.String)">
+            <summary>
+            Creates an instance.
+            </summary>
+            <param name="model">The feature model</param>
+            <param name="singleDatabaseCapacity">The maximal number of items that one single database file can accomodate</param>
+            <param name="workingDirectory">The working directory in which the module creates internal files</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Clear">
+            <summary>
+            Clears the loaded databases and keeps all data on the disk still existing.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.RemoveAll">
+            <summary>
+            Removes all the loaded databases and deletes the files on the disk.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.LoadDatabases">
+            <summary>
+            Loads the database on the disk.
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Search(System.Single[],System.Int32)">
+            <summary>
+            Searches for results.
+            </summary>
+            <param name="feature">The feature</param>
+            <param name="top">The top number of the items to be taken from the databases</param>
+            <returns>The result</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Add(System.String,System.Single[])">
+            <summary>
+            Adds a record.
+            </summary>
+            <param name="key">The key</param>
+            <param name="feature">The feature</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Add(Glasssix.Irisviel.DatabaseRecord)">
+            <summary>
+            Adds a record.
+            </summary>
+            <param name="record">The record</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Add(Glasssix.Irisviel.DatabaseRecord[])">
+            <summary>
+            Adds some records.
+            </summary>
+            <param name="records">The records</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Remove(System.String)">
+            <summary>
+            Removes a record.
+            </summary>
+            <param name="key">The key</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Remove(System.String[])">
+            <summary>
+            Removes some records.
+            </summary>
+            <param name="keys">The keys</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Update(Glasssix.Irisviel.DatabaseRecord)">
+            <summary>
+            Updates a record.
+            </summary>
+            <param name="record">The record</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Update(Glasssix.Irisviel.DatabaseRecord[])">
+            <summary>
+            Updates some records.
+            </summary>
+            <param name="records">The records</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Dispose">
+            <summary>
+            Disposes all managed and unmanaged resources.
+            </summary>
+        </member>
+        <member name="T:Glasssix.Irisviel.FeatureModel">
+            <summary>
+            Defines available feaute models.
+            </summary>
+        </member>
+        <member name="T:Glasssix.Irisviel.IrisvielStringMarshaler">
+            <summary>
+            An internal marshaler for return values that are "string".
+            </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielCreateInstance(System.Int32,System.Int32,System.String)">
+            <summary>
+            Creates an instance of the face searching module.
+            </summary>
+            <param name="singleDatabaseCapacity">The maximal number of items that one single database file can accomodate</param>
+            <param name="dimension">The dimension of the feature</param>
+            <param name="workingDirectory">The working directory in which the module creates internal files</param>
+            <returns>The handle of the instance</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisivelCreateRecord(Glasssix.Irisviel.FeatureModel)">
+            <summary>
+            Creates a database record.
+            </summary>
+            <param name="model">The feature model</param>
+            <returns>The handle of the record</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisivelCreateRecordWithArguments(Glasssix.Irisviel.FeatureModel,System.String,System.Single[])">
+            <summary>
+            Creates a database record with arguments.
+            </summary>
+            <param name="model">The feature model</param>
+            <param name="key">The key</param>
+            <param name="feature">The feature</param>
+            <returns>The handle of the record</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielFree(System.IntPtr)">
+            <summary>
+            Frees a memory block.
+            </summary>
+            <param name="memory">The memory pointer</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielFreeInstance(System.IntPtr)">
+            <summary>
+            Frees an instance.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielFreeRecord(System.IntPtr)">
+            <summary>
+            Frees a record.
+            </summary>
+            <param name="record">The handle of the record</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielFreeRecordContent(Glasssix.Irisviel.NativeDatabaseRecordContent@)">
+            <summary>
+            Frees a record content.
+            </summary>
+            <param name="content">The content</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielFreeSearchResult(System.IntPtr,System.UIntPtr)">
+            <summary>
+            Frees a searching result.
+            </summary>
+            <param name="result">The handle of the result</param>
+            <param name="size">The size of the result</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielSetRecordContent(System.IntPtr,Glasssix.Irisviel.NativeDatabaseRecordContent@)">
+            <summary>
+            Sets the content of a record.
+            </summary>
+            <param name="record">The handle of the record</param>
+            <param name="content">The content</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielGetRecordContent(System.IntPtr,Glasssix.Irisviel.NativeDatabaseRecordContent@)">
+            <summary>
+            Gets the content of a record.
+            </summary>
+            <param name="record">The handle of the record</param>
+            <param name="content">The content</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielClear(System.IntPtr)">
+            <summary>
+            Clears the loaded databases and keeps all data on the disk still existing.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielRemoveAll(System.IntPtr)">
+            <summary>
+            Removes all the loaded databases and deletes the files on the disk.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielDatabaseDirectory(System.IntPtr)">
+            <summary>
+            Gets the database directory.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <returns>The database directory</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielCacheDirectory(System.IntPtr)">
+            <summary>
+            Gets the cache directory.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <returns>The cache directory</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielLoadDatabases(System.IntPtr)">
+            <summary>
+            Loads the database on the disk.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielSearch(System.IntPtr,System.Single[],System.Int32,System.IntPtr@)">
+            <summary>
+            Searches for results.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="feature">The feature</param>
+            <param name="top">The top number of the items to be taken from the databases</param>
+            <param name="result">The result</param>
+            <returns>The size of the result</returns>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielAddRecord(System.IntPtr,System.IntPtr)">
+            <summary>
+            Adds a record.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="record">The handle of the record</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielAddRecords(System.IntPtr,System.IntPtr[],System.UIntPtr)">
+            <summary>
+            Adds some records.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="records">The handles of the records</param>
+            <param name="size">The size of the records</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielRemoveRecord(System.IntPtr,System.String)">
+            <summary>
+            Removes a record.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="key">The key</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielRemoveRecords(System.IntPtr,System.String[],System.UIntPtr)">
+            <summary>
+            Removes some records.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="keys">The keys</param>
+            <param name="size">The size of the keys</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielUpdateRecord(System.IntPtr,System.IntPtr)">
+            <summary>
+            Updates a record.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="record">The handle of the record</param>
+        </member>
+        <member name="M:Glasssix.Irisviel.NativeLibs.IrisvielUpdateRecords(System.IntPtr,System.IntPtr[],System.UIntPtr)">
+            <summary>
+            Updates some records.
+            </summary>
+            <param name="instance">The handle of the instance</param>
+            <param name="records">The handle of the record</param>
+            <param name="size">The size of the keys</param>
+        </member>
+    </members>
+</doc>

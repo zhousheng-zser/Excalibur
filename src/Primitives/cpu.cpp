@@ -1,4 +1,4 @@
-#include "../../include/Primitives/cpu.hpp"
+#include "cpu.hpp"
 
 #ifdef _MSC_VER //Windows
 #include <Windows.h>
@@ -167,7 +167,7 @@ namespace glasssix
 		return f_7_EBX_[16];
 	}
 
-	/// Intel® Xeon Phi only
+	/// Intel?Xeon Phi only
 	bool support_AVX512PF()
 	{
 		int eax[4];
@@ -176,7 +176,7 @@ namespace glasssix
 		return f_7_EBX_[26];
 	}
 
-	/// Intel® Xeon Phi only
+	/// Intel?Xeon Phi only
 	bool support_AVX512ER()
 	{
 		int eax[4];

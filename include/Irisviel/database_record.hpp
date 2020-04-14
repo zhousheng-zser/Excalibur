@@ -11,6 +11,7 @@ namespace glasssix
 	{
 		struct database_record : dynamic_buffer, std::enable_shared_from_this<database_record>
 		{
+			virtual int dimension() const noexcept = 0;
 			virtual bool active() const noexcept = 0;
 			virtual void active(bool value) noexcept = 0;
 			virtual char* key() noexcept = 0;
