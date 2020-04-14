@@ -1,5 +1,7 @@
 #ifdef USE_CUDA
-#include "pca.hpp"
+#include "../../include/excalibur/pca.hpp"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

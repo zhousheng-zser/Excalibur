@@ -132,7 +132,7 @@ namespace glasssix
   do { \
     cublasStatus_t status = condition; \
     CHECK_EQ(status, CUBLAS_STATUS_SUCCESS) << " " \
-      << glasssix::excalibur::cublasGetErrorString(status); \
+      << glasssix::cublasGetErrorString(status); \
   } while (0)
 #endif // !USE_CUBLAS
 

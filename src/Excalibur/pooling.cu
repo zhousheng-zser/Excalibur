@@ -1,11 +1,13 @@
 #ifdef USE_CUDA
-#include "pooling.hpp"
+#include "../../include/excalibur/pooling.hpp"
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 #include "device_functions.h"
 #include <algorithm>
 #include <cfloat>
 #include <vector>
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

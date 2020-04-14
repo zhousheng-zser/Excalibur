@@ -2,18 +2,17 @@
 #ifndef _TENSOR_OPERATION_GPU_HPP_
 #define _TENSOR_OPERATION_GPU_HPP_
 #ifdef USE_CUDA
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+//#include <stdio.h>
+//#include <stdlib.h>
+//#include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include <glasssix/accelerator.hpp>
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
+#include "tensor_operation_cpu.hpp"
 #include <iostream>
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
-#include <glasssix/timer.hpp>
 
 
 namespace glasssix 
@@ -29,205 +28,205 @@ namespace glasssix
 #ifdef USE_OPENCV
 
 			template <typename Dtype>
-			static void tensor2mat_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::vector<cv::Mat>& dst);
+			static void tensor2mat_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::vector<cv::Mat>& dst);
 
 			template <typename Dtype>
 
-			static void tensor2mat_gpu(const tensor<Dtype>& src, std::vector<cv::Mat>& dst);
+			static void tensor2mat_gpu(const memory::tensor<Dtype>& src, std::vector<cv::Mat>& dst);
 
 
 
 			template <typename Dtype>
-			static void mat2tensor_gpu(const cv::Mat &src, std::shared_ptr<tensor<Dtype>>& dst, orderType order = NHWC);
+			static void mat2tensor_gpu(const cv::Mat &src, std::shared_ptr<memory::tensor<Dtype>>& dst, orderType order = NHWC);
 
 			template <typename Dtype>
-			static void mat2tensor_gpu(const cv::Mat &src, tensor<Dtype>& dst, orderType order = NHWC);
+			static void mat2tensor_gpu(const cv::Mat &src, memory::tensor<Dtype>& dst, orderType order = NHWC);
 
 #endif // USE_OPENCV
 
 
 			template <typename Dtype>
-			static void nchw2nhwc_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst);
+			static void nchw2nhwc_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst);
 
 			template <typename Dtype>
-			static void nchw2nhwc_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst);
-
-
-
-			template <typename Dtype>
-			static void nhwc2nchw_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst);
-
-			template <typename Dtype>
-			static void nhwc2nchw_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst);
+			static void nchw2nhwc_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst);
 
 
 
 			template <typename Dtype>
-			static void resize_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void nhwc2nchw_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst);
+
+			template <typename Dtype>
+			static void nhwc2nchw_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst);
+
+
+
+			template <typename Dtype>
+			static void resize_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				int dst_height, int dst_width, interpolationType type = Bilinear);
 
 			template <typename Dtype>
-			static void resize_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
+			static void resize_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst,
 				int dst_height, int dst_width, interpolationType type = Bilinear);
 
 
 
 			template <typename Dtype>
-			static void rotate_with_center_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void rotate_with_center_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				float theta, int &dst_height, int &dst_width, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 			template <typename Dtype>
-			static void rotate_with_center_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
+			static void rotate_with_center_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst,
 				float theta, int &dst_height, int &dst_width, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 
 
 			template <typename Dtype, typename Ptype>
-			static void rotate_with_points_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst,
+			static void rotate_with_points_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst,
 				const point<Ptype> &center, float theta, float scale = 1.0f, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 			template <typename Dtype, typename Ptype>
-			static void rotate_with_points_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst,
+			static void rotate_with_points_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst,
 				const point<Ptype> &center, float theta, float scale = 1.0f, int fill_pixel_value = 0, interpolationType type = Bilinear);
 
 
 
 			template <typename Dtype>
-			static void flip_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, flipType axis = Width_Wise);
+			static void flip_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, flipType axis = Width_Wise);
 
 			template <typename Dtype>
-			static void flip_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst, flipType axis = Width_Wise);
-
-
-
-			template <typename Dtype>
-			static void rgb2gray_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
-
-			template <typename Dtype>
-			static void rgb2gray_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst);
+			static void flip_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, flipType axis = Width_Wise);
 
 
 
 			template <typename Dtype>
-			static void rgb2hsv_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
+			static void rgb2gray_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst);
 
 			template <typename Dtype>
-			static void rgb2hsv_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst);
+			static void rgb2gray_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst);
 
 
 
 			template <typename Dtype>
-			static void matrix_transpose_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
+			static void rgb2hsv_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst);
 
 			template <typename Dtype>
-			static void matrix_transpose_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst);
+			static void rgb2hsv_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst);
+
+
+
+			template <typename Dtype>
+			static void matrix_transpose_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst);
+
+			template <typename Dtype>
+			static void matrix_transpose_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst);
 
 
 
 			template <typename Dtype, typename Rtype>
-			static void roi_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, excalibur::rectangle<Rtype> rect);
+			static void roi_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, excalibur::rectangle<Rtype> rect);
 
 			template <typename Dtype, typename Rtype>
-			static void roi_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst, excalibur::rectangle<Rtype> rect);
+			static void roi_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, excalibur::rectangle<Rtype> rect);
 
 
 
 			template <typename Dtype>
-			static void threshold_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary);
+			static void threshold_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary);
 
 			template <typename Dtype>
-			static void threshold_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary);
+			static void threshold_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary);
 
 
 
 			template <typename Dtype, typename Ptype>
-			static void warp_affine_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void warp_affine_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill_pixel_value = 0, excalibur::interpolationType type = Bilinear);
 
 			template <typename Dtype, typename Ptype>
-			static void warp_affine_gpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
+			static void warp_affine_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst,
 				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, int fill_pixel_value = 0, excalibur::interpolationType type = Bilinear);
 
 
 
 			template <typename Dtype>
-			static void gaussian_blur_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3);
+			static void gaussian_blur_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int ksize = 3);
 
 			template <typename Dtype>
-			static void gaussian_blur_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3);
-
-
-
-			template <typename Dtype>
-			static void mean_value_blur_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3);
-
-			template <typename Dtype>
-			static void mean_value_blur_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3);
+			static void gaussian_blur_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int ksize = 3);
 
 
 
 			template <typename Dtype>
-			static void sobel_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int dx = 1, int dy = 1);
+			static void mean_value_blur_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int ksize = 3);
 
 			template <typename Dtype>
-			static void sobel_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int dx = 1, int dy = 1);
+			static void mean_value_blur_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int ksize = 3);
 
 
 
 			template <typename Dtype>
-			static void morph_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, excalibur::morphType type = Dilate, int ksize = 3);
+			static void sobel_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int dx = 1, int dy = 1);
 
 			template <typename Dtype>
-			static void morph_gpu(const tensor<Dtype> &src, tensor<Dtype> &dst, excalibur::morphType type = Dilate, int ksize = 3);
+			static void sobel_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int dx = 1, int dy = 1);
+
+
+
+			template <typename Dtype>
+			static void morph_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, excalibur::morphType type = Dilate, int ksize = 3);
+
+			template <typename Dtype>
+			static void morph_gpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, excalibur::morphType type = Dilate, int ksize = 3);
 
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void type_converter_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst);
+			static void type_converter_gpu(const std::shared_ptr<memory::tensor<DtypeSRC>> &src, std::shared_ptr<memory::tensor<DtypeDST>> &dst);
 
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void type_converter_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst);
+			static void type_converter_gpu(const memory::tensor<DtypeSRC> &src, memory::tensor<DtypeDST> &dst);
 
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_gpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var);
+			static void preprocess_tensors_gpu(const std::shared_ptr<memory::tensor<DtypeSRC>> &src, std::shared_ptr<memory::tensor<DtypeDST>> &dst, float means[3], float var);
 
 
 
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_gpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var);
+			static void preprocess_tensors_gpu(const memory::tensor<DtypeSRC> &src, memory::tensor<DtypeDST> &dst, float means[3], float var);
 
 
 
 			template <typename Dtype>
-			static void make_border_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void make_border_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				int top, int bottom, int left, int right, borderType type = Border_Constant, Dtype fill_pixel_value = 0);
 
 
 			template <typename Dtype>
-			static void cut_border_gpu(const std::shared_ptr<tensor<Dtype>> &src,
-				std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right);
+			static void cut_border_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src,
+				std::shared_ptr<memory::tensor<Dtype>>& dst, int top, int bottom, int left, int right);
 
 
 			template <typename Dtype, typename Rtype>
-			static void safty_cut_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, rectangle<Rtype>* rect);
+			static void safty_cut_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, rectangle<Rtype>* rect);
 
 
 			template <typename Dtype>
-			static void equalize_hist_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst);
+			static void equalize_hist_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst);
 
 
 			template <typename Dtype>
-			static void merge_channel_gpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst);
+			static void merge_channel_gpu(const std::vector<std::shared_ptr<memory::tensor<Dtype>>> &src_vector, std::shared_ptr<memory::tensor<Dtype>> &dst);
 
 
 			template <typename Dtype>
-			static void lbp_feature_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59 = false);
+			static void lbp_feature_gpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, bool map_59 = false);
 
-			static void calc_hist_gpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>>& dst, int dimension = 59);
+			static void calc_hist_gpu(const std::shared_ptr<memory::tensor<unsigned char>> &src, std::shared_ptr<memory::tensor<float>>& dst, int dimension = 59);
 		};
 	}
 }

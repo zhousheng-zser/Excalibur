@@ -404,5 +404,8 @@ namespace glasssix
 
 		// instantiate class
 		template class tensor<float>;
+		template class tensor<int>;
+		template class tensor<unsigned char>;
+		template class tensor<char>;
 	}
 }

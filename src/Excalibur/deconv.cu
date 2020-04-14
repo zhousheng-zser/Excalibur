@@ -1,6 +1,8 @@
-#include "deconv.hpp"
+#include "../../include/excalibur/deconv.hpp"
 #include <iostream>
 #include "device_launch_parameters.h"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {
