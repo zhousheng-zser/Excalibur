@@ -1,10 +1,10 @@
 #ifndef _TENSOR_OPERATION_CPU_HPP_
 #define _TENSOR_OPERATION_CPU_HPP_
 
-#include <glasssix/tensor.hpp>
-#include <glasssix/timer.hpp>
+#include "../../include/Primitives/tensor.hpp"
+#include "../../include/Primitives/profiler.hpp"
+#include "../../include/Primitives/simd_types.hpp"
 #include "math_functions.hpp"
-#include "../../include/Julius/simd_helper.hpp"
 #include <algorithm>
 #include <cstring>
 #include <climits>
@@ -13,10 +13,6 @@
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif // USE_OPENCV
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif // _OPENMP
 
 #define PI 3.141592f
 #define ICV_WARP_SHIFT          10
@@ -41,6 +37,156 @@ namespace glasssix
 {
 	namespace excalibur
 	{
+		enum interpolationType { Nearest, Bilinear, Cubic };
+
+		enum borderType { Border_Constant, Border_Replicate };
+
+		enum flipType { Channel_Wise, Width_Wise, Height_Wise, Center_Wise };
+
+		enum thresholdType { binary, binary_inv, small_trunc, big_trunc, small_to_zero, big_to_zero };
+
+		enum morphType { Dilate, Erode };
+
+		///Rotation_Invariant(RI)
+		enum lbpType { Native, RI, U2, RIU2, HF, LTP };
+
+		template <typename Dtype>
+		class point
+		{
+		public:
+			Dtype x;
+			Dtype y;
+
+			point()
+			{
+				x = Dtype(0);
+				y = Dtype(0);
+			}
+
+			point(Dtype x, Dtype y)
+			{
+				this->x = x;
+				this->y = y;
+			}
+
+			point& operator=(const point& r)
+			{
+				if (this == &r)
+				{
+					return *this;
+				}
+				x = r.x;
+				y = r.y;
+				return *this;
+			}
+
+			point(const point& r)
+			{
+				x = r.x;
+				y = r.y;
+			}
+
+			float distance(const point& r)
+			{
+				return sqrt((x - r.x) * (x - r.x) * 1.0f + (y - r.y) * (y - r.y) * 1.0f);
+			}
+		};
+
+		template <typename Dtype>
+		class rectangle
+		{
+		public:
+			Dtype x;
+			Dtype y;
+			Dtype h;
+			Dtype w;
+
+			rectangle()
+			{
+				this->x = Dtype(0);
+				this->y = Dtype(0);
+				this->h = Dtype(0);
+				this->w = Dtype(0);
+			}
+
+			rectangle(Dtype x, Dtype y, Dtype h, Dtype w)
+			{
+				CHECK_GE(h, 0);
+				CHECK_GE(w, 0);
+				this->x = x;
+				this->y = y;
+				this->h = h;
+				this->w = w;
+			}
+
+			rectangle(point<Dtype> top_left, point<Dtype> bottom_right)
+			{
+				this->x = top_left.x;
+				this->y = top_left.y;
+				this->h = bottom_right.y - top_left.y;
+				this->w = bottom_right.x - top_left.x;
+				CHECK_GE(h, 0);
+				CHECK_GE(w, 0);
+			}
+
+			rectangle& operator=(const rectangle& r)
+			{
+				if (this == &r)
+				{
+					return *this;
+				}
+				x = r.x;
+				y = r.y;
+				h = r.h;
+				w = r.w;
+				return *this;
+			}
+
+			rectangle(const rectangle& r)
+			{
+				x = r.x;
+				y = r.y;
+				h = r.h;
+				w = r.w;
+			}
+
+			Dtype IoU(const rectangle r)
+			{
+				return Dtype(0);// Todo
+			}
+
+			point<Dtype> center()
+			{
+				return point<Dtype>(Dtype(x + w * 0.5f), Dtype(y + h * 0.5f));
+			}
+		};
+
+
+		class color
+		{
+		public:
+			unsigned char r;
+			unsigned char g;
+			unsigned char b;
+
+			color()
+			{
+				r = (unsigned char)0;
+				g = (unsigned char)0;
+				b = (unsigned char)0;
+			}
+
+			template <typename Dtype>
+			color(Dtype r, Dtype g, Dtype b)
+			{
+				this->r = (unsigned char)r;
+				this->g = (unsigned char)g;
+				this->b = (unsigned char)b;
+			}
+
+
+		};
+
 		class tensor_operation_cpu
 		{
 		public:
@@ -50,12 +196,12 @@ namespace glasssix
 #ifdef USE_OPENCV
 
 			/// <summary>
-			/// transfer tensor to mat
+			/// transfer memory::tensor to mat
 			/// </summary>
-			/// <param name="src">original tensor</param>
+			/// <param name="src">original memory::tensor</param>
 			/// <param name="dst">new mat</param>
 			template <typename Dtype>
-			static void tensor2mat_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::vector<cv::Mat>& dst)
+			static void tensor2mat_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::vector<cv::Mat>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -82,7 +228,7 @@ namespace glasssix
 
 				const Dtype* src_data = src->cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					int src_offset = height * width;
 					int* c_src_offset = new int[channel];
@@ -116,7 +262,7 @@ namespace glasssix
 
 					delete [] c_src_offset;
 				}
-				else if(src->order() == NHWC)
+				else if(src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -135,12 +281,12 @@ namespace glasssix
 
 
 			/// <summary>
-			/// transfer tensor to mat
+			/// transfer memory::tensor to mat
 			/// </summary>
-			/// <param name="src">original tensor</param>
+			/// <param name="src">original memory::tensor</param>
 			/// <param name="dst">new mat</param>
 			template <typename Dtype>
-			static void tensor2mat_cpu(const tensor<Dtype>& src, std::vector<cv::Mat>& dst)
+			static void tensor2mat_cpu(const memory::tensor<Dtype>& src, std::vector<cv::Mat>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -167,7 +313,7 @@ namespace glasssix
 
 				const Dtype* src_data = src.cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					int src_offset = height * width;
 					int* c_src_offset = new int[channel];
@@ -201,7 +347,7 @@ namespace glasssix
 
 					delete [] c_src_offset;
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -220,13 +366,13 @@ namespace glasssix
 
 
 			/// <summary>
-			/// transfer mat to tensor
+			/// transfer mat to memory::tensor
 			/// </summary>
 			/// <param name="src">original mat</param>
-			/// <param name="dst">new tensor</param>
-			/// <param name="order">order type of new tensor: NCHW / NHWC(default)</param>
+			/// <param name="dst">new memory::tensor</param>
+			/// <param name="order">order type of new memory::tensor: memory::NCHW / memory::NHWC(default)</param>
 			template <typename Dtype>
-			static void mat2tensor_cpu(const cv::Mat &src, std::shared_ptr<tensor<Dtype>>& dst, orderType order = NHWC)
+			static void mat2tensor_cpu(const cv::Mat &src, std::shared_ptr<memory::tensor<Dtype>>& dst, orderType order = memory::NHWC)
 			{
 				if (src.data == NULL)
 				{
@@ -321,9 +467,9 @@ namespace glasssix
 				}
 #endif // _MSC_VER
 
-				if (order == NCHW)
+				if (order == memory::NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, -1, NCHW));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{1, channels, height, width}, -1, memory::NCHW));
 					Dtype* dst_data = dst->mutable_cpu_data();
 					int dst_offset = width * height;
 					int* c_dst_offset = new int[channels];
@@ -350,9 +496,9 @@ namespace glasssix
 
 					delete [] c_dst_offset;
 				}
-				else if (order == NHWC)
+				else if (order == memory::NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, -1, NHWC));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, channels}, -1, memory::NHWC));
 					Dtype* dst_data = dst->mutable_cpu_data();
 					memcpy(dst_data, src.data, height * width * channels * sizeof(Dtype));
 				}
@@ -365,13 +511,13 @@ namespace glasssix
 
 
 			/// <summary>
-			/// transfer mat to tensor
+			/// transfer mat to memory::tensor
 			/// </summary>
 			/// <param name="src">original mat</param>
-			/// <param name="dst">new tensor</param>
-			/// <param name="order">order type of new tensor: NCHW / NHWC(default)</param>
+			/// <param name="dst">new memory::tensor</param>
+			/// <param name="order">order type of new memory::tensor: memory::NCHW / memory::NHWC(default)</param>
 			template <typename Dtype>
-			static void mat2tensor_cpu(const cv::Mat &src, tensor<Dtype>& dst, orderType order = NHWC)
+			static void mat2tensor_cpu(const cv::Mat &src, memory::tensor<Dtype>& dst, orderType order = memory::NHWC)
 			{
 				if (src.data == nullptr)
 				{
@@ -466,9 +612,9 @@ namespace glasssix
 				}
 #endif // _MSC_VER
 
-				if (order == NCHW)
+				if (order == memory::NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1, NCHW);
+					dst = memory::tensor<Dtype>(std::vector<int>{1, channel, height, width}, -1, memory::NCHW);
 					Dtype* dst_data = dst.mutable_cpu_data();
 					int dst_offset = width * height;
 					int* c_dst_offset = new int[channel];
@@ -495,9 +641,9 @@ namespace glasssix
 
 					delete [] c_dst_offset;
 				}
-				else if (order == NHWC)
+				else if (order == memory::NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, NHWC);
+					dst = memory::tensor<Dtype>(std::vector<int>{1, height, width, channel}, -1, memory::NHWC);
 					Dtype* dst_data = dst.mutable_cpu_data();
 					memcpy(dst_data, src.data, height * width * channel * sizeof(Dtype));
 				}
@@ -512,32 +658,32 @@ namespace glasssix
 
 
 			/// <summary>
-			/// convert between different datatype of tensor
+			/// convert between different datatype of memory::tensor
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void type_converter_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst);
+			static void type_converter_cpu(const std::shared_ptr<memory::tensor<DtypeSRC>> &src, std::shared_ptr<memory::tensor<DtypeDST>> &dst);
 
 
 
 			/// <summary>
-			/// convert between different datatype of tensor
+			/// convert between different datatype of memory::tensor
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void type_converter_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst);
+			static void type_converter_cpu(const memory::tensor<DtypeSRC> &src, memory::tensor<DtypeDST> &dst);
 
 
 
 			/// <summary>
-			/// convert tensor(NCHW) to tensor(NHWC)
+			/// convert memory::tensor(memory::NCHW) to memory::tensor(memory::NHWC)
 			/// </summary>
-			/// <param name="src">original tensor(NCHW)</param>
-			/// <param name="dst">new tensor(NHWC)</param>
+			/// <param name="src">original memory::tensor(memory::NCHW)</param>
+			/// <param name="dst">new memory::tensor(memory::NHWC)</param>
 			template <typename Dtype>
-			static void nchw2nhwc_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst)
+			static void nchw2nhwc_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -545,15 +691,15 @@ namespace glasssix
 					return;
 				}
 
-				CHECK_EQ(src->order(), NCHW);
+				CHECK_EQ(src->order(), memory::NCHW);
 				int num = src->num();
 				int height = src->height();
 				int width = src->width();
 				int channels = src->channels();
 				int offset = height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), NHWC));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, height, width, channels}, src->device(), memory::NHWC));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -577,18 +723,18 @@ namespace glasssix
 					}
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
 
 			/// <summary>
-			/// convert tensor(NCHW) to tensor(NHWC)
+			/// convert memory::tensor(memory::NCHW) to memory::tensor(memory::NHWC)
 			/// </summary>
-			/// <param name="src">original tensor(NCHW)</param>
-			/// <param name="dst">new tensor(NHWC)</param>
+			/// <param name="src">original memory::tensor(memory::NCHW)</param>
+			/// <param name="dst">new memory::tensor(memory::NHWC)</param>
 			template <typename Dtype>
-			static void nchw2nhwc_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst)
+			static void nchw2nhwc_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -596,14 +742,14 @@ namespace glasssix
 					return;
 				}
 
-				CHECK_EQ(src.order(), NCHW);
+				CHECK_EQ(src.order(), memory::NCHW);
 				int num = src.num();
 				int height = src.height();
 				int width = src.width();
 				int channels = src.channels();
 				int offset = height * width;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), NHWC);
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(std::vector<int>{num, height, width, channels}, src.device(), memory::NHWC);
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -633,12 +779,12 @@ namespace glasssix
 
 
 			/// <summary>
-			/// convert tensor(NHWC) to tensor(NCHW)
+			/// convert memory::tensor(memory::NHWC) to memory::tensor(memory::NCHW)
 			/// </summary>
-			/// <param name="src">original tensor(NHWC)</param>
-			/// <param name="dst">new tensor(NCHW)</param>
+			/// <param name="src">original memory::tensor(memory::NHWC)</param>
+			/// <param name="dst">new memory::tensor(memory::NCHW)</param>
 			template <typename Dtype>
-			static void nhwc2nchw_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst)
+			static void nhwc2nchw_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -646,15 +792,15 @@ namespace glasssix
 					return;
 				}
 
-				CHECK_EQ(src->order(), NHWC);
+				CHECK_EQ(src->order(), memory::NHWC);
 				int num = src->num();
 				int height = src->height();
 				int width = src->width();
 				int channels = src->channels();
 				int offset = height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), NCHW));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, height, width}, src->device(), memory::NCHW));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -678,18 +824,18 @@ namespace glasssix
 					}
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
 
 			/// <summary>
-			/// convert tensor(NHWC) to tensor(NCHW)
+			/// convert memory::tensor(memory::NHWC) to memory::tensor(memory::NCHW)
 			/// </summary>
-			/// <param name="src">original tensor(NHWC)</param>
-			/// <param name="dst">new tensor(NCHW)</param>
+			/// <param name="src">original memory::tensor(memory::NHWC)</param>
+			/// <param name="dst">new memory::tensor(memory::NCHW)</param>
 			template <typename Dtype>
-			static void nhwc2nchw_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst)
+			static void nhwc2nchw_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -697,14 +843,14 @@ namespace glasssix
 					return;
 				}
 
-				CHECK_EQ(src.order(), NHWC);
+				CHECK_EQ(src.order(), memory::NHWC);
 				int num = src.num();
 				int height = src.height();
 				int width = src.width();
 				int channels = src.channels();
 				int offset = height * width;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), NCHW);
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, height, width}, src.device(), memory::NCHW);
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -736,13 +882,13 @@ namespace glasssix
 			/// <summary>
 			/// resize image data
 			/// </summary>
-			/// <param name="src">tensor of image with original size(height and width)</param>
-			/// <param name="dst">tensor of image with new size</param>
+			/// <param name="src">memory::tensor of image with original size(height and width)</param>
+			/// <param name="dst">memory::tensor of image with new size</param>
 			/// <param name="dst_height">new height</param>
 			/// <param name="dst_width">new width</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype>
-			static void resize_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst,
+			static void resize_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst,
 				int dst_height, int dst_width, interpolationType type = Bilinear)
 			{
 				if (src->device() >= 0)
@@ -769,14 +915,14 @@ namespace glasssix
 
 				if (dst_width == width && dst_height == height)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				if (src->order() == NCHW)
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				if (src->order() == memory::NCHW)
 				{					
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -932,13 +1078,13 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					float width_ratio = (float)width / dst_width;
 					float height_ratio = (float)height / dst_height;
 					float beta = 0.5f;
 
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -1007,7 +1153,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1015,13 +1161,13 @@ namespace glasssix
 			/// <summary>
 			/// resize image data
 			/// </summary>
-			/// <param name="src">tensor of image with original size(height and width)</param>
-			/// <param name="dst">tensor of image with new size</param>
+			/// <param name="src">memory::tensor of image with original size(height and width)</param>
+			/// <param name="dst">memory::tensor of image with new size</param>
 			/// <param name="dst_height">new height</param>
 			/// <param name="dst_width">new width</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype>
-			static void resize_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst,
+			static void resize_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst,
 				int dst_height, int dst_width, interpolationType type = Bilinear)
 			{
 				if (src.device() >= 0)
@@ -1052,10 +1198,10 @@ namespace glasssix
 					return;
 				}
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -1210,13 +1356,13 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					float width_ratio = (float)width / dst_width;
 					float height_ratio = (float)height / dst_height;
 					float beta = 0.5f;
 
-					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -1293,15 +1439,15 @@ namespace glasssix
 			/// <summary>
 			/// rotate around center point, height and width will be changed
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="theta">rotation angle, anti-clockwise is positive</param>
 			/// <param name="dst_height">new height after rotate</param>
 			/// <param name="dst_width">new width after rotate</param>
 			/// <param name="fill_pixel_value">pixel value to fill in the blank area, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype>
-			static void rotate_with_center_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void rotate_with_center_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				float theta, int &dst_height, int &dst_width, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src->device() >= 0)
@@ -1312,7 +1458,7 @@ namespace glasssix
 
 				if (fabs(theta) <= 1e-6)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -1336,10 +1482,10 @@ namespace glasssix
 				float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 				float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				if (src->order() == NCHW)
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				if (src->order() == memory::NCHW)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -1407,9 +1553,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -1482,7 +1628,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1490,15 +1636,15 @@ namespace glasssix
 			/// <summary>
 			/// rotate around center point, height and width will be changed
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="theta">rotation angle, anti-clockwise is positive</param>
 			/// <param name="dst_height">new height after rotate</param>
 			/// <param name="dst_width">new width after rotate</param>
 			/// <param name="fill_pixel_value">pixel value to fill in the blank area, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype>
-			static void rotate_with_center_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
+			static void rotate_with_center_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst,
 				float theta, int &dst_height, int &dst_width, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src.device() >= 0)
@@ -1533,10 +1679,10 @@ namespace glasssix
 				float VarX = (float)(-dst_width * cosa / 2.0f - dst_height * sina / 2.0f + width / 2.0f);
 				float VarY = (float)(dst_width * sina / 2.0f - dst_height * cosa / 2.0f + height / 2.0f);
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -1604,9 +1750,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -1687,15 +1833,15 @@ namespace glasssix
 			/// <summary>
 			/// rotate around any point, height and width will be constant
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="center">rotation center</param>
 			/// <param name="theta">rotation angle, anti-clockwise is positive</param>
 			/// <param name="scale">ratio of scale, 1 by default</param>
 			/// <param name="fill_pixel_value">pixel value to fill in the blank area, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype, typename Ptype>
-			static void rotate_with_points_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst,
+			static void rotate_with_points_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst,
 				const point<Ptype> &center, float theta, float scale = 1.0f, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src->device() >= 0)
@@ -1706,7 +1852,7 @@ namespace glasssix
 
 				if (fabs(theta) <= 1e-6)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -1718,8 +1864,8 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
@@ -1755,7 +1901,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -1821,7 +1967,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -1893,7 +2039,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -1901,15 +2047,15 @@ namespace glasssix
 			/// <summary>
 			/// rotate around any point, height and width will be constant
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="center">rotation center</param>
 			/// <param name="theta">rotation angle, anti-clockwise is positive</param>
 			/// <param name="scale">ratio of scale, 1 by default</param>
 			/// <param name="fill_pixel_value">pixel value to fill in the blank area, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype, typename Ptype>
-			static void rotate_with_points_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst,
+			static void rotate_with_points_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst,
 				const point<Ptype> &center, float theta, float scale = 1.0f, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src.device() >= 0)
@@ -1932,7 +2078,7 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
@@ -1969,7 +2115,7 @@ namespace glasssix
 					return;
 				}
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -2036,7 +2182,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -2117,12 +2263,12 @@ namespace glasssix
 			/// <summary>
 			/// draw rectangle
 			/// </summary>
-			/// <param name="dst">tensor with image data</param>
+			/// <param name="dst">memory::tensor with image data</param>
 			/// <param name="rect">rectangle to be drawn</param>
 			/// <param name="color">color of lines</param>
 			/// <param name="thickness">thickness of lines, 2 pixels by default</param>
 			template <typename Dtype, typename Rtype>
-			static void draw_rectangle_cpu(std::shared_ptr<tensor<Dtype>>& dst, rectangle<Rtype> rect, color color, int thickness = 2)
+			static void draw_rectangle_cpu(std::shared_ptr<memory::tensor<Dtype>>& dst, rectangle<Rtype> rect, color color, int thickness = 2)
 			{
 				if (dst->device() >= 0)
 				{
@@ -2216,7 +2362,7 @@ namespace glasssix
 					fill_color[1] = color.g;
 					fill_color[2] = color.b;
 
-					if (dst->order() == NCHW)
+					if (dst->order() == memory::NCHW)
 					{
 						for (int n = 0; n < num; n++)
 						{
@@ -2264,7 +2410,7 @@ namespace glasssix
 							}
 						}
 					}
-					else if (dst->order() == NHWC)
+					else if (dst->order() == memory::NHWC)
 					{
 						for (int n = 0; n < num; n++)
 						{
@@ -2338,12 +2484,12 @@ namespace glasssix
 			/// <summary>
 			/// draw rectangle
 			/// </summary>
-			/// <param name="dst">tensor with image data</param>
+			/// <param name="dst">memory::tensor with image data</param>
 			/// <param name="rect">rectangle to be drawn</param>
 			/// <param name="color">color of lines</param>
 			/// <param name="thickness">thickness of lines, 2 pixels by default</param>
 			template <typename Dtype, typename Rtype>
-			static void draw_rectangle_cpu(tensor<Dtype>& dst, rectangle<Rtype> rect, color color, int thickness = 2)
+			static void draw_rectangle_cpu(memory::tensor<Dtype>& dst, rectangle<Rtype> rect, color color, int thickness = 2)
 			{
 				if (dst.device() >= 0)
 				{
@@ -2437,7 +2583,7 @@ namespace glasssix
 					fill_color[1] = color.g;
 					fill_color[2] = color.b;
 
-					if (dst.order() == NCHW)
+					if (dst.order() == memory::NCHW)
 					{
 						for (int n = 0; n < num; n++)
 						{
@@ -2486,7 +2632,7 @@ namespace glasssix
 							}
 						}
 					}
-					else if (dst.order() == NHWC)
+					else if (dst.order() == memory::NHWC)
 					{
 						for (int n = 0; n < num; n++)
 						{
@@ -2560,13 +2706,13 @@ namespace glasssix
 			/// <summary>
 			/// draw circle
 			/// </summary>
-			/// <param name="dst">tensor with image data</param>
+			/// <param name="dst">memory::tensor with image data</param>
 			/// <param name="center">circle center</param>
 			/// <param name="radius">radius</param>
 			/// <param name="color">color of lines</param>
 			/// <param name="thickness">thickness of lines, 2 pixels by default</param>
 			template <typename Dtype, typename Rtype>
-			static void draw_circle_cpu(std::shared_ptr<tensor<Dtype>>& dst, point<Rtype> center, int radius, color color, int thickness = 2)
+			static void draw_circle_cpu(std::shared_ptr<memory::tensor<Dtype>>& dst, point<Rtype> center, int radius, color color, int thickness = 2)
 			{
 				if (dst->device() >= 0)
 				{
@@ -2644,7 +2790,7 @@ namespace glasssix
 								fill_color[1] = color.g;
 								fill_color[2] = color.b;
 
-								if (dst->order() == NCHW)
+								if (dst->order() == memory::NCHW)
 								{
 									for (int n = 0; n < num; n++)
 									{
@@ -2685,7 +2831,7 @@ namespace glasssix
 										}
 									}
 								}
-								else if (dst->order() == NHWC)
+								else if (dst->order() == memory::NHWC)
 								{
 									int pos_x11_y11 = (y11 * width + x11) * 3;
 									int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2781,7 +2927,7 @@ namespace glasssix
 							fill_color[1] = color.g;
 							fill_color[2] = color.b;
 
-							if (dst->order() == NCHW)
+							if (dst->order() == memory::NCHW)
 							{
 								for (int n = 0; n < num; n++)
 								{
@@ -2809,7 +2955,7 @@ namespace glasssix
 									}
 								}
 							}
-							else if (dst->order() == NHWC)
+							else if (dst->order() == memory::NHWC)
 							{
 								int pos_x11_y11 = (y11 * width + x11) * 3;
 								int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -2871,13 +3017,13 @@ namespace glasssix
 			/// <summary>
 			/// draw circle
 			/// </summary>
-			/// <param name="dst">tensor with image data</param>
+			/// <param name="dst">memory::tensor with image data</param>
 			/// <param name="center">circle center</param>
 			/// <param name="radius">radius</param>
 			/// <param name="color">color of lines</param>
 			/// <param name="thickness">thickness of lines, 2 pixels by default</param>
 			template <typename Dtype, typename Rtype>
-			static void draw_circle_cpu(tensor<Dtype>& dst, point<Rtype> center, int radius, color color, int thickness = 2)
+			static void draw_circle_cpu(memory::tensor<Dtype>& dst, point<Rtype> center, int radius, color color, int thickness = 2)
 			{
 				if (dst.device() >= 0)
 				{
@@ -2953,7 +3099,7 @@ namespace glasssix
 								fill_color[1] = color.g;
 								fill_color[2] = color.b;
 
-								if (dst.order() == NCHW)
+								if (dst.order() == memory::NCHW)
 								{
 									for (int n = 0; n < num; n++)
 									{
@@ -2992,7 +3138,7 @@ namespace glasssix
 										}
 									}
 								}
-								else if (dst.order() == NHWC)
+								else if (dst.order() == memory::NHWC)
 								{
 									int pos_x11_y11 = (y11 * width + x11) * 3;
 									int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -3088,7 +3234,7 @@ namespace glasssix
 							fill_color[1] = color.g;
 							fill_color[2] = color.b;
 
-							if (dst.order() == NCHW)
+							if (dst.order() == memory::NCHW)
 							{
 								for (int n = 0; n < num; n++)
 								{
@@ -3115,7 +3261,7 @@ namespace glasssix
 									}
 								}
 							}
-							else if (dst.order() == NHWC)
+							else if (dst.order() == memory::NHWC)
 							{
 								int pos_x11_y11 = (y11 * width + x11) * 3;
 								int pos_x11_y12 = (y12 * width + x11) * 3;
@@ -3177,11 +3323,11 @@ namespace glasssix
 			/// <summary>
 			/// flip image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="axis">flip axis: Width_Wise(default) / Height_Wise / Center_Wise(flip both height and width) / Channel_Wise</param>
 			template <typename Dtype>
-			static void flip_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, flipType axis = Width_Wise)
+			static void flip_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, flipType axis = Width_Wise)
 			{
 				if (src->device() >= 0)
 				{
@@ -3196,12 +3342,12 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					if (axis == Width_Wise)
 					{
@@ -3287,7 +3433,7 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					if (axis == Width_Wise)
 					{
@@ -3380,7 +3526,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -3388,11 +3534,11 @@ namespace glasssix
 			/// <summary>
 			/// flip image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="axis">flip axis: Width_Wise(default) / Height_Wise / Center_Wise(flip both height and width) / Channel_Wise</param>
 			template <typename Dtype>
-			static void flip_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst, flipType axis = Width_Wise)
+			static void flip_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, flipType axis = Width_Wise)
 			{
 				if (src.device() >= 0)
 				{
@@ -3407,11 +3553,11 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					if (axis == Width_Wise)
 					{
@@ -3497,7 +3643,7 @@ namespace glasssix
 						LOG(ERROR) << "Un-support flip type.";
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					if (axis == Width_Wise)
 					{
@@ -3598,9 +3744,9 @@ namespace glasssix
 			/// <summary>
 			/// convert 3 channels image to 1 channel
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
-			static void rgb2gray_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst)
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
+			static void rgb2gray_cpu(const std::shared_ptr<memory::tensor<unsigned char>> &src, std::shared_ptr<memory::tensor<unsigned char>>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -3621,11 +3767,11 @@ namespace glasssix
 					return;
 				}
 
-				std::shared_ptr<tensor<unsigned char>> dst_temp;
+				std::shared_ptr<memory::tensor<unsigned char>> dst_temp;
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					dst_temp.reset(new tensor<unsigned char>(std::vector<int>{num, 1, height, width}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<unsigned char>(std::vector<int>{num, 1, height, width}, src->device(), src->order()));
 					const unsigned char* src_data = src->cpu_data();
 					unsigned char* dst_data = dst_temp->mutable_cpu_data();
 
@@ -3633,7 +3779,7 @@ namespace glasssix
 
 					//B / G / R
 					mm_type factor_float32[] = { mm_set1_ps(0.114f), mm_set1_ps(0.587f), mm_set1_ps(0.299f) };
-					std::shared_ptr<tensor<float>> temp_float_tensor = std::make_shared<tensor<float>>(mm_align_size);
+					std::shared_ptr<memory::tensor<float>> temp_float_tensor = std::make_shared<memory::tensor<float>>(mm_align_size);
 					float *temp_float_data = temp_float_tensor->mutable_cpu_data();
 
 					__m128i temp_uint8_B, temp_uint8_G, temp_uint8_R;
@@ -3696,9 +3842,9 @@ namespace glasssix
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<unsigned char>(std::vector<int>{num, height, width, 1}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<unsigned char>(std::vector<int>{num, height, width, 1}, src->device(), src->order()));
 					const unsigned char* src_data = src->cpu_data();
 					unsigned char* dst_data = dst_temp->mutable_cpu_data();
 
@@ -3726,7 +3872,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<unsigned char>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<unsigned char>>(dst_temp->clone());
 			}
 
 
@@ -3734,9 +3880,9 @@ namespace glasssix
 			/// <summary>
 			/// convert 3 channels image to 1 channel
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
-			static void rgb2gray_cpu(const tensor<unsigned char> &src, tensor<unsigned char>& dst)
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
+			static void rgb2gray_cpu(const memory::tensor<unsigned char> &src, memory::tensor<unsigned char>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -3757,11 +3903,11 @@ namespace glasssix
 					return;
 				}
 
-				tensor<unsigned char> dst_temp;
+				memory::tensor<unsigned char> dst_temp;
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<unsigned char>(std::vector<int>{num, 1, height, width}, src.device(), src.order());
+					dst_temp = memory::tensor<unsigned char>(std::vector<int>{num, 1, height, width}, src.device(), src.order());
 					const unsigned char* src_data = src.cpu_data();
 					unsigned char* dst_data = dst_temp.mutable_cpu_data();
 
@@ -3769,7 +3915,7 @@ namespace glasssix
 
 					//B / G / R
 					mm_type factor_float32[] = { mm_set1_ps(0.114f), mm_set1_ps(0.587f), mm_set1_ps(0.299f) };
-					std::shared_ptr<tensor<float>> temp_float_tensor = std::make_shared<tensor<float>>(mm_align_size);
+					std::shared_ptr<memory::tensor<float>> temp_float_tensor = std::make_shared<memory::tensor<float>>(mm_align_size);
 					float *temp_float_data = temp_float_tensor->mutable_cpu_data();
 
 					__m128i temp_uint8_B, temp_uint8_G, temp_uint8_R;
@@ -3832,9 +3978,9 @@ namespace glasssix
 #endif //!SIMD_TYPE >= SIMDTYPE_SSE
 
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<unsigned char>(std::vector<int>{num, height, width, 1}, src.device(), src.order());
+					dst_temp = memory::tensor<unsigned char>(std::vector<int>{num, height, width, 1}, src.device(), src.order());
 					const unsigned char* src_data = src.cpu_data();
 					unsigned char* dst_data = dst_temp.mutable_cpu_data();
 
@@ -3870,9 +4016,9 @@ namespace glasssix
 			/// <summary>
 			/// convert rgb image to hsv image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
-			static void rgb2hsv_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<unsigned char>>& dst)
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
+			static void rgb2hsv_cpu(const std::shared_ptr<memory::tensor<unsigned char>> &src, std::shared_ptr<memory::tensor<unsigned char>>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -3893,12 +4039,12 @@ namespace glasssix
 					return;
 				}
 
-				std::shared_ptr<tensor<unsigned char>> dst_temp;
-				dst_temp.reset(new tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src->device(), NCHW));
+				std::shared_ptr<memory::tensor<unsigned char>> dst_temp;
+				dst_temp.reset(new memory::tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src->device(), memory::NCHW));
 				const unsigned char* src_data = src->cpu_data();
 				unsigned char* dst_data = dst_temp->mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -3959,7 +4105,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -4026,7 +4172,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<unsigned char>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<unsigned char>>(dst_temp->clone());
 			}
 
 
@@ -4034,9 +4180,9 @@ namespace glasssix
 			/// <summary>
 			/// convert rgb image to hsv image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
-			static void rgb2hsv_cpu(const tensor<unsigned char> &src, tensor<unsigned char>& dst)
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
+			static void rgb2hsv_cpu(const memory::tensor<unsigned char> &src, memory::tensor<unsigned char>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -4057,11 +4203,11 @@ namespace glasssix
 					return;
 				}
 
-				tensor<unsigned char> dst_temp = tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src.device(), NCHW);
+				memory::tensor<unsigned char> dst_temp = memory::tensor<unsigned char>(std::vector<int>{num, 3, height, width}, src.device(), memory::NCHW);
 				const unsigned char* src_data = src.cpu_data();
 				unsigned char* dst_data = dst_temp.mutable_cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -4122,7 +4268,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -4197,10 +4343,10 @@ namespace glasssix
 			/// <summary>
 			/// matrix transpose
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void matrix_transpose_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+			static void matrix_transpose_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -4215,10 +4361,10 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				if (src->order() == NCHW)
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				if (src->order() == memory::NCHW)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, width, height}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 
@@ -4238,9 +4384,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, width, height, channels}, src->device(), src->order()));
 					const Dtype* src_data = src->cpu_data();
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 
@@ -4268,7 +4414,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -4276,10 +4422,10 @@ namespace glasssix
 			/// <summary>
 			/// matrix transpose
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void matrix_transpose_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst)
+			static void matrix_transpose_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -4294,10 +4440,10 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, width, height}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 
@@ -4317,9 +4463,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, width, height, channels}, src.device(), src.order());
 					const Dtype* src_data = src.cpu_data();
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 
@@ -4355,11 +4501,11 @@ namespace glasssix
 			/// <summary>
 			/// get ROI(region of interest) from image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">ROI tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">ROI memory::tensor</param>
 			/// <param name="rect">ROI rectangle</param>
 			template <typename Dtype, typename Rtype>
-			static void roi_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, rectangle<Rtype> rect)
+			static void roi_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, rectangle<Rtype> rect)
 			{
 				if (src->device() >= 0)
 				{
@@ -4386,13 +4532,13 @@ namespace glasssix
 
 				if (dst_height == height && dst_width == width)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -4415,9 +4561,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -4454,11 +4600,11 @@ namespace glasssix
 			/// <summary>
 			/// get ROI(region of interest) from image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">ROI tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">ROI memory::tensor</param>
 			/// <param name="rect">ROI rectangle</param>
 			template <typename Dtype, typename Rtype>
-			static void roi_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst, rectangle<Rtype> rect)
+			static void roi_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, rectangle<Rtype> rect)
 			{
 				if (src.device() >= 0)
 				{
@@ -4490,9 +4636,9 @@ namespace glasssix
 					return;
 				}
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					dst = memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -4515,9 +4661,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					dst = memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 					Dtype* dst_data = dst.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -4554,8 +4700,8 @@ namespace glasssix
 			/// <summary>
 			/// expand border
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="top">pixels to expand at top of image</param>
 			/// <param name="bottom">pixels to expand at bottom of image</param>
 			/// <param name="left">pixels to expand at left of image</param>
@@ -4563,7 +4709,7 @@ namespace glasssix
 			/// <param name="type">borderType: Border_Constant(default, use constant pixel value(fill_pixel_value) to fill in new blank area) / Border_Replicate(replicate neighboring pixel to fill in new blank area)</param>
 			/// <param name="fill_pixel_value">validate when borderType is Border_Constant, zero by default</param>
 			template <typename Dtype>
-			static void make_border_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst,
+			static void make_border_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst,
 				int top, int bottom, int left, int right, borderType type = Border_Constant, Dtype fill_pixel_value = 0)
 			{
 				if (src->device() >= 0)
@@ -4592,14 +4738,14 @@ namespace glasssix
 
 				if (dst_height == height && dst_width == width)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				if (src->order() == NCHW)
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				if (src->order() == memory::NCHW)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -4739,9 +4885,9 @@ namespace glasssix
 						return;
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -4924,7 +5070,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -4932,8 +5078,8 @@ namespace glasssix
 			/// <summary>
 			/// expand border
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="top">pixels to expand at top of image</param>
 			/// <param name="bottom">pixels to expand at bottom of image</param>
 			/// <param name="left">pixels to expand at left of image</param>
@@ -4941,7 +5087,7 @@ namespace glasssix
 			/// <param name="type">borderType: Border_Constant(default, use constant pixel value(fill_pixel_value) to fill in new blank area) / Border_Replicate(replicate neighboring pixel to fill in new blank area)</param>
 			/// <param name="fill_pixel_value">validate when borderType is Border_Constant, zero by default</param>
 			template <typename Dtype>
-			static void make_border_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst,
+			static void make_border_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst,
 				int top, int bottom, int left, int right, borderType type = Border_Constant, Dtype fill_pixel_value = 0)
 			{
 				if (src.device() >= 0)
@@ -4974,10 +5120,10 @@ namespace glasssix
 					return;
 				}
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -5099,9 +5245,9 @@ namespace glasssix
 						return;
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -5276,15 +5422,15 @@ namespace glasssix
 			/// <summary>
 			/// cut border
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="top">pixels to cut at top of image</param>
 			/// <param name="bottom">pixels to cut at bottom of image</param>
 			/// <param name="left">pixels to cut at left of image</param>
 			/// <param name="right">pixels to cut at right of image</param>
 			template <typename Dtype>
-			static void cut_border_cpu(const std::shared_ptr<tensor<Dtype>> &src,
-				std::shared_ptr<tensor<Dtype>>& dst, int top, int bottom, int left, int right)
+			static void cut_border_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src,
+				std::shared_ptr<memory::tensor<Dtype>>& dst, int top, int bottom, int left, int right)
 			{
 				if (src->device() >= 0)
 				{
@@ -5311,7 +5457,7 @@ namespace glasssix
 				int dst_num_offset = channels * dst_height * dst_width;
 				if (dst_height == height && dst_width == width)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -5321,10 +5467,10 @@ namespace glasssix
 					return;
 				}
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				if (src->order() == NCHW)
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				if (src->order() == memory::NCHW)
 				{					
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -5347,9 +5493,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
 					Dtype* dst_data = dst_temp->mutable_cpu_data();
 					const Dtype* src_data = src->cpu_data();
 
@@ -5371,7 +5517,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -5379,15 +5525,15 @@ namespace glasssix
 			/// <summary>
 			/// cut border
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="top">pixels to cut at top of image</param>
 			/// <param name="bottom">pixels to cut at bottom of image</param>
 			/// <param name="left">pixels to cut at left of image</param>
 			/// <param name="right">pixels to cut at right of image</param>
 			template <typename Dtype>
-			static void cut_border_cpu(const tensor<Dtype> &src,
-				tensor<Dtype>& dst, int top, int bottom, int left, int right)
+			static void cut_border_cpu(const memory::tensor<Dtype> &src,
+				memory::tensor<Dtype>& dst, int top, int bottom, int left, int right)
 			{
 				if (src.device() >= 0)
 				{
@@ -5425,10 +5571,10 @@ namespace glasssix
 					return;
 				}
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -5450,9 +5596,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src.device(), src.order());
 					Dtype* dst_data = dst_temp.mutable_cpu_data();
 					const Dtype* src_data = src.cpu_data();
 
@@ -5481,10 +5627,10 @@ namespace glasssix
 			/// <summary>
 			/// for image(w*h), calculate integral mapping((w+1)*(h+1)), first row and first col are zeros in integral mapping
 			/// </summary>
-			/// <param name="src">image tensor</param>
-			/// <param name="dst">integral mapping tensor</param>
+			/// <param name="src">image memory::tensor</param>
+			/// <param name="dst">integral mapping memory::tensor</param>
 			template <typename Stype, typename Dtype>
-			static void fast_integral_cpu(const std::shared_ptr<tensor<Stype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+			static void fast_integral_cpu(const std::shared_ptr<memory::tensor<Stype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -5499,9 +5645,9 @@ namespace glasssix
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height + 1) * (width + 1);
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, channels, height + 1, width + 1}, src->device(), src->order()));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, height + 1, width + 1}, src->device(), src->order()));
 					const Stype* src_data = src->cpu_data();
 					Dtype* dst_data = dst->mutable_cpu_data();
 					memset(dst_data, (Dtype)0, num * channels * (height + 1) * (width + 1) * sizeof(Dtype));
@@ -5545,9 +5691,9 @@ namespace glasssix
 
 					delete[] columnSum;
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{num, height + 1, width + 1, channels}, src->device(), src->order()));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{num, height + 1, width + 1, channels}, src->device(), src->order()));
 					const Stype* src_data = src->cpu_data();
 					Dtype* dst_data = dst->mutable_cpu_data();
 					memset(dst_data, (Dtype)0, num * channels * (height + 1) * (width + 1) * sizeof(Dtype));
@@ -5599,10 +5745,10 @@ namespace glasssix
 			/// <summary>
 			/// for image(w*h), calculate integral mapping((w+1)*(h+1)), first row and first col are zeros in integral mapping
 			/// </summary>
-			/// <param name="src">image tensor</param>
-			/// <param name="dst">integral mapping tensor</param>
+			/// <param name="src">image memory::tensor</param>
+			/// <param name="dst">integral mapping memory::tensor</param>
 			template <typename Stype, typename Dtype>
-			static void fast_integral_cpu(const tensor<Stype> &src, tensor<Dtype>& dst)
+			static void fast_integral_cpu(const memory::tensor<Stype> &src, memory::tensor<Dtype>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -5617,9 +5763,9 @@ namespace glasssix
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height + 1) * (width + 1);
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, channels, height + 1, width + 1}, src.device(), src.order());
+					dst = memory::tensor<Dtype>(std::vector<int>{num, channels, height + 1, width + 1}, src.device(), src.order());
 					const Stype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 					memset(dst_data, (Dtype)0, num * channels * (height + 1) * (width + 1) * sizeof(Dtype));
@@ -5663,9 +5809,9 @@ namespace glasssix
 
 					delete[] columnSum;
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{num, height + 1, width + 1, channels}, src.device(), src.order());
+					dst = memory::tensor<Dtype>(std::vector<int>{num, height + 1, width + 1, channels}, src.device(), src.order());
 					const Stype* src_data = src.cpu_data();
 					Dtype* dst_data = dst.mutable_cpu_data();
 					memset(dst_data, (Dtype)0, num * channels * (height + 1) * (width + 1) * sizeof(Dtype));
@@ -5717,9 +5863,9 @@ namespace glasssix
 			/// <summary>
             /// calculate histogram, gray image required
             /// </summary>
-            /// <param name="src">original tensor</param>
-            /// <param name="dst">new tensor</param>
-			static void calc_hist_cpu(const std::shared_ptr<tensor<unsigned char>> &src, std::shared_ptr<tensor<float>>& dst, int dimension = 59)
+            /// <param name="src">original memory::tensor</param>
+            /// <param name="dst">new memory::tensor</param>
+			static void calc_hist_cpu(const std::shared_ptr<memory::tensor<unsigned char>> &src, std::shared_ptr<memory::tensor<float>>& dst, int dimension = 59)
 			{
 				if (src->device() >= 0)
 				{
@@ -5733,8 +5879,8 @@ namespace glasssix
 				int width = src->width();
 				int offset = height * width;
 
-				std::shared_ptr<tensor<int>> dst_int;
-				dst_int.reset(new tensor<int>(std::vector<int>{num, 1, 1, dimension}, -1, src->order()));			
+				std::shared_ptr<memory::tensor<int>> dst_int;
+				dst_int.reset(new memory::tensor<int>(std::vector<int>{num, 1, 1, dimension}, -1, src->order()));			
 				int *dst_int_data = dst_int->mutable_cpu_data();
 
 				const unsigned char* src_data = src->cpu_data();
@@ -5776,7 +5922,7 @@ namespace glasssix
 					}
 				}
 
-				dst.reset(new tensor<float>(std::vector<int>{num, 1, 1, dimension}, src->device(), src->order()));
+				dst.reset(new memory::tensor<float>(std::vector<int>{num, 1, 1, dimension}, src->device(), src->order()));
 				float *dst_float_data = dst->mutable_cpu_data();
 
 				for (int n = 0; n < num; n++)
@@ -5798,10 +5944,10 @@ namespace glasssix
 			/// <summary>
 			/// equalize histogram, gray image required
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void equalize_hist_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst)
+			static void equalize_hist_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst)
 			{
 				if (src->device() >= 0)
 				{
@@ -5815,8 +5961,8 @@ namespace glasssix
 				int width = src->width();
 				int offset = height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -5856,7 +6002,7 @@ namespace glasssix
 					}
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -5864,10 +6010,10 @@ namespace glasssix
 			/// <summary>
 			/// equalize histogram, gray image required
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void equalize_hist_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst)
+			static void equalize_hist_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst)
 			{
 				if (src.device() >= 0)
 				{
@@ -5881,7 +6027,7 @@ namespace glasssix
 				int width = src.width();
 				int offset = height * width;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());				
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());				
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -5929,10 +6075,10 @@ namespace glasssix
 			/// <summary>
 			/// split multi-channel image to single-channel image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst_vector">array of single-channel image tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst_vector">array of single-channel image memory::tensor</param>
 			template <typename Dtype>
-			static void split_channel_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::vector<std::shared_ptr<tensor<Dtype>>>& dst_vector)
+			static void split_channel_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::vector<std::shared_ptr<memory::tensor<Dtype>>>& dst_vector)
 			{
 				if (src->device() >= 0)
 				{
@@ -5950,7 +6096,7 @@ namespace glasssix
 				const Dtype* src_data = src->cpu_data();
 				dst_vector.clear();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -5958,15 +6104,15 @@ namespace glasssix
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int channel_offset = ch * src_offset;
-							std::shared_ptr<tensor<Dtype>> temp_ptr;
-							temp_ptr.reset(new tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device(), src->order()));
+							std::shared_ptr<memory::tensor<Dtype>> temp_ptr;
+							temp_ptr.reset(new memory::tensor<Dtype>(std::vector<int>{1, 1, height, width}, src->device(), src->order()));
 							Dtype* temp_data = temp_ptr->mutable_cpu_data();
 							std::memcpy((void*)temp_data, (void*)(src_data + n_offset + channel_offset), src_offset * sizeof(Dtype));
 							dst_vector.push_back(temp_ptr);
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					dst_vector.resize(num * channels);
 					std::vector<Dtype *> ptr_arr(num * channels);
@@ -5975,7 +6121,7 @@ namespace glasssix
 					{
 						for (int ch = 0; ch < channels; ++ch)
 						{
-							dst_vector.at(n * channels + ch).reset(new tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
+							dst_vector.at(n * channels + ch).reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, 1}, src->device(), src->order()));
 							ptr_arr[n * channels + ch] = dst_vector.at(n * channels + ch)->mutable_cpu_data();
 						}
 					}
@@ -6008,10 +6154,10 @@ namespace glasssix
 			/// <summary>
 			/// split multi-channel image to single-channel image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst_vector">array of single-channel image tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst_vector">array of single-channel image memory::tensor</param>
 			template <typename Dtype>
-			static void split_channel_cpu(const tensor<Dtype> &src, std::vector<tensor<Dtype>>& dst_vector)
+			static void split_channel_cpu(const memory::tensor<Dtype> &src, std::vector<memory::tensor<Dtype>>& dst_vector)
 			{
 				if (src.device() >= 0)
 				{
@@ -6029,21 +6175,21 @@ namespace glasssix
 				const Dtype* src_data = src.cpu_data();
 				dst_vector.clear();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int channel_offset = ch * src_offset;
-							tensor<Dtype> temp_ptr = tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.order());
+							memory::tensor<Dtype> temp_ptr = memory::tensor<Dtype>(std::vector<int>{1, 1, height, width}, src.device(), src.order());
 							Dtype* temp_data = temp_ptr.mutable_cpu_data();
 							std::memcpy((void*)temp_data, (void*)(src_data + n * num_offset + channel_offset), src_offset * sizeof(Dtype));
 							dst_vector.push_back(temp_ptr);
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					dst_vector.resize(num * channels);
 					std::vector<Dtype *> ptr_arr(num * channels);
@@ -6052,7 +6198,7 @@ namespace glasssix
 					{
 						for (int ch = 0; ch < channels; ++ch)
 						{
-							dst_vector.at(n * channels + ch) = tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.order());
+							dst_vector.at(n * channels + ch) = memory::tensor<Dtype>(std::vector<int>{1, height, width, 1}, src.device(), src.order());
 							ptr_arr[n * channels + ch] = dst_vector.at(n * channels + ch).mutable_cpu_data();
 						}
 					}
@@ -6085,14 +6231,14 @@ namespace glasssix
 			/// <summary>
 			/// merge 3 single-channel images together, to create one 3-channel image 
 			/// </summary>
-			/// <param name="src_vector">array of tensors, each tensor should share the same height/width/device/order</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src_vector">array of tensors, each memory::tensor should share the same height/width/device/order</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void merge_channel_cpu(const std::vector<std::shared_ptr<tensor<Dtype>>> &src_vector, std::shared_ptr<tensor<Dtype>> &dst)
+			static void merge_channel_cpu(const std::vector<std::shared_ptr<memory::tensor<Dtype>>> &src_vector, std::shared_ptr<memory::tensor<Dtype>> &dst)
 			{
 				CHECK_EQ(src_vector.size(), 3);
 				int height, width, device;
-				orderType order;
+				memory::orderType order;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
 					CHECK_EQ(src_vector.at(i)->channels(), 1);
@@ -6122,13 +6268,13 @@ namespace glasssix
 					}
 				}
 
-				if (order == NCHW)
+				if (order == memory::NCHW)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, order));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, order));
 				}
-				else if (order == NHWC)
+				else if (order == memory::NHWC)
 				{
-					dst.reset(new tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, order));
+					dst.reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, order));
 				}
 				else
 				{
@@ -6150,14 +6296,14 @@ namespace glasssix
 			/// <summary>
 			/// merge 3 single-channel images together, to create one 3-channel image
 			/// </summary>
-			/// <param name="src_vector">array of tensors, each tensor should share the same height/width/device/order</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src_vector">array of tensors, each memory::tensor should share the same height/width/device/order</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename Dtype>
-			static void merge_channel_cpu(const std::vector<tensor<Dtype>> &src_vector, tensor<Dtype> &dst)
+			static void merge_channel_cpu(const std::vector<memory::tensor<Dtype>> &src_vector, memory::tensor<Dtype> &dst)
 			{
 				CHECK_EQ(src_vector.size(), 3);
 				int height, width, device;
-				orderType order;
+				memory::orderType order;
 				for (int i = 0; i < src_vector.size(); ++i)
 				{
 					CHECK_EQ(src_vector.at(i)->channels(), 1);
@@ -6187,13 +6333,13 @@ namespace glasssix
 					}
 				}
 
-				if (order == NCHW)
+				if (order == memory::NCHW)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, order);
+					dst = memory::tensor<Dtype>(std::vector<int>{1, 3, height, width}, device, order);
 				}
-				else if (order == NHWC)
+				else if (order == memory::NHWC)
 				{
-					dst = tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, order);
+					dst = memory::tensor<Dtype>(std::vector<int>{1, height, width, 3}, device, order);
 				}
 				else
 				{
@@ -6215,8 +6361,8 @@ namespace glasssix
 			/// <summary>
 			/// threshold image data, gray image required
 			/// </summary>
-			/// <param name="src">original tensor, gray image</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor, gray image</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="thresh">threshold value, 128 by default</param>
 			/// <param name="maxval">max value, 255 by default</param>
 			/// <param name="type">thresholdType: binary(default, set pixel value as maxval when pixel value is greater than thresh, otherwise set pixel value as 0)
@@ -6226,7 +6372,7 @@ namespace glasssix
 			///                            small_to_zero(set pixel value as 0 when pixel value is smaller than thresh, otherwise remain unchanged)
 			///                              big_to_zero(set pixel value as 0 when pixel value is greater than thresh, otherwise remain unchanged)</param>
 			template <typename Dtype>
-			static void threshold_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary)
+			static void threshold_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary)
 			{
 				if (src->device() >= 0)
 				{
@@ -6240,8 +6386,8 @@ namespace glasssix
 				int width = src->width();
 				int offset = height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype *src_data = src->cpu_data();
 
@@ -6318,7 +6464,7 @@ namespace glasssix
 					break;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -6326,8 +6472,8 @@ namespace glasssix
 			/// <summary>
 			/// threshold image data, gray image required
 			/// </summary>
-			/// <param name="src">original tensor, gray image</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor, gray image</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="thresh">threshold value, 128 by default</param>
 			/// <param name="maxval">max value, 255 by default</param>
 			/// <param name="type">thresholdType: binary(default, set pixel value as maxval when pixel value is greater than thresh, otherwise set pixel value as 0)
@@ -6337,7 +6483,7 @@ namespace glasssix
 			///                            small_to_zero(set pixel value as 0 when pixel value is smaller than thresh, otherwise remain unchanged)
 			///                              big_to_zero(set pixel value as 0 when pixel value is greater than thresh, otherwise remain unchanged)</param>
 			template <typename Dtype>
-			static void threshold_cpu(const tensor<Dtype> &src, tensor<Dtype>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary)
+			static void threshold_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype>& dst, int thresh = 128, int maxval = 255, thresholdType type = binary)
 			{
 				if (src.device() >= 0)
 				{
@@ -6350,7 +6496,7 @@ namespace glasssix
 				int height = src.height();
 				int width = src.width();
 				int offset = height * width;
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype *src_data = src.cpu_data();
 
@@ -6438,14 +6584,14 @@ namespace glasssix
 			/// <summary>
 			/// warp affine image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="src_point">3 points before warp affine</param>
 			/// <param name="dst_point">3 points after warp affine, get transformation matrix using src_point and dst_point</param>
 			/// <param name="fill_pixel_value">fill blank area with fill_pixel_value, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype, typename Ptype>
-			static void warp_affine_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst,
+			static void warp_affine_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst,
 				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src->device() >= 0)
@@ -6468,8 +6614,8 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));				
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));				
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -6502,7 +6648,7 @@ namespace glasssix
 
 				X = math_functions::gauss_all(A, B);
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -6568,7 +6714,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -6638,7 +6784,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -6646,14 +6792,14 @@ namespace glasssix
 			/// <summary>
 			/// warp affine image
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="src_point">3 points before warp affine</param>
 			/// <param name="dst_point">3 points after warp affine, get transformation matrix using src_point and dst_point</param>
 			/// <param name="fill_pixel_value">fill blank area with fill_pixel_value, zero by default</param>
 			/// <param name="type">interpolationType: Nearest / Bilinear(default)</param>
 			template <typename Dtype, typename Ptype>
-			static void warp_affine_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst,
+			static void warp_affine_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst,
 				const std::vector<point<Ptype>> &src_point, const std::vector<point<Ptype>> &dst_point, Dtype fill_pixel_value = 0, interpolationType type = Bilinear)
 			{
 				if (src.device() >= 0)
@@ -6676,7 +6822,7 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				unsigned maxIndex = height * width * channels - 1;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
@@ -6709,7 +6855,7 @@ namespace glasssix
 
 				X = math_functions::gauss_all(A, B);
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -6775,7 +6921,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -6853,11 +6999,11 @@ namespace glasssix
 			/// <summary>
 			/// gaussian blur
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="ksize">size of gaussian kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void gaussian_blur_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3)
+			static void gaussian_blur_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int ksize = 3)
 			{
 				if (src->device() >= 0)
 				{
@@ -6873,7 +7019,7 @@ namespace glasssix
 
 				if (ksize == 1)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -6905,14 +7051,14 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src->cpu_data();
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -6979,10 +7125,10 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7051,7 +7197,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -7059,11 +7205,11 @@ namespace glasssix
 			/// <summary>
 			/// gaussian blur
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="ksize">size of gaussian kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void gaussian_blur_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3)
+			static void gaussian_blur_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int ksize = 3)
 			{
 				if (src.device() >= 0)
 				{
@@ -7111,12 +7257,12 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src.cpu_data();
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
-					tensor<Dtype> temp = tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
+					memory::tensor<Dtype> temp = memory::tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order());
 					Dtype* temp_data = temp.mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7183,9 +7329,9 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					tensor<Dtype> temp = tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
+					memory::tensor<Dtype> temp = memory::tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order());
 					Dtype* temp_data = temp.mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7262,11 +7408,11 @@ namespace glasssix
 			/// <summary>
 			/// mean value blur
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void mean_value_blur_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int ksize = 3)
+			static void mean_value_blur_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int ksize = 3)
 			{
 				if (src->device() >= 0)
 				{
@@ -7282,7 +7428,7 @@ namespace glasssix
 
 				if (ksize == 1)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -7301,14 +7447,14 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src->cpu_data();
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, channels, height, width}, src->device(), src->order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7375,10 +7521,10 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, channels}, src->device(), src->order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7447,7 +7593,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -7455,11 +7601,11 @@ namespace glasssix
 			/// <summary>
 			/// mean value blur
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="ksize">size of blur kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void mean_value_blur_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int ksize = 3)
+			static void mean_value_blur_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int ksize = 3)
 			{
 				if (src.device() >= 0)
 				{
@@ -7494,13 +7640,13 @@ namespace glasssix
 				}
 
 				const Dtype* src_data = src.cpu_data();
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, channels, height, width}, src.device(), src.order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7567,10 +7713,10 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					std::shared_ptr<tensor<Dtype>> temp;
-					temp.reset(new tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order()));
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					temp.reset(new memory::tensor<Dtype>(std::vector<int>{1, height, width, channels}, src.device(), src.order()));
 					Dtype* temp_data = temp->mutable_cpu_data();
 
 					for (int n = 0; n < num; n++)
@@ -7647,12 +7793,12 @@ namespace glasssix
 			/// <summary>
 			/// calculate gradient in horizontal / vertical direction
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="dx"> 1 by default, calculate horizontal gradient when dx is greater than 0, otherwise do nothing</param>
 			/// <param name="dy"> 1 by default, calculate vertical gradient when dy is greater than 0, otherwise do nothing</param>
 			template <typename Dtype>
-			static void sobel_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int dx = 1, int dy = 1)
+			static void sobel_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int dx = 1, int dy = 1)
 			{
 				if (src->device() >= 0)
 				{
@@ -7673,12 +7819,12 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -7733,7 +7879,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -7792,7 +7938,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -7800,12 +7946,12 @@ namespace glasssix
 			/// <summary>
 			/// calculate gradient in horizontal / vertical direction
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="dx"> 1 by default, calculate horizontal gradient when dx is greater than 0, otherwise do nothing</param>
 			/// <param name="dy"> 1 by default, calculate vertical gradient when dy is greater than 0, otherwise do nothing</param>
 			template <typename Dtype>
-			static void sobel_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, int dx = 1, int dy = 1)
+			static void sobel_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, int dx = 1, int dy = 1)
 			{
 				if (src.device() >= 0)
 				{
@@ -7826,11 +7972,11 @@ namespace glasssix
 				int offset = height * width;
 				int num_offset = channels * height * width;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -7886,7 +8032,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -7953,12 +8099,12 @@ namespace glasssix
 			/// <summary>
 			/// dilate or erode image data
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="type">morphType: Dilate(default) / Erode</param>
 			/// <param name="ksize">size of square kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void morph_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, morphType type = Dilate, int ksize = 3)
+			static void morph_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, morphType type = Dilate, int ksize = 3)
 			{
 				if (src->device() >= 0)
 				{
@@ -7974,7 +8120,7 @@ namespace glasssix
 
 				if (ksize == 1)
 				{
-					dst = std::make_shared<tensor<Dtype>>(src->clone());
+					dst = std::make_shared<memory::tensor<Dtype>>(src->clone());
 					return;
 				}
 
@@ -7986,12 +8132,12 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				int half = (ksize - 1) * 0.5;
 
-				std::shared_ptr<tensor<Dtype>> dst_temp;
-				dst_temp.reset(new tensor<Dtype>(src->data_shape(), src->device(), src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
+				dst_temp.reset(new memory::tensor<Dtype>(src->data_shape(), src->device(), src->order()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					if (type == morphType::Dilate)
 					{
@@ -8092,7 +8238,7 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					if (type == morphType::Dilate)
 					{
@@ -8196,7 +8342,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -8204,12 +8350,12 @@ namespace glasssix
 			/// <summary>
 			/// dilate or erode image data
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			/// <param name="type">morphType: Dilate(default) / Erode</param>
 			/// <param name="ksize">size of square kernel, odd value required, 3 by default</param>
 			template <typename Dtype>
-			static void morph_cpu(const tensor<Dtype> &src, tensor<Dtype> &dst, morphType type = Dilate, int ksize = 3)
+			static void morph_cpu(const memory::tensor<Dtype> &src, memory::tensor<Dtype> &dst, morphType type = Dilate, int ksize = 3)
 			{
 				if (src.device() >= 0)
 				{
@@ -8237,11 +8383,11 @@ namespace glasssix
 				int num_offset = channels * height * width;
 				int half = (ksize - 1) * 0.5;
 
-				tensor<Dtype> dst_temp = tensor<Dtype>(src.data_shape(), src.device(), src.order());
+				memory::tensor<Dtype> dst_temp = memory::tensor<Dtype>(src.data_shape(), src.device(), src.order());
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 				const Dtype* src_data = src.cpu_data();
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					if (type == morphType::Dilate)
 					{
@@ -8342,7 +8488,7 @@ namespace glasssix
 						LOG(WARNING) << "unsupported type.";
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					if (type == morphType::Dilate)
 					{
@@ -8455,10 +8601,10 @@ namespace glasssix
 			/// <summary>
 			/// for image(w*h), calculate LBP feature((w-2)*(h-2))
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">LBP feature tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">LBP feature memory::tensor</param>
 			/// <param name="map_59">map_59: map 256-dimension LBP-feature to 59-dimension)</param>
-			static void lbp_feature_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59 = false)
+			static void lbp_feature_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, bool map_59 = false)
 			{
 				if (src->device() >= 0)
 				{
@@ -8472,15 +8618,15 @@ namespace glasssix
 				int width = src->width();
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height - 2) * (width - 2);
-				std::shared_ptr<tensor<Dtype>> dst_temp;
+				std::shared_ptr<memory::tensor<Dtype>> dst_temp;
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order()));
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
-					dst_temp.reset(new tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order()));
+					dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order()));
 				}
 				else
 				{
@@ -8490,7 +8636,7 @@ namespace glasssix
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8541,7 +8687,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8595,7 +8741,7 @@ namespace glasssix
 					NOT_IMPLEMENTED;
 				}
 
-				dst = std::make_shared<tensor<Dtype>>(dst_temp->clone());
+				dst = std::make_shared<memory::tensor<Dtype>>(dst_temp->clone());
 			}
 
 
@@ -8604,10 +8750,10 @@ namespace glasssix
 			/// <summary>
 			/// for image(w*h), calculate LBP feature((w-2)*(h-2))
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">LBP feature tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">LBP feature memory::tensor</param>
 			/// <param name="map_59">map_59: map 256-dimension LBP-feature to 59-dimension)</param>
-			static void lbp_feature_cpu(const tensor<Dtype>& src, tensor<Dtype>& dst, bool map_59 = false)
+			static void lbp_feature_cpu(const memory::tensor<Dtype>& src, memory::tensor<Dtype>& dst, bool map_59 = false)
 			{
 				if (src.device() >= 0)
 				{
@@ -8622,14 +8768,14 @@ namespace glasssix
 				int src_num_offset = channels * height * width;
 				int dst_num_offset = channels * (height - 2) * (width - 2);
 
-				tensor<Dtype> dst_temp;
-				if (src.order() == NCHW)
+				memory::tensor<Dtype> dst_temp;
+				if (src.order() == memory::NCHW)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, channels, height - 2, width - 2}, src->device(), src->order());
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
-					dst_temp = tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order());
+					dst_temp = memory::tensor<Dtype>(std::vector<int>{num, height - 2, width - 2, channels}, src->device(), src->order());
 				}
 				else
 				{
@@ -8638,7 +8784,7 @@ namespace glasssix
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst_temp.mutable_cpu_data();
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8688,7 +8834,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8750,13 +8896,13 @@ namespace glasssix
 			/// <summary>
 			/// calculate LBP feature with block
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">LBP feature tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">LBP feature memory::tensor</param>
 			/// <param name="block_h">block height</param>
 			/// <param name="block_w">block width</param>
 			/// <param name="stride_h">stride height</param>
 			/// <param name="stride_w">stride width</param>
-			static void mblbp_feature_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, int block_h,
+			static void mblbp_feature_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, int block_h,
 				int block_w, int stride_h, int stride_w)
 			{
 				if (src->device() >= 0)
@@ -8776,8 +8922,8 @@ namespace glasssix
 				const Dtype* src_data = src->cpu_data();
 				Dtype* dst_data = dst->mutable_cpu_data();
 
-				std::shared_ptr<tensor<Dtype>> src_tensor = std::make_shared<tensor<Dtype>>(src);
-				std::shared_ptr<tensor<Dtype>> integral_tensor = std::make_shared<tensor<Dtype>>(tensor<Dtype>::tensor(src->order()));
+				std::shared_ptr<memory::tensor<Dtype>> src_tensor = std::make_shared<memory::tensor<Dtype>>(src);
+				std::shared_ptr<memory::tensor<Dtype>> integral_tensor = std::make_shared<memory::tensor<Dtype>>(memory::tensor<Dtype>::memory::tensor(src->order()));
 				fast_integral_cpu(src_tensor, integral_tensor);
 				Dtype* integral_data = integral_tensor->mutable_cpu_data();
 
@@ -8786,7 +8932,7 @@ namespace glasssix
 				int dst_num_offset = channels * dst_height * dst_width;
 				int integral_num_offset = channels * (height + 1) * (width + 1);
 
-				if (src->order() == NCHW)
+				if (src->order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8831,7 +8977,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src->order() == NHWC)
+				else if (src->order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8885,13 +9031,13 @@ namespace glasssix
 			/// <summary>
 			/// calculate LBP feature with block
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">LBP feature tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">LBP feature memory::tensor</param>
 			/// <param name="block_h">block height</param>
 			/// <param name="block_w">block width</param>
 			/// <param name="stride_h">stride height</param>
 			/// <param name="stride_w">stride width</param>
-			static void mblbp_feature_cpu(const tensor<Dtype>& src, tensor<Dtype>& dst, int block_h,
+			static void mblbp_feature_cpu(const memory::tensor<Dtype>& src, memory::tensor<Dtype>& dst, int block_h,
 				int block_w, int stride_h, int stride_w)
 			{
 				if (src.device() >= 0)
@@ -8911,7 +9057,7 @@ namespace glasssix
 				const Dtype* src_data = src.cpu_data();
 				Dtype* dst_data = dst.mutable_cpu_data();
 
-				tensor<Dtype> integral_tensor = tensor<Dtype>::tensor(src->order());
+				memory::tensor<Dtype> integral_tensor = memory::tensor<Dtype>::memory::tensor(src->order());
 				fast_integral_cpu(src, integral_tensor);
 				Dtype* integral_data = integral_tensor.mutable_cpu_data();
 
@@ -8920,7 +9066,7 @@ namespace glasssix
 				int dst_num_offset = channels * dst_height * dst_width;
 				int integral_num_offset = channels * (height + 1) * (width + 1);
 
-				if (src.order() == NCHW)
+				if (src.order() == memory::NCHW)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -8965,7 +9111,7 @@ namespace glasssix
 						}
 					}
 				}
-				else if (src.order() == NHWC)
+				else if (src.order() == memory::NHWC)
 				{
 					for (int n = 0; n < num; n++)
 					{
@@ -9016,33 +9162,33 @@ namespace glasssix
 
 
 			/// <summary>
-			/// preprocess tensor
+			/// preprocess memory::tensor
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_cpu(const std::shared_ptr<tensor<DtypeSRC>> &src, std::shared_ptr<tensor<DtypeDST>> &dst, float means[3], float var);
+			static void preprocess_tensors_cpu(const std::shared_ptr<memory::tensor<DtypeSRC>> &src, std::shared_ptr<memory::tensor<DtypeDST>> &dst, float means[3], float var);
 
 
 
 			/// <summary>
-			/// preprocess tensor
+			/// preprocess memory::tensor
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">new tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">new memory::tensor</param>
 			template <typename DtypeSRC, typename DtypeDST>
-			static void preprocess_tensors_cpu(const tensor<DtypeSRC> &src, tensor<DtypeDST> &dst, float means[3], float var);
+			static void preprocess_tensors_cpu(const memory::tensor<DtypeSRC> &src, memory::tensor<DtypeDST> &dst, float means[3], float var);
 
 
 			
 			/// <summary>
 			/// get ROI(region of interest) from image. Similar to roi_cpu, but more safe, if rectangle exceeds border, fill 0 instead. 
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">ROI tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">ROI memory::tensor</param>
 			/// <param name="rect">region of interest</param>
 			template <typename Dtype, typename Rtype>
-			static void safty_cut_cpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, rectangle<Rtype>* rect)
+			static void safty_cut_cpu(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, rectangle<Rtype>* rect)
 			{
 				if (src->device() >= 0)
 				{
@@ -9060,16 +9206,16 @@ namespace glasssix
 					int bottom = std::max(int(rect->y + rect->h - src->height()), int(0));
 					int left = std::max(int(0), int(-1 * rect->x));
 					int right = std::max(int(rect->x + rect->w - src->width()), int(0));
-					std::shared_ptr<tensor<Dtype>> temp;
-					if (src->order() == NCHW)
+					std::shared_ptr<memory::tensor<Dtype>> temp;
+					if (src->order() == memory::NCHW)
 					{
-						temp.reset(new tensor<Dtype>(
+						temp.reset(new memory::tensor<Dtype>(
 							std::vector<int>{src->num(), src->channels(), src->height() + top + bottom, src->width() + left + right},
 							src->device(), src->order()));
 					}
-					else if (src->order() == NHWC)
+					else if (src->order() == memory::NHWC)
 					{
-						temp.reset(new tensor<Dtype>(
+						temp.reset(new memory::tensor<Dtype>(
 							std::vector<int>{src->num(), src->height() + top + bottom, src->width() + left + right, src->channels()},
 							src->device(), src->order()));
 					}
@@ -9088,11 +9234,11 @@ namespace glasssix
 			/// <summary>
 			/// get ROI(region of interest) from image. Similar to roi_cpu, but more safe, if rectangle exceeds border, fill 0 instead. 
 			/// </summary>
-			/// <param name="src">original tensor</param>
-			/// <param name="dst">ROI tensor</param>
+			/// <param name="src">original memory::tensor</param>
+			/// <param name="dst">ROI memory::tensor</param>
 			/// <param name="rect">region of interest</param>
 			template <typename Dtype, typename Rtype>
-			static void safty_cut_cpu(const tensor<Dtype>& src, tensor<Dtype>& dst, rectangle<Rtype>* rect)
+			static void safty_cut_cpu(const memory::tensor<Dtype>& src, memory::tensor<Dtype>& dst, rectangle<Rtype>* rect)
 			{
 				if (src.device() >= 0)
 				{
@@ -9110,16 +9256,16 @@ namespace glasssix
 					int bottom = std::max(rect->y + rect->h - src.height(), 0);
 					int left = std::max(0, -1 * rect->x);
 					int right = std::max(rect->x + rect->w - src.width(), 0);
-					tensor<Dtype>* temp;
-					if (src.order() == NCHW)
+					memory::tensor<Dtype>* temp;
+					if (src.order() == memory::NCHW)
 					{
-						temp = new tensor<Dtype>(
+						temp = new memory::tensor<Dtype>(
 							std::vector<int>{src.num(), src.channels(), src.height() + top + bottom, src.width() + left + right},
 							src.device(), src.order());
 					}
-					else if (src.order() == NHWC)
+					else if (src.order() == memory::NHWC)
 					{
-						temp = new tensor<Dtype>(
+						temp = new memory::tensor<Dtype>(
 							std::vector<int>{src.num(), src.height() + top + bottom, src.width() + left + right, src.channels()},
 							src.device(), src.order());
 					}
@@ -9141,15 +9287,15 @@ namespace glasssix
             /// <param name="channel1">first image</param>
             /// <param name="channel2">second image</param>
             /// <param name="result">absolute pixel-subtraction image</param>
-			static void absdiff_cpu(const std::shared_ptr<tensor<unsigned char>> &channel1, const std::shared_ptr<tensor<unsigned char>> &channel2, std::shared_ptr<tensor<unsigned char>> &result)
+			static void absdiff_cpu(const std::shared_ptr<memory::tensor<unsigned char>> &channel1, const std::shared_ptr<memory::tensor<unsigned char>> &channel2, std::shared_ptr<memory::tensor<unsigned char>> &result)
 			{
 				CHECK_EQ(channel1->num(), channel2->num());
 				CHECK_EQ(channel1->channels(), channel2->channels());
 				CHECK_EQ(channel1->height(), channel2->height());
 				CHECK_EQ(channel1->width(), channel2->width());
 
-				std::shared_ptr<tensor<unsigned char>> sub_value;
-				sub_value.reset(new tensor<unsigned char>(channel1->data_shape(), channel1->device(), channel1->order()));
+				std::shared_ptr<memory::tensor<unsigned char>> sub_value;
+				sub_value.reset(new memory::tensor<unsigned char>(channel1->data_shape(), channel1->device(), channel1->order()));
 
 				const unsigned char *channel1_data = channel1->cpu_data();
 				const unsigned char *channel2_data = channel2->cpu_data();
@@ -9173,7 +9319,7 @@ namespace glasssix
 					sub_value_data[i] = temp;
 				}
 
-				result = std::make_shared<tensor<unsigned char>>(sub_value->clone());
+				result = std::make_shared<memory::tensor<unsigned char>>(sub_value->clone());
 			}
 
 
@@ -9184,15 +9330,15 @@ namespace glasssix
             /// <param name="channel1">first image</param>
             /// <param name="channel2">second image</param>
             /// <param name="result">pixel-sum image</param>
-			static void add_channel_cpu(const std::shared_ptr<tensor<unsigned char>> &channel1, const std::shared_ptr<tensor<unsigned char>> &channel2, std::shared_ptr<tensor<unsigned char>> &result)
+			static void add_channel_cpu(const std::shared_ptr<memory::tensor<unsigned char>> &channel1, const std::shared_ptr<memory::tensor<unsigned char>> &channel2, std::shared_ptr<memory::tensor<unsigned char>> &result)
 			{
 				CHECK_EQ(channel1->num(), channel2->num());
 				CHECK_EQ(channel1->channels(), channel2->channels());
 				CHECK_EQ(channel1->height(), channel2->height());
 				CHECK_EQ(channel1->width(), channel2->width());
 
-				std::shared_ptr<tensor<unsigned char>> add_value;
-				add_value.reset(new tensor<unsigned char>(channel1->data_shape(), channel1->device(), channel1->order()));
+				std::shared_ptr<memory::tensor<unsigned char>> add_value;
+				add_value.reset(new memory::tensor<unsigned char>(channel1->data_shape(), channel1->device(), channel1->order()));
 
 				const unsigned char *channel1_data = channel1->cpu_data();
 				const unsigned char *channel2_data = channel2->cpu_data();
@@ -9216,7 +9362,7 @@ namespace glasssix
 					add_value_data[i] = temp;
 				}
 
-				result = std::make_shared<tensor<unsigned char>>(add_value->clone());
+				result = std::make_shared<memory::tensor<unsigned char>>(add_value->clone());
 			}
 
 
@@ -9224,8 +9370,8 @@ namespace glasssix
 			/// <summary>
             /// calculate mean-value of input image
             /// </summary>
-            /// <param name="array_tensor">image tensor</param>
-			static float mean_array(const std::shared_ptr<tensor<unsigned char>> &array_tensor)
+            /// <param name="array_tensor">image memory::tensor</param>
+			static float mean_array(const std::shared_ptr<memory::tensor<unsigned char>> &array_tensor)
 			{
 				const unsigned char *array_data = array_tensor->cpu_data();
 				float sum = 0;
@@ -9242,11 +9388,11 @@ namespace glasssix
 #ifdef USE_OPENCV
 
 			/// <summary>
-			/// convert tensor to cv::Mat, then show image
+			/// convert memory::tensor to cv::Mat, then show image
 			/// </summary>
-			/// <param name="dst">image tensor</param>
+			/// <param name="dst">image memory::tensor</param>
 			template <typename Dtype>
-			static void showimage(std::shared_ptr<tensor<Dtype>>& dst)
+			static void showimage(std::shared_ptr<memory::tensor<Dtype>>& dst)
 			{
 				std::vector<cv::Mat> mat;
 				tensor2mat_cpu(dst, mat);
@@ -9262,11 +9408,11 @@ namespace glasssix
 
 
 			/// <summary>
-			/// convert tensor to cv::Mat, then show image
+			/// convert memory::tensor to cv::Mat, then show image
 			/// </summary>
-			/// <param name="dst">image tensor</param>
+			/// <param name="dst">image memory::tensor</param>
 			template <typename Dtype>
-			static void showimage(tensor<Dtype>& dst)
+			static void showimage(memory::tensor<Dtype>& dst)
 			{
 				std::vector<cv::Mat> mat;
 				tensor2mat_cpu(dst, mat);

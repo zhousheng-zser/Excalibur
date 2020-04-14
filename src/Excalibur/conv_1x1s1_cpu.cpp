@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

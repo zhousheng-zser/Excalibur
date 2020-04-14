@@ -1,5 +1,6 @@
 #include "../../include/Excalibur/tensor_operation_cpu.hpp"
 using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 const unsigned char LBPMAP[5][256] =
 {

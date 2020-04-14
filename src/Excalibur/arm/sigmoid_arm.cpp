@@ -5,6 +5,8 @@
 #include "arm/neon_mathfun.hpp"
 #endif // __ARM_NEON
 
+using namespace glasssix::memory;
+
 void glasssix::excalibur::sigmoid_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom)
 {
 	int num = bottom->num();

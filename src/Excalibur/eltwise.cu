@@ -1,6 +1,8 @@
 #ifdef USE_CUDA
 #include "math_functions.hpp"
-#include "eltwise.hpp"
+#include "../../include/excalibur/eltwise.hpp"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

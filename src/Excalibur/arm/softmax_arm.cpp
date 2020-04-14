@@ -9,6 +9,8 @@
 #include "arm/neon_mathfun.hpp"
 #endif // __ARM_NEON
 
+using namespace glasssix::memory;
+
 void glasssix::excalibur::softmax_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 {
 	// value = exp( value - global max value )

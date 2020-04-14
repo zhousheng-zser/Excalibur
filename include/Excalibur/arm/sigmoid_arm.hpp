@@ -10,7 +10,7 @@ namespace glasssix
 		class sigmoid_arm : virtual public sigmoid
 		{
 		public:
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom);
 		};
 	}
 }

@@ -4,6 +4,8 @@
 #include <arm_neon.h>
 #endif
 
+using namespace glasssix::memory;
+
 void glasssix::excalibur::batchnorm_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom)
 {
 	orderType order = bottom->order();

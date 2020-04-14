@@ -1,7 +1,8 @@
 #ifdef USE_CUDA
-#include <glasssix/accelerator.hpp>
 #include "im2col.hpp"
 #include <algorithm>
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

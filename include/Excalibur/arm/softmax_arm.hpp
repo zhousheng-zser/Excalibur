@@ -11,7 +11,7 @@ namespace glasssix
 		{
 		public:
 			softmax_arm(int input_channel, int device) : softmax(input_channel, -1) {}
-			void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 		};
 	}
 }

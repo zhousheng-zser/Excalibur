@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <memory>
-#include <glasssix/tensor.hpp>
+#include "../../Primitives/tensor.hpp"
 #include "../eltwise.hpp"
 
 namespace glasssix
@@ -14,7 +14,7 @@ namespace glasssix
 		{
 		public:
 			eltwise_arm(int type, int device) : eltwise(type, -1) {}
-			void Forward_cpu(const std::vector<std::shared_ptr<tensor<float>>> bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_cpu(const std::vector<std::shared_ptr<memory::tensor<float>>> bottom, std::shared_ptr<memory::tensor<float>>& top);
 		};
 	}
 }

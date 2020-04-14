@@ -4,10 +4,10 @@
 #include <arm_neon.h>
 #endif // __ARM_NEON
 
-void glasssix::excalibur::inner_product_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
+void glasssix::excalibur::inner_product_arm::Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
 {
-	orderType order = bottom->order();
-	if (order == NCHW)
+	memory::orderType order = bottom->order();
+	if (order == memory::NCHW)
 	{
 		int num = bottom->num();
 		int w = bottom->width();
@@ -15,7 +15,7 @@ void glasssix::excalibur::inner_product_arm::Forward_cpu(const std::shared_ptr<t
 		int channels = bottom->channels();
 		int size = w * h;
 
-		top.reset(new tensor<float>(std::vector<int>{num, num_output_, 1, 1}, -1, NCHW));
+		top.reset(new memory::tensor<float>(std::vector<int>{num, num_output_, 1, 1}, -1, memory::NCHW));
 
 		const float* weight_data_ptr = weights_->cpu_data();
 		const float *bias_data = nullptr;

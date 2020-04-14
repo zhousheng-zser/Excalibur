@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _POOLING_HPP_
 #define _POOLING_HPP_
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #ifdef USE_CUDNN
 #include "cudnn.hpp"
 #endif
@@ -22,16 +22,16 @@ namespace glasssix
 			int device_;
 			enum pooling_type { MAX, AVE };
 			pooling_type type_;
-			orderType order_;
+			memory::orderType order_;
 
 		public:
 			pooling(int kernel, int stride, int pad, int type, int device);
 			virtual ~pooling();
 
-			virtual void Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			virtual void Forward_cpu(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 
 #ifdef USE_CUDA
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 #ifdef USE_CUDNN
 		private:
 			float one = 1.0, zero = 0.0;
@@ -40,7 +40,7 @@ namespace glasssix
 			cudnnPoolingDescriptor_t  pooling_desc_;
 			cudnnPoolingMode_t        mode_;
 		public:
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top);
 #endif
 #endif
 		};

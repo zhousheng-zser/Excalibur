@@ -1,5 +1,7 @@
 #ifdef USE_CUDA
-#include "mirrormax.hpp"
+#include "../../include/excalibur/mirrormax.hpp"
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

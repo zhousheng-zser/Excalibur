@@ -3,6 +3,8 @@
 #include "arm/pooling_arm_func.hpp" 
 #include <cfloat>
 
+using namespace glasssix::memory;
+
 void glasssix::excalibur::pooling_arm::Forward_cpu(const std::shared_ptr<tensor<float>>& bottom, std::shared_ptr<tensor<float>>& top)
 {
 	order_ = bottom->order();

@@ -1,5 +1,7 @@
 #include "normalize.hpp"
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

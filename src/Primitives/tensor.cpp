@@ -11,7 +11,9 @@ namespace glasssix
 		// n Alignment size that must be a power of two
 		inline size_t align_size(size_t sz, int n)
 		{
-			return (sz + n - 1) & -n;
+			//TODO: switch to channel aligned version
+			//return (sz + n - 1) & -n;
+			return sz;
 		}
 
 		template<typename Dtype>
@@ -402,5 +404,8 @@ namespace glasssix
 
 		// instantiate class
 		template class tensor<float>;
+		template class tensor<int>;
+		template class tensor<unsigned char>;
+		template class tensor<char>;
 	}
 }

@@ -1,7 +1,9 @@
 #include "sigmoid.hpp"
-//#include <memory>
 #include <algorithm>
 #include <cmath>
+
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur

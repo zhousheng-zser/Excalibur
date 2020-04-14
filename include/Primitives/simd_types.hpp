@@ -278,5 +278,34 @@ __forceinline float _mm512_sumall_ps(__m512 r)
 	void half2float(const unsigned short* halfs, float* floats, int length);
 
 	float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias);
+
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)&&(SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
+	static float mul_add_3x3_simd(__m128 r0_data, __m128 r1_data, __m128 r2_data, __m128 k0_data, __m128 k1_data, __m128 k2_data, float bias)
+	{
+		float sum_sum = bias;
+		__m128 sum = _mm_setzero_ps();
+
+#ifdef __FMA__
+		sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+		sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+		sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+#else
+		sum = _mm_add_ps(_mm_mul_ps(r0_data, k0_data), sum);
+		sum = _mm_add_ps(_mm_mul_ps(r1_data, k1_data), sum);
+		sum = _mm_add_ps(_mm_mul_ps(r2_data, k2_data), sum);
+		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+#endif
+
+		float temp[4];
+		_mm_storeu_ps(temp, sum);
+		for (int i = 0; i < 3; i++)
+		{
+			sum_sum += temp[i];
+		}
+
+		return sum_sum;
+	}
+#endif
 }
 #endif // !_SIMD_TYPES_HPP_
