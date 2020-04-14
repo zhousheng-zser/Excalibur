@@ -1,6 +1,8 @@
 #ifdef USE_CUDA
-#include "upsample.hpp"
+#include "../../include/excalibur/upsample.hpp"
 #include <iostream>
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

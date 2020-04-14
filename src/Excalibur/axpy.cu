@@ -4,6 +4,8 @@
 #include "device_launch_parameters.h"
 #include "axpy.hpp"
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace excalibur
