@@ -26,85 +26,12 @@
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
     <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
     <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
-    <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\basic_math.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\blas.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\compiler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\cpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\dllexport.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\environment.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\iterators.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\logger.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\memory.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\simd_types.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\tensor.hpp">
-      <Filter>Header Files</Filter>
-    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\singleton.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\profiler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\pure_c_interface_utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\src\Primitives\memory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
   </ItemGroup>
 </Project>
