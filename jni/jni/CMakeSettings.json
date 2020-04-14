@@ -3,20 +3,32 @@
     {
       "environment": "android-clang-arm",
       "androidSdkDir": "C:/Users/Glasssix-ZMY/AppData/Local/Android/Sdk",
-      "androidNdkDir": "${env.androidSdkDir}/ndk-bundle",
-      "androidCMakeDir": "${env.androidSdkDir}/cmake/3.10.2.4988404/bin",
-      "androidPrebuiltDir": "${env.androidNdkDir}/toolchains/llvm/prebuilt"
+      "androidNdkDir": "${env.androidSdkDir}/ndk/20.1.5948944",
+      "androidCMakeDir": "${env.androidSdkDir}/cmake/3.10.2.4988404/bin"
     }
   ],
   "configurations": [
     {
-      "name": "x64-Release",
-      "generator": "Visual Studio 16 2019 Win64",
-      "configurationType": "RelWithDebInfo",
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
       "buildRoot": "${projectDir}/../../Build/${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
       "cmakeCommandArgs": "-DUSE_ANDROID_NDK=OFF",
-      "buildCommandArgs": "",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "intelliSenseMode": "windows-msvc-x64",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": []
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}/../../Build/${name}",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
+      "cmakeCommandArgs": "-DUSE_ANDROID_NDK=OFF",
+      "buildCommandArgs": "-v",
       "ctestCommandArgs": "",
       "intelliSenseMode": "windows-msvc-x64",
       "inheritEnvironments": [ "msvc_x64_x64" ],
@@ -53,34 +65,8 @@
           "name": "ANDROID_ABI",
           "value": "arm64-v8a",
           "type": "STRING"
-        },
-        {
-          "name": "CMAKE_MAKE_PROGRAM",
-          "value": "${env.androidCMakeDir}/ninja.exe",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_SYSROOT",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_CXX",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/c++/v1",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_CLANG",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/lib64/clang/8.0.7/include",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_PLATFORM",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
-          "type": "STRING"
         }
       ],
-      "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",
       "inheritEnvironments": [ "android-clang-arm" ]
     },
     {
@@ -91,7 +77,7 @@
       "configurationType": "Release",
       "ctestCommandArgs": "",
       "generator": "Ninja",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "installRoot": "${projectDir}../../Build/Install/${name}",
       "intelliSenseMode": "android-clang-arm64",
       "name": "Android-ARM64-Release",
       "variables": [
@@ -114,34 +100,8 @@
           "name": "ANDROID_ABI",
           "value": "arm64-v8a",
           "type": "STRING"
-        },
-        {
-          "name": "CMAKE_MAKE_PROGRAM",
-          "value": "${env.androidCMakeDir}/ninja.exe",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_SYSROOT",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_CXX",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/c++/v1",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_CLANG",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/lib64/clang/8.0.7/include",
-          "type": "FILEPATH"
-        },
-        {
-          "name": "ANDROID_INCLUDE_PLATFORM",
-          "value": "${env.androidPrebuiltDir}/windows-x86_64/sysroot/usr/include/aarch64-linux-android",
-          "type": "STRING"
         }
       ],
-      "cmakeExecutable": "${env.androidCMakeDir}/cmake.exe",
       "inheritEnvironments": [ "android-clang-arm" ]
     }
   ]
