@@ -1,6 +1,8 @@
 #include "pnet_mobile_nir.hpp"
 #include <iostream>
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace longinus
@@ -115,12 +117,12 @@ namespace glasssix
 			delete cls_prob;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(prelu1_weights, false);
-			FreeHost(prelu2_dw_weights, false);
-			FreeHost(prelu2_weights, false);
-			FreeHost(prelu3_dw_weights, false);
-			FreeHost(prelu3_weights, false);
-			FreeHost(prelu4_dw_weights, false);
+			aligned_heap_free(prelu1_weights);
+			aligned_heap_free(prelu2_dw_weights);
+			aligned_heap_free(prelu2_weights);
+			aligned_heap_free(prelu3_dw_weights);
+			aligned_heap_free(prelu3_weights);
+			aligned_heap_free(prelu4_dw_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)

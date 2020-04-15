@@ -1,5 +1,7 @@
 #include "onet_mobile_nir.hpp"
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace longinus
@@ -244,21 +246,21 @@ namespace glasssix
 			delete prob1;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(relu1_weights, false);
-			FreeHost(relu1_dw_weights, false);
-			FreeHost(relu2_ex_weights, false);
-			FreeHost(relu2_dw_weights, false);
-			FreeHost(relu2_1_ex_weights, false);
-			FreeHost(relu2_1_dw_weights, false);
-			FreeHost(relu3_ex_weights, false);
-			FreeHost(relu3_dw_weights, false);
-			FreeHost(relu3_1_ex_weights, false);
-			FreeHost(relu3_1_dw_weights, false);
-			FreeHost(relu4_ex_weights, false);
-			FreeHost(relu4_dw_weights, false);
-			FreeHost(relu4_1_ex_weights, false);
-			FreeHost(relu4_1_dw_weights, false);
-			FreeHost(relu5_ex_weights, false);
+			aligned_heap_free(relu1_weights);
+			aligned_heap_free(relu1_dw_weights);
+			aligned_heap_free(relu2_ex_weights);
+			aligned_heap_free(relu2_dw_weights);
+			aligned_heap_free(relu2_1_ex_weights);
+			aligned_heap_free(relu2_1_dw_weights);
+			aligned_heap_free(relu3_ex_weights);
+			aligned_heap_free(relu3_dw_weights);
+			aligned_heap_free(relu3_1_ex_weights);
+			aligned_heap_free(relu3_1_dw_weights);
+			aligned_heap_free(relu4_ex_weights);
+			aligned_heap_free(relu4_dw_weights);
+			aligned_heap_free(relu4_1_ex_weights);
+			aligned_heap_free(relu4_1_dw_weights);
+			aligned_heap_free(relu5_ex_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)

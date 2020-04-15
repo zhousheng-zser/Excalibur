@@ -23,7 +23,7 @@
 ((p0)[offset_] - (p1)[offset_] - (p2)[offset_] + (p3)[offset_])
 
 using namespace glasssix::longinus;
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 //move definition of LBPMAP[5][256] to tensor_operation_cpu.cpp
 //extern const unsigned char LBPMAP[5][256] = {}
@@ -423,7 +423,7 @@ static inline double DetectAt(const int * const *pNode, int offset, const double
 }
 
 
-void InternalLonginusCascade::scan_cpu(glasssix::excalibur::tensor<int>& I, std::vector<CandidateRect> &rects,
+void InternalLonginusCascade::scan_cpu(glasssix::memory::tensor<int>& I, std::vector<CandidateRect> &rects,
 	int xstep, int ystep, int xmax, int ymax, int sum_width, int factor1024x, int lut_len, bool doEarlyReject)
 {
 	UpdateCascade(tensor_fea_info.cpu_data(), numStages, tensor_weak_num_in_stages.cpu_data(), tensor_pNode.mutable_cpu_data(), I.cpu_data(), I.width());
@@ -497,7 +497,7 @@ void InternalLonginusCascade::scan_cpu(glasssix::excalibur::tensor<int>& I, std:
 	}
 }
 
-void InternalLonginusCascade::scan_cpu_multi_threads(glasssix::excalibur::tensor<int>& I, std::vector<CandidateRect> &rects,
+void InternalLonginusCascade::scan_cpu_multi_threads(glasssix::memory::tensor<int>& I, std::vector<CandidateRect> &rects,
 	int xstep, int ystep, int xmax, int ymax, int sum_width, int factor1024x, int lut_len, bool doEarlyReject)
 {
 	UpdateCascade(tensor_fea_info.cpu_data(), numStages, tensor_weak_num_in_stages.cpu_data(), tensor_pNode.mutable_cpu_data(), I.cpu_data(), I.width());
@@ -585,7 +585,7 @@ void InternalLonginusCascade::scan_cpu_multi_threads(glasssix::excalibur::tensor
 	}
 }
 
-void InternalLonginusCascade::SingleScaleDetect(glasssix::excalibur::tensor<int> &Integral, int winStep, int factor1024x, std::vector<CandidateRect> &rects, bool useMultiThreads, bool doEarlyReject)
+void InternalLonginusCascade::SingleScaleDetect(glasssix::memory::tensor<int> &Integral, int winStep, int factor1024x, std::vector<CandidateRect> &rects, bool useMultiThreads, bool doEarlyReject)
 {
 	int sum_width, sum_height;
 	int ystep, xstep, ymax, xmax;
@@ -621,7 +621,7 @@ void InternalLonginusCascade::SingleScaleDetect(glasssix::excalibur::tensor<int>
 	}
 }
 
-std::vector<face_rect_basic> InternalLonginusCascade::MultiScaleDetect(glasssix::excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads, bool doEarlyReject)
+std::vector<face_rect_basic> InternalLonginusCascade::MultiScaleDetect(glasssix::memory::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads, bool doEarlyReject)
 {
 	//LOG_IF(WARNING, (doEarlyReject && device_ >= 0)) << "doEarlyReject dose not work on gpu. It will not take any benifit on speed. Automatic disable.";
 	LOG_IF(WARNING, (useMultiThreads && device_ >= 0)) << "useMultiThreads is invalide when working on gpu. Automatic ignore.";

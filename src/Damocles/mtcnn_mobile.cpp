@@ -7,7 +7,7 @@
 
 #include <algorithm>
 
-using namespace glasssix;
+using namespace glasssix::memory;
 using namespace glasssix::longinus;
 
 glasssix::longinus::mtcnn_mobile::mtcnn_mobile(int device_id, bool handle_big_face) : vDamocles(device_id)

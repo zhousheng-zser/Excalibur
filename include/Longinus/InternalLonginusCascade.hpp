@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include <glasssix/tensor.hpp>
+#include "../../include/Primitives/tensor.hpp"
 #include "common.hpp"
 #include "BaseLonginusCascade.hpp"
 
@@ -21,8 +21,8 @@ namespace glasssix
 			void LoadCascade(const std::string& filename, int device = -1);
 			virtual void LoadCascade(LonginusCascadeType cascadeType, int device = -1);
 #endif
-			void SingleScaleDetect(excalibur::tensor<int> &Integral, int winStep, int factor1024x, std::vector<CandidateRect> &rects, bool useMultiThreads = false, bool doEarlyReject = false);
-			std::vector<face_rect_basic> MultiScaleDetect(excalibur::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads = false, bool doEarlyReject = false);
+			void SingleScaleDetect(memory::tensor<int> &Integral, int winStep, int factor1024x, std::vector<CandidateRect> &rects, bool useMultiThreads = false, bool doEarlyReject = false);
+			std::vector<face_rect_basic> MultiScaleDetect(memory::tensor<unsigned char> &gray, int minSize, float scale, int min_neighbors, bool useMultiThreads = false, bool doEarlyReject = false);
 
 #ifndef RELEASE_SDK
 #ifdef HARDCODE_TRANSFORM
@@ -43,26 +43,26 @@ namespace glasssix
 			int map_mode;
 			int fea_mode;
 
-			excalibur::tensor<int> tensor_weak_num_in_stages;
-			excalibur::tensor<double> tensor_stage_threshold;
-			excalibur::tensor<double> tensor_stage_far;
-			excalibur::tensor<int> tensor_fea_index;
-			excalibur::tensor<int> tensor_fea_info;
-			excalibur::tensor<double> tensor_weak_threshold;
-			excalibur::tensor<double> tensor_regression_value;
+			memory::tensor<int> tensor_weak_num_in_stages;
+			memory::tensor<double> tensor_stage_threshold;
+			memory::tensor<double> tensor_stage_far;
+			memory::tensor<int> tensor_fea_index;
+			memory::tensor<int> tensor_fea_info;
+			memory::tensor<double> tensor_weak_threshold;
+			memory::tensor<double> tensor_regression_value;
 			
-			excalibur::tensor<const int *> tensor_pNode;
-			excalibur::tensor<unsigned char> tensor_FeaMap;
+			memory::tensor<const int *> tensor_pNode;
+			memory::tensor<unsigned char> tensor_FeaMap;
 
 			int device_;
 
 		private:
-			void scan_cpu(excalibur::tensor<int>& I, std::vector<CandidateRect> &rects,
+			void scan_cpu(memory::tensor<int>& I, std::vector<CandidateRect> &rects,
 				int xstep, int ystep, int xmax, int ymax, int sum_width, int factor1024x, int lut_len, bool doEarlyReject = false);
-			void scan_cpu_multi_threads(excalibur::tensor<int>& I, std::vector<CandidateRect> &rects,
+			void scan_cpu_multi_threads(memory::tensor<int>& I, std::vector<CandidateRect> &rects,
 				int xstep, int ystep, int xmax, int ymax, int sum_width, int factor1024x, int lut_len, bool doEarlyReject = false);
 #ifdef USE_CUDA
-			void scan_gpu(excalibur::tensor<int>& I, std::vector<CandidateRect> &rects,
+			void scan_gpu(memory::tensor<int>& I, std::vector<CandidateRect> &rects,
 				int xstep, int ystep, int xmax, int ymax, int sum_width, int factor1024x, int lut_len, bool doEarlyReject = false);
 #endif
 		};

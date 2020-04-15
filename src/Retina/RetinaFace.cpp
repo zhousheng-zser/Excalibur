@@ -1,9 +1,9 @@
 #include <vector>
 #include "RetinaFace.hpp"
 #include "retina_net.hpp"
-#include <glasssix/timer.hpp>
+
 //#define SPLIT_TIME
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 using namespace glasssix::longinus;
 
 namespace
