@@ -36,8 +36,8 @@ namespace glasssix
 			int device_;
 			bool cudnn_ready_ = false;
 			bool int8_quantization_ = false;
-			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
-			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
+			std::shared_ptr<memory::tensor<float>> tensor_float_data = nullptr;
+			std::shared_ptr<memory::tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			//
 
 			Declear_Opration(baseconv, conv1);
@@ -81,13 +81,13 @@ namespace glasssix
 
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data);
 #endif 
 #endif
-			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data);
 
 		public:
 			Banshee(int device);
@@ -97,11 +97,11 @@ namespace glasssix
 			{
 				if (order == 0)//NCHW
 				{
-					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+					tensor_float_data.reset(new memory::tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, memory::NCHW));
 				}
 				else//NHWC
 				{
-					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+					tensor_float_data.reset(new memory::tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, memory::NHWC));
 				}
 
 				float means[3] = { 104.0f, 117.0f, 124.0f };
@@ -112,7 +112,7 @@ namespace glasssix
 					memcpy(tensor_data, input_data, num * 1 * 48 * 48 * sizeof(float));
 					tensor_operation_cpu::preprocess_tensors_cpu(tensor_float_data, tensor_float_data, means, var);
 
-					std::shared_ptr<tensor<float>> src_tensor = tensor_float_data;
+					std::shared_ptr<memory::tensor<float>> src_tensor = tensor_float_data;
 #ifdef __ARM_NEON
 					if (order == 1)
 						tensor_operation_cpu::nhwc2nchw_cpu(tensor_float_data, src_tensor);
@@ -141,13 +141,13 @@ namespace glasssix
 			{
 				if (order == 0)//NCHW
 				{
-					tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
-					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, NCHW));
+					tensor_unsigned_char_data.reset(new memory::tensor<unsigned char>(std::vector<int>{(int)num, 1, 48, 48}, device_, memory::NCHW));
+					tensor_float_data.reset(new memory::tensor<float>(std::vector<int>{(int)num, 1, 48, 48}, device_, memory::NCHW));
 				}
 				else//NHWC
 				{
-					tensor_unsigned_char_data.reset(new tensor<unsigned char>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
-					tensor_float_data.reset(new tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, NHWC));
+					tensor_unsigned_char_data.reset(new memory::tensor<unsigned char>(std::vector<int>{(int)num, 48, 48, 1}, device_, memory::NHWC));
+					tensor_float_data.reset(new memory::tensor<float>(std::vector<int>{(int)num, 48, 48, 1}, device_, memory::NHWC));
 				}
 
 				float means[3] = { 104.0f, 117.0f, 124.0f };

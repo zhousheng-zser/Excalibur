@@ -42,11 +42,11 @@ glasssix::longinus::mtcnn_mobile_nir::~mtcnn_mobile_nir()
 std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile_nir::Detect(const unsigned char* img, const int channels, const int height, const int width,
 	const int minSize, const float* threshold, const float factor, const int stage, int order)
 {
-	std::shared_ptr<tensor<unsigned char> > src_tensor;
-	if (order == NHWC)
+	std::shared_ptr<memory::tensor<unsigned char> > src_tensor;
+	if (order == memory::NHWC)
 	{
-		std::shared_ptr<tensor<unsigned char> > src_nhwc_tensor;
-		src_nhwc_tensor = std::shared_ptr<tensor<unsigned char> > (new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
+		std::shared_ptr<memory::tensor<unsigned char> > src_nhwc_tensor;
+		src_nhwc_tensor = std::shared_ptr<memory::tensor<unsigned char> > (new memory::tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, memory::NHWC));
 		src_nhwc_tensor->copy_from(img, channels * height * width);
 		if (device_id_ < 0)
 		{
@@ -61,9 +61,9 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile_nir::Detect(const u
 #endif
 		}
 	}
-	else if (order == NCHW)
+	else if (order == memory::NCHW)
 	{
-		src_tensor = std::shared_ptr<tensor<unsigned char> >(new tensor <unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
+		src_tensor = std::shared_ptr<memory::tensor<unsigned char> >(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, memory::NCHW));
 		src_tensor->copy_from(img, channels * height * width);
 	}
 	else
@@ -171,7 +171,7 @@ std::vector<FaceInfomation> glasssix::longinus::mtcnn_mobile_nir::Detect(const u
 /// <param name="nms_thresh">nms threshold value</param>
 /// <param name="scales">scale factors</param>
 /// <param name="pnet_result">proposed bboxes</param>
-bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<unsigned char> > &bgr_8uc3, float thresh, float nms_thresh, std::vector<float> scales, std::vector<Longinus_CNN_BBox>& pnet_result)
+bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<memory::tensor<unsigned char> > &bgr_8uc3, float thresh, float nms_thresh, std::vector<float> scales, std::vector<Longinus_CNN_BBox>& pnet_result)
 {
 	pnet_result.clear();
 	std::vector<std::vector<float> > maps;
@@ -212,8 +212,8 @@ bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<u
 		float cur_scale_x = (float)width / changedw;
 		float cur_scale_y = (float)height / changedh;
 
-		std::shared_ptr<tensor<unsigned char> > resized;
-		std::shared_ptr<tensor<float> > bgr_32fc3 = std::shared_ptr<tensor<float> >(new tensor<float>(bgr_8uc3->data_shape(), device_id_, bgr_8uc3->order()));
+		std::shared_ptr<memory::tensor<unsigned char> > resized;
+		std::shared_ptr<memory::tensor<float> > bgr_32fc3 = std::shared_ptr<memory::tensor<float> >(new memory::tensor<float>(bgr_8uc3->data_shape(), device_id_, bgr_8uc3->order()));
 		if (device_id_ < 0)
 		{
 			tensor_operation_cpu::resize_cpu(bgr_8uc3, resized, changedh, changedw);
@@ -230,7 +230,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<u
 		}
 
 		PNet_->Forward(bgr_32fc3);
-		std::shared_ptr<tensor<float>> confidence = PNet_->get_cls_prob();
+		std::shared_ptr<memory::tensor<float>> confidence = PNet_->get_cls_prob();
 		const float *confidence_data = confidence->cpu_data();
 
 		int confidenceH = confidence->height();
@@ -678,7 +678,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::GenerateBoundingBox(std::vector<Longi
 /// <param name="thresh">score threshold</param>
 /// <param name="nms_thresh">nms threshold</param>
 bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN_BBox>& pnetBbox, std::vector<Longinus_CNN_BBox>& rnet_result, 
-	std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh)
+	std::shared_ptr<memory::tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh)
 {
 	if (pnetBbox.size() == 0)
 	{
@@ -757,11 +757,11 @@ bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN
 	int w = bgr_8uc3->width();
 	int channels = bgr_8uc3->channels();
 
-	std::shared_ptr<tensor<float> > task_rnet_images;
+	std::shared_ptr<memory::tensor<float> > task_rnet_images;
 	for (int pp = 0; pp < need_thread_num; pp++)
 	{
-		std::shared_ptr<tensor<unsigned char>> roi_tensor, roi_resized_tensor;
-		std::shared_ptr<tensor<float> > roi_resized_float_tensor;
+		std::shared_ptr<memory::tensor<unsigned char>> roi_tensor, roi_resized_tensor;
+		std::shared_ptr<memory::tensor<float> > roi_resized_float_tensor;
 
 		regressed_pading_.clear();
 		for (int i = 0; i<task_secondBbox[pp].size(); i++) {
@@ -773,7 +773,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN
 			regressed_pading_.push_back(tempFace);
 		}
 
-		task_rnet_images.reset(new tensor<float>(std::vector<int>{(int)task_secondBbox[pp].size(), channels, rnet_size, rnet_size}, device_id_, NCHW));
+		task_rnet_images.reset(new memory::tensor<float>(std::vector<int>{(int)task_secondBbox[pp].size(), channels, rnet_size, rnet_size}, device_id_, memory::NCHW));
 		float *input_data = nullptr;
 		if (device_id_ < 0)
 		{
@@ -834,10 +834,10 @@ bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN
 
 		RNet_->Forward(task_rnet_images);
 
-		std::shared_ptr<tensor<float> > confidence = RNet_->get_cls_prob();
+		std::shared_ptr<memory::tensor<float> > confidence = RNet_->get_cls_prob();
 		const float *confidence_data = confidence->cpu_data();
 
-		std::shared_ptr<tensor<float> > location = RNet_->get_conv5_2();
+		std::shared_ptr<memory::tensor<float> > location = RNet_->get_conv5_2();
 		const float *location_data = location->cpu_data();
 
 		int confidence_sliceStep = confidence->channels() * confidence->width() * confidence->height();
@@ -911,7 +911,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::RNet_Process(std::vector<Longinus_CNN
 /// <param name="nms_thresh">nms threshold</param>
 /// <param name="doLandmark">output landmarks</param>
 bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN_BBox>& rnetBbox, std::vector<Longinus_CNN_BBox>& onet_result, 
-	std::shared_ptr<tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark)
+	std::shared_ptr<memory::tensor<unsigned char>>& bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark)
 {
 	if (rnetBbox.size() == 0)
 	{
@@ -992,11 +992,11 @@ bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN
 	int channels = bgr_8uc3->channels();
 	float means[3] = { 104.0f, 117.0f, 124.0f };
 	float var = 0.0078125;
-	std::shared_ptr<tensor<float> > task_onet_images;
+	std::shared_ptr<memory::tensor<float> > task_onet_images;
 	for (int pp = 0; pp < need_thread_num; pp++)
 	{
-		std::shared_ptr<tensor<unsigned char>> roi_tensor, roi_resized_tensor;
-		std::shared_ptr<tensor<float> > roi_resized_float_tensor;
+		std::shared_ptr<memory::tensor<unsigned char>> roi_tensor, roi_resized_tensor;
+		std::shared_ptr<memory::tensor<float> > roi_resized_float_tensor;
 
 		regressed_pading_.clear();
 		for (int i = 0; i<task_thirdBbox[pp].size(); i++) {
@@ -1008,7 +1008,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN
 			regressed_pading_.push_back(tempFace);
 		}
 
-		task_onet_images.reset(new tensor<float>(std::vector<int>{(int)task_thirdBbox[pp].size(), channels, onet_size, onet_size}, device_id_, NCHW));
+		task_onet_images.reset(new memory::tensor<float>(std::vector<int>{(int)task_thirdBbox[pp].size(), channels, onet_size, onet_size}, device_id_, memory::NCHW));
 		float *input_data = nullptr;
 		if (device_id_ < 0)
 		{
@@ -1066,16 +1066,16 @@ bool glasssix::longinus::mtcnn_mobile_nir::ONet_Process(std::vector<Longinus_CNN
 
 		ONet_->Forward(task_onet_images);
 
-		std::shared_ptr<tensor<float> > confidence = ONet_->get_conv6_1();
+		std::shared_ptr<memory::tensor<float> > confidence = ONet_->get_conv6_1();
 		const float *confidence_data = confidence->cpu_data();
 
-		std::shared_ptr<tensor<float> > location = ONet_->get_conv6_2();
+		std::shared_ptr<memory::tensor<float> > location = ONet_->get_conv6_2();
 		const float *location_data = location->cpu_data();
 
-		std::shared_ptr<tensor<float> > headpose = ONet_->get_conv6_3();
+		std::shared_ptr<memory::tensor<float> > headpose = ONet_->get_conv6_3();
 		const float *headpose_data = headpose->cpu_data();
 
-		std::shared_ptr<tensor<float> > pts = ONet_->get_conv6_4();
+		std::shared_ptr<memory::tensor<float> > pts = ONet_->get_conv6_4();
 		const float *pts_data = pts->cpu_data();
 
 		int task_count = 0;

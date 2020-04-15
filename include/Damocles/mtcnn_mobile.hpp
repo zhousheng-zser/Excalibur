@@ -60,12 +60,12 @@ namespace glasssix
 		protected:
 
 		private:
-			bool PNet_Process(std::shared_ptr<tensor<unsigned char> > &bgr_8uc3, float thresh, float nms_thresh, std::vector<float> scales, std::vector<Longinus_CNN_BBox>& pnet_result);
+			bool PNet_Process(std::shared_ptr<memory::tensor<unsigned char> > &bgr_8uc3, float thresh, float nms_thresh, std::vector<float> scales, std::vector<Longinus_CNN_BBox>& pnet_result);
 			bool GenerateBoundingBox(std::vector<Longinus_CNN_BBox>& bounding_bbox, std::vector<std::vector<float>>& maps, std::vector<float>& scales,
 				std::vector<int>& mapH, std::vector<int>& mapW, float thresh, float nms_thresh, int stride, int cellSize, int image_width, int image_height);
 
-			bool RNet_Process(std::vector<Longinus_CNN_BBox>& pnetBbox, std::vector<Longinus_CNN_BBox>& rnet_result, std::shared_ptr<tensor<unsigned char> > &bgr_8uc3, int min_size, float thresh, float nms_thresh);
-			bool ONet_Process(std::vector<Longinus_CNN_BBox>& rnetBbox, std::vector<Longinus_CNN_BBox>& onet_result, std::shared_ptr<tensor<unsigned char> > & bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark);
+			bool RNet_Process(std::vector<Longinus_CNN_BBox>& pnetBbox, std::vector<Longinus_CNN_BBox>& rnet_result, std::shared_ptr<memory::tensor<unsigned char> > &bgr_8uc3, int min_size, float thresh, float nms_thresh);
+			bool ONet_Process(std::vector<Longinus_CNN_BBox>& rnetBbox, std::vector<Longinus_CNN_BBox>& onet_result, std::shared_ptr<memory::tensor<unsigned char> > & bgr_8uc3, int min_size, float thresh, float nms_thresh, bool doLandmark);
 			
 			pnet_mobile * PNet_;
 			rnet_mobile* RNet_;

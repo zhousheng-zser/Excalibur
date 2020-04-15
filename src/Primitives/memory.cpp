@@ -63,7 +63,7 @@ namespace glasssix
 			if (!udata)
 				return nullptr;
 			unsigned char** adata = alignPtr((unsigned char**)udata + 1, alignment);
-			adata[-1] = udata;
+			adata[-1] = (unsigned char*)udata;
 			return adata;
 		}
 
