@@ -81,6 +81,11 @@
             <param name="singleDatabaseCapacity">The maximal number of items that one single database file can accomodate</param>
             <param name="workingDirectory">The working directory in which the module creates internal files</param>
         </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Finalize">
+            <summary>
+            The finalizer.
+            </summary>
+        </member>
         <member name="M:Glasssix.Irisviel.FaceService.Clear">
             <summary>
             Clears the loaded databases and keeps all data on the disk still existing.
@@ -151,6 +156,12 @@
             <summary>
             Disposes all managed and unmanaged resources.
             </summary>
+        </member>
+        <member name="M:Glasssix.Irisviel.FaceService.Dispose(System.Boolean)">
+            <summary>
+            Disposes all managed and unmanaged resources. 
+            </summary>
+            <param name="disposing">Indicates whether disposing managed resources is scheduled</param>
         </member>
         <member name="T:Glasssix.Irisviel.FeatureModel">
             <summary>
