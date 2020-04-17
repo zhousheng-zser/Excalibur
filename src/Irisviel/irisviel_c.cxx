@@ -266,7 +266,7 @@ IRISVIEL_C_EXPORT void irisviel_remove_records(irisviel_face_service_handle inst
 		return;
 	}
 
-	std::vector<std::string> key_strs;
+	std::vector<std::string_view> key_strs;
 
 	for (auto ptr = keys; ptr < keys + size; ptr++)
 	{

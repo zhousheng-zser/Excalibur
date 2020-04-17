@@ -3,10 +3,11 @@
 #include "database_record.hpp"
 #include "database_feature_observer.hpp"
 
-#include <string>
 #include <memory>
 #include <vector>
+#include <string>
 #include <cstddef>
+#include <string_view>
 
 namespace glasssix
 {
@@ -17,11 +18,11 @@ namespace glasssix
 		public:
 			class impl;
 
-			database_manager(const std::string& file_path, std::size_t capacity, int dimension);
+			database_manager(std::string_view file_path, std::size_t capacity, int dimension);
 			virtual ~database_manager();
-			bool contains(const std::string& key);
+			bool contains(std::string_view key);
 			bool update(database_record& record);
-			bool remove(const std::string& key);
+			bool remove(std::string_view key);
 			bool empty() const noexcept;
 			bool full() const noexcept;
 			bool add(database_record& record);
