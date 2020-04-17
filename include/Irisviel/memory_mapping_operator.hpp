@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <string_view>
 
 namespace glasssix
 {
@@ -15,7 +16,7 @@ namespace glasssix
 		class memory_mapping_operator
 		{
 		public:
-			memory_mapping_operator(const std::string& file_path, std::size_t max_size);
+			memory_mapping_operator(std::string_view file_path, std::size_t max_size);
 			virtual ~memory_mapping_operator() = default;
 			const std::uint8_t* const_data() const noexcept;
 			std::uint8_t* mutable_data() const noexcept;
