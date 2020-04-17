@@ -73,9 +73,9 @@ namespace glasssix
 	union union_type_s_mm128
 #define store_to_q(x,y)\
 	_mm_store_ps(x,y)
-#define mm_final_ssum_quarter(q) (q.s[0])
-#define mm_final_ssum_half(q) (q.s[0]+q.s[1])
-#define mm_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm128_final_ssum_quarter(q) (q.s[0])
+#define mm128_final_ssum_half(q) (q.s[0]+q.s[1])
+#define mm128_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
 	__forceinline float _mm_sumall_ps(__m128 r)
 	{
 		union_type_s_mm128 q = { 0 };
@@ -170,6 +170,14 @@ __forceinline int _mm256_sumall_epi32(const __m256i re)
 	return temp_sum[0] + temp_sum[1] + temp_sum[2] + temp_sum[3] + temp_sum[4] + temp_sum[5] + temp_sum[6] + temp_sum[7];
 }
 
+union union_type_s_mm128
+{
+	double d[2];
+	float s[4];
+	__m128 v;
+	__m64 t[2];
+};
+
 union union_type_s_mm256
 {
 	double d[4];
@@ -178,15 +186,17 @@ union union_type_s_mm256
 	__m128 p[2];
 	__m64 t[4];
 };
-#define q_type \
-	union union_type_s_mm256
-
-#define store_to_q(x,y)\
-	_mm256_store_ps(x,y)
-
-#define mm_final_ssum_quarter(q) (q.s[0]+q.s[1])
-#define mm_final_ssum_half(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
-#define mm_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3]+q.s[4]+q.s[5]+q.s[6]+q.s[7])
+//#define q_type \
+//	union union_type_s_mm256
+//
+//#define store_to_q(x,y)\
+//	_mm256_store_ps(x,y)
+#define mm128_final_ssum_quarter(q) (q.s[0])
+#define mm128_final_ssum_half(q) (q.s[0]+q.s[1])
+#define mm128_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm256_final_ssum_quarter(q) (q.s[0]+q.s[1])
+#define mm256_final_ssum_half(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm256_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3]+q.s[4]+q.s[5]+q.s[6]+q.s[7])
 __forceinline float _mm_sumall_ps(__m128 r)
 {
 	float s[4] = { 0 };
