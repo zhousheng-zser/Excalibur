@@ -2,6 +2,7 @@
 
 #include <string>
 #include <cstddef>
+#include <string_view>
 
 namespace glasssix
 {
@@ -10,7 +11,7 @@ namespace glasssix
 	public:
 		class impl;
 
-		memory_mapping(const std::string& path, std::size_t size) noexcept;
+		memory_mapping(std::string_view path, std::size_t size) noexcept;
 		virtual ~memory_mapping();
 		operator bool() const noexcept;
 		std::uint8_t* data() const noexcept;

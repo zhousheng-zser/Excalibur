@@ -20,7 +20,7 @@ namespace glasssix
 		class database_manager::impl
 		{
 		public:
-			impl(const std::string& file_path, std::size_t capacity, int dimension) : dimension_{ dimension }, removal_pending_{}, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (capacity + 1UL) * database_record::record_size(dimension) }
+			impl(std::string_view file_path, std::size_t capacity, int dimension) : dimension_{ dimension }, removal_pending_{}, record_size_{ database_record::record_size(dimension) }, mapping_{ file_path, (capacity + 1UL) * database_record::record_size(dimension) }
 			{
 				auto header = mapping_.locate_element_absolutely<database_header>(0);
 
@@ -66,9 +66,9 @@ namespace glasssix
 				return true;
 			}
 
-			bool contains(const std::string& key)
+			bool contains(std::string_view key)
 			{
-				return record_entries_.find(key) != record_entries_.end();
+				return record_entries_.find(std::string{ key }) != record_entries_.end();
 			}
 
 			bool update(database_record& data)
@@ -85,9 +85,9 @@ namespace glasssix
 				return true;
 			}
 
-			bool remove(const std::string& key)
+			bool remove(std::string_view key)
 			{
-				if (record_entries_.erase(key) > 0)
+				if (record_entries_.erase(std::string{ key }) > 0)
 				{
 					removal_pending_ = true;
 
@@ -191,7 +191,7 @@ namespace glasssix
 			std::unordered_map<std::string, int, case_insensitive_string_hash, case_insensitive_string_comparer> record_entries_;
 		};
 
-		database_manager::database_manager(const std::string& file_path, std::size_t capacity, int dimension) : impl_{ new impl{ file_path, capacity, dimension } }
+		database_manager::database_manager(std::string_view file_path, std::size_t capacity, int dimension) : impl_{ new impl{ file_path, capacity, dimension } }
 		{
 		}
 
@@ -204,7 +204,7 @@ namespace glasssix
 			}
 		}
 
-		bool database_manager::contains(const std::string& key)
+		bool database_manager::contains(std::string_view key)
 		{
 			return impl_->contains(key);
 		}
@@ -214,7 +214,7 @@ namespace glasssix
 			return impl_->update(record);
 		}
 
-		bool database_manager::remove(const std::string& key)
+		bool database_manager::remove(std::string_view key)
 		{
 			return impl_->remove(key);
 		}

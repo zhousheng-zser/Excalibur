@@ -515,7 +515,7 @@ namespace glasssix
         /// <param name="order">order type of image: NCHW(0) / NHWC(1)</param>
         /// <param name="threshold">threshold value, 0.5f by default</param>
         /// <param name="scales">scale value, 1.0f by default</param>
-		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold) const
+		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int min_win, int img_height, int img_width, int img_order, float threshold) const
 		{
 			std::vector<face_rect_with_face_info> output;
 
@@ -524,7 +524,7 @@ namespace glasssix
 				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
 			}).get();
 #else
-			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
+			auto res = retina_->detect(img_data, min_win, img_height, img_width, img_order, threshold);
 #endif
 
 			for (auto i = 0; i < res.size(); i++)
@@ -926,9 +926,9 @@ namespace glasssix
 			return impl_->alignFace(ori_image, n, channels, height, width);
 		}
 
-		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int channels, int height, int width, int order, float threshold) const
+		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int min_win, int height, int width, int order, float threshold) const
 		{
-			return impl_->detectRetina(image, channels, height, width, order, threshold);
+			return impl_->detectRetina(image, min_win, height, width, order, threshold);
 		}
 
 #ifndef TRIAL
