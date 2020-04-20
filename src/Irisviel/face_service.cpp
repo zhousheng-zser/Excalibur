@@ -220,7 +220,7 @@ namespace glasssix
 			std::list<std::shared_ptr<database_cache>> cache_;
 		};
 
-		face_service::face_service(int single_database_capacity, int dimension, std::string_view working_directory) : impl_{ new impl{ single_database_capacity, dimension, working_directory } }
+		face_service::face_service(int single_database_capacity, int dimension, std::string_view working_directory) : impl_{ new impl{ single_database_capacity, dimension, std::string{ working_directory } } }
 		{
 		}
 
