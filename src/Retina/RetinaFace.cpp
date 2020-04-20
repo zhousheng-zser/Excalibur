@@ -1,10 +1,13 @@
+#include "RetinaFace.hpp"
+#include "retina_net.hpp"
+#include "Primitives/tensor.hpp"
+
 #include <vector>
 #include <cstring>
 
 #include <glasssix/timer.hpp>
 
-#include "RetinaFace.hpp"
-#include "retina_net.hpp"
+
 
 //#define SPLIT_TIME
 using namespace glasssix::excalibur;
@@ -559,21 +562,21 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char* img_data, in
 		return std::vector<FaceInfomation>();
 	}
 
-	std::shared_ptr<tensor<unsigned char>> img_tensor;
+	std::shared_ptr<glasssix::memory::tensor<unsigned char>> img_tensor;
 	if (img_order == 0)
 	{
-		img_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, 3, img_height, img_width}, device_, NCHW));
+		img_tensor.reset(new glasssix::memory::tensor<unsigned char>(std::vector<int>{1, 3, img_height, img_width}, device_, glasssix::memory::NCHW));
 	}
 	else
 	{
-		img_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, img_height, img_width, 3}, device_, NHWC));
+		img_tensor.reset(new glasssix::memory::tensor<unsigned char>(std::vector<int>{1, img_height, img_width, 3}, device_, glasssix::memory::NHWC));
 	}
 	CHECK_GE(min_win, 16);
 	float scale = min_win / 16.0f;
 
 	int ws = (img_width / scale + 31) / 32 * 32;
 	int hs = (img_height / scale + 31) / 32 * 32;
-	std::shared_ptr<tensor<unsigned char>> img_bordered;
+	std::shared_ptr<glasssix::memory::tensor<unsigned char>> img_bordered;
 	std::vector<std::vector<std::tuple<std::vector<int>, const float*>>> tuple_result;
 
 	//TODO: uncomment next line, and open MACRO 'SPLIT_TIME', you will find infer_time(gpu version) is 35ms faster on 1920*1080 image, both CUDNN and native-gpu

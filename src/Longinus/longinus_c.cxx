@@ -1,5 +1,5 @@
-#include "../../include/Longinus/longinus_c.h"
-#include "../../include/Primitives/memory.hpp"
+#include "Longinus/longinus_c.h"
+#include "Primitives/memory.hpp"
 #include <cstring>
 
 using glasssix::memory::heap_free;

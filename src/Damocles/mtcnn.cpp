@@ -1,9 +1,11 @@
 #include "mtcnn.hpp"
-#include "../Excalibur/tensor_operation_cpu.hpp"
-#include "../Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
+
 #include <algorithm>
 #include <fstream>
-using namespace std;
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {
@@ -119,7 +121,7 @@ namespace glasssix
 			float bbw = 0, bbh = 0, maxSide = 0;
 			float h = 0, w = 0;
 			float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-			for (vector<FaceInfomation>::iterator it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++) {
+			for (auto it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++) {
 				bbw = (*it).bbox.xmax - (*it).bbox.xmin/* + 1*/;
 				bbh = (*it).bbox.ymax - (*it).bbox.ymin/* + 1*/;
 				x1 = (*it).bbox.xmin + (*it).bbox_reg[0] * bbw;

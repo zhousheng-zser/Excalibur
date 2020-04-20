@@ -1,11 +1,14 @@
 #pragma once
 #ifndef _MTCNN_ONET_HPP_
 #define _MTCNN_ONET_HPP_
-#include "../Excalibur/io.hpp"
-#include "../Excalibur/support_layers.hpp"
+
+#include "Excalibur/io.hpp"
+#include "Excalibur/support_layers.hpp"
 #include "mtcnn_onet_data.hpp"
+#include "Primitives/tensor.hpp"
 
 using namespace glasssix::excalibur;
+using glasssix::memory::tensor;
 
 namespace glasssix
 {

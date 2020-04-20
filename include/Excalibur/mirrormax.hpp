@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _MIRRORMAX_HPP_
 #define _MIRRORMAX_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 

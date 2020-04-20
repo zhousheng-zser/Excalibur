@@ -9,7 +9,7 @@
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
-#include "../../include/Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
 #include <algorithm>
 
 using namespace glasssix::memory;

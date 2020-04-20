@@ -7,7 +7,7 @@
 //#include <string.h>
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "tensor_operation_cpu.hpp"
 #include <iostream>
 #ifdef USE_OPENCV

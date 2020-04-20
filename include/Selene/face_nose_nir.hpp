@@ -2,7 +2,7 @@
 #define _FACE_NOSE_NIR_HPP_
 
 #include "selene.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 
 namespace glasssix
 {

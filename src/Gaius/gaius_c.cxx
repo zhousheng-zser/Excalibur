@@ -1,5 +1,5 @@
-#include "../../include/Gaius/gaius_c.h"
-#include "../../include/Primitives/memory.hpp"
+#include "Gaius/gaius_c.h"
+#include "Primitives/memory.hpp"
 
 #include <cstring>
 

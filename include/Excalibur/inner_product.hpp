@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _INNER_PRODUCT_HPP_
 #define _INNER_PRODUCT_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "math_functions.hpp"
 #include "im2col.hpp"
 

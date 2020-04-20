@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/simd_types.hpp"
 #include "base_conv.hpp"
 #include "conv_cudnn_gpu.hpp"
 #include "conv_native_cpu.hpp"
