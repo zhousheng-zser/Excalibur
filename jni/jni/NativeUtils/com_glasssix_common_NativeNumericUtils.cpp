@@ -27,7 +27,7 @@ namespace
             constexpr std::ptrdiff_t baseline_move_bits = is_big_endian_v ? max_move_bits : 0;
             constexpr std::ptrdiff_t sign = is_big_endian_v ? -1 : 1;
             
-            ((result += static_cast<Result>((static_cast<std::uintmax_t>(data[Indexes]) << (baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT)))), ...);
+            ((result += static_cast<Result>((static_cast<std::uintmax_t>(data[Indexes]) << (baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT))), ...);
         }
     }
 
