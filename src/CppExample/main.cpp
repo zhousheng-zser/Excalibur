@@ -10,7 +10,7 @@ int main()
 	cv::Mat gray;
 	cv::cvtColor(img, gray, cv::COLOR_BGR2GRAY);
 	glasssix::longinus::face_rect_with_face_info* info = nullptr;
-	int n = Longinus_detectRetina(d, &info, img.data, img.rows, img.cols, 1, 0.5f);
+	int n = Longinus_detectRetina(d, &info, img.data, 48, img.rows, img.cols, 1, 0.5f);
 
 	float aaa[3] = { 0.6, 0.7, 0.7 };
 	//int n = Longinus_detectEx(d, &info, img.data, img.rows, img.cols, 48, aaa, 1.0 / 0.709f, 3, 1);
