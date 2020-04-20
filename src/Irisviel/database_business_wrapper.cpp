@@ -122,12 +122,12 @@ namespace glasssix
 				return true;
 			}
 
-			std::vector<std::vector<database_search_result>> search(const float* feature, std::chrono::milliseconds& elapsed_time, int top) const
+			std::vector<std::vector<database_search_result>> search(const float* feature, int top) const
 			{
-				return search_many({ feature }, elapsed_time, top);
+				return search_many({ feature }, top);
 			}
 
-			std::vector<std::vector<database_search_result>> search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top) const
+			std::vector<std::vector<database_search_result>> search_many(const std::vector<const float*>& features, int top) const
 			{
 				int dimension = observer_->dimension();
 				std::vector<std::vector<database_search_result>> result;
@@ -146,9 +146,6 @@ namespace glasssix
 					}
 
 					top = std::min(static_cast<int>(current_data_.size()), top);
-
-					// Start timing.
-					auto start = std::chrono::high_resolution_clock::now();
 
 					vector2d<uint32_t> ids;
 					vector2d<float> distances;
@@ -186,10 +183,6 @@ namespace glasssix
 						result.emplace_back(inner);
 					}
 
-					// End timing.
-					auto end = std::chrono::high_resolution_clock::now();
-					elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-
 					return result;
 				}
 				catch (...)
@@ -209,7 +202,7 @@ namespace glasssix
 			std::shared_ptr<database_feature_observer> observer_;
 		};
 
-		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, const std::string& map_file_path, const std::string& cache_directory) : impl_{ new impl{ observer, map_file_path, cache_directory } }
+		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, std::string_view map_file_path, std::string_view cache_directory) : impl_{ new impl{ observer, std::string{ map_file_path }, std::string{ cache_directory } } }
 		{
 		}
 
@@ -237,14 +230,14 @@ namespace glasssix
 			return impl_->cache_file_path();
 		}
 
-		std::vector<std::vector<database_search_result>> database_business_wrapper::search(const float* feature, std::chrono::milliseconds& elapsed_time, int top) const
+		std::vector<std::vector<database_search_result>> database_business_wrapper::search(const float* feature, int top) const
 		{
-			return impl_->search(feature, elapsed_time, top);
+			return impl_->search(feature, top);
 		}
 
-		std::vector<std::vector<database_search_result>> database_business_wrapper::search_many(const std::vector<const float*>& features, std::chrono::milliseconds& elapsed_time, int top) const
+		std::vector<std::vector<database_search_result>> database_business_wrapper::search_many(const std::vector<const float*>& features, int top) const
 		{
-			return impl_->search_many(features, elapsed_time, top);
+			return impl_->search_many(features, top);
 		}
 	}
 }

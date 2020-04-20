@@ -233,7 +233,7 @@ JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_remove___3Ljava_la
 		native_keys.emplace_back(native_key);
 	}
 
-	impl->remove(native_keys);
+	impl->remove(std::vector<std::string_view>(std::begin(native_keys), std::end(native_keys)));
 }
 
 JNIEXPORT void JNICALL Java_com_glasssix_irisviel_FaceService_update__Lcom_glasssix_irisviel_DatabaseRecord_2(JNIEnv* env, jobject obj, jobject record)
