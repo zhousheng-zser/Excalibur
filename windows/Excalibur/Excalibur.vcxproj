@@ -126,14 +126,12 @@
     <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
     <ClInclude Include="..\..\include\Excalibur\eltwise.hpp" />
     <ClInclude Include="..\..\include\Excalibur\flip.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\ftensor.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\hswish.hpp" />
     <ClInclude Include="..\..\include\Excalibur\im2col.hpp" />
     <ClInclude Include="..\..\include\Excalibur\inner_product.hpp" />
     <ClInclude Include="..\..\include\Excalibur\io.hpp" />
     <ClInclude Include="..\..\include\Excalibur\math_functions.hpp" />
     <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\mkl_alternate.hpp" />
     <ClInclude Include="..\..\include\Excalibur\normalize.hpp" />
     <ClInclude Include="..\..\include\Excalibur\pca.hpp" />
     <ClInclude Include="..\..\include\Excalibur\pooling.hpp" />
@@ -147,7 +145,6 @@
     <ClInclude Include="..\..\include\Excalibur\tensor_operation_cpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp" />
     <ClInclude Include="..\..\include\Excalibur\upsample.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\utensor.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\arm\batchnorm_arm.cpp" />
@@ -172,6 +169,7 @@
     <ClCompile Include="..\..\src\Excalibur\deconv.cpp" />
     <ClCompile Include="..\..\src\Excalibur\eltwise.cpp" />
     <ClCompile Include="..\..\src\Excalibur\flip.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\hswish.cpp" />
     <ClCompile Include="..\..\src\Excalibur\im2col.cpp" />
     <ClCompile Include="..\..\src\Excalibur\inner_product.cpp" />
     <ClCompile Include="..\..\src\Excalibur\io.cpp" />
@@ -198,6 +196,7 @@
     <CudaCompile Include="..\..\src\Excalibur\deconv.cu" />
     <CudaCompile Include="..\..\src\Excalibur\eltwise.cu" />
     <CudaCompile Include="..\..\src\Excalibur\flip.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\hswish.cu" />
     <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />
     <CudaCompile Include="..\..\src\Excalibur\inner_product.cu" />
     <CudaCompile Include="..\..\src\Excalibur\math_functions.cu" />
