@@ -4,10 +4,13 @@
 #include "rnet_mobile.hpp"
 #include "onet_mobile.hpp"
 #include "vdamocles.hpp"
+#include "Primitives/tensor.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+using glasssix::memory::tensor;
 
 namespace glasssix
 {

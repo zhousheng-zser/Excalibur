@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _SCALE_HPP_
 #define _SCALE_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 //using namespace glasssix::memory;
 
 namespace glasssix

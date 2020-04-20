@@ -1,9 +1,10 @@
 #ifndef _RETINAFACE_HPP_
 #define _RETINAFACE_HPP_
 
+#include "Longinus/common.hpp"
+
 #include <vector>
 #include <map>
-#include "../../include/Longinus/common.hpp"
 
 namespace glasssix
 {

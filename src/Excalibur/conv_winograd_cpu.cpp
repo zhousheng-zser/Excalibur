@@ -1,5 +1,5 @@
 #include "conv_winograd_cpu.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 #include <iostream>
 #include <fstream>
 

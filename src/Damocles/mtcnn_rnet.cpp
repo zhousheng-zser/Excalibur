@@ -1,4 +1,5 @@
 #include "mtcnn_rnet.hpp"
+
 namespace glasssix
 {
 	namespace longinus

@@ -1,6 +1,6 @@
-#include "../../include/Selene/face_nose_nir.hpp"
-#include "../../include/Selene/face_nir_net.hpp"
-#include "../../include/Selene/nose_nir_net.hpp"
+#include "Selene/face_nose_nir.hpp"
+#include "Selene/face_nir_net.hpp"
+#include "Selene/nose_nir_net.hpp"
 #include <glasssix/tensor.hpp>
 #include <glasssix/syncedmem.hpp>
 

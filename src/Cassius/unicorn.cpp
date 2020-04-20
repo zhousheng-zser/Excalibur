@@ -1,7 +1,8 @@
 #include "unicorn.hpp"
+#include "Primitives/simd_types.hpp"
+
 #include <iostream>
 #include <vector>
-#include "../../include/Julius/simd_helper.hpp"
 
 #ifdef INT8_DATA
 #include "unicorn_int8_data.hpp"
@@ -14,6 +15,8 @@
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>
 #endif //CALC_LAYERS
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

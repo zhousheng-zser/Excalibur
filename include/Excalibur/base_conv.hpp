@@ -1,8 +1,8 @@
 #pragma once
 #ifndef _BASE_CONV_HPP_
 #define _BASE_CONV_HPP_
-#include "../../include/Primitives/tensor.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/tensor.hpp"
+#include "Primitives/simd_types.hpp"
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>

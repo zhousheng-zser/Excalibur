@@ -2,7 +2,8 @@
 #define _BASE_CNN_HPP_
 
 #include <vector>
-#include "../Longinus/common.hpp"
+#include "Longinus/common.hpp"
+
 namespace glasssix
 {
 	namespace longinus

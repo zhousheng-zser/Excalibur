@@ -6,7 +6,7 @@
 #include "retina_net_data.hpp"
 #endif
 #include <glasssix/timer.hpp>
-#include "../../include/Julius/simd_helper.hpp"
+#include "Julius/simd_helper.hpp"
 //define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
 #include <glasssix/profiler.hpp>

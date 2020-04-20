@@ -8,7 +8,7 @@
 #include <fcntl.h>
 #include <corecrt_io.h>
 
-#include "../../include/Merge_Conv_BN_Scale/caffe.pb.h"
+#include "Merge_Conv_BN_Scale/caffe.pb.h"
 
 #include <glasssix/logger.hpp>
 

@@ -8,17 +8,21 @@
 
 #include "LonginusDetector.hpp"
 #include "ImageOperation.hpp"
-#include "../../include/Romancia/banshee.hpp"
-#include "../../include/Retina/RetinaFace.hpp"
-#include "../../include/Selene/blur_vsl_net.hpp"
-#include "../../include/Selene/black_white_vsl.hpp"
-#include "../../include/Selene/face_nose_nir.hpp"
-#include "../../include/Damocles/mtcnn.hpp"
-#include "../../include/Damocles/mtcnn_mobile.hpp"
-#include "../../include/Damocles/mtcnn_mobile_nir.hpp"
+#include "Romancia/banshee.hpp"
+#include "Retina/RetinaFace.hpp"
+#include "Selene/blur_vsl_net.hpp"
+#include "Selene/black_white_vsl.hpp"
+#include "Selene/face_nose_nir.hpp"
+#include "Damocles/mtcnn.hpp"
+#include "Damocles/mtcnn_mobile.hpp"
+#include "Damocles/mtcnn_mobile_nir.hpp"
+#include "Primitives/tensor.hpp"
+
 #ifdef TRIAL
 #include "InternalLonginusCascade.hpp"
 #endif // !TRIAL
+
+using namespace glasssix::memory;
 
 //use for mask judge
 const float mask_param[59] = { -0.356874f, -0.317302f,  1.10015f,   0.203173f,   0.91378f, 

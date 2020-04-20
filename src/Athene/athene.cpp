@@ -40,7 +40,7 @@
 #include <thread>
 #include <Windows.h>
 #include "apc.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 
 using namespace cv;
 using namespace std;

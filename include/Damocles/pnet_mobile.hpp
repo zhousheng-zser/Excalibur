@@ -1,9 +1,11 @@
 #ifndef _DAILIR_PNET_MOBILE_HPP_
 #define _DAILIR_PNET_MOBILE_HPP_
 #include "pnet_mobile_data.hpp"
-#include "../Excalibur/support_layers.hpp"
+#include "Excalibur/support_layers.hpp"
+#include "Primitives/tensor.hpp"
 
 using namespace glasssix::excalibur;
+using glasssix::memory::tensor;
 
 namespace glasssix
 {

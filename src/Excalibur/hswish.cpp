@@ -1,4 +1,4 @@
-#include "../../include/Excalibur/hswish.hpp"
+#include "Excalibur/hswish.hpp"
 
 using namespace glasssix::memory;
 

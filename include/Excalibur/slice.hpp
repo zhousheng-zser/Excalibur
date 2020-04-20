@@ -2,7 +2,7 @@
 #ifndef _SLICE_HPP_
 #define _SLICE_HPP_
 
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 namespace glasssix

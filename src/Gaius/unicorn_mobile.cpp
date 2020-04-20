@@ -1,11 +1,15 @@
 #include "unicorn_mobile.hpp"
+#include "unicorn_mobile_data.hpp"
+#include "Primitives/simd_types.hpp"
+
 #include <iostream>
 #include <vector>
-#include "../../include/Julius/simd_helper.hpp"
-#include "unicorn_mobile_data.hpp"
+
 #ifdef __ARM_NEON
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 #endif
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {

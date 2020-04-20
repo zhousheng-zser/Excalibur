@@ -1,12 +1,14 @@
 #include "mtcnn_mobile_nir.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 
 #ifdef USE_CUDA
-#include "../../include/Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
 #endif
+
 #include <algorithm>
 
 using namespace glasssix;
+using namespace glasssix::memory;
 using namespace glasssix::longinus;
 
 glasssix::longinus::mtcnn_mobile_nir::mtcnn_mobile_nir(int device_id, bool handle_big_face)
