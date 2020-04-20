@@ -202,7 +202,7 @@ namespace glasssix
 			std::shared_ptr<database_feature_observer> observer_;
 		};
 
-		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, std::string_view map_file_path, std::string_view cache_directory) : impl_{ new impl{ observer, map_file_path, cache_directory } }
+		database_business_wrapper::database_business_wrapper(const std::shared_ptr<database_feature_observer>& observer, std::string_view map_file_path, std::string_view cache_directory) : impl_{ new impl{ observer, std::string{ map_file_path }, std::string{ cache_directory } } }
 		{
 		}
 
