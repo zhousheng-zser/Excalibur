@@ -19,20 +19,20 @@ namespace
 
     namespace details
     {
-        template<typename T, typename Result, std::size_t... Indexes>
-        constexpr auto get_numeric_element_helper(T* data, Result& result, std::index_sequence<Indexes...>) -> std::enable_if_t<std::is_arithmetic_v<T>>
+        template<typename Result, std::size_t... Indexes>
+        constexpr auto get_numeric_element_helper(const std::uint8_t* data, Result& result, std::index_sequence<Indexes...>) -> std::enable_if_t<std::is_arithmetic_v<Result>>
         {
             constexpr std::ptrdiff_t total_bits = sizeof(Result) * CHAR_BIT;
             constexpr std::ptrdiff_t max_move_bits = total_bits - CHAR_BIT;
             constexpr std::ptrdiff_t baseline_move_bits = is_big_endian_v ? max_move_bits : 0;
             constexpr std::ptrdiff_t sign = is_big_endian_v ? -1 : 1;
-            
-            ((result += static_cast<Result>((static_cast<std::uintmax_t>(data[Indexes]) << (baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT))), ...);
+
+            ((result += static_cast<Result>((static_cast<std::uintmax_t>(data[Indexes]) << (baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT)))), ...);
         }
     }
 
-    template<typename T, typename Result>
-    constexpr auto get_numeric_element(T* data, Result& result) -> std::enable_if_t<std::is_arithmetic_v<T>>
+    template<typename Result>
+    constexpr auto get_numeric_element(const std::uint8_t* data, Result& result) -> std::enable_if_t<std::is_arithmetic_v<Result>>
     {
         details::get_numeric_element_helper(data, result, std::make_index_sequence<sizeof(Result)>{});
     }
@@ -51,7 +51,7 @@ namespace
 
         for (; data_ptr < native_data.get() + data_size; data_ptr += sizeof(Result), result_ptr++)
         {
-            get_numeric_element(data_ptr, *result_ptr);
+            get_numeric_element(reinterpret_cast<const std::uint8_t*>(data_ptr), *result_ptr);
         }
 
         return result;
