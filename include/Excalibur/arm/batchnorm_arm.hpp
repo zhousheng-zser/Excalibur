@@ -20,12 +20,14 @@ namespace glasssix
 			void Forward_cpu(const std::shared_ptr<memory::tensor<float> >& bottom);
 			void set_bias(float* bias)
 			{
-				b_->set_cpu_data(bias);
+				//b_->set_cpu_data(bias);
+				memcpy(b_->mutable_cpu_data(), bias, b_->count() * sizeof(float));
 			}
 
 			void set_weights(float* weights)
 			{
-				a_->set_cpu_data(weights);
+				//a_->set_cpu_data(weights);
+				memcpy(a_->mutable_cpu_data(), weights, a_->count() * sizeof(float));
 			}
 
 		private:
