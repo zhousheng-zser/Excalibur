@@ -1,7 +1,11 @@
+#pragma once
+
 #ifndef _DAILIR_PNET_MOBILE_NIR_HPP_
 #define _DAILIR_PNET_MOBILE_NIR_HPP_
+
 #include "pnet_mobile_nir_data.hpp"
-#include "../Excalibur/support_layers.hpp"
+#include "Primitives/tensor.hpp"
+#include "Excalibur/support_layers.hpp"
 
 using namespace glasssix::excalibur;
 

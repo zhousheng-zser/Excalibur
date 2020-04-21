@@ -1,11 +1,10 @@
 #pragma once
 
 #include "NativeTensorProxy.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <memory>
-
 #include <marshal_fx.hpp>
-#include <glasssix/tensor.hpp>
 
 using System::Runtime::InteropServices::OptionalAttribute;
 using System::Runtime::InteropServices::DefaultParameterValueAttribute;
@@ -185,8 +184,8 @@ namespace glasssix
             /// <param name="native">The native object</param>
             Tensor(System::IntPtr native) : Tensor{}
             {
-                tensor_ = static_cast<excalibur::tensor_*>(native.ToPointer())->clone_new();
-                tensor_ptr_ = new std::shared_ptr<excalibur::tensor_>{ tensor_, std::default_delete<excalibur::tensor_>{} };
+                tensor_ = static_cast<memory::tensor_*>(native.ToPointer())->clone_new();
+                tensor_ptr_ = new std::shared_ptr<memory::tensor_>{ tensor_, std::default_delete<memory::tensor_>{} };
             }
 
             /// <summary>
@@ -196,7 +195,7 @@ namespace glasssix
             Tensor(TensorOrderType order) : Tensor{}
             {
                 tensor_ = proxy_->Create(order);
-                tensor_ptr_ = new std::shared_ptr<excalibur::tensor_>{ tensor_, std::default_delete<excalibur::tensor_>{} };
+                tensor_ptr_ = new std::shared_ptr<memory::tensor_>{ tensor_, std::default_delete<memory::tensor_>{} };
             }
 
             /// <summary>
@@ -210,7 +209,7 @@ namespace glasssix
                 [Optional, DefaultParameterValue(TensorOrderType::NCHW)] TensorOrderType order) : Tensor{}
             {
                 tensor_ = proxy_->Create(shape, device, order);
-                tensor_ptr_ = new std::shared_ptr<excalibur::tensor_>{ tensor_, std::default_delete<excalibur::tensor_>{} };
+                tensor_ptr_ = new std::shared_ptr<memory::tensor_>{ tensor_, std::default_delete<memory::tensor_>{} };
             }
 
             /// <summary>
@@ -224,7 +223,7 @@ namespace glasssix
                 [Optional, DefaultParameterValue(TensorOrderType::NCHW)] TensorOrderType order) : Tensor{}
             {
                 tensor_ = proxy_->Create(shape, device, order);
-                tensor_ptr_ = new std::shared_ptr<excalibur::tensor_>{ tensor_, std::default_delete<excalibur::tensor_>{} };
+                tensor_ptr_ = new std::shared_ptr<memory::tensor_>{ tensor_, std::default_delete<memory::tensor_>{} };
             }
 
             /// <summary>
@@ -300,9 +299,9 @@ namespace glasssix
                 }
             }
         private:
-            tensor_* tensor_;
+            memory::tensor_* tensor_;
             NativeTensorProxy^ proxy_;
-            std::shared_ptr<excalibur::tensor_>* tensor_ptr_;
+            std::shared_ptr<memory::tensor_>* tensor_ptr_;
         };
     }
 }

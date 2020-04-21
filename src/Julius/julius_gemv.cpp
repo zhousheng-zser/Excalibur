@@ -1,5 +1,5 @@
 #include "julius_gemv.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {

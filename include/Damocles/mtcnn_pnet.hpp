@@ -1,8 +1,10 @@
 #pragma once
 #ifndef _MTCNN_PNET_HPP_
 #define _MTCNN_PNET_HPP_
+
 #include "mtcnn_pnet_data.hpp"
-#include "../Excalibur/support_layers.hpp"
+#include "Excalibur/support_layers.hpp"
+#include "Primitives/tensor.hpp"
 
 using namespace glasssix::excalibur;
 

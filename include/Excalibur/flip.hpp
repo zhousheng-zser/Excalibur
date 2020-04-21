@@ -2,7 +2,7 @@
 #ifndef _FLIP_HPP_
 #define _FLIP_HPP_
 
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 namespace glasssix

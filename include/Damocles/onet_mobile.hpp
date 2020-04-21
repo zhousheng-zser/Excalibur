@@ -1,6 +1,10 @@
+#pragma once
+
 #ifndef _DAILIR_ONET_HPP_
 #define _DAILIR_ONET_HPP_
-#include "../Excalibur/support_layers.hpp"
+
+#include "Excalibur/support_layers.hpp"
+#include "Primitives/tensor.hpp"
 #include "onet_mobile_data.hpp"
 
 using namespace glasssix::excalibur;

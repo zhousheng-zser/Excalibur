@@ -6,10 +6,13 @@ using System::Runtime::InteropServices::GCHandle;
 
 namespace glasssix
 {
-    namespace excalibur
+    namespace memory
     {
         struct tensor_;
+    }
 
+    namespace excalibur
+    {
         /// <summary>
         /// A adapter for native tensors with caches.
         /// </summary>
@@ -59,12 +62,12 @@ namespace glasssix
             /// Create an instance of a tensor using a specified memory order.
             /// </summary>
             /// <param name="order">The memory order</param>
-            tensor_* Create(TensorOrderType order)
+            memory::tensor_* Create(TensorOrderType order)
             {
                 auto handler = assigned_constructors_->Lookup(System::Reflection::MethodBase::GetCurrentMethod());
                 auto result = safe_cast<System::IntPtr>(handler->DynamicInvoke(order)).ToPointer();
                 
-                return handler != nullptr ? static_cast<tensor_*>(result) : nullptr;
+                return handler != nullptr ? static_cast<memory::tensor_*>(result) : nullptr;
             }
 
             /// <summary>
@@ -73,12 +76,12 @@ namespace glasssix
             /// <param name="shape">The shape data</param>
             /// <param name="device">The device ID</param>
             /// <param name="order">The memory order</param>
-            tensor_* Create(int shape, int device, TensorOrderType order)
+            memory::tensor_* Create(int shape, int device, TensorOrderType order)
             {
                 auto handler = assigned_constructors_->Lookup(System::Reflection::MethodBase::GetCurrentMethod());
                 auto result = safe_cast<System::IntPtr>(handler->DynamicInvoke(shape, device, order)).ToPointer();
 
-                return handler != nullptr ? static_cast<tensor_*>(result) : nullptr;
+                return handler != nullptr ? static_cast<memory::tensor_*>(result) : nullptr;
             }
 
             /// <summary>
@@ -87,12 +90,12 @@ namespace glasssix
             /// <param name="shape">The shape data</param>
             /// <param name="device">The device ID</param>
             /// <param name="order">The memory order</param>
-            tensor_* Create(System::Collections::Generic::IList<int>^ shape, int device, TensorOrderType order)
+            memory::tensor_* Create(System::Collections::Generic::IList<int>^ shape, int device, TensorOrderType order)
             {
                 auto handler = assigned_constructors_->Lookup(System::Reflection::MethodBase::GetCurrentMethod());
                 auto result = safe_cast<System::IntPtr>(GCHandle::Alloc(handler->DynamicInvoke(shape, device, order))).ToPointer();
 
-                return handler != nullptr ? static_cast<tensor_*>(result) : nullptr;
+                return handler != nullptr ? static_cast<memory::tensor_*>(result) : nullptr;
             }
         private:
             NativeTensorConstructors^ assigned_constructors_;

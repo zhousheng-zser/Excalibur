@@ -1,4 +1,7 @@
 #include "onet_mobile_nir.hpp"
+#include "Primitives/memory.hpp"
+
+using glasssix::memory::aligned_heap_free;
 
 using namespace glasssix::memory;
 
@@ -20,7 +23,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -276,7 +279,7 @@ namespace glasssix
 #endif
 		}
 
-		void onet_mobile_nir::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		void onet_mobile_nir::Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
 			relu1->Forward_cpu(conv1_top_data);
@@ -292,7 +295,7 @@ namespace glasssix
 			conv2_1_dw->Forward(conv2_1_ex_top_data, conv2_1_dw_top_data);
 			relu2_1_dw->Forward_cpu(conv2_1_dw_top_data);
 			conv2_1_em->Forward(conv2_1_dw_top_data, conv2_1_em_top_data);
-			res2->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
+			res2->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
 			conv3_ex->Forward(res2_top_data, conv3_ex_top_data);
 			relu3_ex->Forward_cpu(conv3_ex_top_data);
 			conv3_dw->Forward(conv3_ex_top_data, conv3_dw_top_data);
@@ -303,7 +306,7 @@ namespace glasssix
 			conv3_1_dw->Forward(conv3_1_ex_top_data, conv3_1_dw_top_data);
 			relu3_1_dw->Forward_cpu(conv3_1_dw_top_data);
 			conv3_1_em->Forward(conv3_1_dw_top_data, conv3_1_em_top_data);
-			res3->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
+			res3->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
 			conv4_ex->Forward(res3_top_data, conv4_ex_top_data);
 			relu4_ex->Forward_cpu(conv4_ex_top_data);
 			conv4_dw->Forward(conv4_ex_top_data, conv4_dw_top_data);
@@ -314,7 +317,7 @@ namespace glasssix
 			conv4_1_dw->Forward(conv4_1_ex_top_data, conv4_1_dw_top_data);
 			relu4_1_dw->Forward_cpu(conv4_1_dw_top_data);
 			conv4_1_em->Forward(conv4_1_dw_top_data, conv4_1_em_top_data);
-			res4->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
+			res4->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
 			conv5_ex->Forward(res4_top_data, conv5_ex_top_data);
 			relu5_ex->Forward_cpu(conv5_ex_top_data);
 			conv5_dw->Forward(conv5_ex_top_data, conv5_dw_top_data);
@@ -326,7 +329,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDA
-		void onet_mobile_nir::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
+		void onet_mobile_nir::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			relu1->Forward_gpu_native(conv1_top_data);
@@ -342,7 +345,7 @@ namespace glasssix
 			conv2_1_dw->Forward(cublas_handle_, conv2_1_ex_top_data, conv2_1_dw_top_data);
 			relu2_1_dw->Forward_gpu_native(conv2_1_dw_top_data);
 			conv2_1_em->Forward(cublas_handle_, conv2_1_dw_top_data, conv2_1_em_top_data);
-			res2->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
+			res2->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
 			conv3_ex->Forward(cublas_handle_, res2_top_data, conv3_ex_top_data);
 			relu3_ex->Forward_gpu_native(conv3_ex_top_data);
 			conv3_dw->Forward(cublas_handle_, conv3_ex_top_data, conv3_dw_top_data);
@@ -353,7 +356,7 @@ namespace glasssix
 			conv3_1_dw->Forward(cublas_handle_, conv3_1_ex_top_data, conv3_1_dw_top_data);
 			relu3_1_dw->Forward_gpu_native(conv3_1_dw_top_data);
 			conv3_1_em->Forward(cublas_handle_, conv3_1_dw_top_data, conv3_1_em_top_data);
-			res3->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
+			res3->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
 			conv4_ex->Forward(cublas_handle_, res3_top_data, conv4_ex_top_data);
 			relu4_ex->Forward_gpu_native(conv4_ex_top_data);
 			conv4_dw->Forward(cublas_handle_, conv4_ex_top_data, conv4_dw_top_data);
@@ -364,7 +367,7 @@ namespace glasssix
 			conv4_1_dw->Forward(cublas_handle_, conv4_1_ex_top_data, conv4_1_dw_top_data);
 			relu4_1_dw->Forward_gpu_native(conv4_1_dw_top_data);
 			conv4_1_em->Forward(cublas_handle_, conv4_1_dw_top_data, conv4_1_em_top_data);
-			res4->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
+			res4->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
 			conv5_ex->Forward(cublas_handle_, res4_top_data, conv5_ex_top_data);
 			relu5_ex->Forward_gpu_native(conv5_ex_top_data);
 			conv5_dw->Forward(cublas_handle_, conv5_ex_top_data, conv5_dw_top_data);
@@ -375,7 +378,7 @@ namespace glasssix
 			conv6_4->Forward_gpu_native(cublas_handle_, conv5_dw_top_data, conv6_4_top_data);
 		}
 #ifdef USE_CUDNN
-		void onet_mobile_nir::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
+		void onet_mobile_nir::Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			relu1->Forward_gpu_native(conv1_top_data);
@@ -391,7 +394,7 @@ namespace glasssix
 			conv2_1_dw->Forward(cudnn_handle_, conv2_1_ex_top_data, conv2_1_dw_top_data);
 			relu2_1_dw->Forward_gpu_native(conv2_1_dw_top_data);
 			conv2_1_em->Forward(cudnn_handle_, conv2_1_dw_top_data, conv2_1_em_top_data);
-			res2->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
+			res2->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv2_em_top_data, conv2_1_em_top_data}, res2_top_data);
 			conv3_ex->Forward(cudnn_handle_, res2_top_data, conv3_ex_top_data);
 			relu3_ex->Forward_gpu_native(conv3_ex_top_data);
 			conv3_dw->Forward(cudnn_handle_, conv3_ex_top_data, conv3_dw_top_data);
@@ -402,7 +405,7 @@ namespace glasssix
 			conv3_1_dw->Forward(cudnn_handle_, conv3_1_ex_top_data, conv3_1_dw_top_data);
 			relu3_1_dw->Forward_gpu_native(conv3_1_dw_top_data);
 			conv3_1_em->Forward(cudnn_handle_, conv3_1_dw_top_data, conv3_1_em_top_data);
-			res3->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
+			res3->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv3_em_top_data, conv3_1_em_top_data}, res3_top_data);
 			conv4_ex->Forward(cudnn_handle_, res3_top_data, conv4_ex_top_data);
 			relu4_ex->Forward_gpu_native(conv4_ex_top_data);
 			conv4_dw->Forward(cudnn_handle_, conv4_ex_top_data, conv4_dw_top_data);
@@ -413,7 +416,7 @@ namespace glasssix
 			conv4_1_dw->Forward(cudnn_handle_, conv4_1_ex_top_data, conv4_1_dw_top_data);
 			relu4_1_dw->Forward_gpu_native(conv4_1_dw_top_data);
 			conv4_1_em->Forward(cudnn_handle_, conv4_1_dw_top_data, conv4_1_em_top_data);
-			res4->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
+			res4->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{conv4_em_top_data, conv4_1_em_top_data}, res4_top_data);
 			conv5_ex->Forward(cudnn_handle_, res4_top_data, conv5_ex_top_data);
 			relu5_ex->Forward_gpu_native(conv5_ex_top_data);
 			conv5_dw->Forward(cudnn_handle_, conv5_ex_top_data, conv5_dw_top_data);
@@ -426,7 +429,7 @@ namespace glasssix
 #endif
 #endif
 
-		void onet_mobile_nir::Forward(const std::shared_ptr<tensor<float>> input_data)
+		void onet_mobile_nir::Forward(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			if (device_ < 0)
 			{

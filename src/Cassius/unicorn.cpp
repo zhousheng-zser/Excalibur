@@ -1,7 +1,8 @@
 #include "unicorn.hpp"
+#include "Primitives/simd_types.hpp"
+
 #include <iostream>
 #include <vector>
-#include "../../include/Julius/simd_helper.hpp"
 
 #ifdef INT8_DATA
 #include "unicorn_int8_data.hpp"
@@ -12,8 +13,10 @@
 //define CALC_LAYERS, calculate time_consuming layer by layer
 //#define CALC_LAYERS
 #ifdef CALC_LAYERS
-#include <glasssix/profiler.hpp>
+#include "Primitives/profiler.hpp"
 #endif //CALC_LAYERS
+
+using namespace glasssix::memory;
 
 namespace glasssix
 {
@@ -520,34 +523,34 @@ namespace glasssix
 			delete normalizer;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(relu1a_weights, false);
-			FreeHost(relu1b_weights, false);
-			FreeHost(relu2_1_weights, false);
-			FreeHost(relu2_2_weights, false);
-			FreeHost(relu2_weights, false);
-			FreeHost(relu3_1_weights, false);
-			FreeHost(relu3_2_weights, false);
-			FreeHost(relu3_3_weights, false);
-			FreeHost(relu3_4_weights, false);
-			FreeHost(relu3_weights, false);
-			FreeHost(relu4_1_weights, false);
-			FreeHost(relu4_2_weights, false);
-			FreeHost(relu4_3_weights, false);
-			FreeHost(relu4_4_weights, false);
-			FreeHost(relu4_5_weights, false);
-			FreeHost(relu4_6_weights, false);
-			FreeHost(relu4_7_weights, false);
-			FreeHost(relu4_8_weights, false);
-			FreeHost(relu4_9_weights, false);
-			FreeHost(relu4_10_weights, false);
-			FreeHost(relu4_weights, false);
-			FreeHost(relu5_1_weights, false);
-			FreeHost(relu5_2_weights, false);
-			FreeHost(relu5_3_weights, false);
-			FreeHost(relu5_4_weights, false);
-			FreeHost(relu5_5_weights, false);
-			FreeHost(relu5_6_weights, false);
-			FreeHost(relu5_weights, false);
+			aligned_heap_free(relu1a_weights);
+			aligned_heap_free(relu1b_weights);
+			aligned_heap_free(relu2_1_weights);
+			aligned_heap_free(relu2_2_weights);
+			aligned_heap_free(relu2_weights);
+			aligned_heap_free(relu3_1_weights);
+			aligned_heap_free(relu3_2_weights);
+			aligned_heap_free(relu3_3_weights);
+			aligned_heap_free(relu3_4_weights);
+			aligned_heap_free(relu3_weights);
+			aligned_heap_free(relu4_1_weights);
+			aligned_heap_free(relu4_2_weights);
+			aligned_heap_free(relu4_3_weights);
+			aligned_heap_free(relu4_4_weights);
+			aligned_heap_free(relu4_5_weights);
+			aligned_heap_free(relu4_6_weights);
+			aligned_heap_free(relu4_7_weights);
+			aligned_heap_free(relu4_8_weights);
+			aligned_heap_free(relu4_9_weights);
+			aligned_heap_free(relu4_10_weights);
+			aligned_heap_free(relu4_weights);
+			aligned_heap_free(relu5_1_weights);
+			aligned_heap_free(relu5_2_weights);
+			aligned_heap_free(relu5_3_weights);
+			aligned_heap_free(relu5_4_weights);
+			aligned_heap_free(relu5_5_weights);
+			aligned_heap_free(relu5_6_weights);
+			aligned_heap_free(relu5_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)

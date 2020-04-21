@@ -63,14 +63,14 @@ namespace glasssix
             /// Set the parameters for building a tensor.
             /// </summary>
             /// <param name="order">The memory order</param>
-            virtual void tensor_parameters(orderType order) override;
+            virtual void tensor_parameters(memory::orderType order) override;
 
             /// <summary>
             /// Set the parameters for building a tensor.
             /// </summary>
             /// <param name="order">The memory order</param>
             /// <param name="device">The device ID</param>
-            virtual void tensor_parameters(orderType order, int device) override;
+            virtual void tensor_parameters(memory::orderType order, int device) override;
 
             /// <summary>
             /// Create an image from a floating-point tensor.
@@ -81,7 +81,7 @@ namespace glasssix
             /// True: success
             /// False: failure
             ///</returns>
-            virtual bool from_tensor(const tensor<float>& data, tensor_layout layout) override;
+            virtual bool from_tensor(const memory::tensor<float>& data, tensor_layout layout) override;
 
             /// <summary>
             /// Create a bitmap from a uint8 tensor.
@@ -92,35 +92,35 @@ namespace glasssix
             /// True: success
             /// False: failure
             ///</returns>
-            virtual bool from_tensor(const tensor<uint8_t>& data, tensor_layout layout) override;
+            virtual bool from_tensor(const memory::tensor<uint8_t>& data, tensor_layout layout) override;
 
             /// <summary>
             /// Create a floating-point tensor.
             /// </summary>
             /// <param name="layout">The destintation bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<float>> to_tensor_float(tensor_layout layout) override;
+            virtual std::optional<memory::tensor<float>> to_tensor_float(tensor_layout layout) override;
 
             /// <summary>
             /// Create a uint8 tensor.
             /// </summary>
             /// <param name="layout">The destination bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::optional<tensor<uint8_t>> to_tensor_uint8(tensor_layout layout) override;
+            virtual std::optional<memory::tensor<uint8_t>> to_tensor_uint8(tensor_layout layout) override;
 
             /// <summary>
             /// Create a shared floating-point tensor.
             /// </summary>
             /// <param name="layout">The destintation bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::shared_ptr<tensor<float>> to_tensor_float_shared(tensor_layout layout) override;
+            virtual std::shared_ptr<memory::tensor<float>> to_tensor_float_shared(tensor_layout layout) override;
 
             /// <summary>
             /// Create a shared uint8 tensor.
             /// </summary>
             /// <param name="layout">The destination bitmap type</param>
             /// <returns>The result</returns>
-            virtual std::shared_ptr<tensor<uint8_t>> to_tensor_uint8_shared(tensor_layout layout) override;
+            virtual std::shared_ptr<memory::tensor<uint8_t>> to_tensor_uint8_shared(tensor_layout layout) override;
         private:
             /// <summary>
             /// Update the parameters of the image.
@@ -143,14 +143,14 @@ namespace glasssix
             /// <returns>The result</returns>
             template<typename TEnum, typename UnderlyingType, bool Shared>
             auto to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
-                ->std::conditional_t<Shared, std::shared_ptr<tensor<UnderlyingType>>, std::optional<tensor<UnderlyingType>>>;
+                ->std::conditional_t<Shared, std::shared_ptr<memory::tensor<UnderlyingType>>, std::optional<memory::tensor<UnderlyingType>>>;
         private:
             int width_;
             int height_;
             int stride_;
             int device_;
             int channels_;
-            orderType order_;
+            memory::orderType order_;
             std::shared_ptr<fi_image_ex> image_;
         private:
             static constexpr int uint8_bits_ = 8;

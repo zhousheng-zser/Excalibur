@@ -2,10 +2,9 @@
 
 #include "tensor_converter.hpp"
 #include "tensor_or_shared.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <memory>
-
-#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -41,9 +40,9 @@ namespace glasssix
         /// <param name="source">The source tensor</param>
         /// <returns>The allocated tensor</returns>
         template<typename UnderlyingType, bool Shared = false>
-        auto allocate_tensor(const tensor_base& source)
+        auto allocate_tensor(const memory::tensor_& source)
         {
-            auto input_vector = source.order() == NHWC ?
+            auto input_vector = source.order() == memory::NHWC ?
                 std::vector<int>{ source.num(), source.height(), source.width(), source.channels() } :
                 std::vector<int>{ source.num(),  source.channels(),  source.height(),  source.width() };
 

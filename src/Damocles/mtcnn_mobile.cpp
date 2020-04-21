@@ -1,8 +1,8 @@
 #include "mtcnn_mobile.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 
 #ifdef USE_CUDA
-#include "../../include/Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
 #endif
 
 #include <algorithm>
@@ -235,7 +235,7 @@ bool glasssix::longinus::mtcnn_mobile::PNet_Process(std::shared_ptr<tensor<unsig
 		}
 
 		PNet_->Forward(bgr_32fc3);
-		std::shared_ptr<tensor<float>> confidence = PNet_->get_cls_prob();
+		std::shared_ptr<memory::tensor<float>> confidence = PNet_->get_cls_prob();
 		const float *confidence_data = confidence->cpu_data();
 
 		int confidenceH = confidence->height();

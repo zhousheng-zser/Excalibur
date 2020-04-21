@@ -1,5 +1,5 @@
 #include "julius_nrm2.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/simd_types.hpp"
 #include <cmath>
 
 namespace glasssix

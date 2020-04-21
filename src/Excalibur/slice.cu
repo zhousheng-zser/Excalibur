@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "../../include/excalibur/slice.hpp"
+#include "excalibur/slice.hpp"
 
 using namespace glasssix::memory;
 

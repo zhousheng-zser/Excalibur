@@ -93,6 +93,10 @@
     <ClInclude Include="..\..\include\Primitives\tensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\format.h" />
+    <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef _DAMOCLES_HPP_
 #define _DAMOCLES_HPP_
 

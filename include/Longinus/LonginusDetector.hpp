@@ -1,11 +1,13 @@
 #ifndef _ROMANCIADETECTOR_HPP_
 #define _ROMANCIADETECTOR_HPP_
 
+#include "matcher.hpp"
+
 #include <vector>
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "matcher.hpp"
+
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif
@@ -166,7 +168,7 @@ namespace glasssix
 
 			static std::vector<bool> maskJudge(const std::vector<unsigned char> &aligned_data, int n);
 
-			std::vector<face_rect_with_face_info> detectRetina(const unsigned char *image, int channels, int height, int width,
+			std::vector<face_rect_with_face_info> detectRetina(const unsigned char *image, int min_win, int height, int width,
 				                                           int order, float threshold = 0.5) const;
 
 #ifndef TRIAL

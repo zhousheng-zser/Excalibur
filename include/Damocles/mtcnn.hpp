@@ -1,12 +1,15 @@
 #pragma once
+
 #ifndef _MTCNN_HPP_
 #define _MTCNN_HPP_
+
 #include "mtcnn_pnet.hpp"
 #include "mtcnn_onet.hpp"
 #include "mtcnn_rnet.hpp"
 #include "vdamocles.hpp"
-#include <omp.h>
+#include "Primitives/tensor.hpp"
 
+#include <omp.h>
 
 namespace glasssix
 {
@@ -24,10 +27,10 @@ namespace glasssix
 
 			//P-NET
 			void GenerateBBox(const std::shared_ptr<memory::tensor<float>> &confidence, const std::shared_ptr<memory::tensor<float>> &reg_box, float scale, float thresh);
-			std::vector<FaceInfomation> ProposalNet(const std::shared_ptr<memory::tensor<float>> &image, int min_size, float threshold, float factor, memory::orderType order = memory::orderType::NHWC);
+			std::vector<FaceInfomation> ProposalNet(const std::shared_ptr<memory::tensor<float>> &image, int min_size, float threshold, float factor, memory::orderType order = memory::NHWC);
 
 			//R-NET, O-NET
-			std::vector<FaceInfomation> NextStage(const std::shared_ptr<memory::tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, memory::orderType order = memory::orderType::NHWC);
+			std::vector<FaceInfomation> NextStage(const std::shared_ptr<memory::tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, glasssix::memory::orderType order = glasssix::memory::NHWC);
 			
 			std::vector<FaceInfomation> NMS(std::vector<FaceInfomation>& bboxes, float thresh, char methodType);
 			void refine(std::vector<FaceInfomation> &vecFaceInfomation, const int &height, const int &width, bool square);

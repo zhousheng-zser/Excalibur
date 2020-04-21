@@ -1,8 +1,8 @@
 #pragma once
 
-#include <FreeImage.h>
+#include "Primitives/singleton.hpp"
 
-#include <glasssix/init_once.hpp>
+#include <FreeImage.h>
 
 namespace glasssix
 {

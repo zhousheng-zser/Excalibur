@@ -1,11 +1,9 @@
 #include "mtcnn.hpp"
-#include "../Excalibur/tensor_operation_cpu.hpp"
-#include "../Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
+
 #include <algorithm>
 #include <fstream>
-
-using namespace glasssix::memory;
-using namespace std;
 
 namespace glasssix
 {
@@ -121,7 +119,7 @@ namespace glasssix
 			float bbw = 0, bbh = 0, maxSide = 0;
 			float h = 0, w = 0;
 			float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-			for (vector<FaceInfomation>::iterator it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++) {
+			for (auto it = vecFaceInfomation.begin(); it != vecFaceInfomation.end(); it++) {
 				bbw = (*it).bbox.xmax - (*it).bbox.xmin/* + 1*/;
 				bbh = (*it).bbox.ymax - (*it).bbox.ymin/* + 1*/;
 				x1 = (*it).bbox.xmin + (*it).bbox_reg[0] * bbw;
@@ -159,7 +157,7 @@ namespace glasssix
         /// <param name="reg_box">P-NET reg_box</param>
         /// <param name="scale">scale factor</param>
         /// <param name="thresh">confidence exceed threshold value will be proposed</param>
-		void MTCNN::GenerateBBox(const std::shared_ptr<tensor<float>> &confidence, const std::shared_ptr<tensor<float>> &reg_box,
+		void MTCNN::GenerateBBox(const std::shared_ptr<memory::tensor<float>> &confidence, const std::shared_ptr<memory::tensor<float>> &reg_box,
 			float scale, float thresh)
 		{
 			int feature_map_w = confidence->width();
@@ -206,7 +204,7 @@ namespace glasssix
         /// <param name="threshold">confidence exceed threshold value will be proposed</param>
         /// <param name="factor">scale factor between two near images</param>
 		/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
-		std::vector<FaceInfomation> MTCNN::ProposalNet(const std::shared_ptr<tensor<float>> &image, int minSize, float threshold, float factor, orderType order) 
+		std::vector<FaceInfomation> MTCNN::ProposalNet(const std::shared_ptr<memory::tensor<float>> &image, int minSize, float threshold, float factor, memory::orderType order)
 		{
 			int channels = image->channels();
 			int height = image->height();
@@ -220,13 +218,13 @@ namespace glasssix
 				scale *= factor;
 			}
 			total_boxes_.clear();
-			std::shared_ptr<tensor<float>> input_layer;
+			std::shared_ptr<memory::tensor<float>> input_layer;
 
 			for (int i = 0; i < scales.size(); i++) {
 				float coef = scales[i];
 				int ws = static_cast<int>(width * coef + 0.5);
 				int hs = static_cast<int>(height * coef + 0.5);
-				input_layer.reset(new tensor<float>(std::vector<int>{ 1, channels, hs, ws }, device_id_));
+				input_layer.reset(new memory::tensor<float>(std::vector<int>{ 1, channels, hs, ws }, device_id_));
 
 				if (device_id_ < 0)
 				{
@@ -242,8 +240,8 @@ namespace glasssix
 				}
 
 				PNet_->Forward(input_layer);
-				std::shared_ptr<tensor<float>> confidence = PNet_->get_prob1();
-				std::shared_ptr<tensor<float>> reg = PNet_->get_conv4_2();
+				std::shared_ptr<memory::tensor<float>> confidence = PNet_->get_prob1();
+				std::shared_ptr<memory::tensor<float>> reg = PNet_->get_conv4_2();
 
 				GenerateBBox(confidence, reg, scales[i], threshold);
 
@@ -266,7 +264,7 @@ namespace glasssix
         /// <param name="stage_num">R-NET: 2, O-NET: 3</param>
 		/// <param name="threshold">confidence exceed threshold value will be retained</param>
 		/// <param name="order">order type of image tensor: NCHW(0) / NHWC(1)</param>
-		std::vector<FaceInfomation> MTCNN::NextStage(const std::shared_ptr<tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, orderType order)
+		std::vector<FaceInfomation> MTCNN::NextStage(const std::shared_ptr<memory::tensor<float>> &image, std::vector<FaceInfomation> &pre_stage_res, int input_w, int input_h, int stage_num, const float threshold, memory::orderType order)
 		{
 			std::vector<FaceInfomation> res;
 			int batch_size = (int)pre_stage_res.size();
@@ -277,17 +275,17 @@ namespace glasssix
 			int height = image->height();
 			int width = image->width();
 
-			std::shared_ptr<tensor<float>> input_layer;
-			std::shared_ptr<tensor<float>> confidence;
-			std::shared_ptr<tensor<float>> reg_box;
-			std::shared_ptr<tensor<float>> reg_landmark;
+			std::shared_ptr<memory::tensor<float>> input_layer;
+			std::shared_ptr<memory::tensor<float>> confidence;
+			std::shared_ptr<memory::tensor<float>> reg_box;
+			std::shared_ptr<memory::tensor<float>> reg_landmark;
 
 			switch (stage_num) {
 			case 2: {
-				input_layer.reset(new tensor<float>(std::vector<int>{batch_size, channels, input_h, input_w}, device_id_));
+				input_layer.reset(new memory::tensor<float>(std::vector<int>{batch_size, channels, input_h, input_w}, device_id_));
 			}break;
 			case 3: {
-				input_layer.reset(new tensor<float>(std::vector<int>{batch_size, channels, input_h, input_w}, device_id_));
+				input_layer.reset(new memory::tensor<float>(std::vector<int>{batch_size, channels, input_h, input_w}, device_id_));
 			}break;
 			default:
 				return res;
@@ -313,7 +311,7 @@ namespace glasssix
 #endif
 			for (int n = 0; n < batch_size; ++n)
 			{
-				std::shared_ptr<tensor<float>> roi_tensor, roi_resized_tensor;
+				std::shared_ptr<memory::tensor<float>> roi_tensor, roi_resized_tensor;
 				
 				FaceBox &box = pre_stage_res[n].bbox;
 				int rect_h = (int)box.ymax - (int)box.ymin;
@@ -423,16 +421,16 @@ namespace glasssix
 			{
 				return onet_res;
 			}
-			orderType order_ = (orderType)order;
+			memory::orderType order_ = (memory::orderType)order;
 
-			std::shared_ptr<tensor<unsigned char>> src_tensor;
-			std::shared_ptr<tensor<float>> src_float_tensor;
+			std::shared_ptr<memory::tensor<unsigned char>> src_tensor;
+			std::shared_ptr<memory::tensor<float>> src_float_tensor;
 			float means[3] = { 127.5f, 127.5f, 127.5f };
 			float var = 0.0078125;
-			if (order == NHWC)
+			if (order == memory::NHWC)
 			{
-				std::shared_ptr<tensor<unsigned char>> src_nhwc_tensor;
-				src_nhwc_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, NHWC));
+				std::shared_ptr<memory::tensor<unsigned char>> src_nhwc_tensor;
+				src_nhwc_tensor.reset(new memory::tensor<unsigned char>(std::vector<int>{1, height, width, channels}, device_id_, memory::NHWC));
 				if (device_id_ < 0)
 				{
 					memcpy(src_nhwc_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));
@@ -450,9 +448,9 @@ namespace glasssix
 #endif // USE_CUDA
 				}
 			}
-			else if (order == NCHW)
+			else if (order == memory::NCHW)
 			{
-				src_tensor.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, NCHW));
+				src_tensor.reset(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_id_, memory::NCHW));
 				if (device_id_ < 0)
 				{
 					memcpy(src_tensor->mutable_cpu_data(), image, channels * height * width * sizeof(unsigned char));

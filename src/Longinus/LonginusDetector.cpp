@@ -8,17 +8,21 @@
 
 #include "LonginusDetector.hpp"
 #include "ImageOperation.hpp"
-#include "../../include/Romancia/banshee.hpp"
-#include "../../include/Retina/RetinaFace.hpp"
-#include "../../include/Selene/blur_vsl_net.hpp"
-#include "../../include/Selene/black_white_vsl.hpp"
-#include "../../include/Selene/face_nose_nir.hpp"
-#include "../../include/Damocles/mtcnn.hpp"
-#include "../../include/Damocles/mtcnn_mobile.hpp"
-#include "../../include/Damocles/mtcnn_mobile_nir.hpp"
+#include "Romancia/banshee.hpp"
+#include "Retina/RetinaFace.hpp"
+#include "Selene/blur_vsl_net.hpp"
+#include "Selene/black_white_vsl.hpp"
+#include "Selene/face_nose_nir.hpp"
+#include "Damocles/mtcnn.hpp"
+#include "Damocles/mtcnn_mobile.hpp"
+#include "Damocles/mtcnn_mobile_nir.hpp"
+#include "Primitives/tensor.hpp"
+
 #ifdef TRIAL
 #include "InternalLonginusCascade.hpp"
 #endif // !TRIAL
+
+using namespace glasssix::memory;
 
 //use for mask judge
 const float mask_param[59] = { -0.356874f, -0.317302f,  1.10015f,   0.203173f,   0.91378f, 
@@ -248,7 +252,7 @@ namespace glasssix
 				return std::vector<face_rect_with_face_info>();
 			}
 			std::vector<std::vector<float> > infoParam;
-			std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
+			std::shared_ptr<memory::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 			group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));
 
 			if (device_ < 0)
@@ -515,7 +519,7 @@ namespace glasssix
         /// <param name="order">order type of image: NCHW(0) / NHWC(1)</param>
         /// <param name="threshold">threshold value, 0.5f by default</param>
         /// <param name="scales">scale value, 1.0f by default</param>
-		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold) const
+		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int min_win, int img_height, int img_width, int img_order, float threshold) const
 		{
 			std::vector<face_rect_with_face_info> output;
 
@@ -524,7 +528,7 @@ namespace glasssix
 				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
 			}).get();
 #else
-			auto res = retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
+			auto res = retina_->detect(img_data, min_win, img_height, img_width, img_order, threshold);
 #endif
 
 			for (auto i = 0; i < res.size(); i++)
@@ -926,9 +930,9 @@ namespace glasssix
 			return impl_->alignFace(ori_image, n, channels, height, width);
 		}
 
-		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int channels, int height, int width, int order, float threshold) const
+		std::vector<face_rect_with_face_info> LonginusDetector::detectRetina(const unsigned char *image, int min_win, int height, int width, int order, float threshold) const
 		{
-			return impl_->detectRetina(image, channels, height, width, order, threshold);
+			return impl_->detectRetina(image, min_win, height, width, order, threshold);
 		}
 
 #ifndef TRIAL

@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _UPSAMPLE_HPP_
 #define _UPSAMPLE_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include <memory>
 
 namespace glasssix

@@ -58,7 +58,7 @@ namespace glasssix
 		{
 			if (cpu_ptr_ && own_cpu_data_)
 			{
-				//FreeHost(cpu_ptr_, cpu_malloc_use_cuda_);
+				//aligned_heap_free(cpu_ptr_, cpu_malloc_use_cuda_);
 				if (allocator_)
 				{
 					allocator_->fastFree(cpu_ptr_, device_);

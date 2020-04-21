@@ -1,7 +1,9 @@
 #pragma once
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
-#include "../../include/Primitives/simd_types.hpp"
+
+#include "Primitives/tensor.hpp"
+#include "Primitives/simd_types.hpp"
 #include "base_conv.hpp"
 #include "conv_cudnn_gpu.hpp"
 #include "conv_native_cpu.hpp"
@@ -41,8 +43,8 @@
 #include <climits>
 
 #define Neuron_Name(name) private: \
-std::shared_ptr<memory::tensor<float>> name##_top_data;\
-public: std::shared_ptr<memory::tensor<float>> get_##name(){\
+std::shared_ptr<glasssix::memory::tensor<float>> name##_top_data;\
+public: std::shared_ptr<glasssix::memory::tensor<float>> get_##name(){\
 return name##_top_data;\
 }\
 private:
@@ -63,16 +65,16 @@ half2float((unsigned short*)netname##_##layer_para,layer_para,sizeof(netname##_#
 #else
 #define Copy_Params(layer_para, netname, datatype)\
 if(datatype == INT_MAX){\
-layer_para =  (float*)aligned_heap_alloc(sizeof(netname##_##layer_para), MALLOC_ALIGN); \
+layer_para =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layer_para), MALLOC_ALIGN); \
 memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
 if(datatype == USHRT_MAX) {\
-layer_para =  (float*)aligned_heap_alloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float), MALLOC_ALIGN); \
+layer_para =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float), MALLOC_ALIGN); \
 half2float((unsigned short*)netname##_##layer_para,layer_para,sizeof(netname##_##layer_para) / sizeof(unsigned short));}
 #endif
 
 
 #define Copy_Int8_to_FP32_Params(layername, netname)\
-layername##_##weights =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(signed char) * sizeof(float), MALLOC_ALIGN); \
+layername##_##weights =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(signed char) * sizeof(float), MALLOC_ALIGN); \
 int8_to_float((const signed char*)netname##_##layername##_##weights,(const float*)netname##_##layername##_##scales_weight,(float*)layername##_##weights,\
     sizeof(netname##_##layername##_##weights) / sizeof(signed char),sizeof(netname##_##layername##_##scales_weight) / sizeof(float));
 
@@ -80,11 +82,11 @@ int8_to_float((const signed char*)netname##_##layername##_##weights,(const float
 #ifdef INT8_DATA //copy directely, do not caculate
 
 #define Copy_Int8_Params(layername, netname)\
-layername##_##bias =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
+layername##_##bias =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
 memcpy(layername##_##bias, netname##_##layername##_##bias, sizeof(netname##_##layername##_##bias));\
-layername##_##weights_int8 =  (signed char*)aligned_heap_alloc(sizeof(netname##_##layername##_##weights), MALLOC_ALIGN); \
+layername##_##weights_int8 =  (signed char*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##weights), MALLOC_ALIGN); \
 memcpy(layername##_##weights_int8, netname##_##layername##_##weights, sizeof(netname##_##layername##_##weights));\
-layername##_##scales =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
+layername##_##scales =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
 layername##_##scales[0] =  netname##_##layername##_##scales_bottom[0];\
 for (int i = 0; i < sizeof(netname##_##layername##_##scales_weight) / sizeof(float); i++) {\
 layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
@@ -94,9 +96,9 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 #if SIMD_TYPE >= SIMDTYPE_SSE
 
 #define Copy_Int8_Params(layername, netname)\
-layername##_##bias =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
+layername##_##bias =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
 memcpy(layername##_##bias, netname##_##layername##_##bias, sizeof(netname##_##layername##_##bias));\
-layername##_##weights_int8 =  (signed char*)aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(float) * sizeof(signed char), MALLOC_ALIGN); \
+layername##_##weights_int8 =  (signed char*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(float) * sizeof(signed char), MALLOC_ALIGN); \
     for (int j = 0, num_weights = sizeof(netname##_##layername##_##weights) / sizeof(float), group = sizeof(netname##_##layername##_##scales_weight) / sizeof(float); j < group; j++){\
         int offset = num_weights / group;\
         mm_type scale = mm_set1_ps(netname##_##layername##_##scales_weight[j]);\
@@ -112,7 +114,7 @@ layername##_##weights_int8 =  (signed char*)aligned_heap_alloc(sizeof(netname##_
 				layername##_##weights_int8[j * offset + index_offset + k] = (signed char)(bottom_round_data_[k]);}}\
 			for (index = mm_align_size * index; index < offset; index++){\
 				layername##_##weights_int8[j * offset + index] = round(netname##_##layername##_##weights[j * offset + index] * netname##_##layername##_##scales_weight[j]);}}\
-layername##_##scales =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
+layername##_##scales =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
 layername##_##scales[0] =  netname##_##layername##_##scales_bottom[0];\
 for (int i = 0; i < sizeof(netname##_##layername##_##scales_weight) / sizeof(float); i++) {\
 layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
@@ -120,14 +122,14 @@ layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}
 #else
 
 #define Copy_Int8_Params(layername, netname)\
-layername##_##bias =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
+layername##_##bias =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##bias), MALLOC_ALIGN); \
 memcpy(layername##_##bias, netname##_##layername##_##bias, sizeof(netname##_##layername##_##bias));\
-layername##_##weights_int8 =  (signed char*)aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(float) * sizeof(signed char), MALLOC_ALIGN); \
+layername##_##weights_int8 =  (signed char*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(float) * sizeof(signed char), MALLOC_ALIGN); \
 	for (int j = 0, num_weights = sizeof(netname##_##layername##_##weights) / sizeof(float), group = sizeof(netname##_##layername##_##scales_weight) / sizeof(float); j < group; j++){\
         int offset = j * num_weights / group;\
         for(int index = 0; index < num_weights / group; index++){\
 			layername##_##weights_int8[offset + index] = round(netname##_##layername##_##weights[offset + index] * netname##_##layername##_##scales_weight[j]);}}\
-layername##_##scales =  (float*)aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
+layername##_##scales =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##scales_bottom) + sizeof(netname##_##layername##_##scales_weight), MALLOC_ALIGN); \
 layername##_##scales[0] =  netname##_##layername##_##scales_bottom[0];\
 for (int i = 0; i < sizeof(netname##_##layername##_##scales_weight) / sizeof(float); i++) {\
 layername##_##scales[i + 1] = netname##_##layername##_##scales_weight[i];}

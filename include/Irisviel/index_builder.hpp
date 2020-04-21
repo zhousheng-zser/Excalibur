@@ -3,11 +3,10 @@
 #ifndef _INDEX_HPP_
 #define _INDEX_HPP_
 
+#include "distance.hpp"
 #include "ngraph_internal.hpp"
 #include "kgraph_internal.hpp"
-#include "distance.hpp"
-
-#include <glasssix/tensor.hpp>
+#include "Primitives/tensor.hpp"
 
 namespace glasssix 
 {
@@ -37,7 +36,7 @@ namespace glasssix
 			ngraph_internal ngraph_;
 			float *norm_array_;
 			uint32_t dimension_;
-			std::shared_ptr<glasssix::excalibur::tensor<float>> norm_array_tensor_;
+			std::shared_ptr<glasssix::memory::tensor<float>> norm_array_tensor_;
 		};
 	}
 }

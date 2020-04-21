@@ -1,7 +1,8 @@
 #pragma once
 #ifndef _AXPY_HPP_
 #define _AXPY_HPP_
-#include <../../include/Primitives/tensor.hpp>
+
+#include "Primitives/tensor.hpp"
 #include "math_functions.hpp"
 
 
