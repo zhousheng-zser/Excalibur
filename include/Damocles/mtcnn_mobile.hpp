@@ -1,13 +1,19 @@
+#pragma once
+
 #ifndef _MTCNN_MOBILE_HPP_
 #define _MTCNN_MOBILE_HPP_
+
 #include "pnet_mobile.hpp"
 #include "rnet_mobile.hpp"
 #include "onet_mobile.hpp"
 #include "vdamocles.hpp"
+#include "Primitives/tensor.hpp"
 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+using glasssix::memory::tensor;
 
 namespace glasssix
 {

@@ -1,9 +1,9 @@
 #include "face_service.hpp"
 #include "database_cache.hpp"
 #include "filesystem_utils.hpp"
+#include "Primitives/fmt/format.h"
 
 #include <list>
-#include <chrono>
 #include <fstream>
 #include <cstddef>
 #include <utility>
@@ -11,7 +11,6 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include <glasssix/fmt/format.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 
@@ -58,7 +57,9 @@ namespace glasssix
 
 			void load_databases()
 			{
-				for (auto& item : fs::directory_iterator{ database_directory_, fs::directory_options::skip_permission_denied })
+				std::error_code code;
+
+				for (auto& item : fs::directory_iterator{ database_directory_, fs::directory_options::skip_permission_denied, code })
 				{
 					if (item.path().filename().extension() == database_extension)
 					{
@@ -72,37 +73,23 @@ namespace glasssix
 
 			std::vector<database_search_result> search(const float* feature, int top) const
 			{
-				std::chrono::milliseconds total_time;
 				std::vector<database_search_result> result;
 
 				for (auto& item : cache_)
 				{
-					std::chrono::milliseconds elapsed_time;
-					auto search_result = item->wrapper->search(feature, elapsed_time, top);
+					auto search_result = item->wrapper->search(feature, top);
 
 					if (!search_result.empty())
 					{
 						auto single_result = search_result.front();
 						std::copy(single_result.begin(), single_result.end(), std::back_inserter(result));
 					}
-
-					total_time += elapsed_time;
 				}
 
 				std::sort(result.begin(), result.end(), [](const database_search_result& left, database_search_result& right) { return left.similarity > right.similarity; });
 				result.resize(std::min(static_cast<size_t>(top), result.size()));
 
 				return result;
-			}
-
-			void remove(const std::vector<std::string>& keys)
-			{
-				remove_if_core([&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](const std::string& key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
-			}
-
-			void remove(const std::string& key)
-			{
-				remove_if_core([&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
 			}
 
 			void add(const std::vector<std::shared_ptr<database_record>>& records)
@@ -134,6 +121,16 @@ namespace glasssix
 				{
 					item->commit();
 				}
+			}
+
+			void remove(std::string_view key)
+			{
+				remove_if_core([&](database_cache& item) { return item.manager->remove(key) && !item.manager->empty(); });
+			}
+
+			void remove(const std::vector<std::string_view>& keys)
+			{
+				remove_if_core([&](database_cache& item) { return std::count_if(keys.begin(), keys.end(), [&](std::string_view key) { return item.manager->remove(key) && !item.manager->empty(); }) > 0; });
 			}
 
 			void update(database_record& record)
@@ -183,7 +180,7 @@ namespace glasssix
 				}
 			}
 
-			std::shared_ptr<database_cache> find_available_database_core(const std::string& key)
+			std::shared_ptr<database_cache> find_available_database_core(std::string_view key)
 			{
 				// Finds a database that can accommodate at least one record and ensures there is no repeated key among the databases.
 				for (auto& item : cache_)
@@ -208,7 +205,7 @@ namespace glasssix
 				return create_new_database_core(file_path.string());
 			}
 
-			std::shared_ptr<database_cache> create_new_database_core(const std::string& path)
+			std::shared_ptr<database_cache> create_new_database_core(std::string_view path)
 			{
 				auto manager = std::make_shared<database_manager>(path, single_database_capacity_, dimension_);
 				auto wrapper = std::make_shared<database_business_wrapper>(manager->create_feature_observer(), path, cache_directory_.string());
@@ -223,7 +220,7 @@ namespace glasssix
 			std::list<std::shared_ptr<database_cache>> cache_;
 		};
 
-		face_service::face_service(int single_database_capacity, int dimension, const std::string& working_directory) : impl_{ new impl{ single_database_capacity, dimension, working_directory } }
+		face_service::face_service(int single_database_capacity, int dimension, std::string_view working_directory) : impl_{ new impl{ single_database_capacity, dimension, std::string{ working_directory } } }
 		{
 		}
 
@@ -276,12 +273,12 @@ namespace glasssix
 			impl_->add(records);
 		}
 
-		void face_service::remove(const std::string& key)
+		void face_service::remove(std::string_view key)
 		{
 			impl_->remove(key);
 		}
 
-		void face_service::remove(const std::vector<std::string>& keys)
+		void face_service::remove(const std::vector<std::string_view>& keys)
 		{
 			impl_->remove(keys);
 		}

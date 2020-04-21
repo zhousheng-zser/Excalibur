@@ -1,9 +1,10 @@
 #ifndef _RETINAFACE_HPP_
 #define _RETINAFACE_HPP_
 
+#include "Longinus/common.hpp"
+
 #include <vector>
 #include <map>
-#include "../../include/Longinus/common.hpp"
 
 namespace glasssix
 {
@@ -45,7 +46,7 @@ namespace glasssix
 
 			~RetinaFace();
 
-			std::vector<FaceInfomation> detect(const unsigned char *img_data, int img_channel, int img_height, int img_width, int img_order, float threshold = 0.5);
+			std::vector<FaceInfomation> detect(const unsigned char *img_data, int min_win, int img_height, int img_width, int img_order, float threshold = 0.5);
 		
 		private:
 			FaceBox bbox_pred(FaceBox anchor, std::vector<float> regress);

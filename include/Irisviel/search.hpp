@@ -1,15 +1,16 @@
+#pragma once
+
 #ifndef _SEARCH_HPP_
 #define _SEARCH_HPP_
 
+#include "distance.hpp"
 #include "ngraph_internal.hpp"
 #include "kgraph_internal.hpp"
-#include "distance.hpp"
 #include "irisviel_types.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <tuple>
 #include <cstdint>
-
-#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -40,7 +41,7 @@ namespace glasssix
 			uint32_t query_num_;
 			std::vector<const float*> base_data_cache_;
 			const std::vector<const float*>* query_data_;
-			std::shared_ptr<glasssix::excalibur::tensor<char>> opt_graph_tensor_;
+			std::shared_ptr<memory::tensor<char>> opt_graph_tensor_;
 
 			char* opt_graph_ = nullptr;
 

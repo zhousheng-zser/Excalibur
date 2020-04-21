@@ -1,9 +1,9 @@
 #ifndef _TENSOR_OPERATION_CPU_HPP_
 #define _TENSOR_OPERATION_CPU_HPP_
 
-#include "../../include/Primitives/tensor.hpp"
-#include "../../include/Primitives/profiler.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/tensor.hpp"
+#include "Primitives/profiler.hpp"
+#include "Primitives/simd_types.hpp"
 #include "math_functions.hpp"
 #include <algorithm>
 #include <cstring>

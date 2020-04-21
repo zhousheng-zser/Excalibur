@@ -2,7 +2,7 @@
 #ifndef _DECONV_HPP_
 #define _DECONV_HPP_
 #include "base_conv.hpp"
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #include "im2col.hpp"
 #include "math_functions.hpp"
 #include <memory>

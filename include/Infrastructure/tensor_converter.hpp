@@ -1,12 +1,10 @@
 #pragma once
 
-#include <cassert>
-#include <algorithm>
-
-#include <glasssix/tensor.hpp>
-
 #include "tensor_helper.hpp"
 #include "tensor_layout.hpp"
+#include "Primitives/tensor.hpp"
+
+#include <cassert>
 
 namespace glasssix
 {

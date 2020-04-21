@@ -1,4 +1,5 @@
 #include "ngraph_internal.hpp"
+#include "Primitives/tensor.hpp"
 #include "distance.hpp"
 
 #include <stack>
@@ -6,10 +7,6 @@
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-
-#include <glasssix/tensor.hpp>
-
-using namespace glasssix::excalibur;
 
 namespace glasssix
 {
@@ -257,7 +254,7 @@ namespace glasssix
 				range = base_num;
 			}
 
-			std::shared_ptr<tensor<float>> center_tensor = std::make_shared<tensor<float>>(dimension);
+			std::shared_ptr<memory::tensor<float>> center_tensor = std::make_shared<memory::tensor<float>>(dimension);
 			float* center = center_tensor->mutable_cpu_data();
 			for (uint32_t j = 0; j < dimension; j++)
 			{

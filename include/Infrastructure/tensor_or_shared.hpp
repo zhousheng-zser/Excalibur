@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <glasssix/tensor.hpp>
+#include "Primitives/tensor.hpp"
 
 namespace glasssix
 {
@@ -14,9 +14,9 @@ namespace glasssix
         template<typename UnderlyingType>
         struct tensor_or_shared<UnderlyingType, false>
         {
-            std::reference_wrapper<tensor<UnderlyingType>> data;
+            std::reference_wrapper<memory::tensor<UnderlyingType>> data;
 
-            tensor_or_shared(const tensor<UnderlyingType>& tensor) : data{ const_cast<excalibur::tensor<UnderlyingType>&>(tensor) }
+            tensor_or_shared(const memory::tensor<UnderlyingType>& tensor) : data{ const_cast<memory::tensor<UnderlyingType>&>(tensor) }
             {
             }
 
@@ -34,7 +34,7 @@ namespace glasssix
         template<typename UnderlyingType>
         struct tensor_or_shared<UnderlyingType, true>
         {
-            std::shared_ptr<tensor<UnderlyingType>> data;
+            std::shared_ptr<memory::tensor<UnderlyingType>> data;
 
             tensor_or_shared(const std::shared_ptr<tensor<UnderlyingType>>& tensor) : data{ tensor }
             {

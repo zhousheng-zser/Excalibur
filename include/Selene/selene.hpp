@@ -1,14 +1,9 @@
 #ifndef _SELENE_HPP_
 #define _SELENE_HPP_
-#include <memory>
-#include <iostream>
-#include <vector>
 
-//#define TEST_CAFFE
-#ifdef TEST_CAFFE
-#define USE_OPENCV
-#include <glasssix/CaffeBinding.hpp>
-#endif // TEST_CAFFE
+#include <memory>
+#include <vector>
+#include <iostream>
 
 namespace glasssix
 {

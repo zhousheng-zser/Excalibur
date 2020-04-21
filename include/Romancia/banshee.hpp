@@ -1,9 +1,10 @@
 #ifndef _Lindburg_HPP_
 #define _Lindburg_HPP_
 
-#include "../Excalibur/support_layers.hpp"
-#include "../Excalibur/tensor_operation_cpu.hpp"
-#include "../Excalibur/tensor_operation_gpu.hpp"
+#include "Primitives/tensor.hpp"
+#include "Excalibur/support_layers.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
 
 using namespace glasssix::excalibur;
 

@@ -1,6 +1,7 @@
+#pragma once
+
 #ifndef _GAIUS_FEATURE_HPP_
 #define _GAIUS_FEATURE_HPP_
-
 
 #ifdef EXPORT_GAIUS
 #undef EXPORT_GAIUS

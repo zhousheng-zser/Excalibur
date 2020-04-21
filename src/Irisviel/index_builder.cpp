@@ -19,7 +19,7 @@ namespace glasssix
 		index_builder::index_builder(const std::vector<const float*>& baseData, int dimension)
 			: dimension_{ static_cast<uint32_t>(dimension) }, base_data{ &baseData }, base_num{ static_cast<uint32_t>(baseData.size()) }
 		{
-			norm_array_tensor_.reset(new glasssix::excalibur::tensor<float>(base_num));
+			norm_array_tensor_.reset(new glasssix::memory::tensor<float>(base_num));
 			norm_array_ = norm_array_tensor_->mutable_cpu_data();
 
 			//use 10 data to judge if normalized
@@ -123,7 +123,7 @@ namespace glasssix
 		{
 			base_data = &new_base_data;
 			base_num = new_base_data.size();
-			norm_array_tensor_.reset(new glasssix::excalibur::tensor<float>(base_num));
+			norm_array_tensor_.reset(new glasssix::memory::tensor<float>(base_num));
 			norm_array_ = norm_array_tensor_->mutable_cpu_data();
 			//use 10 data to judge if normalized
 			float sum = 0;

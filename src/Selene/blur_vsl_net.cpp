@@ -1,7 +1,8 @@
 #include "blur_vsl_net.hpp"
 #include "blur_vsl_net_data.hpp"
+#include "Primitives/memory.hpp"
 
-using namespace glasssix::memory;
+using glasssix::memory::aligned_heap_free;
 
 namespace glasssix
 {
@@ -21,7 +22,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -146,7 +147,7 @@ namespace glasssix
 #endif
 		}
 
-		void Blur_vsl_net::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		void Blur_vsl_net::Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
 			prelu1->Forward_cpu(conv1_top_data);
@@ -168,7 +169,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDA
-		void Blur_vsl_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
+		void Blur_vsl_net::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
@@ -190,7 +191,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void Blur_vsl_net::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
+		void Blur_vsl_net::Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
@@ -228,7 +229,7 @@ namespace glasssix
 		/// <param name="order">order type of visible image: NCHW(0) / NHWC(1)</param>
 		bool Blur_vsl_net::judge(const unsigned char* vsl_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order)
 		{
-			std::shared_ptr<tensor<unsigned char>> face_vsl;
+			std::shared_ptr<memory::tensor<unsigned char>> face_vsl;
 
 			//get judge area: 1*3*48*48
 			{
@@ -236,14 +237,14 @@ namespace glasssix
 				CHECK_EQ(landmarks.size(), 1);
 				CHECK_EQ(landmarks[0].size() / 2, 5);
 
-				std::shared_ptr<tensor<unsigned char>> image_vsl;
+				std::shared_ptr<memory::tensor<unsigned char>> image_vsl;
 				if (order == 0)
 				{
-					image_vsl.reset(new tensor<unsigned char>(std::vector<int>{1, 3, height, width}, -1, NCHW));
+					image_vsl.reset(new memory::tensor<unsigned char>(std::vector<int>{1, 3, height, width}, -1, memory::NCHW));
 				}
 				else if (order == 1)
 				{
-					image_vsl.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, 3}, -1, NHWC));
+					image_vsl.reset(new memory::tensor<unsigned char>(std::vector<int>{1, height, width, 3}, -1, memory::NHWC));
 				}
 				else
 				{

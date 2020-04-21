@@ -2,7 +2,7 @@
 #ifndef _HSWISH_HPP_
 #define _HSWISH_HPP_
 
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 
 namespace glasssix
 {

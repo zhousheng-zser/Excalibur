@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _POOLING_HPP_
 #define _POOLING_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 #ifdef USE_CUDNN
 #include "cudnn.hpp"
 #endif

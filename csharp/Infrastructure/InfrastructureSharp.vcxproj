@@ -69,6 +69,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>GLOG_NO_ABBREVIATED_SEVERITIES;FREEIMAGE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);$(SolutionDir)../include/Infrastructure;$(SolutionDir)../include/Interop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Infrastructure.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -80,6 +81,7 @@
       <WarningLevel>Level3</WarningLevel>
       <PreprocessorDefinitions>GLOG_NO_ABBREVIATED_SEVERITIES;FREEIMAGE_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);$(SolutionDir)../include/Infrastructure;$(SolutionDir)../include/Interop;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\Infrastructure.lib;</AdditionalDependencies>

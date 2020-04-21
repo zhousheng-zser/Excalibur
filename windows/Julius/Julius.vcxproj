@@ -16,6 +16,7 @@
     <ClInclude Include="..\..\include\Julius\julius_axpby.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_dot.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_gemm.hpp" />
+    <ClInclude Include="..\..\include\Julius\julius_gemm_align.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_gemv.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_nrm2.hpp" />
     <ClInclude Include="..\..\include\Julius\julius_scal.hpp" />
@@ -27,6 +28,8 @@
     <ClCompile Include="..\..\src\Julius\julius_axpby.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_dot.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_gemm.cpp" />
+    <ClCompile Include="..\..\src\Julius\julius_gemm_align.cpp" />
+    <ClCompile Include="..\..\src\Julius\julius_gemm_auto.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_gemv.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_nrm2.cpp" />
     <ClCompile Include="..\..\src\Julius\julius_scal.cpp" />
@@ -69,13 +72,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <TargetName>lib$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <TargetName>lib$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -89,6 +92,7 @@
       <OpenMPSupport>false</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -104,6 +108,7 @@
       <OpenMPSupport>false</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

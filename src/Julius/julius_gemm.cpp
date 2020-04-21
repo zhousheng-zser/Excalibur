@@ -1,7 +1,7 @@
 #include "julius_gemm.hpp"
 #include "julius_gemm_align.hpp"
 #include "julius_axpby.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {

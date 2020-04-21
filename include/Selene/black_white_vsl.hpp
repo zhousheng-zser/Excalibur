@@ -2,9 +2,9 @@
 #define _BLACK_WHITE_VSL_HPP_
 
 #include "selene.hpp"
-#include "../Excalibur/support_layers.hpp"
-#include "../Excalibur/tensor_operation_cpu.hpp"
-#include "../Excalibur/tensor_operation_gpu.hpp"
+#include "Excalibur/support_layers.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_gpu.hpp"
 
 using namespace glasssix::excalibur;
 

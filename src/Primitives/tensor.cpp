@@ -349,6 +349,7 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+				std::terminate();
 			}
 		}
 
@@ -364,6 +365,7 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+				std::terminate();
 			}
 		}
 

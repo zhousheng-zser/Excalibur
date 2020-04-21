@@ -1,5 +1,5 @@
 #include "convdw_3x3s2_cpu.hpp"
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 #include <iostream>
 #include <fstream>
 

@@ -7,8 +7,8 @@
 #include "julius_gemv.hpp"
 #include "julius_gemm.hpp"
 #include "julius.hpp"
-#include "../../include/Primitives/logger.hpp"
-#include "../../include/Primitives/simd_types.hpp"
+#include "Primitives/logger.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {

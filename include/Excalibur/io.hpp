@@ -1,7 +1,7 @@
 #pragma once
 #ifndef _IO_HPP_
 #define _IO_HPP_
-#include "../../include/Primitives/tensor.hpp"
+#include "Primitives/tensor.hpp"
 //#include <io.h>
 #include <fcntl.h>
 #include <stdio.h>

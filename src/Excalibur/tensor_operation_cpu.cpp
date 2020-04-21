@@ -1,4 +1,4 @@
-#include "../../include/Excalibur/tensor_operation_cpu.hpp"
+#include "Excalibur/tensor_operation_cpu.hpp"
 using namespace glasssix::excalibur;
 using namespace glasssix::memory;
 

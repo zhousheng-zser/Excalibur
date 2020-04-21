@@ -6,6 +6,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <string_view>
 
 namespace glasssix
 {
@@ -16,7 +17,7 @@ namespace glasssix
 		public:
 			class impl;
 
-			face_service(int single_database_capacity, int dimension, const std::string& working_directory);
+			face_service(int single_database_capacity, int dimension, std::string_view working_directory);
 			virtual ~face_service();
 			void clear() noexcept;
 			void remove_all() noexcept;
@@ -26,8 +27,8 @@ namespace glasssix
 			std::vector<database_search_result> search(const float* feature, int top) const;
 			void add(database_record& record);
 			void add(const std::vector<std::shared_ptr<database_record>>& records);
-			void remove(const std::string& key);
-			void remove(const std::vector<std::string>& keys);
+			void remove(std::string_view key);
+			void remove(const std::vector<std::string_view>& keys);
 			void update(database_record& record);
 			void update(const std::vector<std::shared_ptr<database_record>>& records);
 		private:

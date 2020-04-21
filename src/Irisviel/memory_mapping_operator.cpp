@@ -7,7 +7,7 @@ namespace glasssix
 {
 	namespace irisviel
 	{
-		memory_mapping_operator::memory_mapping_operator(const std::string& file_path, std::size_t max_size) : mapping_{ file_path, max_size }
+		memory_mapping_operator::memory_mapping_operator(std::string_view file_path, std::size_t max_size) : mapping_{ file_path, max_size }
 		{
 			if (!mapping_)
 			{

@@ -1,6 +1,8 @@
 #ifndef _DAILIR_RNET_MOBILE_HPP_
 #define _DAILIR_RNET_MOBILE_HPP_
-#include "../Excalibur/support_layers.hpp"
+
+#include "Excalibur/support_layers.hpp"
+#include "Primitives/tensor.hpp"
 #include "rnet_mobile_data.hpp"
 
 using namespace glasssix::excalibur;
