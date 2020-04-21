@@ -26,6 +26,7 @@ namespace glasssix
 			data_ = nullptr;
 			order_ = order;
 			allocator_ = allocator;
+			data_->set_allocator(allocator_);
 		}
 
 		template<typename Dtype>
@@ -46,7 +47,7 @@ namespace glasssix
 #endif // CPU only
 			}
 			count_ = w;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 			step_ = w;
 		}
@@ -71,7 +72,7 @@ namespace glasssix
 #endif // CPU only
 			}
 			count_ = shape_[0] * shape_[1] * step_;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
 
@@ -95,7 +96,7 @@ namespace glasssix
 #endif // CPU only
 			}
 			count_ = shape_[0] * shape_[1] * step_;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared< syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 			Dtype* cpu_data = data_->mutable_cpu_data();
 			// set data
@@ -122,7 +123,7 @@ namespace glasssix
 #endif // CPU only
 			}
 			count_ = shape_[0] * shape_[1] * step_;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
 
@@ -146,7 +147,7 @@ namespace glasssix
 #endif // CPU only
 			}
 			count_ = shape_[0] * shape_[1] * step_;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 			Dtype* cpu_data = data_->mutable_cpu_data();
 			// set data
@@ -171,9 +172,24 @@ namespace glasssix
 		template<typename Dtype>
 		tensor<Dtype>::tensor(const std::vector<int>& shape, int device, orderType order, pool_allocator<Dtype>* allocator) :order_(order), device_(device), allocator_(allocator)
 		{
-			CHECK_EQ(shape.size(), 4);
+			CHECK_LE(shape.size(), 4);
 			shape_ = std::vector<int>(4);
-			memcpy(shape_.data(), shape.data(), 4 * sizeof(int));
+			if (shape.size() == 1)
+			{
+				shape_ = { 1,shape[0],1,1 };
+			}
+			if (shape.size() == 2)
+			{
+				shape_ = { 1, 1, shape[0], shape[1] };
+			}
+			if (shape.size() == 3)
+			{
+				shape_ = { 1, shape[0], shape[1], shape[2] };
+			}
+			if (shape.size() == 4)
+			{
+				memcpy(shape_.data(), shape.data(), 4 * sizeof(int));
+			}
 			if (device_ >= 0)
 			{
 #ifndef USE_CUDA
@@ -182,7 +198,7 @@ namespace glasssix
 			}
 			step_ = align_size(shape_[2] * shape_[3] * sizeof(Dtype), 16) / sizeof(Dtype);
 			count_ = shape_[0] * shape_[1] * step_;
-			data_ = new syncedmem<Dtype>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
 
@@ -200,6 +216,18 @@ namespace glasssix
 		}
 
 		template <typename Dtype>
+		tensor<Dtype>::tensor(tensor<Dtype>&& t) noexcept
+		{
+			count_ = std::exchange(t.count_, 0);
+			device_ = std::exchange( t.device_, 0);
+			shape_ = std::move(t.shape_);
+			this->data_ = std::exchange(t.data_, nullptr);
+			order_ = std::exchange(t.order_, orderType{});
+			step_ = std::exchange(t.step_, 0);
+			allocator_ = std::exchange(t.allocator_, nullptr);
+		}
+
+		template <typename Dtype>
 		tensor<Dtype>& tensor<Dtype>::operator=(const tensor<Dtype>& t)
 		{
 			if (this == &t)
@@ -213,17 +241,13 @@ namespace glasssix
 			order_ = t.order_;
 			step_ = t.step_;
 			allocator_ = t.allocator_;
+			data_->set_allocator(allocator_);
 			return *this;
 		}
 
 		template <typename Dtype>
 		tensor<Dtype>::~tensor()
 		{
-			if (data_ != nullptr)
-			{
-				delete data_;
-				data_ = nullptr;
-			}
 		}
 
 		template <typename Dtype>

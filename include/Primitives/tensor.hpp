@@ -41,7 +41,7 @@ namespace glasssix
 		class EXPORT_EXCALIBUR_PRIMITIVES tensor : public tensor_
 		{
 			// Data pointer
-			syncedmem<Dtype>* data_;
+			std::shared_ptr<syncedmem<Dtype>> data_;
 			// Allocator from outside
 			pool_allocator<Dtype>* allocator_;
 			// The 4-dim shape of the tensor in" NCHW/NHWC
@@ -78,6 +78,7 @@ namespace glasssix
 			~tensor();
 
 			tensor(const tensor& t);
+			tensor(tensor<Dtype>&& t) noexcept;
 			tensor& operator=(const tensor& t);
 
 			// Deep copy
