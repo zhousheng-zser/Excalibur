@@ -372,7 +372,7 @@ namespace glasssix
 			/// <param name="dst">new memory::tensor</param>
 			/// <param name="order">order type of new memory::tensor: memory::NCHW / memory::NHWC(default)</param>
 			template <typename Dtype>
-			static void mat2tensor_cpu(const cv::Mat &src, std::shared_ptr<memory::tensor<Dtype>>& dst, orderType order = memory::NHWC)
+			static void mat2tensor_cpu(const cv::Mat &src, std::shared_ptr<memory::tensor<Dtype>>& dst, memory::orderType order = memory::NHWC)
 			{
 				if (src.data == NULL)
 				{
@@ -517,7 +517,7 @@ namespace glasssix
 			/// <param name="dst">new memory::tensor</param>
 			/// <param name="order">order type of new memory::tensor: memory::NCHW / memory::NHWC(default)</param>
 			template <typename Dtype>
-			static void mat2tensor_cpu(const cv::Mat &src, memory::tensor<Dtype>& dst, orderType order = memory::NHWC)
+			static void mat2tensor_cpu(const cv::Mat &src, memory::tensor<Dtype>& dst, memory::orderType order = memory::NHWC)
 			{
 				if (src.data == nullptr)
 				{
