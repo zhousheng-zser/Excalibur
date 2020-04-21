@@ -404,8 +404,13 @@ namespace glasssix
 
 		// instantiate class
 		template class tensor<float>;
+		template class tensor<double>;
+		template class tensor<int const*>;
 		template class tensor<int>;
 		template class tensor<unsigned char>;
 		template class tensor<char>;
+		template class tensor<signed char>;
+		template class tensor<short>;
+		template class tensor<unsigned int>;
 	}
 }

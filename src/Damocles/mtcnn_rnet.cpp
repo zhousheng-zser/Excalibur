@@ -1,4 +1,7 @@
 #include "mtcnn_rnet.hpp"
+
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace longinus
@@ -124,10 +127,10 @@ namespace glasssix
 			delete prob1;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(prelu1_weights, false);
-			FreeHost(prelu2_weights, false);
-			FreeHost(prelu3_weights, false);
-			FreeHost(prelu4_weights, false);
+			aligned_heap_free(prelu1_weights);
+			aligned_heap_free(prelu2_weights);
+			aligned_heap_free(prelu3_weights);
+			aligned_heap_free(prelu4_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)
