@@ -3,6 +3,8 @@
 #include "../Excalibur/tensor_operation_gpu.hpp"
 #include <algorithm>
 #include <fstream>
+
+using namespace glasssix::memory;
 using namespace std;
 
 namespace glasssix

@@ -277,8 +277,13 @@ namespace glasssix
 
 		// instantiate class
 		template class syncedmem<float>;
+		template class syncedmem<double>;
 		template class syncedmem<int>;
+		template class syncedmem<int const*>;
 		template class syncedmem<unsigned char>;
 		template class syncedmem<char>;
+		template class syncedmem<signed char>;
+		template class syncedmem<short>;
+		template class syncedmem<unsigned int>;
 	}
 }

@@ -1,18 +1,17 @@
 #include "retina_net.hpp"
 
 #ifdef INT8_DATA
-#include "retina_net_int8_data.hpp"
+#include "../../include/Retina/retina_net_int8_data.hpp"
 #else
-#include "retina_net_data.hpp"
+#include "../../include/Retina/retina_net_data.hpp"
 #endif
-#include <glasssix/timer.hpp>
-#include "../../include/Julius/simd_helper.hpp"
+#include "../../include/Primitives/simd_instruction_set.hpp"
 //define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
-#include <glasssix/profiler.hpp>
+#include "../../include/Primitives/profiler.hpp"
 #endif
 
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 namespace glasssix
 {

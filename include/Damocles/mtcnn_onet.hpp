@@ -27,7 +27,7 @@ namespace glasssix
 			Declear_Params(conv6_2);
 			Declear_Params(conv6_3);
 			//
-			std::shared_ptr<tensor<float>> tensor_data;
+			std::shared_ptr<memory::tensor<float>> tensor_data;
 			Declear_Opration(baseconv, conv1);
 			Neuron_Name(conv1);
 			Declear_Opration(prelu, prelu1);
@@ -66,19 +66,19 @@ namespace glasssix
 			int device_;
 			bool cudnn_ready_ = false;
 			bool int8_quantization_ = false;
-			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data);
 #endif 
 #endif
 		public:
 			mtcnn_onet(int device);
 			~mtcnn_onet();
-			void Forward(const std::shared_ptr<tensor<float>> input_data);
+			void Forward(const std::shared_ptr<memory::tensor<float>> input_data);
 		};
 	}
 }
