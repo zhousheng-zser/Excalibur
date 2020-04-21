@@ -1,6 +1,8 @@
 #pragma once
 #ifndef _SUPPORT_LAYERS_HPP_
 #define _SUPPORT_LAYERS_HPP_
+
+#include "Primitives/tensor.hpp"
 #include "Primitives/simd_types.hpp"
 #include "base_conv.hpp"
 #include "conv_cudnn_gpu.hpp"
@@ -41,8 +43,8 @@
 #include <climits>
 
 #define Neuron_Name(name) private: \
-std::shared_ptr<tensor<float>> name##_top_data;\
-public: std::shared_ptr<tensor<float>> get_##name(){\
+std::shared_ptr<glasssix::memory::tensor<float>> name##_top_data;\
+public: std::shared_ptr<glasssix::memory::tensor<float>> get_##name(){\
 return name##_top_data;\
 }\
 private:

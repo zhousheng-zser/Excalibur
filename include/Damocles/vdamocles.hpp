@@ -1,8 +1,11 @@
+#pragma once
+
 #ifndef _BASE_CNN_HPP_
 #define _BASE_CNN_HPP_
 
-#include <vector>
 #include "Longinus/common.hpp"
+
+#include <vector>
 
 namespace glasssix
 {

@@ -5,11 +5,12 @@
 #else
 #include "retina_net_data.hpp"
 #endif
-#include <glasssix/timer.hpp>
-#include "Julius/simd_helper.hpp"
+
+#include "Primitives/simd_types.hpp"
+
 //define CALC_LAYERS, calculate time_consuming layer by layer
 #ifdef CALC_LAYERS
-#include <glasssix/profiler.hpp>
+#include "Primitives/profiler.hpp"
 #endif
 
 using namespace glasssix::excalibur;
@@ -32,7 +33,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -747,7 +748,7 @@ namespace glasssix
 #endif
 		}
 
-		void Retina_net::Forward_cpu(const std::shared_ptr<tensor<float>> &input_data)
+		void Retina_net::Forward_cpu(const std::shared_ptr<memory::tensor<float>> &input_data)
 		{
 			mobilenet0_conv0_fwd->Forward(input_data, mobilenet0_conv0_fwd_top_data);
 			mobilenet0_relu0_fwd->Forward_cpu(mobilenet0_conv0_fwd_top_data);
@@ -812,7 +813,7 @@ namespace glasssix
 			rf_c3_det_context_conv3_1->Forward(rf_c3_det_context_conv1_top_data, rf_c3_det_context_conv3_1_top_data);
 			rf_c3_det_context_conv3_1_relu->Forward_cpu(rf_c3_det_context_conv3_1_top_data);
 			rf_c3_det_context_conv3_2->Forward(rf_c3_det_context_conv3_1_top_data, rf_c3_det_context_conv3_2_top_data);
-			rf_c3_det_concat->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
+			rf_c3_det_concat->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
 			rf_c3_det_concat_relu->Forward_cpu(rf_c3_det_concat_top_data);
 			face_rpn_cls_score_stride32->Forward(rf_c3_det_concat_top_data, face_rpn_cls_score_stride32_top_data);
 			face_rpn_cls_score_reshape_stride32->Forward(face_rpn_cls_score_stride32_top_data, face_rpn_cls_score_reshape_stride32_top_data);
@@ -823,7 +824,7 @@ namespace glasssix
 			rf_c2_lateral->Forward(mobilenet0_conv22_fwd_top_data, rf_c2_lateral_top_data);
 			rf_c2_lateral_relu->Forward_cpu(rf_c2_lateral_top_data);
 			rf_c3_upsampling->Forward(rf_c3_lateral_top_data, rf_c3_upsampling_top_data);
-			_plus0->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
+			_plus0->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
 			rf_c2_aggr->Forward(_plus0_top_data, rf_c2_aggr_top_data);
 			rf_c2_aggr_relu->Forward_cpu(rf_c2_aggr_top_data);
 			rf_c2_det_conv1->Forward(rf_c2_aggr_top_data, rf_c2_det_conv1_top_data);
@@ -833,7 +834,7 @@ namespace glasssix
 			rf_c2_det_context_conv3_1->Forward(rf_c2_det_context_conv1_top_data, rf_c2_det_context_conv3_1_top_data);
 			rf_c2_det_context_conv3_1_relu->Forward_cpu(rf_c2_det_context_conv3_1_top_data);
 			rf_c2_det_context_conv3_2->Forward(rf_c2_det_context_conv3_1_top_data, rf_c2_det_context_conv3_2_top_data);
-			rf_c2_det_concat->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
+			rf_c2_det_concat->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
 			rf_c2_det_concat_relu->Forward_cpu(rf_c2_det_concat_top_data);
 			face_rpn_cls_score_stride16->Forward(rf_c2_det_concat_top_data, face_rpn_cls_score_stride16_top_data);
 			face_rpn_cls_score_reshape_stride16->Forward(face_rpn_cls_score_stride16_top_data, face_rpn_cls_score_reshape_stride16_top_data);
@@ -844,7 +845,7 @@ namespace glasssix
 			rf_c1_red_conv->Forward(mobilenet0_conv10_fwd_top_data, rf_c1_red_conv_top_data);
 			rf_c1_red_conv_relu->Forward_cpu(rf_c1_red_conv_top_data);
 			rf_c2_upsampling->Forward(rf_c2_aggr_top_data, rf_c2_upsampling_top_data);
-			_plus1->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
+			_plus1->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
 			rf_c1_aggr->Forward(_plus1_top_data, rf_c1_aggr_top_data);
 			rf_c1_aggr_relu->Forward_cpu(rf_c1_aggr_top_data);
 			rf_c1_det_conv1->Forward(rf_c1_aggr_top_data, rf_c1_det_conv1_top_data);
@@ -854,7 +855,7 @@ namespace glasssix
 			rf_c1_det_context_conv3_1->Forward(rf_c1_det_context_conv1_top_data, rf_c1_det_context_conv3_1_top_data);
 			rf_c1_det_context_conv3_1_relu->Forward_cpu(rf_c1_det_context_conv3_1_top_data);
 			rf_c1_det_context_conv3_2->Forward(rf_c1_det_context_conv3_1_top_data, rf_c1_det_context_conv3_2_top_data);
-			rf_c1_det_concat->Forward_cpu(std::vector<std::shared_ptr<tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
+			rf_c1_det_concat->Forward_cpu(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
 			rf_c1_det_concat_relu->Forward_cpu(rf_c1_det_concat_top_data);
 			face_rpn_cls_score_stride8->Forward(rf_c1_det_concat_top_data, face_rpn_cls_score_stride8_top_data);
 			face_rpn_cls_score_reshape_stride8->Forward(face_rpn_cls_score_stride8_top_data, face_rpn_cls_score_reshape_stride8_top_data);
@@ -866,7 +867,7 @@ namespace glasssix
 
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
-		void Retina_net::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> &input_data)
+		void Retina_net::Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> &input_data)
 		{
 			mobilenet0_conv0_fwd->Forward(cudnn_handle_, input_data, mobilenet0_conv0_fwd_top_data);
 			mobilenet0_relu0_fwd->Forward_gpu_native(mobilenet0_conv0_fwd_top_data);
@@ -931,7 +932,7 @@ namespace glasssix
 			rf_c3_det_context_conv3_1->Forward(cudnn_handle_, rf_c3_det_context_conv1_top_data, rf_c3_det_context_conv3_1_top_data);
 			rf_c3_det_context_conv3_1_relu->Forward_gpu_native(rf_c3_det_context_conv3_1_top_data);
 			rf_c3_det_context_conv3_2->Forward(cudnn_handle_, rf_c3_det_context_conv3_1_top_data, rf_c3_det_context_conv3_2_top_data);
-			rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
+			rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
 			rf_c3_det_concat_relu->Forward_gpu_native(rf_c3_det_concat_top_data);
 			face_rpn_cls_score_stride32->Forward(cudnn_handle_, rf_c3_det_concat_top_data, face_rpn_cls_score_stride32_top_data);
 			face_rpn_cls_score_reshape_stride32->Forward(face_rpn_cls_score_stride32_top_data, face_rpn_cls_score_reshape_stride32_top_data);
@@ -942,7 +943,7 @@ namespace glasssix
 			rf_c2_lateral->Forward(cudnn_handle_, mobilenet0_conv22_fwd_top_data, rf_c2_lateral_top_data);
 			rf_c2_lateral_relu->Forward_gpu_native(rf_c2_lateral_top_data);
 			rf_c3_upsampling->Forward(cublas_handle_, rf_c3_lateral_top_data, rf_c3_upsampling_top_data);
-			_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
+			_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
 			rf_c2_aggr->Forward(cudnn_handle_, _plus0_top_data, rf_c2_aggr_top_data);
 			rf_c2_aggr_relu->Forward_gpu_native(rf_c2_aggr_top_data);
 			rf_c2_det_conv1->Forward(cudnn_handle_, rf_c2_aggr_top_data, rf_c2_det_conv1_top_data);
@@ -952,7 +953,7 @@ namespace glasssix
 			rf_c2_det_context_conv3_1->Forward(cudnn_handle_, rf_c2_det_context_conv1_top_data, rf_c2_det_context_conv3_1_top_data);
 			rf_c2_det_context_conv3_1_relu->Forward_gpu_native(rf_c2_det_context_conv3_1_top_data);
 			rf_c2_det_context_conv3_2->Forward(cudnn_handle_, rf_c2_det_context_conv3_1_top_data, rf_c2_det_context_conv3_2_top_data);
-			rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
+			rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
 			rf_c2_det_concat_relu->Forward_gpu_native(rf_c2_det_concat_top_data);
 			face_rpn_cls_score_stride16->Forward(cudnn_handle_, rf_c2_det_concat_top_data, face_rpn_cls_score_stride16_top_data);
 			face_rpn_cls_score_reshape_stride16->Forward(face_rpn_cls_score_stride16_top_data, face_rpn_cls_score_reshape_stride16_top_data);
@@ -963,7 +964,7 @@ namespace glasssix
 			rf_c1_red_conv->Forward(cudnn_handle_, mobilenet0_conv10_fwd_top_data, rf_c1_red_conv_top_data);
 			rf_c1_red_conv_relu->Forward_gpu_native(rf_c1_red_conv_top_data);
 			rf_c2_upsampling->Forward(cublas_handle_, rf_c2_aggr_top_data, rf_c2_upsampling_top_data);
-			_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
+			_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
 			rf_c1_aggr->Forward(cudnn_handle_, _plus1_top_data, rf_c1_aggr_top_data);
 			rf_c1_aggr_relu->Forward_gpu_native(rf_c1_aggr_top_data);
 			rf_c1_det_conv1->Forward(cudnn_handle_, rf_c1_aggr_top_data, rf_c1_det_conv1_top_data);
@@ -973,7 +974,7 @@ namespace glasssix
 			rf_c1_det_context_conv3_1->Forward(cudnn_handle_, rf_c1_det_context_conv1_top_data, rf_c1_det_context_conv3_1_top_data);
 			rf_c1_det_context_conv3_1_relu->Forward_gpu_native(rf_c1_det_context_conv3_1_top_data);
 			rf_c1_det_context_conv3_2->Forward(cudnn_handle_, rf_c1_det_context_conv3_1_top_data, rf_c1_det_context_conv3_2_top_data);
-			rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
+			rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
 			rf_c1_det_concat_relu->Forward_gpu_native(rf_c1_det_concat_top_data);
 			face_rpn_cls_score_stride8->Forward(cudnn_handle_, rf_c1_det_concat_top_data, face_rpn_cls_score_stride8_top_data);
 			face_rpn_cls_score_reshape_stride8->Forward(face_rpn_cls_score_stride8_top_data, face_rpn_cls_score_reshape_stride8_top_data);
@@ -986,7 +987,7 @@ namespace glasssix
 
 //#define CALC_LAYERS
 #ifdef CALC_LAYERS
-void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_data)
+void Retina_net::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> &input_data)
 {
 	Profiler *profiler_ = Profiler::Get();
 	profiler_->TurnON();
@@ -1153,7 +1154,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 	rf_c3_det_context_conv3_2->Forward(cublas_handle_, rf_c3_det_context_conv3_1_top_data, rf_c3_det_context_conv3_2_top_data);
 	profiler_->ScopeEnd();
 
-	rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
+	rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
 	rf_c3_det_concat_relu->Forward_gpu_native(rf_c3_det_concat_top_data);
 	
 	profiler_->ScopeStart("face_rpn_cls_score_stride32");
@@ -1182,7 +1183,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 	profiler_->ScopeEnd();
 
 	profiler_->ScopeStart("_plus0");
-	_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
+	_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
 	profiler_->ScopeEnd();
 
 	profiler_->ScopeStart("rf_c2_aggr");
@@ -1211,7 +1212,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 	profiler_->ScopeStart("rf_c2_det_context_conv3_2");
 	rf_c2_det_context_conv3_2->Forward(cublas_handle_, rf_c2_det_context_conv3_1_top_data, rf_c2_det_context_conv3_2_top_data);
 	profiler_->ScopeEnd();
-	rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
+	rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
 	rf_c2_det_concat_relu->Forward_gpu_native(rf_c2_det_concat_top_data);
 	
 	profiler_->ScopeStart("face_rpn_cls_score_stride16");
@@ -1240,7 +1241,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 	profiler_->ScopeEnd();
 
 	profiler_->ScopeStart("_plus1");
-	_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
+	_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
 	profiler_->ScopeEnd();
 
 	profiler_->ScopeStart("rf_c1_aggr");
@@ -1270,7 +1271,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 	rf_c1_det_context_conv3_2->Forward(cublas_handle_, rf_c1_det_context_conv3_1_top_data, rf_c1_det_context_conv3_2_top_data);
 	profiler_->ScopeEnd();
 
-	rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
+	rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
 	rf_c1_det_concat_relu->Forward_gpu_native(rf_c1_det_concat_top_data);
 	
 	profiler_->ScopeStart("face_rpn_cls_score_stride8");
@@ -1294,7 +1295,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
 }
 #else
 
-    void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_data)
+    void Retina_net::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> &input_data)
     {
     	mobilenet0_conv0_fwd->Forward(cublas_handle_, input_data, mobilenet0_conv0_fwd_top_data);
     	mobilenet0_relu0_fwd->Forward_gpu_native(mobilenet0_conv0_fwd_top_data);
@@ -1359,7 +1360,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
     	rf_c3_det_context_conv3_1->Forward(cublas_handle_, rf_c3_det_context_conv1_top_data, rf_c3_det_context_conv3_1_top_data);
     	rf_c3_det_context_conv3_1_relu->Forward_gpu_native(rf_c3_det_context_conv3_1_top_data);
     	rf_c3_det_context_conv3_2->Forward(cublas_handle_, rf_c3_det_context_conv3_1_top_data, rf_c3_det_context_conv3_2_top_data);
-    	rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
+    	rf_c3_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_det_conv1_top_data, rf_c3_det_context_conv2_top_data, rf_c3_det_context_conv3_2_top_data}, rf_c3_det_concat_top_data);
     	rf_c3_det_concat_relu->Forward_gpu_native(rf_c3_det_concat_top_data);
     	face_rpn_cls_score_stride32->Forward(cublas_handle_, rf_c3_det_concat_top_data, face_rpn_cls_score_stride32_top_data);
     	face_rpn_cls_score_reshape_stride32->Forward(face_rpn_cls_score_stride32_top_data, face_rpn_cls_score_reshape_stride32_top_data);
@@ -1370,7 +1371,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
     	rf_c2_lateral->Forward(cublas_handle_, mobilenet0_conv22_fwd_top_data, rf_c2_lateral_top_data);
     	rf_c2_lateral_relu->Forward_gpu_native(rf_c2_lateral_top_data);
     	rf_c3_upsampling->Forward(cublas_handle_, rf_c3_lateral_top_data, rf_c3_upsampling_top_data);
-    	_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
+    	_plus0->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c3_upsampling_top_data, rf_c2_lateral_top_data}, _plus0_top_data);
     	rf_c2_aggr->Forward(cublas_handle_, _plus0_top_data, rf_c2_aggr_top_data);
     	rf_c2_aggr_relu->Forward_gpu_native(rf_c2_aggr_top_data);
     	rf_c2_det_conv1->Forward(cublas_handle_, rf_c2_aggr_top_data, rf_c2_det_conv1_top_data);
@@ -1380,7 +1381,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
     	rf_c2_det_context_conv3_1->Forward(cublas_handle_, rf_c2_det_context_conv1_top_data, rf_c2_det_context_conv3_1_top_data);
     	rf_c2_det_context_conv3_1_relu->Forward_gpu_native(rf_c2_det_context_conv3_1_top_data);
     	rf_c2_det_context_conv3_2->Forward(cublas_handle_, rf_c2_det_context_conv3_1_top_data, rf_c2_det_context_conv3_2_top_data);
-    	rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
+    	rf_c2_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c2_det_conv1_top_data, rf_c2_det_context_conv2_top_data, rf_c2_det_context_conv3_2_top_data}, rf_c2_det_concat_top_data);
     	rf_c2_det_concat_relu->Forward_gpu_native(rf_c2_det_concat_top_data);
     	face_rpn_cls_score_stride16->Forward(cublas_handle_, rf_c2_det_concat_top_data, face_rpn_cls_score_stride16_top_data);
     	face_rpn_cls_score_reshape_stride16->Forward(face_rpn_cls_score_stride16_top_data, face_rpn_cls_score_reshape_stride16_top_data);
@@ -1391,7 +1392,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
     	rf_c1_red_conv->Forward(cublas_handle_, mobilenet0_conv10_fwd_top_data, rf_c1_red_conv_top_data);
     	rf_c1_red_conv_relu->Forward_gpu_native(rf_c1_red_conv_top_data);
     	rf_c2_upsampling->Forward(cublas_handle_, rf_c2_aggr_top_data, rf_c2_upsampling_top_data);
-    	_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
+    	_plus1->Forward_gpu_native(cublas_handle_, std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_red_conv_top_data, rf_c2_upsampling_top_data}, _plus1_top_data);
     	rf_c1_aggr->Forward(cublas_handle_, _plus1_top_data, rf_c1_aggr_top_data);
     	rf_c1_aggr_relu->Forward_gpu_native(rf_c1_aggr_top_data);
     	rf_c1_det_conv1->Forward(cublas_handle_, rf_c1_aggr_top_data, rf_c1_det_conv1_top_data);
@@ -1401,7 +1402,7 @@ void Retina_net::Forward_gpu_native(const std::shared_ptr<tensor<float>> &input_
     	rf_c1_det_context_conv3_1->Forward(cublas_handle_, rf_c1_det_context_conv1_top_data, rf_c1_det_context_conv3_1_top_data);
     	rf_c1_det_context_conv3_1_relu->Forward_gpu_native(rf_c1_det_context_conv3_1_top_data);
     	rf_c1_det_context_conv3_2->Forward(cublas_handle_, rf_c1_det_context_conv3_1_top_data, rf_c1_det_context_conv3_2_top_data);
-    	rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
+    	rf_c1_det_concat->Forward_gpu_native(std::vector<std::shared_ptr<memory::tensor<float>>>{rf_c1_det_conv1_top_data, rf_c1_det_context_conv2_top_data, rf_c1_det_context_conv3_2_top_data}, rf_c1_det_concat_top_data);
     	rf_c1_det_concat_relu->Forward_gpu_native(rf_c1_det_concat_top_data);
     	face_rpn_cls_score_stride8->Forward(cublas_handle_, rf_c1_det_concat_top_data, face_rpn_cls_score_stride8_top_data);
     	face_rpn_cls_score_reshape_stride8->Forward(face_rpn_cls_score_stride8_top_data, face_rpn_cls_score_reshape_stride8_top_data);

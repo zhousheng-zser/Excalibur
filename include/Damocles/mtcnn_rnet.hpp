@@ -1,13 +1,14 @@
+#pragma once 
 
 #ifndef _MTCNN_RNET_HPP_
 #define _MTCNN_RNET_HPP_
+
 #include "Excalibur/io.hpp"
 #include "Excalibur/support_layers.hpp"
 #include "Primitives/tensor.hpp"
 #include "mtcnn_rnet_data.hpp"
 
 using namespace glasssix::excalibur;
-using glasssix::memory::tensor;
 
 namespace glasssix
 {
@@ -27,7 +28,7 @@ namespace glasssix
 			Declear_Params(conv5_2);
 			Declear_Params(conv5_3);
 			//
-			std::shared_ptr<tensor<float>> tensor_data;
+			std::shared_ptr<memory::tensor<float>> tensor_data;
 			Declear_Opration(baseconv, conv1);
 			Neuron_Name(conv1);
 			Declear_Opration(prelu, prelu1);
@@ -58,19 +59,19 @@ namespace glasssix
 			int device_;
 			bool cudnn_ready_ = false;
 			bool int8_quantization_ = false;
-			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data);
 #endif 
 #endif
 		public:
 			mtcnn_rnet(int device);
 			~mtcnn_rnet();
-			void Forward(const std::shared_ptr<tensor<float>> input_data);
+			void Forward(const std::shared_ptr<memory::tensor<float>> input_data);
 		};
 	}
 }

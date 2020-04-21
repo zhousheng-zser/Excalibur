@@ -1,9 +1,10 @@
 #include "banshee.hpp"
 #include "banshee_data.hpp"
-#include <glasssix/tensor.hpp>
-#include <glasssix/syncedmem.hpp>
+#include "Primitives/memory.hpp"
+#include "Primitives/tensor.hpp"
 
 using namespace glasssix::excalibur;
+using glasssix::memory::aligned_heap_free;
 
 namespace glasssix
 {
@@ -23,7 +24,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -166,12 +167,12 @@ namespace glasssix
 			delete conv6_3;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(prelu1_weights, false);
-			FreeHost(prelu1_dw_weights, false);
-			FreeHost(prelu2_dw_weights, false);
-			FreeHost(prelu3_dw_weights, false);
-			FreeHost(prelu4_dw_weights, false);
-			FreeHost(prelu5_weights, false);
+			aligned_heap_free(prelu1_weights);
+			aligned_heap_free(prelu1_dw_weights);
+			aligned_heap_free(prelu2_dw_weights);
+			aligned_heap_free(prelu3_dw_weights);
+			aligned_heap_free(prelu4_dw_weights);
+			aligned_heap_free(prelu5_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)
@@ -188,7 +189,7 @@ namespace glasssix
 #endif
 		}
 
-		void Banshee::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		void Banshee::Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 #ifdef _DEBUG
 			CHECK_EQ(input_data->width(), 48);
@@ -217,7 +218,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDA
-		void Banshee::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
+		void Banshee::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 #ifdef _DEBUG
 			CHECK_EQ(input_data->width(), 48);
@@ -246,7 +247,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void Banshee::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
+		void Banshee::Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 #ifdef _DEBUG
 			CHECK_EQ(input_data->width(), 48);
@@ -346,14 +347,14 @@ namespace glasssix
 			CHECK_EQ(n, 1);
 			CHECK_EQ(channels, 1);
 
-			std::shared_ptr<tensor<unsigned char>> ori_image, resized_img, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
-			std::vector<std::shared_ptr<tensor<unsigned char>>> src_vector;
+			std::shared_ptr<memory::tensor<unsigned char>> ori_image, resized_img, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
+			std::vector<std::shared_ptr<memory::tensor<unsigned char>>> src_vector;
 			std::vector<unsigned char> res;
 			res.resize(n * 3 * 128 * 128);
 
 			if (device_ < 0)
 			{
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				ori_image.reset(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, memory::NCHW));
 				memcpy(ori_image->mutable_cpu_data(), origine, 1 * channels * height * width * sizeof(unsigned char));
 
 				rectangle<int> MarginRect = rectangle<int>((float)width / 7,
@@ -406,7 +407,7 @@ namespace glasssix
 			else
 			{
 #ifdef USE_CUDA
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				ori_image.reset(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, memory::NCHW));
 				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				rectangle<int> MarginRect = rectangle<int>((float)width / 7,
@@ -481,14 +482,14 @@ namespace glasssix
 			CHECK_EQ(n, bbox.size());
 			CHECK_EQ(n, landmarks.size());
 			CHECK_EQ(channels, 1);
-			std::shared_ptr<tensor<unsigned char>> ori_image, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
-			std::vector<std::shared_ptr<tensor<unsigned char>>> src_vector;
+			std::shared_ptr<memory::tensor<unsigned char>> ori_image, ROI, rotated_ROI, final_mat, final_mat_gray, color_img, resized_color_img;
+			std::vector<std::shared_ptr<memory::tensor<unsigned char>>> src_vector;
 			std::vector<unsigned char> res;
 			res.resize(n * 3 * 128 * 128);
 
 			if (device_ < 0)
 			{
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				ori_image.reset(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, memory::NCHW));
 				memcpy(ori_image->mutable_cpu_data(), origine, 1 * channels * height * width * sizeof(unsigned char));
 
 				for (size_t i = 0; i < landmarks.size(); i++)
@@ -543,7 +544,7 @@ namespace glasssix
 			else
 			{
 #ifdef USE_CUDA
-				ori_image.reset(new tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, NCHW));
+				ori_image.reset(new memory::tensor<unsigned char>(std::vector<int>{1, channels, height, width}, device_, memory::NCHW));
 				CUDA_CHECK(cudaMemcpy(ori_image->mutable_gpu_data(), origine, channels * height * width * sizeof(unsigned char), cudaMemcpyDefault));
 
 				for (size_t i = 0; i < landmarks.size(); i++)
