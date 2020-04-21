@@ -21,7 +21,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{1, mm_align_size, 1, 1});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 

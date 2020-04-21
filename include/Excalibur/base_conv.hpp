@@ -30,7 +30,7 @@ namespace glasssix
 			const float *scales_data;
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
-			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{1, mm_align_size, 1, 1});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -186,8 +186,8 @@ namespace glasssix
 			{
 				if (bias_term_)
 				{
-					bias_->set_cpu_data(bias);
-
+					//bias_->set_cpu_data(bias);
+					memcpy(bias_->mutable_cpu_data(), bias, bias_->count() * sizeof(float));
 					if (device_ < 0)
 					{
 						bias_data = bias_->cpu_data();
@@ -201,8 +201,8 @@ namespace glasssix
 
 			virtual void set_weights(float* weights)
 			{
-				weights_->set_cpu_data(weights);
-
+				//weights_->set_cpu_data(weights);
+				memcpy(weights_->mutable_cpu_data(), weights, weights_->count() * sizeof(float));
 				if (device_ < 0)
 				{
 					weights_data = weights_->cpu_data();
@@ -233,7 +233,8 @@ namespace glasssix
 
 			void set_weights(signed char* weights_int8)
 			{
-				weights_int8_->set_cpu_data(weights_int8);
+				//weights_int8_->set_cpu_data(weights_int8);
+				memcpy(weights_int8_->mutable_cpu_data(), weights_int8, weights_int8_->count() * sizeof(float));
 				if (device_ < 0)
 				{
 					weights_int8_data = weights_int8_->cpu_data();
@@ -263,7 +264,8 @@ namespace glasssix
 
 			void set_scales(float* scales)
 			{
-				scales_->set_cpu_data(scales);
+				//scales_->set_cpu_data(scales);
+				memcpy(scales_->mutable_cpu_data(), scales, scales_->count() * sizeof(float));
 				if (device_ < 0)
 				{
 					scales_data = scales_->cpu_data();
