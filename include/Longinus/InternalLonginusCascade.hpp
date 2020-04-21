@@ -1,13 +1,15 @@
+#pragma once
+
 #ifndef INTERNALLONGINUSCASCADE_HPP
 #define INTERNALLONGINUSCASCADE_HPP
+
+#include "common.hpp"
+#include "BaseLonginusCascade.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <string>
 #include <vector>
 #include <memory>
-
-#include "../../include/Primitives/tensor.hpp"
-#include "common.hpp"
-#include "BaseLonginusCascade.hpp"
 
 namespace glasssix
 {
@@ -70,4 +72,3 @@ namespace glasssix
 }
 
 #endif
-

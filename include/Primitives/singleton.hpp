@@ -2,36 +2,39 @@
 
 #include <mutex>
 #include <memory>
+#include <utility>
+#include <type_traits>
 
 namespace glasssix
 {
 	/// <summary>
 	/// A singleton pattern.
 	/// </summary>
-	template<typename T>
+	template<typename Object, typename = std::enable_if_t<std::is_class<Object>::value>>
 	class singleton
 	{
 	public:
 		virtual ~singleton() = default;
 
-		template<typename... TArgs>
-		static T& instance(TArgs... args)
+		template<typename... Args>
+		static Object& instance(Args&&... args)
 		{
-			static std::mutex mutex;
-			static std::shared_ptr<T> resource;
-			std::lock_guard<std::mutex> lock{ mutex };
+			static std::once_flag flag;
+			static uint8_t buffer[sizeof(Object)];
+			static Object& resource = reinterpret_cast<Object&>(buffer[0]);
 
-			if (resource == nullptr)
+			std::call_once(flag, [&]
 			{
-				resource.reset(new T{ args... });
-			}
+				new (buffer) Object{ std::forward<Args>(args)... };
+			});
 
-			return *resource;
+			return resource;
 		}
 	protected:
 		singleton() = default;
 	};
 
+		
 	/// <summary>
 	/// An init-once resource initializer.
 	/// </summary>

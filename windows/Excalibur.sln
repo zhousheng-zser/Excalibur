@@ -34,13 +34,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Retina", "Retina\Retina.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppExample", "..\examples\CppExample\CppExample.vcxproj", "{6FCF7CB3-7523-442B-BA36-E65EF38A5598}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Merge_Conv_BN_Scale", "..\tools\Merge_Conv_BN_Scale\Merge_Conv_BN_Scale.vcxproj", "{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PersonalReality", "..\tools\PersonalReality\PersonalReality.vcxproj", "{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CSharpExample", "..\examples\CSharpExample\CSharpExample.csproj", "{A2764D42-919E-4817-927F-BB6CF13CEEC1}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Athene", "Athene\Athene.vcxproj", "{70049867-7840-4450-A777-95364EB75146}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Irisvian", "..\csharp\Irisvian\Irisvian.csproj", "{1472C28D-83DF-4257-AA10-217E110FAC01}"
 EndProject
@@ -137,19 +131,6 @@ Global
 		{6FCF7CB3-7523-442B-BA36-E65EF38A5598}.Release|Any CPU.ActiveCfg = Debug|x64
 		{6FCF7CB3-7523-442B-BA36-E65EF38A5598}.Release|x64.ActiveCfg = Release|x64
 		{6FCF7CB3-7523-442B-BA36-E65EF38A5598}.Release|x64.Build.0 = Release|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Debug|x64.ActiveCfg = Debug|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Debug|x64.Build.0 = Release|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Release|Any CPU.ActiveCfg = Release|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Release|x64.ActiveCfg = Release|x64
-		{DF6DBF10-3828-428D-8247-7ADA4C86B2F6}.Release|x64.Build.0 = Release|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Debug|x64.ActiveCfg = Debug|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Debug|x64.Build.0 = Release|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Release|Any CPU.ActiveCfg = Release|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Release|Any CPU.Build.0 = Debug|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Release|x64.ActiveCfg = Release|x64
-		{F84120F7-43E0-44D9-AA16-DAE8B0C0EFD2}.Release|x64.Build.0 = Release|x64
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -158,12 +139,6 @@ Global
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|Any CPU.Build.0 = Debug|Any CPU
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|x64.ActiveCfg = Release|Any CPU
 		{A2764D42-919E-4817-927F-BB6CF13CEEC1}.Release|x64.Build.0 = Release|Any CPU
-		{70049867-7840-4450-A777-95364EB75146}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{70049867-7840-4450-A777-95364EB75146}.Debug|x64.ActiveCfg = Debug|x64
-		{70049867-7840-4450-A777-95364EB75146}.Debug|x64.Build.0 = Debug|x64
-		{70049867-7840-4450-A777-95364EB75146}.Release|Any CPU.ActiveCfg = Debug|x64
-		{70049867-7840-4450-A777-95364EB75146}.Release|x64.ActiveCfg = Release|x64
-		{70049867-7840-4450-A777-95364EB75146}.Release|x64.Build.0 = Release|x64
 		{1472C28D-83DF-4257-AA10-217E110FAC01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1472C28D-83DF-4257-AA10-217E110FAC01}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1472C28D-83DF-4257-AA10-217E110FAC01}.Debug|x64.ActiveCfg = Debug|Any CPU

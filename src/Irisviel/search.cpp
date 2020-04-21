@@ -1,16 +1,13 @@
 #include "search.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <cstring>
 #include <fstream>
 #include <iostream>
 
-#include <glasssix/accelerator.hpp>
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif
-
-using namespace glasssix::excalibur;
 
 namespace glasssix
 {
@@ -163,7 +160,7 @@ namespace glasssix
 			data_len_ = (dimension_ + 1) * sizeof(float);
 			neighbor_len_ = (width + 1) * sizeof(uint32_t);
 			node_size_ = data_len_ + neighbor_len_;
-			opt_graph_tensor_.reset(new tensor<char>(node_size_ * base_num_));
+			opt_graph_tensor_.reset(new memory::tensor<char>(node_size_ * base_num_));
 			opt_graph_ = opt_graph_tensor_->mutable_cpu_data();
 			if (opt_graph_ == nullptr)
 			{

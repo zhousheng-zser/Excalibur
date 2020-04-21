@@ -107,7 +107,7 @@ namespace glasssix
             {
                 CheckPointer();
 
-                builder_->tensor_parameters(static_cast<orderType>(order));
+                builder_->tensor_parameters(static_cast<memory::orderType>(order));
             }
 
             /// <summary>
@@ -119,7 +119,7 @@ namespace glasssix
             {
                 CheckPointer();
 
-                builder_->tensor_parameters(static_cast<orderType>(order), device);
+                builder_->tensor_parameters(static_cast<memory::orderType>(order), device);
             }
 
             /// <summary>

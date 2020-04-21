@@ -1,10 +1,9 @@
 #include "index_builder.hpp"
 #include "search.hpp"
 #include "irisviel_search.hpp"
+#include "Primitives/mutex_wrapper.hpp"
 
 #include <iostream>
-
-#include <glasssix/mutex_wrapper.hpp>
 
 namespace glasssix
 {

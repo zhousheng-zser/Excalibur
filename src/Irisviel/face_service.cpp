@@ -1,6 +1,7 @@
 #include "face_service.hpp"
 #include "database_cache.hpp"
 #include "filesystem_utils.hpp"
+#include "Primitives/fmt/format.h"
 
 #include <list>
 #include <fstream>
@@ -10,7 +11,6 @@
 #include <unordered_set>
 #include <unordered_map>
 
-#include <glasssix/fmt/format.h>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/uuid/uuid_generators.hpp>
 

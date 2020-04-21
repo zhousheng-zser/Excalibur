@@ -21,7 +21,7 @@ namespace glasssix
             { tensor_layout::grayscale, [](fi_image_ex& inner) { return inner.convert_to_grayscale(); } }
         };
 
-        tensor_builder_free_image_impl::tensor_builder_free_image_impl() : device_{ -1 }, order_{ NHWC }, width_{}, height_{}, stride_{}, channels_{}
+        tensor_builder_free_image_impl::tensor_builder_free_image_impl() : device_{ -1 }, order_{ memory::NHWC }, width_{}, height_{}, stride_{}, channels_{}
         {
             init_free_image::instance().invoke();
             image_ = std::make_shared<fi_image_ex>();
@@ -106,7 +106,7 @@ namespace glasssix
         /// Set the parameters for building a tensor.
         /// </summary>
         /// <param name="order">The memory order</param>
-        void tensor_builder_free_image_impl::tensor_parameters(orderType order)
+        void tensor_builder_free_image_impl::tensor_parameters(memory::orderType order)
         {
             order_ = order;
         }
@@ -116,7 +116,7 @@ namespace glasssix
         /// </summary>
         /// <param name="order">The memory order</param>
         /// <param name="device">The device ID</param>
-        void tensor_builder_free_image_impl::tensor_parameters(orderType order, int device)
+        void tensor_builder_free_image_impl::tensor_parameters(memory::orderType order, int device)
         {
             order_ = order;
             device_ = device;
@@ -131,7 +131,7 @@ namespace glasssix
         /// True: success
         /// False: failure
         ///</returns>
-        bool tensor_builder_free_image_impl::from_tensor(const tensor<float>& data, tensor_layout layout)
+        bool tensor_builder_free_image_impl::from_tensor(const memory::tensor<float>& data, tensor_layout layout)
         {
             FREE_IMAGE_TYPE type;
 
@@ -178,7 +178,7 @@ namespace glasssix
         /// True: success
         /// False: failure
         ///</returns>
-        bool tensor_builder_free_image_impl::from_tensor(const tensor<uint8_t>& data, tensor_layout layout)
+        bool tensor_builder_free_image_impl::from_tensor(const memory::tensor<uint8_t>& data, tensor_layout layout)
         {
             switch (layout)
             {
@@ -208,7 +208,7 @@ namespace glasssix
         /// </summary>
         /// <param name="type">The destintation bitmap type</param>
         /// <returns>The result</returns>
-        std::optional<tensor<float>> tensor_builder_free_image_impl::to_tensor_float(tensor_layout layout)
+        std::optional<memory::tensor<float>> tensor_builder_free_image_impl::to_tensor_float(tensor_layout layout)
         {
             return to_tensor_core<tensor_layout, float, false>(layout, float_converters_);
         }
@@ -218,7 +218,7 @@ namespace glasssix
         /// </summary>
         /// <param name="type">The destination bitmap type</param>
         /// <returns>The result</returns>
-        std::optional<tensor<uint8_t>> tensor_builder_free_image_impl::to_tensor_uint8(tensor_layout layout)
+        std::optional<memory::tensor<uint8_t>> tensor_builder_free_image_impl::to_tensor_uint8(tensor_layout layout)
         {
             return to_tensor_core<tensor_layout, uint8_t, false>(layout, uint8_converters_);
         }
@@ -239,7 +239,7 @@ namespace glasssix
         /// </summary>
         /// <param name="type">The destintation bitmap type</param>
         /// <returns>The result</returns>
-        std::shared_ptr<tensor<float>> tensor_builder_free_image_impl::to_tensor_float_shared(tensor_layout layout)
+        std::shared_ptr<memory::tensor<float>> tensor_builder_free_image_impl::to_tensor_float_shared(tensor_layout layout)
         {
             return to_tensor_core<tensor_layout, float, true>(layout, float_converters_);
         }
@@ -249,7 +249,7 @@ namespace glasssix
         /// </summary>
         /// <param name="type">The destintation bitmap type</param>
         /// <returns>The result</returns>
-        std::shared_ptr<tensor<uint8_t>> tensor_builder_free_image_impl::to_tensor_uint8_shared(tensor_layout layout)
+        std::shared_ptr<memory::tensor<uint8_t>> tensor_builder_free_image_impl::to_tensor_uint8_shared(tensor_layout layout)
         {
             return to_tensor_core<tensor_layout, uint8_t, true>(layout, uint8_converters_);
         }
@@ -281,7 +281,7 @@ namespace glasssix
         /// <returns>The result</returns>
         template<typename TEnum, typename UnderlyingType, bool Shared>
         auto tensor_builder_free_image_impl::to_tensor_core(TEnum type, bitmap_converter_map<TEnum>& converters)
-            -> std::conditional_t<Shared, std::shared_ptr<tensor<UnderlyingType>>, std::optional<tensor<UnderlyingType>>>
+            -> std::conditional_t<Shared, std::shared_ptr<memory::tensor<UnderlyingType>>, std::optional<memory::tensor<UnderlyingType>>>
         {
             static_assert(std::is_enum_v<TEnum>, "The TEnum must be an enumeration type.");
             static_assert(std::is_integral_v<UnderlyingType> || std::is_floating_point_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
