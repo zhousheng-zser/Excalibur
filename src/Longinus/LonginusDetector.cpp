@@ -1002,11 +1002,11 @@ namespace glasssix
 		std::vector<bool> LonginusDetector::maskJudge(const std::vector<unsigned char> &aligned_data, int n)
 		{
 			std::vector<bool> result;
-			std::shared_ptr<tensor<unsigned char>> aligned_face(new tensor<unsigned char>(std::vector<int>{n, 3, 128, 128}, -1, NCHW));
+			std::shared_ptr<memory::tensor<unsigned char>> aligned_face(new memory::tensor<unsigned char>(std::vector<int>{n, 3, 128, 128}, -1, memory::NCHW));
 			memcpy(aligned_face->mutable_cpu_data(), aligned_data.data(), n * 3 * 128 * 128 * sizeof(unsigned char));
 
-			std::shared_ptr<tensor<unsigned char>> gray_img;
-			std::shared_ptr<tensor<float>> hist_lbp;
+			std::shared_ptr<memory::tensor<unsigned char>> gray_img;
+			std::shared_ptr<memory::tensor<float>> hist_lbp;
 			tensor_operation_cpu::rgb2gray_cpu(aligned_face, gray_img);
 			tensor_operation_cpu::lbp_feature_cpu(gray_img, gray_img, true);
 			tensor_operation_cpu::calc_hist_cpu(gray_img, hist_lbp);

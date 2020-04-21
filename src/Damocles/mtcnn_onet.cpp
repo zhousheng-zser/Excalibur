@@ -4,6 +4,8 @@
 
 using glasssix::memory::aligned_heap_free;
 
+using namespace glasssix::memory;
+
 namespace glasssix
 {
 	namespace longinus

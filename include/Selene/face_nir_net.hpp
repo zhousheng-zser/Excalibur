@@ -70,25 +70,25 @@ namespace glasssix
 			int device_;
 			bool cudnn_ready_ = false;
 			bool int8_quantization_ = false;
-			std::shared_ptr<tensor<float>> tensor_float_data = nullptr;
-			std::shared_ptr<tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
+			std::shared_ptr<memory::tensor<float>> tensor_float_data = nullptr;
+			std::shared_ptr<memory::tensor<unsigned char>> tensor_unsigned_char_data = nullptr;
 			//
 
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data);
 #endif 
 #endif
-			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data);
 
 		public:
 			Face_nir_net(int device);
 			virtual ~Face_nir_net();
 
-			void Forward(const std::shared_ptr<tensor<unsigned char>> input_data, int order = 0)
+			void Forward(const std::shared_ptr<memory::tensor<unsigned char>> input_data, int order = 0)
 			{
 				float means[3] = { 127.5f, 127.5f, 127.5f };
 				float var = 0.0078125;

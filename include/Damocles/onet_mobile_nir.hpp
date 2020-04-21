@@ -7,8 +7,6 @@
 #include "Primitives/tensor.hpp"
 #include "onet_mobile_nir_data.hpp"
 
-using namespace glasssix::excalibur;
-
 namespace glasssix
 {
 	namespace longinus

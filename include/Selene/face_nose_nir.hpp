@@ -18,8 +18,8 @@ namespace glasssix
 			Face_nose_nir(int device);
 			virtual ~Face_nose_nir();
 
-			void face_nose_area(const std::shared_ptr<glasssix::excalibur::tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, 
-				std::vector<std::shared_ptr<glasssix::excalibur::tensor<unsigned char>>> &face_nir, std::shared_ptr<glasssix::excalibur::tensor<unsigned char>> &nose_nir);
+			void face_nose_area(const std::shared_ptr<glasssix::memory::tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, 
+				std::vector<std::shared_ptr<glasssix::memory::tensor<unsigned char>>> &face_nir, std::shared_ptr<glasssix::memory::tensor<unsigned char>> &nose_nir);
 			
 			bool judge(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order) override;
 

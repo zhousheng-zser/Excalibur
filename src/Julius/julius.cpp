@@ -357,12 +357,12 @@ namespace glasssix
 			if (TransA == CBLAS_TRANSPOSE::CblasNoTrans)
 			{
 				f_A = new float[M * lda];
-				half2float(A, f_A, M * lda);
+				//half2float(A, f_A, M * lda);
 			}
 			else if(TransA == CBLAS_TRANSPOSE::CblasTrans)
 			{
 				f_A = new float[K * lda];
-				half2float(A, f_A, K * lda);
+				//half2float(A, f_A, K * lda);
 			}
 			else
 			{
@@ -371,19 +371,19 @@ namespace glasssix
 			if (TransB == CBLAS_TRANSPOSE::CblasNoTrans)
 			{
 				f_B = new float[K * ldb];
-				half2float(B, f_B, K * ldb);
+				//half2float(B, f_B, K * ldb);
 			}
 			else if (TransB == CBLAS_TRANSPOSE::CblasTrans)
 			{
 				f_B = new float[N * ldb];
-				half2float(B, f_B, N * ldb);
+				//half2float(B, f_B, N * ldb);
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
 			cblas_sgemm(Order, TransA, TransB, M, N, K, alpha, f_A, lda, f_B, ldb, beta, f_C, ldc);
-			float2half(f_C, C, M * ldc);
+			//float2half(f_C, C, M * ldc);
 			delete[] f_A;
 			delete[] f_B;
 			delete[] f_C;
