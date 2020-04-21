@@ -1,11 +1,13 @@
 #ifndef _ROMANCIADETECTOR_HPP_
 #define _ROMANCIADETECTOR_HPP_
 
+#include "matcher.hpp"
+
 #include <vector>
 #include <string>
 #include <memory>
 #include <algorithm>
-#include "matcher.hpp"
+
 #ifdef USE_OPENCV
 #include <opencv2/opencv.hpp>
 #endif

@@ -47,7 +47,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>../../include/Infrastructure;../../include/Excalibur;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <LibraryPath>$(SolutionDir)..\3rdparty\windows\freeimage\libd;$(LibraryPath)</LibraryPath>
@@ -55,7 +55,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>../../include/Infrastructure;../../include/Excalibur;$(IncludePath)</IncludePath>
+    <IncludePath>$(IncludePath)</IncludePath>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <LibraryPath>$(SolutionDir)..\3rdparty\windows\freeimage\lib;$(LibraryPath)</LibraryPath>
@@ -74,6 +74,7 @@
       <ShowIncludes>false</ShowIncludes>
       <OpenMPSupport>
       </OpenMPSupport>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include/Infrastructure;$(SolutionDir)/../include/Excalibur;$(SolutionDir)/../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -101,6 +102,7 @@
       <ShowIncludes>false</ShowIncludes>
       <OpenMPSupport>
       </OpenMPSupport>
+      <AdditionalIncludeDirectories>$(SolutionDir)../include/Infrastructure;$(SolutionDir)/../include/Excalibur;$(SolutionDir)/../include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

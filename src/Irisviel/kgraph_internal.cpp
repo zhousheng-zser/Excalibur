@@ -1,14 +1,17 @@
 #include "kgraph_internal.hpp"
+#include "Primitives/logger.hpp"
+#include "distance.hpp"
 
 #include <bitset>
-#include <boost/dynamic_bitset.hpp>
-#include <iostream>
-#include <fstream>
 #include <random>
-#include "distance.hpp"
+#include <fstream>
+#include <iostream>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
+
+#include <boost/dynamic_bitset.hpp>
 
 #if defined(PROFILER) && defined(_MSC_VER)
 #define WIN32_LEAN_AND_MEAN

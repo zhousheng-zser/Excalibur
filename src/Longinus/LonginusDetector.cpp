@@ -252,7 +252,7 @@ namespace glasssix
 				return std::vector<face_rect_with_face_info>();
 			}
 			std::vector<std::vector<float> > infoParam;
-			std::shared_ptr<excalibur::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
+			std::shared_ptr<memory::tensor<unsigned char>> rect_tensor, rect48_tensor, group_rect_tensor;
 			group_rect_tensor.reset(new tensor<unsigned char>(std::vector<int>{(int)rects.size(), 1, 48, 48}, device_));
 
 			if (device_ < 0)

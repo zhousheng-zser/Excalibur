@@ -1,11 +1,10 @@
 #pragma once
 
 #include "tensor_or_shared.hpp"
+#include "Primitives/tensor.hpp"
 
 #include <cassert>
 #include <functional>
-
-#include <glasssix/tensor.hpp>
 
 namespace glasssix
 {
@@ -22,7 +21,7 @@ namespace glasssix
             /// </summary>
             /// <param name="tensor">The tensor</param>
             /// <returns>True or false</returns>
-            static bool has_triple_channel(const tensor_base& tensor)
+            static bool has_triple_channel(const memory::tensor_& tensor)
             {
                 return tensor.channels() == 3;
             }
@@ -32,7 +31,7 @@ namespace glasssix
             /// </summary>
             /// <param name="tensor">The tensor</param>
             /// <returns>True or false</returns>
-            static bool has_single_channel(const tensor_base& tensor)
+            static bool has_single_channel(const memory::tensor_& tensor)
             {
                 return tensor.channels() == 1;
             }
@@ -42,7 +41,7 @@ namespace glasssix
             /// </summary>
             /// <param name="tensor">The tensor</param>
             /// <returns>True or false</returns>
-            static bool has_quadruple_channel(const tensor_base& tensor)
+            static bool has_quadruple_channel(const memory::tensor_& tensor)
             {
                 return tensor.channels() == 4;
             }
@@ -61,14 +60,14 @@ namespace glasssix
             /// <param name="channels">The channel count</param>
             /// <returns>The result</returns>
             template<typename UnderlyingType, bool Shared>
-            static auto create(const void* bitmap, orderType order, int device, int width, int height, int stride, int channels)
+            static auto create(const void* bitmap, memory::orderType order, int device, int width, int height, int stride, int channels)
             {
                 static_assert(std::is_arithmetic_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
                 assert(bitmap != nullptr);
 
                 // Initialize the tensor parameters.
                 auto input_data = reinterpret_cast<const UnderlyingType*>(bitmap);
-                auto input_vector = order == NHWC ? std::vector<int>{ 1, height, width, channels } : std::vector<int>{ 1, channels, height, width };
+                auto input_vector = order == memory::NHWC ? std::vector<int>{ 1, height, width, channels } : std::vector<int>{ 1, channels, height, width };
 
                 // Create a tensor according to the memory order.
                 // It may be either an "object" or a "shared_ptr".
@@ -90,7 +89,7 @@ namespace glasssix
             /// <param name="bitmap">The bitmap buffer</param>
             /// <param name="stride">The stride</param>
             template<typename UnderlyingType>
-            static void copy_to_bitmap(const tensor<UnderlyingType>& data, void* bitmap, int stride)
+            static void copy_to_bitmap(const memory::tensor<UnderlyingType>& data, void* bitmap, int stride)
             {
                 static_assert(std::is_arithmetic_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
                 assert(bitmap != nullptr);
@@ -111,7 +110,7 @@ namespace glasssix
             /// <param name="destination">The destination tensor</param>
             /// <param name="channels">The number of channels in the destination</param>
             template<typename UnderlyingType>
-            static void rgb_or_rgba_to_gray(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination, int channels)
+            static void rgb_or_rgba_to_gray(const memory::tensor<UnderlyingType>& source, memory::tensor<UnderlyingType>& destination, int channels)
             {
                 static_assert(std::is_arithmetic_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
                 assert(has_triple_channel(source) || has_quadruple_channel(source));
@@ -123,9 +122,9 @@ namespace glasssix
                 auto input_data = source.mutable_cpu_data();
 
                 // Transform the data.
-                transform_tensor_core<true>(source, destination, channels, [&](orderType order)
+                transform_tensor_core<true>(source, destination, channels, [&](memory::orderType order)
                 {
-                    return order == NCHW ?
+                    return order == memory::NCHW ?
                         std::function{ [&](int w, int h) { return static_cast<UnderlyingType>(input_data[width * h + w] * 0.299 + input_data[width * height + width * h + w] * 0.587 + input_data[width * height * 2 + width * h + w] * 0.114); } } :
                         std::function{ [&](int w, int h) { return static_cast<UnderlyingType>(input_data[(width * h + w) * source_channels] * 0.299 + input_data[(width * h + w) * source_channels + 1] * 0.587 + input_data[(width * h + w) * source_channels + 2] * 0.114); } };
                 });
@@ -138,7 +137,7 @@ namespace glasssix
             /// <param name="source">The source tensor</param>
             /// <param name="destination">The destination tensor</param>
             template<typename UnderlyingType>
-            static void rgba_to_rgb(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination)
+            static void rgba_to_rgb(const memory::tensor<UnderlyingType>& source, memory::tensor<UnderlyingType>& destination)
             {
                 static_assert(std::is_arithmetic_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
                 assert(has_quadruple_channel(source));
@@ -152,16 +151,16 @@ namespace glasssix
                 auto input_data = source.mutable_cpu_data();
 
                 // Transform the data.
-                transform_tensor_core<false>(source, destination, channels, [&](orderType order)
+                transform_tensor_core<false>(source, destination, channels, [&](memory::orderType order)
                 {
-                    return order == NCHW ?
+                    return order == memory::NCHW ?
                         std::function{ [&](int w, int h, int c) { return input_data[width * height * c + width * h + w]; } } :
                         std::function{ [&](int w, int h, int c) { return input_data[(width * h + w) * source_channels + c]; } };
                 });
             }
         private:
             template<bool to_bitmap, typename UnderlyingType>
-            static void copy_data_core(orderType order, const UnderlyingType* input_data, UnderlyingType* output_data, int width, int height, int channels, int stride)
+            static void copy_data_core(memory::orderType order, const UnderlyingType* input_data, UnderlyingType* output_data, int width, int height, int channels, int stride)
             {
                 auto channel_bytes = sizeof(UnderlyingType);
                 auto pixel_bytes = channel_bytes * channels;
@@ -172,7 +171,7 @@ namespace glasssix
 
                 switch (order)
                 {
-                case NCHW:
+                case memory::NCHW:
                 {
                     // For bitmaps, the order is B, G, R
                     for (auto c = channels - 1; c >= 0; c--)
@@ -195,7 +194,7 @@ namespace glasssix
                     }
                     break;
                 }
-                case NHWC:
+                case memory::NHWC:
                 {
                     // Simply do progressive scanning.
                     for (auto h = 0; h < height; h++)
@@ -220,13 +219,13 @@ namespace glasssix
             }
 
             template<bool MergingPixels, typename UnderlyingType, typename TPixelGeneratorSelector>
-            static void transform_tensor_core(const tensor<UnderlyingType>& source, tensor<UnderlyingType>& destination, int channels, TPixelGeneratorSelector&& pixel_generator_selector)
+            static void transform_tensor_core(const memory::tensor<UnderlyingType>& source, memory::tensor<UnderlyingType>& destination, int channels, TPixelGeneratorSelector&& pixel_generator_selector)
             {
-                static_assert(std::is_invocable_v<TPixelGeneratorSelector, orderType>, R"(The selector must contain only one argument with the type of "orderType".)");
+                static_assert(std::is_invocable_v<TPixelGeneratorSelector, memory::orderType>, R"(The selector must contain only one argument with the type of "orderType".)");
                 static_assert(std::is_arithmetic_v<UnderlyingType>, "The underlying type of a tensor must be integral or floating-point.");
 
                 // Check the pixel generator.
-                using pixel_generator_type = decltype(pixel_generator_selector(orderType{}));
+                using pixel_generator_type = decltype(pixel_generator_selector(memory::orderType{}));
                 if constexpr (MergingPixels)
                 {
                     static_assert(std::is_invocable_v<pixel_generator_type, int, int>, R"(In the merging-pixel mode, the "pixel_generator_type" must be a callable type with (int w, int h) as arguments.)");
@@ -243,7 +242,7 @@ namespace glasssix
                 auto width = source.width();
                 auto height = source.height();
                 auto input_data = source.mutable_cpu_data();
-                auto input_vector = order == NHWC ? std::vector<int>{ 1, height, width, channels } : std::vector<int>{ 1, channels, height, width };
+                auto input_vector = order == memory::NHWC ? std::vector<int>{ 1, height, width, channels } : std::vector<int>{ 1, channels, height, width };
 
                 // Create a tensor according to the memory order.
                 destination = tensor<UnderlyingType>{ input_vector, source.device(), order };
@@ -278,9 +277,9 @@ namespace glasssix
             }
 
             template<typename UnderlyingType>
-            static auto pixel_setter_core(const tensor<UnderlyingType>& data)
+            static auto pixel_setter_core(const memory::tensor<UnderlyingType>& data)
             {
-                return data.order() == NCHW ?
+                return data.order() == memory::NCHW ?
                     std::function{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, UnderlyingType pixel) { output_data[width * height * c + width * h + w] = pixel; } } :
                     std::function{ [&, width = data.width(), height = data.height(), channels = data.channels(), output_data = data.mutable_cpu_data()] (int w, int h, int c, UnderlyingType pixel) { output_data[channels * width * h + channels * w + c] = pixel; } };
             }

@@ -196,6 +196,7 @@ namespace glasssix
 			order_ = t.order_;
 			step_ = t.step_;
 			allocator_ = t.allocator_;
+			data_->set_allocator(allocator_);
 		}
 
 		template <typename Dtype>
@@ -324,6 +325,7 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+				std::terminate();
 			}
 		}
 
@@ -339,6 +341,7 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+				std::terminate();
 			}
 		}
 
