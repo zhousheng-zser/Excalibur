@@ -30,14 +30,14 @@ namespace glasssix
 		/// <param name="landmarks">detected humanface landmarks</param>
 		/// <param name="face_nir">face area in near-infrared image</param>
 		/// <param name="nose_nir">nose area in near-infrared image</param>
-		void Face_nose_nir::face_nose_area(const std::shared_ptr<tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, 
-			std::vector<std::shared_ptr<tensor<unsigned char>>> &face_nir, std::shared_ptr<tensor<unsigned char>> &nose_nir)
+		void Face_nose_nir::face_nose_area(const std::shared_ptr<memory::tensor<unsigned char>> &image_nir, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, 
+			std::vector<std::shared_ptr<memory::tensor<unsigned char>>> &face_nir, std::shared_ptr<memory::tensor<unsigned char>> &nose_nir)
 		{
 			CHECK_EQ(bbox.size(), 1);
 			CHECK_EQ(landmarks.size(), 1);
 			CHECK_EQ(landmarks[0].size() / 2, 5);
 
-			std::shared_ptr<tensor<unsigned char>> ROI, rotated_ROI, face_mat, nose_mat;
+			std::shared_ptr<memory::tensor<unsigned char>> ROI, rotated_ROI, face_mat, nose_mat;
 			glasssix::excalibur::rectangle<int> MarginRect = glasssix::excalibur::rectangle<int>(bbox[0][0] - bbox[0][3] * 0.2,
 				bbox[0][1] - bbox[0][2] * 0.2,
 				bbox[0][3] * 1.4f,
@@ -75,7 +75,7 @@ namespace glasssix
 			{
 				int x_diff = 0;
 				int y_diff = 0;
-				std::shared_ptr<tensor<unsigned char>> temp;
+				std::shared_ptr<memory::tensor<unsigned char>> temp;
 
 				glasssix::excalibur::rectangle<float> face_rect = glasssix::excalibur::rectangle<float>(new_center_eye.x - distance + x_diff,
 					new_center_eye.y - distance / 2 + y_diff,
@@ -102,14 +102,14 @@ namespace glasssix
 		/// <param name="order">order type of near-infrared image: NCHW(0) / NHWC(1)</param>
 		bool Face_nose_nir::judge(const unsigned char* nir_color_image, int height, int width, std::vector<std::vector<int>> bbox, std::vector<std::vector<int>> landmarks, float thresh[2], float value[2], int order)
 		{
-			std::shared_ptr<tensor<unsigned char>> image_nir, gray_nir;
+			std::shared_ptr<memory::tensor<unsigned char>> image_nir, gray_nir;
 			if (order == 0)
 			{
-				image_nir.reset(new tensor<unsigned char>(std::vector<int>{1, 3, height, width}, -1, NCHW));
+				image_nir.reset(new memory::tensor<unsigned char>(std::vector<int>{1, 3, height, width}, -1, memory::NCHW));
 			}
 			else if (order == 1)
 			{
-				image_nir.reset(new tensor<unsigned char>(std::vector<int>{1, height, width, 3}, -1, NHWC));
+				image_nir.reset(new memory::tensor<unsigned char>(std::vector<int>{1, height, width, 3}, -1, memory::NHWC));
 			}
 			else
 			{
@@ -120,8 +120,8 @@ namespace glasssix
 			tensor_operation_cpu::rgb2gray_cpu(image_nir, gray_nir);
 			tensor_operation_cpu::gaussian_blur_cpu(gray_nir, gray_nir);
 
-			std::vector<std::shared_ptr<tensor<unsigned char>>> face_nir;
-			std::shared_ptr<tensor<unsigned char>> nose_nir;
+			std::vector<std::shared_ptr<memory::tensor<unsigned char>>> face_nir;
+			std::shared_ptr<memory::tensor<unsigned char>> nose_nir;
 			face_nose_area(gray_nir, bbox, landmarks, face_nir, nose_nir);
 
 			face_nir_net_->Forward(face_nir[0]);

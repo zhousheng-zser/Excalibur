@@ -1,9 +1,7 @@
 #include "black_white_vsl.hpp"
 #include "blur_vsl_net_data.hpp"
-#include <glasssix/tensor.hpp>
-#include <glasssix/syncedmem.hpp>
 
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 namespace glasssix
 {

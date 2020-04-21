@@ -107,7 +107,7 @@ static inline double DetectAt_CPU(const int * const *pNode, int offset, const do
 	return stage_sum;
 }
 
-void glasssix::longinus::InternalLonginusCascade::scan_gpu(excalibur::tensor<int>& I, std::vector<CandidateRect>& rects, int xstep, int ystep, int xmax, int ymax, int sum_width,
+void glasssix::longinus::InternalLonginusCascade::scan_gpu(memory::tensor<int>& I, std::vector<CandidateRect>& rects, int xstep, int ystep, int xmax, int ymax, int sum_width,
 	int factor1024x, int lut_len, bool doEarlyReject)
 {
 	UpdateCascade(tensor_fea_info.cpu_data(), numStages, tensor_weak_num_in_stages.cpu_data(), tensor_pNode.mutable_cpu_data(), I.gpu_data(), I.width());
@@ -115,7 +115,7 @@ void glasssix::longinus::InternalLonginusCascade::scan_gpu(excalibur::tensor<int
 	int rowSteps = ymax / ystep + 1;
 	int colSteps = xmax / xstep + 1;
 	int numSubWin = colSteps * rowSteps;
-	excalibur::tensor<double> tensor_result(numSubWin, device_);
+	memory::tensor<double> tensor_result(numSubWin, device_, memory::NHWC);
 
 	unsigned int dimX = numSubWin / 128 + ((numSubWin % 128) == 0 ? 0 : 1);
 	dim3 gridDim(dimX > 60 ? 60 : dimX);

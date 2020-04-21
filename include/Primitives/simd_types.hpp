@@ -4,7 +4,7 @@
 
 #include "simd_instruction_set.hpp"
 #include "logger.hpp"
-
+#include "dllexport.hpp"
 
 namespace glasssix
 {
@@ -73,9 +73,9 @@ namespace glasssix
 	union union_type_s_mm128
 #define store_to_q(x,y)\
 	_mm_store_ps(x,y)
-#define mm_final_ssum_quarter(q) (q.s[0])
-#define mm_final_ssum_half(q) (q.s[0]+q.s[1])
-#define mm_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm128_final_ssum_quarter(q) (q.s[0])
+#define mm128_final_ssum_half(q) (q.s[0]+q.s[1])
+#define mm128_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
 	__forceinline float _mm_sumall_ps(__m128 r)
 	{
 		union_type_s_mm128 q = { 0 };
@@ -170,6 +170,14 @@ __forceinline int _mm256_sumall_epi32(const __m256i re)
 	return temp_sum[0] + temp_sum[1] + temp_sum[2] + temp_sum[3] + temp_sum[4] + temp_sum[5] + temp_sum[6] + temp_sum[7];
 }
 
+union union_type_s_mm128
+{
+	double d[2];
+	float s[4];
+	__m128 v;
+	__m64 t[2];
+};
+
 union union_type_s_mm256
 {
 	double d[4];
@@ -178,15 +186,17 @@ union union_type_s_mm256
 	__m128 p[2];
 	__m64 t[4];
 };
-#define q_type \
-	union union_type_s_mm256
-
-#define store_to_q(x,y)\
-	_mm256_store_ps(x,y)
-
-#define mm_final_ssum_quarter(q) (q.s[0]+q.s[1])
-#define mm_final_ssum_half(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
-#define mm_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3]+q.s[4]+q.s[5]+q.s[6]+q.s[7])
+//#define q_type \
+//	union union_type_s_mm256
+//
+//#define store_to_q(x,y)\
+//	_mm256_store_ps(x,y)
+#define mm128_final_ssum_quarter(q) (q.s[0])
+#define mm128_final_ssum_half(q) (q.s[0]+q.s[1])
+#define mm128_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm256_final_ssum_quarter(q) (q.s[0]+q.s[1])
+#define mm256_final_ssum_half(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3])
+#define mm256_final_ssum_all(q) (q.s[0]+q.s[1]+q.s[2]+q.s[3]+q.s[4]+q.s[5]+q.s[6]+q.s[7])
 __forceinline float _mm_sumall_ps(__m128 r)
 {
 	float s[4] = { 0 };
@@ -261,51 +271,26 @@ __forceinline float _mm512_sumall_ps(__m512 r)
 //************************types convertors**************************//
 
 	// convert float to brain half
-	unsigned short float32_to_bfloat16(float value);
+	EXPORT_EXCALIBUR_PRIMITIVES unsigned short float32_to_bfloat16(float value);
 
 	// convert brain half to float
-	float bfloat16_to_float32(unsigned short value);
+	EXPORT_EXCALIBUR_PRIMITIVES float bfloat16_to_float32(unsigned short value);
 
 	// round to nearest
-	signed char float32_to_int8(float value);
+	EXPORT_EXCALIBUR_PRIMITIVES signed char float32_to_int8(float value);
 
-	void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group);
+	EXPORT_EXCALIBUR_PRIMITIVES void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group);
 
 	// convert float32 to float16 with SIMD
-	void float2half(const float* floats, unsigned short* halfs, int length);
+	EXPORT_EXCALIBUR_PRIMITIVES void float2half(const float* floats, unsigned short* halfs, int length);
 
 	// convert float16 to float32 with SIMD
-	void half2float(const unsigned short* halfs, float* floats, int length);
+	EXPORT_EXCALIBUR_PRIMITIVES void half2float(const unsigned short* halfs, float* floats, int length);
 
-	float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias);
+	EXPORT_EXCALIBUR_PRIMITIVES float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias);
 
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)&&(SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
-	static float mul_add_3x3_simd(__m128 r0_data, __m128 r1_data, __m128 r2_data, __m128 k0_data, __m128 k1_data, __m128 k2_data, float bias)
-	{
-		float sum_sum = bias;
-		__m128 sum = _mm_setzero_ps();
-
-#ifdef __FMA__
-		sum = _mm_fmadd_ps(r0_data, k0_data, sum);
-		sum = _mm_fmadd_ps(r1_data, k1_data, sum);
-		sum = _mm_fmadd_ps(r2_data, k2_data, sum);
-		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
-#else
-		sum = _mm_add_ps(_mm_mul_ps(r0_data, k0_data), sum);
-		sum = _mm_add_ps(_mm_mul_ps(r1_data, k1_data), sum);
-		sum = _mm_add_ps(_mm_mul_ps(r2_data, k2_data), sum);
-		//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
-#endif
-
-		float temp[4];
-		_mm_storeu_ps(temp, sum);
-		for (int i = 0; i < 3; i++)
-		{
-			sum_sum += temp[i];
-		}
-
-		return sum_sum;
-	}
+	EXPORT_EXCALIBUR_PRIMITIVES float mul_add_3x3_simd(__m128 r0_data, __m128 r1_data, __m128 r2_data, __m128 k0_data, __m128 k1_data, __m128 k2_data, float bias);
 #endif
 }
 #endif // !_SIMD_TYPES_HPP_

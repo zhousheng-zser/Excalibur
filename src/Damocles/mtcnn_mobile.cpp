@@ -7,7 +7,6 @@
 
 #include <algorithm>
 
-using namespace glasssix;
 using namespace glasssix::memory;
 using namespace glasssix::longinus;
 

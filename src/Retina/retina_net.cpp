@@ -13,7 +13,7 @@
 #include "Primitives/profiler.hpp"
 #endif
 
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 namespace glasssix
 {

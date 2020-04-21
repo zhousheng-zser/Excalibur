@@ -6,7 +6,7 @@
 #include <cstring>
 
 //#define SPLIT_TIME
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 using namespace glasssix::longinus;
 
 namespace

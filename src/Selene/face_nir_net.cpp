@@ -1,9 +1,7 @@
 #include "face_nir_net.hpp"
 #include "face_nir_net_data.hpp"
-#include <glasssix/tensor.hpp>
-#include <glasssix/syncedmem.hpp>
 
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 namespace glasssix
 {
