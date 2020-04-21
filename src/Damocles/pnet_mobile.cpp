@@ -1,5 +1,9 @@
 #include "pnet_mobile.hpp"
+#include "Primitives/memory.hpp"
+
 #include <iostream>
+
+using glasssix::memory::aligned_heap_free;
 
 namespace glasssix
 {
@@ -19,7 +23,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{mm_align_size});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{mm_align_size});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 
@@ -112,12 +116,12 @@ namespace glasssix
 			delete cls_prob;
 
 			//conv_weights and bias free automatically, prelu_weights need to free explicitly
-			FreeHost(prelu1_weights, false);
-			FreeHost(prelu2_dw_weights, false);
-			FreeHost(prelu2_weights, false);
-			FreeHost(prelu3_dw_weights, false);
-			FreeHost(prelu3_weights, false);
-			FreeHost(prelu4_dw_weights, false);
+			aligned_heap_free(prelu1_weights);
+			aligned_heap_free(prelu2_dw_weights);
+			aligned_heap_free(prelu2_weights);
+			aligned_heap_free(prelu3_dw_weights);
+			aligned_heap_free(prelu3_weights);
+			aligned_heap_free(prelu4_dw_weights);
 
 #ifdef USE_CUDA
 			if (cublas_handle_)
@@ -133,7 +137,7 @@ namespace glasssix
 #endif
 		}
 
-		void pnet_mobile::Forward_cpu(const std::shared_ptr<tensor<float>> input_data)
+		void pnet_mobile::Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(input_data, conv1_top_data);
 			prelu1->Forward_cpu(conv1_top_data);
@@ -153,7 +157,7 @@ namespace glasssix
 
 
 #ifdef USE_CUDA
-		void pnet_mobile::Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data)
+		void pnet_mobile::Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cublas_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
@@ -172,7 +176,7 @@ namespace glasssix
 		}
 
 #ifdef USE_CUDNN
-		void pnet_mobile::Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data)
+		void pnet_mobile::Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			conv1->Forward(cudnn_handle_, input_data, conv1_top_data);
 			prelu1->Forward_gpu_native(conv1_top_data);
@@ -193,7 +197,7 @@ namespace glasssix
 #endif
 #endif
 
-		void pnet_mobile::Forward(const std::shared_ptr<tensor<float>> input_data)
+		void pnet_mobile::Forward(const std::shared_ptr<memory::tensor<float>> input_data)
 		{
 			if (device_<0)
 			{

@@ -1,11 +1,13 @@
+#pragma once
+
 #ifndef _DAILIR_PNET_MOBILE_HPP_
 #define _DAILIR_PNET_MOBILE_HPP_
+
 #include "pnet_mobile_data.hpp"
 #include "Excalibur/support_layers.hpp"
 #include "Primitives/tensor.hpp"
 
 using namespace glasssix::excalibur;
-using glasssix::memory::tensor;
 
 namespace glasssix
 {
@@ -56,25 +58,25 @@ namespace glasssix
 			Declear_Opration(softmax, cls_prob);
 			Neuron_Name(cls_prob);
 
-			std::shared_ptr<tensor<float>> tensor_data;
+			std::shared_ptr<memory::tensor<float>> tensor_data;
 
 			int device_;
 			bool cudnn_ready_ = false;
 			bool int8_quantization_ = false;
-			void Forward_cpu(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_cpu(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDA
 			cublasHandle_t cublas_handle_ = nullptr;
-			void Forward_gpu_native(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_native(const std::shared_ptr<memory::tensor<float>> input_data);
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle_ = nullptr;
-			void Forward_gpu_cudnn(const std::shared_ptr<tensor<float>> input_data);
+			void Forward_gpu_cudnn(const std::shared_ptr<memory::tensor<float>> input_data);
 #endif 
 #endif
 
 		public:
 			pnet_mobile(int device);
 			~pnet_mobile();
-			void Forward(const std::shared_ptr<tensor<float>> input_data);
+			void Forward(const std::shared_ptr<memory::tensor<float>> input_data);
 		};
 	}
 }

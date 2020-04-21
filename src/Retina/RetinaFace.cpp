@@ -5,10 +5,6 @@
 #include <vector>
 #include <cstring>
 
-#include <glasssix/timer.hpp>
-
-
-
 //#define SPLIT_TIME
 using namespace glasssix::excalibur;
 using namespace glasssix::longinus;

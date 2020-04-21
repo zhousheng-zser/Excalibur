@@ -232,7 +232,7 @@ bool glasssix::longinus::mtcnn_mobile_nir::PNet_Process(std::shared_ptr<tensor<u
 		}
 
 		PNet_->Forward(bgr_32fc3);
-		std::shared_ptr<tensor<float>> confidence = PNet_->get_cls_prob();
+		std::shared_ptr<memory::tensor<float>> confidence = PNet_->get_cls_prob();
 		const float *confidence_data = confidence->cpu_data();
 
 		int confidenceH = confidence->height();
