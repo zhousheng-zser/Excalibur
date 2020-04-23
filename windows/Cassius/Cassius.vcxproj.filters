@@ -21,12 +21,18 @@
     <ClInclude Include="..\..\include\Cassius\unicorn.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Cassius\cassius_c.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Cassius\CassiusFeature.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Cassius\unicorn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Cassius\cassius_c.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
