@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/inner_product.hpp"
+#include "Excalibur/inner_product.hpp"
 
 using namespace glasssix::memory;
 

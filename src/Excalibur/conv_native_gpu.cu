@@ -1,6 +1,6 @@
 #include "conv_native_gpu.hpp"
 #include <iostream>
-#include "excalibur/depthwise_conv_kernel.cuh"
+#include "Excalibur/depthwise_conv_kernel.cuh"
 #include "device_launch_parameters.h"
 
 using namespace glasssix::memory;

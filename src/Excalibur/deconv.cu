@@ -1,4 +1,4 @@
-#include "excalibur/deconv.hpp"
+#include "Excalibur/deconv.hpp"
 #include <iostream>
 #include "device_launch_parameters.h"
 

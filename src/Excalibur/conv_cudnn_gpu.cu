@@ -1,5 +1,5 @@
-#include "excalibur/conv_cudnn_gpu.hpp"
-#include "excalibur/depthwise_conv_kernel.cuh"
+#include "Excalibur/conv_cudnn_gpu.hpp"
+#include "Excalibur/depthwise_conv_kernel.cuh"
 #include <iostream>
 
 using namespace glasssix::memory;

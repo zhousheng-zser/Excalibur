@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/scale.hpp"
+#include "Excalibur/scale.hpp"
 #include <iostream>
 
 using namespace glasssix::memory;

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <type_traits>
 
 /// <summary>
 /// This is something for future use, that is designed for ABI-independent invocations across DLL boundaries.
@@ -18,12 +19,41 @@ namespace glasssix
 			std::uint32_t data1;
 			std::uint16_t data2;
 			std::uint16_t data3;
-			std::uint8_t data4[8];
+			std::array<std::uint8_t, 8> data4;
 
-			guid() noexcept = default;
-
-			constexpr guid(std::uint32_t const data1, std::uint16_t const data2, std::uint16_t const data3, const std::array<std::uint8_t, 8>& data4) noexcept : data1{ data1 }, data2{ data2 }, data3{ data3 }, data4{ data4[0], data4[1], data4[2], data4[3], data4[4], data4[5], data4[6], data4[7] }
+			constexpr guid() : data1{}, data2{}, data3{}, data4{}
 			{
+			}
+
+			constexpr guid(std::uint32_t data1, std::uint16_t data2, std::uint16_t data3, const std::array<std::uint8_t, 8>& data4): data1{ data1 }, data2{ data2 }, data3{ data3 }, data4{ data4 }
+			{
+			}
+
+			constexpr bool operator==(const guid& right) const noexcept
+			{
+				// Both std::array<>::operator== and std::equal are not constexpr functions.
+				return data1 == right.data1 && data2 == right.data2 && data3 == right.data3 && [&]
+				{
+					if (data4.size() != right.data4.size())
+					{
+						return false;
+					}
+
+					for (auto left_ptr = data4.data(), right_ptr = right.data4.data(), end_ptr = data4.data() + data4.size(); left_ptr < end_ptr; left_ptr++, right_ptr++)
+					{
+						if (*left_ptr != *right_ptr)
+						{
+							return false;
+						}
+					}
+
+					return true;
+				}();
+			}
+
+			constexpr bool operator!=(const guid& right) const noexcept
+			{
+				return !(*this == right);
 			}
 		};
 
@@ -39,17 +69,25 @@ namespace glasssix
 
 		namespace impl
 		{
-			template <typename Object>
+			template<typename Object, typename Enable = void>
 			struct abi
 			{
 				using type = Object;
 			};
 
-			template <typename Object>
+			template<typename Object>
 			using abi_t = typename abi<Object>::type;
 
 			/// <summary>
-			/// Defines the common base.
+			/// Specialization for enum type.
+			/// </summary>
+			template<typename Enum> struct abi<Enum, std::enable_if<std::is_enum_v<Enum>>>
+			{
+				using type = std::underlying_type_t<Enum>;
+			};
+
+			/// <summary>
+			/// Specialization for the common base.
 			/// </summary>
 			template<> struct abi<unknown_object>
 			{

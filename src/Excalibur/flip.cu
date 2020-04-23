@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/flip.hpp"
+#include "Excalibur/flip.hpp"
 
 using namespace glasssix::memory;
 

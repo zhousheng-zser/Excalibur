@@ -5,6 +5,7 @@
 
 #include <mutex>
 #include <vector>
+#include <memory>
 
 #include <boost/smart_ptr/detail/spinlock.hpp>
 

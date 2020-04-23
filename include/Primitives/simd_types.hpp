@@ -6,6 +6,10 @@
 #include "logger.hpp"
 #include "dllexport.hpp"
 
+#ifdef __GNUC__
+#define __forceinline inline __attribute__((always_inline))
+#endif
+
 namespace glasssix
 {
 #define NATIVE_CODE_WARNING LOG(WARNING) << \

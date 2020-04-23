@@ -3,6 +3,7 @@
 #define _TENSOR_HPP_
 #include "syncedmem.hpp"
 #include <vector>
+#include <memory>
 
 namespace glasssix
 {

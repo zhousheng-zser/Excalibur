@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/sigmoid.hpp"
+#include "Excalibur/sigmoid.hpp"
 #include <iostream>
 
 using namespace glasssix::memory;

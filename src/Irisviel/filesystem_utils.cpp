@@ -18,5 +18,18 @@ namespace glasssix
 		{
 			return fs::create_directories(path, last_error_code);
 		}
+
+		fs::path path_from_string_view(std::string_view str) noexcept
+		{
+			if constexpr (std::is_constructible_v<fs::path, std::string_view>)
+			{
+				return str;
+			}
+			else
+			{
+				// Makes it compatible with ghc::filesystem::path which does not contain a constructor with a std::string_view as a argument.
+				return fs::path{ std::string{ str } };
+			}
+		}
 	}
 }

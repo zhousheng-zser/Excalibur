@@ -1,6 +1,6 @@
 #ifdef USE_CUDA
-#include "excalibur/math_functions.hpp"
-#include "excalibur/softmax.hpp"
+#include "Excalibur/math_functions.hpp"
+#include "Excalibur/softmax.hpp"
 #include <cfloat>
 
 using namespace glasssix::memory;

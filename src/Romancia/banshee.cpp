@@ -3,7 +3,6 @@
 #include "Primitives/memory.hpp"
 #include "Primitives/tensor.hpp"
 
-using namespace glasssix::excalibur;
 using glasssix::memory::aligned_heap_free;
 
 namespace glasssix
@@ -24,7 +23,7 @@ namespace glasssix
 
 #if SIMD_TYPE >= SIMDTYPE_SSE
 			//use for Copy_Int8_Params
-			std::shared_ptr<tensor<float>> bottom_round_ = std::make_shared<tensor<float>>(std::vector<int>{1, mm_align_size, 1, 1});
+			std::shared_ptr<memory::tensor<float>> bottom_round_ = std::make_shared<memory::tensor<float>>(std::vector<int>{1, mm_align_size, 1, 1});
 			float* bottom_round_data_ = bottom_round_->mutable_cpu_data();
 #endif // SIMD_TYPE >= SIMDTYPE_SSE
 

@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/normalize.hpp"
+#include "Excalibur/normalize.hpp"
 
 using namespace glasssix::memory;
 

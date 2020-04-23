@@ -115,12 +115,14 @@
     <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
     <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
     <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
     <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
+    <ClInclude Include="..\..\include\Primitives\unknown_object.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />

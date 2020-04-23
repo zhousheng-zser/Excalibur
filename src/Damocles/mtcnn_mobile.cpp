@@ -316,13 +316,13 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 				if (boundingBox[num].exist)
 				{
 					//the iou
-					maxY = __max(boundingBox[num].row1, boundingBox[order].row1);
-					maxX = __max(boundingBox[num].col1, boundingBox[order].col1);
-					minY = __min(boundingBox[num].row2, boundingBox[order].row2);
-					minX = __min(boundingBox[num].col2, boundingBox[order].col2);
+					maxY = std::max(boundingBox[num].row1, boundingBox[order].row1);
+					maxX = std::max(boundingBox[num].col1, boundingBox[order].col1);
+					minY = std::min(boundingBox[num].row2, boundingBox[order].row2);
+					minX = std::min(boundingBox[num].col2, boundingBox[order].col2);
 					//maxX1 and maxY1 reuse 
-					maxX = __max(minX - maxX + 1, 0);
-					maxY = __max(minY - maxY + 1, 0);
+					maxX = std::max(minX - maxX + 1, 0.f);
+					maxY = std::max(minY - maxY + 1, 0.f);
 					//IOU reuse for the area of two bbox
 					IOU = maxX * maxY;
 					float area1 = boundingBox[num].area;
@@ -331,7 +331,7 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 						IOU = IOU / (area1 + area2 - IOU);
 					else if (!modelname.compare("Min"))
 					{
-						IOU = IOU / __min(area1, area2);
+						IOU = IOU / std::min(area1, area2);
 					}
 					if (IOU > overlap_threshold)
 					{
@@ -358,13 +358,13 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 				if (boundingBox.at(num).exist)
 				{
 					//the iou
-					maxY = __max(boundingBox[num].row1, boundingBox[order].row1);
-					maxX = __max(boundingBox[num].col1, boundingBox[order].col1);
-					minY = __min(boundingBox[num].row2, boundingBox[order].row2);
-					minX = __min(boundingBox[num].col2, boundingBox[order].col2);
+					maxY = std::max(boundingBox[num].row1, boundingBox[order].row1);
+					maxX = std::max(boundingBox[num].col1, boundingBox[order].col1);
+					minY = std::min(boundingBox[num].row2, boundingBox[order].row2);
+					minX = std::min(boundingBox[num].col2, boundingBox[order].col2);
 					//maxX1 and maxY1 reuse 
-					maxX = __max(minX - maxX + 1, 0);
-					maxY = __max(minY - maxY + 1, 0);
+					maxX = std::max(minX - maxX + 1, 0.f);
+					maxY = std::max(minY - maxY + 1, 0.f);
 					//IOU reuse for the area of two bbox
 					IOU = maxX * maxY;
 					float area1 = boundingBox[num].area;
@@ -373,7 +373,7 @@ static void _nms(std::vector<Longinus_CNN_BBox> &boundingBox, std::vector<Longin
 						IOU = IOU / (area1 + area2 - IOU);
 					else if (!modelname.compare("Min"))
 					{
-						IOU = IOU / __min(area1, area2);
+						IOU = IOU / std::min(area1, area2);
 					}
 					if (IOU > overlap_threshold)
 					{

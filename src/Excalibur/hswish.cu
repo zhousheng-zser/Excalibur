@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/hswish.hpp"
+#include "Excalibur/hswish.hpp"
 #include <iostream>
 
 namespace glasssix

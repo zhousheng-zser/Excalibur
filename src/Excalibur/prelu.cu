@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/prelu.hpp"
+#include "Excalibur/prelu.hpp"
 #include <iostream>
 
 using namespace glasssix::memory;

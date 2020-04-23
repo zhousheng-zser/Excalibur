@@ -4294,7 +4294,7 @@ namespace glasssix
 		/// <param name="src">original tensor</param>
 		/// <param name="dst">LBP feature tensor</param>
 		/// <param name="type">lbpType: Native(calculate with neighboring 8 pixels)</param>
-		static void tensor_operation_gpu::lbp_feature_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59)
+		void tensor_operation_gpu::lbp_feature_gpu(const std::shared_ptr<tensor<Dtype>> &src, std::shared_ptr<tensor<Dtype>> &dst, bool map_59)
 		{
 			if (src->device() < 0)
 			{

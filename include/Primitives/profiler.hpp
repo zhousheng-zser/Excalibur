@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "logger.hpp"
 
@@ -62,17 +63,17 @@ namespace glasssix
 		void scope_start(const char *name)
 		{
 			if (state_ == not_running) return;
-			scope_ptr scope(new scope);
+			scope_ptr new_scope = std::make_shared<scope>();
 			if (!scope_stack_.empty())
 			{
-				scope->name = scope_stack_.back()->name + ":" + name;
+				new_scope->name = scope_stack_.back()->name + ":" + name;
 			}
 			else
 			{
-				scope->name = name;
+				new_scope->name = name;
 			}
-			scope->start_microsec = now() - init_;
-			scope_stack_.push_back(scope);
+			new_scope->start_microsec = now() - init_;
+			scope_stack_.push_back(new_scope);
 		}
 		/*!
 		 * \brief end a scope

@@ -93,8 +93,16 @@
     <ClInclude Include="..\..\include\Primitives\tensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\fmt\format.h" />
     <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\format.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\unknown_object.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

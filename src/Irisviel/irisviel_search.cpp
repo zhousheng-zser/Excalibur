@@ -13,14 +13,14 @@ namespace glasssix
 		{
 			index_.reset(new index_builder{ base_data, dimension });
 			search_.reset(new irisviel_search_internal{ base_data, dimension });
-			mutex_wrapper_.reset(new mutex_wrapper{});
+			mutex_wrapper_.reset(new mutex_wrapper);
 		}
 
 		irisviel_search::irisviel_search(int dimension)
 		{
 			index_.reset(new index_builder{ dimension });
 			search_.reset(new irisviel_search_internal{ dimension });
-			mutex_wrapper_.reset(new mutex_wrapper{});
+			mutex_wrapper_.reset(new mutex_wrapper);
 		}
 
 		irisviel_search::irisviel_search(const std::vector<const float*>& base_data, int dimension, const std::shared_ptr<mutex_wrapper>& lock) : irisviel_search{ base_data, dimension }

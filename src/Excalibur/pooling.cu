@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/pooling.hpp"
+#include "Excalibur/pooling.hpp"
 #include <cuda_runtime.h>
 #include "device_launch_parameters.h"
 #include "device_functions.h"

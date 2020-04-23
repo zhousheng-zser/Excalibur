@@ -570,8 +570,8 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char* img_data, in
 	CHECK_GE(min_win, 16);
 	float scale = min_win / 16.0f;
 
-	int ws = (img_width / scale + 31) / 32 * 32;
-	int hs = (img_height / scale + 31) / 32 * 32;
+	int ws = (int(img_width / scale) + 31) / 32 * 32;
+	int hs = (int(img_height / scale) + 31) / 32 * 32;
 	std::shared_ptr<glasssix::memory::tensor<unsigned char>> img_bordered;
 	std::vector<std::vector<std::tuple<std::vector<int>, const float*>>> tuple_result;
 
@@ -612,8 +612,9 @@ std::vector<FaceInfomation> RetinaFace::detect(const unsigned char* img_data, in
 
 #ifdef USE_CUDA
 		cudaMemcpy(img_tensor->mutable_gpu_data(), img_data, 3 * img_height * img_width, cudaMemcpyDefault);
-		tensor_operation_gpu::resize_gpu(img_tensor, img_tensor, (int(img_height / scale) + 31) / 32 * 32, (int(img_width / scale) + 31) / 32 * 32);
-
+		//tensor_operation_gpu::resize_gpu(img_tensor, img_tensor, (int(img_height / scale) + 31) / 32 * 32, (int(img_width / scale) + 31) / 32 * 32);
+		tensor_operation_gpu::resize_gpu(img_tensor, img_tensor, int(img_height / scale), int(img_width / scale));
+		tensor_operation_gpu::make_border_gpu(img_tensor, img_bordered, 0, hs - int(img_height / scale), 0, ws - int(img_width / scale));
 		if (img_order != 0)
 		{
 			tensor_operation_gpu::nhwc2nchw_gpu(img_tensor, img_tensor);

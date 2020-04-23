@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "excalibur/math_functions.hpp"
+#include "Excalibur/math_functions.hpp"
 
 namespace glasssix
 {
