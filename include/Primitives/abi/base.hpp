@@ -31,6 +31,8 @@
 /// </summary>
 namespace glasssix::abi
 {
+	struct guid;
+
 	namespace impl
 	{
 		template<typename T, typename Enable = void>

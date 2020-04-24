@@ -66,7 +66,7 @@ namespace glasssix::abi::meta_utils
 		auto destination_ptr = result.data();
 
 		// Converts hexadecimal characters to raw bytes.
-		for (auto end_ptr = result.data() + result.size(); destination_ptr < end_ptr; source_ptr += 2, destination_ptr++)
+		for (auto end_ptr = result.data() + result.size(); destination_ptr < end_ptr; source_ptr += hexadecimal_character_size_v<std::uint8_t>, destination_ptr++)
 		{
 			if (auto first_part = details::from_hexadecimal_character(source_ptr[0]), second_part = details::from_hexadecimal_character(source_ptr[1]); first_part && second_part)
 			{
