@@ -18,56 +18,56 @@ namespace glasssix::abi::impl
 
 	template<> struct category<bool>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::int8_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::int16_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::int32_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::int64_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::uint8_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::uint16_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::uint32_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<std::uint64_t>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<float>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 
 	template<> struct category<double>
 	{
-		using type = category_basic_tag;
+		using type = basic_category;
 	};
 }

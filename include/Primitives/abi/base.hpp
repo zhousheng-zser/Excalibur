@@ -1,5 +1,6 @@
 #pragma once
 
+#include "guid.hpp"
 #include "meta_utils.hpp"
 
 #include <cstddef>
@@ -31,8 +32,6 @@
 /// </summary>
 namespace glasssix::abi
 {
-	struct guid;
-
 	namespace impl
 	{
 		template<typename T, typename Enable = void>
