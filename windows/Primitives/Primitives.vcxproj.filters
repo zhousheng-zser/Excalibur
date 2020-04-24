@@ -21,9 +21,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -105,6 +102,21 @@
     <ClInclude Include="..\..\include\Primitives\scope_guard.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\basic_types.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\meta_utils.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\guid.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">
@@ -113,5 +125,11 @@
     <Filter Include="Source Files">
       <UniqueIdentifier>{dc17a2b0-e71e-4d46-9917-f9848323078a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="abi">
+      <UniqueIdentifier>{4d0eddc1-28a6-44f4-9a07-b0395324d146}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>
