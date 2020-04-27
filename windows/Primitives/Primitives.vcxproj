@@ -99,8 +99,10 @@
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\basic_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\guid.hpp" />
-    <ClInclude Include="..\..\include\Primitives\abi\meta_utils.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
     <ClInclude Include="..\..\include\Primitives\blas.hpp" />
     <ClInclude Include="..\..\include\Primitives\compiler.hpp" />

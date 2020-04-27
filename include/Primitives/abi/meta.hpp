@@ -7,7 +7,7 @@
 #include <string_view>
 #include <type_traits>
 
-namespace glasssix::abi::meta_utils
+namespace glasssix::exposing::meta
 {
 	namespace details
 	{
@@ -43,6 +43,21 @@ namespace glasssix::abi::meta_utils
 		}
 	}
 
+	template<typename...T>
+	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
+
+	template <template <typename> typename Condition, typename>
+	struct tuple_if;
+
+	template <template <typename> typename Condition, typename... Args>
+	struct tuple_if<Condition, std::tuple<Args...>>
+	{ 
+		using type = tuple_cat_t<typename std::conditional<Condition<T>::value, std::tuple<Args>, std::tuple<>>::type...>;
+	};
+
+	template <template <typename> typename Condition, typename T>
+	using tuple_if_t = typename tuple_if<Condition, T>::type;
+
 	template<typename T, typename = std::enable_if_t<std::is_standard_layout_v<T>>>
 	inline constexpr std::size_t hexadecimal_character_size_v = sizeof(T) * 2;
 
@@ -56,7 +71,7 @@ namespace glasssix::abi::meta_utils
 	constexpr auto to_number(std::string_view str, bool big_endian = true) -> std::enable_if_t<std::is_arithmetic_v<Number>, Number>
 	{
 		// Ensures security.
-		if (str.size() / 2 < sizeof(Number))
+		if (str.size() / hexadecimal_character_size_v<std::uint8_t> < sizeof(Number))
 		{
 			return Number{};
 		}
@@ -70,7 +85,7 @@ namespace glasssix::abi::meta_utils
 		{
 			if (auto first_part = details::from_hexadecimal_character(source_ptr[0]), second_part = details::from_hexadecimal_character(source_ptr[1]); first_part && second_part)
 			{
-				// Combines two half bytes into one single byte.
+				// Combines two nibbles into one single byte.
 				*destination_ptr = static_cast<std::uint8_t>(((*first_part) << 4) + *second_part);
 				continue;
 			}

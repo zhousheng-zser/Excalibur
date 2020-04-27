@@ -2,7 +2,7 @@
 
 #include "base.hpp"
 
-namespace glasssix::abi::impl
+namespace glasssix::exposing::impl
 {
 	template<> inline constexpr auto& name_v<bool> = "b1";
 	template<> inline constexpr auto& name_v<std::int8_t> = "i1";

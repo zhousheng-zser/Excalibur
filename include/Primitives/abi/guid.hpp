@@ -1,13 +1,13 @@
 #pragma once
 
-#include "meta_utils.hpp"
+#include "meta.hpp"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
 
-namespace glasssix::abi
+namespace glasssix::exposing
 {
 	namespace details
 	{
@@ -22,7 +22,7 @@ namespace glasssix::abi
 			}
 		};
 	}
-
+	
 	/// <summary>
 	/// Defines a GUID.
 	/// </summary>
@@ -50,21 +50,21 @@ namespace glasssix::abi
 				return;
 			}
 
-			constexpr details::size_offset offset_data1{ 0, meta_utils::hexadecimal_character_size_v<std::uint32_t> };
-			constexpr details::size_offset offset_data2{ offset_data1.offset_end() + 1, meta_utils::hexadecimal_character_size_v<std::uint16_t> };
-			constexpr details::size_offset offset_data3{ offset_data2.offset_end() + 1,  meta_utils::hexadecimal_character_size_v<std::uint16_t> };
-			constexpr details::size_offset offset_data4_first{ offset_data3.offset_end() + 1, meta_utils::hexadecimal_character_size_v<std::uint8_t> * 2 };
-			constexpr details::size_offset offset_data4_second{ offset_data4_first.offset_end() + 1, meta_utils::hexadecimal_character_size_v<std::uint8_t> * 6 };
+			constexpr details::size_offset offset_data1{ 0, meta::hexadecimal_character_size_v<std::uint32_t> };
+			constexpr details::size_offset offset_data2{ offset_data1.offset_end() + 1, meta::hexadecimal_character_size_v<std::uint16_t> };
+			constexpr details::size_offset offset_data3{ offset_data2.offset_end() + 1,  meta::hexadecimal_character_size_v<std::uint16_t> };
+			constexpr details::size_offset offset_data4_first{ offset_data3.offset_end() + 1, meta::hexadecimal_character_size_v<std::uint8_t> * 2 };
+			constexpr details::size_offset offset_data4_second{ offset_data4_first.offset_end() + 1, meta::hexadecimal_character_size_v<std::uint8_t> * 6 };
 
-			data1 = meta_utils::to_number<std::uint32_t>(str.substr(offset_data1.offset, offset_data1.size));
-			data2 = meta_utils::to_number<std::uint16_t>(str.substr(offset_data2.offset, offset_data2.size));
-			data3 = meta_utils::to_number<std::uint16_t>(str.substr(offset_data3.offset, offset_data3.size));
+			data1 = meta::to_number<std::uint32_t>(str.substr(offset_data1.offset, offset_data1.size));
+			data2 = meta::to_number<std::uint16_t>(str.substr(offset_data2.offset, offset_data2.size));
+			data3 = meta::to_number<std::uint16_t>(str.substr(offset_data3.offset, offset_data3.size));
 
 			auto assign_to_data4 = [&](const details::size_offset& source_offset, std::size_t offset, std::size_t size)
 			{
-				for (std::size_t i = offset, j = source_offset.offset; i < offset + size; i++, j += meta_utils::hexadecimal_character_size_v<std::uint8_t>)
+				for (std::size_t i = offset, j = source_offset.offset; i < offset + size; i++, j += meta::hexadecimal_character_size_v<std::uint8_t>)
 				{
-					data4[i] = meta_utils::to_number<std::uint8_t>(str.substr(j, meta_utils::hexadecimal_character_size_v<std::uint8_t>));
+					data4[i] = meta::to_number<std::uint8_t>(str.substr(j, meta::hexadecimal_character_size_v<std::uint8_t>));
 				}
 			};
 

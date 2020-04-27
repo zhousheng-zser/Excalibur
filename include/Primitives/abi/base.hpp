@@ -1,7 +1,7 @@
 #pragma once
 
 #include "guid.hpp"
-#include "meta_utils.hpp"
+#include "meta.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -27,108 +27,122 @@
 #define G6_NOVTABLE
 #endif
 
-/// <summary>
-/// This is something for future use, that is designed for ABI-independent invocations across DLL boundaries.
-/// </summary>
-namespace glasssix::abi
+namespace glasssix::exposing::impl
 {
-	namespace impl
+	template<typename Derived>
+	struct consume;
+
+	template<typename Derived, typename Interface = Derived>
+	using consume_t = typename consume<Interface>::template type<Derived>;
+
+	template<typename T>
+	struct delegate;
+
+	template<typename T, typename Nested>
+	using delegate_t = typename delegate<T>::template type<Nested>;
+
+	template<typename T>
+	struct category
 	{
-		template<typename T, typename Enable = void>
-		struct abi
+		using type = void;
+	};
+
+	template<typename T>
+	using category_t = typename category<T>::type;
+
+	/// <summary>
+	/// Checks whether the type is contained by some category.
+	/// </summary>
+	template<typename T>
+	inline constexpr bool has_category_v = !std::is_same_v<category_t<T>, void>;
+
+	/// <summary>
+	/// C++ basic types.
+	/// </summary>
+	struct basic_category;
+
+	/// <summary>
+	/// Public interfaces.
+	/// </summary>
+	struct interface_category;
+
+	/// <summary>
+	/// Delegates.
+	/// </summary>
+	struct delegate_category;
+
+	/// <summary>
+	/// Enumerations.
+	/// </summary>
+	struct enum_category;
+
+	/// <summary>
+	/// Classes.
+	/// </summary>
+	struct class_category;
+
+	/// <summary>
+	/// Generic public interfaces.
+	/// </summary>
+	template<typename... Args>
+	struct generic_interface_category;
+
+	/// <summary>
+	/// The signature of a category.
+	/// </summary>
+	template <typename Category, typename T>
+	struct category_signature;
+
+	/// <summary>
+	/// The signature of a type.
+	/// </summary>
+	template <typename T>
+	struct signature
+	{
+		static constexpr auto value{ category_signature<typename category<T>::type, T>::value };
+	};
+
+	template<typename T>
+	struct guid_storage
+	{
+		static_assert(bool{}, "Support for ordinary C++ types is disabled.");
+	};
+
+	template<typename, typename = void>
+	struct is_implements : std::false_type {};
+
+	template<typename T>
+	struct is_implements<T, std::void_t<typename T::implements_type>> : std::true_type {};
+
+	template<typename T>
+	inline constexpr bool is_implements_v = is_implements<T>::value;
+
+	template<typename Derived, typename Interface>
+	struct require_one : consume_t<Derived, Interface>
+	{
+		operator Interface() const noexcept
 		{
-			using type = T;
-		};
+			return static_cast<const Derived*>(this)->template try_as<I>();
+		}
+	};
 
-		template<typename T>
-		using abi_t = typename abi<T>::type;
+	template<typename Derived, typename... Interfaces>
+	struct G6_EBO require : require_one<Derived, Interfaces>...
+	{
+	};
 
-		template<typename T>
-		struct consume;
+	template<typename T>
+	struct name
+	{
+		static constexpr auto value{};
+	};
 
-		template<typename T, typename Nested = T>
-		using consume_t = typename consume<Nested>::template type<T>;
+	template <typename T>
+	inline constexpr auto& name_v = name<T>::value;
+}
 
-		template<typename T>
-		struct delegate;
-
-		template<typename T, typename Nested>
-		using delegate_t = typename delegate<T>::template type<Nested>;
-
-		template<typename T>
-		struct category
-		{
-			using type = void;
-		};
-
-		template<typename T>
-		using category_t = typename category<T>::type;
-
-		/// <summary>
-		/// Checks whether the type is contained by some category.
-		/// </summary>
-		template<typename T>
-		inline constexpr bool has_category_v = !std::is_same_v<category_t<T>, void>;
-
-		/// <summary>
-		/// C++ basic types.
-		/// </summary>
-		struct basic_category;
-
-		/// <summary>
-		/// Public interfaces.
-		/// </summary>
-		struct interface_category;
-
-		/// <summary>
-		/// Delegates.
-		/// </summary>
-		struct delegate_category;
-
-		/// <summary>
-		/// Enumerations.
-		/// </summary>
-		struct enum_category;
-
-		/// <summary>
-		/// Classes.
-		/// </summary>
-		struct class_category;
-
-		/// <summary>
-		/// Generic public interfaces.
-		/// </summary>
-		template<typename... Args>
-		struct generic_interface_category;
-
-		/// <summary>
-		/// The signature of a category.
-		/// </summary>
-		template <typename Category, typename T>
-		struct category_signature;
-
-		/// <summary>
-		/// The signature of a type.
-		/// </summary>
-		template <typename T>
-		struct signature
-		{
-			static constexpr auto value{ category_signature<typename category<T>::type, T>::value };
-		};
-
-		template<typename T>
-		struct guid_storage
-		{
-			static_assert(false, "Support for ordinary C++ types is disabled.");
-		};
-
-		template<typename T>
-		struct name
-		{
-			static constexpr auto value{};
-		};
-
-		template <typename T>
-		inline constexpr auto& name_v = name<T>::value;
-	}
+namespace glasssix::exposing
+{
+	template<typename T>
+	inline constexpr auto guid_of_v = impl::guid_storage<T>::value;
 }
