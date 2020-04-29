@@ -102,20 +102,11 @@ namespace glasssix::exposing::impl
 		static constexpr auto value{ category_signature<typename category<T>::type, T>::value };
 	};
 
-	template<typename T>
+	template<typename T, typename = void>
 	struct guid_storage
 	{
 		static_assert(bool{}, "Support for ordinary C++ types is disabled.");
 	};
-
-	template<typename, typename = void>
-	struct is_implements : std::false_type {};
-
-	template<typename T>
-	struct is_implements<T, std::void_t<typename T::implements_type>> : std::true_type {};
-
-	template<typename T>
-	inline constexpr bool is_implements_v = is_implements<T>::value;
 
 	template<typename Derived, typename Interface>
 	struct require_one : consume_t<Derived, Interface>
@@ -145,4 +136,10 @@ namespace glasssix::exposing
 {
 	template<typename T>
 	inline constexpr auto guid_of_v = impl::guid_storage<T>::value;
+
+	template<typename T>
+	constexpr bool is_guid_of(const guid& id) noexcept
+	{
+		return id == guid_of_v<T>;
+	}
 }

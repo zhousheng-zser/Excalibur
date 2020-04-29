@@ -1,6 +1,8 @@
 #pragma once
 
 #include "base.hpp"
+#include "guid.hpp"
+#include "base_abi.hpp"
 
 namespace glasssix::exposing::impl
 {

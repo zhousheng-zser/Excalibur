@@ -117,10 +117,10 @@
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\implements.hpp">
+    <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp">
+    <ClInclude Include="..\..\include\Primitives\abi\implements.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>

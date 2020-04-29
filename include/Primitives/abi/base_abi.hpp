@@ -1,6 +1,8 @@
 #pragma once
 
 #include "base.hpp"
+#include "guid.hpp"
+#include "meta.hpp"
 #include "exceptions.hpp"
 
 #include <cstddef>
@@ -23,6 +25,12 @@ namespace glasssix::exposing::impl
 	template<typename T>
 	using abi_t = typename abi<T>::type;
 
+	template<typename T>
+	struct guid_storage<T, std::void_t<decltype(abi<T>::id)>>
+	{
+		static constexpr auto value{ abi<T>::id };
+	};
+
 	/// <summary>
 	/// Specialization for enum type.
 	/// </summary>
@@ -36,6 +44,8 @@ namespace glasssix::exposing::impl
 	/// </summary>
 	template<> struct abi<exposing::unknown_object>
 	{
+		static constexpr guid id{ "00000000-0000-0000-C000-000000000046" };
+
 		struct type
 		{
 			virtual bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept = 0;
@@ -50,12 +60,12 @@ namespace glasssix::exposing::impl
 	/// Checks whether a type is an ABI interface.
 	/// </summary>
 	template<typename T>
-	struct is_interface : std::bool_constant<std::conjunction_v<std::is_base_of<exposing::unknown_object, T>, std::is_standard_layout<T>>>
+	struct is_derived_from_unknown_object : std::bool_constant<std::conjunction_v<std::is_base_of<exposing::unknown_object, T>, std::is_standard_layout<T>>>
 	{
 	};
 
 	template<typename T>
-	inline constexpr bool is_interface_v = is_interface<T>::value;
+	inline constexpr bool is_derived_from_unknown_object_v = is_derived_from_unknown_object<T>::value;
 }
 
 namespace glasssix::exposing
@@ -67,7 +77,7 @@ namespace glasssix::exposing
 	/// <returns>The ABI</returns>
 	inline void* get_abi(const unknown_object& object) noexcept
 	{
-		return object.abi_;
+		return meta::get_standard_layout_first_member<impl::unknown_object*>(object);
 	}
 
 	/// <summary>
@@ -77,7 +87,7 @@ namespace glasssix::exposing
 	/// <returns>The pointer to the ABI</returns>
 	inline void** put_abi(unknown_object& object) noexcept
 	{
-		return reinterpret_cast<void**>(&object.abi_);
+		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<impl::unknown_object*>(object));
 	}
 
 	/// <summary>
@@ -97,7 +107,7 @@ namespace glasssix::exposing
 	/// <param name="object">The object</param>
 	/// <returns>The ABI detached from the object</returns>
 	template<typename T>
-	inline auto detach_abi(T&& object) noexcept -> std::enable_if_t<std::disjunction_v<impl::is_interface<std::decay_t<T>>, std::is_null_pointer<T>>, void*>
+	inline auto detach_abi(T&& object) noexcept -> std::enable_if_t<std::disjunction_v<impl::is_derived_from_unknown_object<std::decay_t<T>>, std::is_null_pointer<T>>, void*>
 	{
 		if constexpr (std::is_null_pointer_v<T>)
 		{
@@ -144,7 +154,7 @@ namespace glasssix::exposing
 namespace glasssix::exposing::impl
 {
 	template<typename To, typename From>
-	auto as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_interface<From>, is_interface<To>>>
+	auto as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_derived_from_unknown_object<From>, is_derived_from_unknown_object<To>>>
 	{
 		unknown_object result;
 
@@ -157,7 +167,7 @@ namespace glasssix::exposing::impl
 	}
 
 	template<typename To, typename From>
-	auto try_as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_interface<From>, is_interface<To>>>
+	auto try_as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_derived_from_unknown_object<From>, is_derived_from_unknown_object<To>>>
 	{
 		unknown_object result;
 
@@ -172,12 +182,12 @@ namespace glasssix::exposing::impl
 
 namespace glasssix::exposing
 {
+	/// <summary>
+	/// A fundamental wrapper for the underlying ABI.
+	/// </summary>
 	class unknown_object
 	{
 	public:
-		friend void* get_abi(const unknown_object& object) noexcept;
-		friend void** put_abi(unknown_object& object) noexcept;
-
 		unknown_object() noexcept : abi_{}
 		{
 		}
