@@ -41,7 +41,7 @@ namespace glasssix::exposing::impl
 	template<typename T, typename Nested>
 	using delegate_t = typename delegate<T>::template type<Nested>;
 
-	template<typename T>
+	template<typename T, typename = void>
 	struct category
 	{
 		using type = void;
@@ -99,7 +99,7 @@ namespace glasssix::exposing::impl
 	template <typename T>
 	struct signature
 	{
-		static constexpr auto value{ category_signature<typename category<T>::type, T>::value };
+		static constexpr auto value{ category_signature<category_t<T>, T>::value };
 	};
 
 	template<typename T, typename = void>

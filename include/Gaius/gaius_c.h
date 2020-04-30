@@ -22,4 +22,4 @@ extern "C" GAIUS_C_EXPORT  void Gaius_ReleaseInstance(glasssix::gaius::GaiusFeat
 
 extern "C" GAIUS_C_EXPORT  unsigned char *Gaius_getVersion();
 
-extern "C" GAIUS_C_EXPORT  float *Gaius_Forward(glasssix::gaius::GaiusFeature *instance, unsigned char *input_data, int num, int order);
+extern "C" GAIUS_C_EXPORT  float *Gaius_Forward(glasssix::gaius::GaiusFeature *instance, unsigned char *input_data, int num, int order, bool mask);

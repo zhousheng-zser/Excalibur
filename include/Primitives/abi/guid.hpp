@@ -33,15 +33,15 @@ namespace glasssix::exposing
 		std::uint16_t data3;
 		std::array<std::uint8_t, 8> data4;
 
-		constexpr guid() : data1{}, data2{}, data3{}, data4{}
+		constexpr guid() noexcept : data1{}, data2{}, data3{}, data4{}
 		{
 		}
 
-		constexpr guid(std::uint32_t data1, std::uint16_t data2, std::uint16_t data3, const std::array<std::uint8_t, 8>& data4) : data1{ data1 }, data2{ data2 }, data3{ data3 }, data4{ data4 }
+		constexpr guid(std::uint32_t data1, std::uint16_t data2, std::uint16_t data3, const std::array<std::uint8_t, 8>& data4) noexcept : data1{ data1 }, data2{ data2 }, data3{ data3 }, data4{ data4 }
 		{
 		}
 
-		constexpr guid(std::string_view str) : guid{}
+		constexpr guid(std::string_view str) noexcept : guid{}
 		{
 			constexpr std::size_t guid_string_size = 36;
 
@@ -94,4 +94,20 @@ namespace glasssix::exposing
 			return !(*this == right);
 		}
 	};
+
+	/// <summary>
+	/// Converts a GUID to an array.
+	/// </summary>
+	/// <param name="id">The GUID</param>
+	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
+	/// <returns>The array</returns>
+	constexpr auto to_array(const guid& id, bool is_big_endian = true) noexcept
+	{
+		return meta::concat_arrays(
+			meta::to_array(id.data1, is_big_endian),
+			meta::to_array(id.data2, is_big_endian),
+			meta::to_array(id.data3, is_big_endian),
+			id.data4
+		);
+	}
 }

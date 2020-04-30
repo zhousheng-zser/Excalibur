@@ -11,47 +11,13 @@
 
 namespace glasssix::exposing::meta
 {
-	namespace details
-	{
-		template<typename Number, std::size_t... Indexes>
-		constexpr auto make_number_impl(const std::array<std::uint8_t, sizeof(Number)>& data, std::index_sequence<Indexes...>, bool big_endian) noexcept -> std::enable_if_t<std::is_arithmetic_v<Number>, Number>
-		{
-			constexpr std::ptrdiff_t total_bits = sizeof(Number) * CHAR_BIT;
-			constexpr std::ptrdiff_t max_move_bits = total_bits - CHAR_BIT;
-			std::ptrdiff_t baseline_move_bits = big_endian ? max_move_bits : 0;
-			std::ptrdiff_t sign = big_endian ? -1 : 1;
-
-			return static_cast<Number>(((static_cast<std::uintmax_t>(data[Indexes]) << (baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT)) + ...));
-		}
-
-		constexpr std::optional<std::uint8_t> from_hexadecimal_character(int character) noexcept
-		{
-			if (character >= '0' && character <= '9')
-			{
-				return character - '0';
-			}
-
-			if (character >= 'A' && character <= 'F')
-			{
-				return character - 'A' + 0xA;
-			}
-
-			if (character >= 'a' && character <= 'f')
-			{
-				return character - 'a' + 0xA;
-			}
-
-			return std::nullopt;
-		}
-	}
-
 	template<typename...T>
 	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
 
 	template<template<typename> typename Condition, typename>
 	struct tuple_if;
 
-	template<template<typename> typename Condition, typename... Args> 
+	template<template<typename> typename Condition, typename... Args>
 	struct tuple_if<Condition, std::tuple<Args...>>
 	{
 		using type = tuple_cat_t<typename std::conditional<Condition<Args>::value, std::tuple<Args>, std::tuple<>>::type...>;
@@ -75,7 +41,7 @@ namespace glasssix::exposing::meta
 	template<typename... Args>
 	struct first_of_template_arguments
 	{
-		using type = tuple_first<std::tuple<Args...>>
+		using type = tuple_first<std::tuple<Args...>>;
 	};
 
 	/// <summary>
@@ -101,6 +67,104 @@ namespace glasssix::exposing::meta
 	/// </summary>
 	template<typename T, typename = std::enable_if_t<std::is_standard_layout_v<T>>>
 	inline constexpr std::size_t hexadecimal_character_size_v = sizeof(T) * 2;
+
+	template<typename Array, typename = void>
+	struct is_std_array : std::false_type {};
+
+	template<typename T, std::size_t Size>
+	struct is_std_array<std::array<T, Size>> : std::true_type {};
+
+	/// <summary>
+	/// Checks whether a type is a std::array.
+	/// </summary>
+	template<typename Array>
+	inline constexpr bool is_std_array_v = is_std_array<Array>::value;
+
+	template<typename Array>
+	struct std_array_traits;
+
+	template<typename T, std::size_t Size>
+	struct std_array_traits<std::array<T, Size>>
+	{
+		using element_type = T;
+		static constexpr std::size_t value = Size;
+	};
+
+	/// <summary>
+	/// Gets the element type of a std::array.
+	/// </summary>
+	template<typename Array>
+	using std_array_element_t = typename std_array_traits<std::decay_t<Array>>::element_type;
+
+	/// <summary>
+	/// Gets the size of a std::array.
+	/// </summary>
+	template<typename Array>
+	inline constexpr std::size_t std_array_size_v = std_array_traits<std::decay_t<Array>>::value;
+
+	/// <summary>
+	/// Get the sum of numbers.
+	/// </summary>
+	/// <typeparam name="Numbers">The numeric types</typeparam>
+	/// <param name="...args">The numbers</param>
+	/// <returns>The sum</returns>
+	template<typename... Numbers, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Numbers>...>>>
+	constexpr auto sum(Numbers&&... args) noexcept
+	{
+		using result_type = std::common_type_t<Numbers...>;
+
+		return (static_cast<result_type>(std::forward<Numbers>(args)) + ...);
+	}
+
+	namespace details
+	{
+		template<typename Number, typename Callable, std::size_t... Indexes, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+		constexpr auto number_move_bits_helper(std::index_sequence<Indexes...>, bool big_endian, Callable&& handler) noexcept
+		{
+			constexpr std::ptrdiff_t total_bits = sizeof(Number) * CHAR_BIT;
+			constexpr std::ptrdiff_t max_move_bits = total_bits - CHAR_BIT;
+			std::ptrdiff_t baseline_move_bits = big_endian ? max_move_bits : 0;
+			std::ptrdiff_t sign = big_endian ? -1 : 1;
+
+			return std::forward<Callable>(handler)((std::pair{ Indexes, baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT })...);
+		}
+
+		template<typename T, typename U, std::size_t Size, std::size_t... Indexes>
+		constexpr void set_array_value_helper(T* result, const std::array<U, Size>& source, std::index_sequence<Indexes...>) noexcept
+		{
+			((result[Indexes] = static_cast<T>(source[Indexes])), ...);
+		}
+
+		template<std::size_t... Indexes, typename... Arrays>
+		constexpr auto concat_arrays_impl(std::index_sequence<Indexes...>, Arrays&&... arrays) noexcept
+		{
+			constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
+			std::array<std::common_type_t<std_array_element_t<Arrays>...>, (std_array_size_v<Arrays> + ...)> result{};
+			std::size_t offset = 0;
+
+			return (details::set_array_value_helper(result.data() + (offset += sizes[Indexes]), std::forward<Arrays>(arrays), std::make_index_sequence<std_array_size_v<Arrays>>{}), ..., result);
+		}
+
+		constexpr std::optional<std::uint8_t> from_hexadecimal_character(int character) noexcept
+		{
+			if (character >= '0' && character <= '9')
+			{
+				return character - '0';
+			}
+
+			if (character >= 'A' && character <= 'F')
+			{
+				return character - 'A' + 0xA;
+			}
+
+			if (character >= 'a' && character <= 'f')
+			{
+				return character - 'a' + 0xA;
+			}
+
+			return std::nullopt;
+		}
+	}
 
 	/// <summary>
 	/// Retrieves a reference to the first member of an object arranged in standard layout.
@@ -135,23 +199,28 @@ namespace glasssix::exposing::meta
 	/// <summary>
 	/// Combines multiple bytes into a number.
 	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
 	/// <param name="data">The bytes</param>
 	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
 	/// <returns>The number</returns>
 	template<typename Number>
 	constexpr auto make_number(const std::array<std::uint8_t, sizeof(Number)>& data, bool big_endian = true) noexcept -> std::enable_if_t<std::is_arithmetic_v<Number>, Number>
 	{
-		return details::make_number_impl<Number>(data, std::make_index_sequence<sizeof(Number)>{}, big_endian);
+		return details::number_move_bits_helper<Number>(std::make_index_sequence<sizeof(Number)>{}, big_endian, [&](auto&&... parts)
+			{
+				return ((static_cast<std::uintmax_t>(data[std::forward<decltype(parts)>(parts).first]) << std::forward<decltype(parts)>(parts).second) + ...);
+			});
 	}
 
 	/// <summary>
 	/// Parses a string containing hexadecimal digits into a number.
 	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
 	/// <param name="str">The string</param>
 	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
 	/// <returns>The number</returns>
 	template<typename Number>
-	constexpr auto to_number(std::string_view str, bool big_endian = true) -> std::enable_if_t<std::is_arithmetic_v<Number>, Number>
+	constexpr auto to_number(std::string_view str, bool big_endian = true) noexcept -> std::enable_if_t<std::is_arithmetic_v<Number>, Number>
 	{
 		// Ensures security.
 		if (str.size() / hexadecimal_character_size_v<std::uint8_t> < sizeof(Number))
@@ -177,5 +246,38 @@ namespace glasssix::exposing::meta
 		}
 
 		return make_number<Number>(result, big_endian);
+	}
+
+	/// <summary>
+	/// Retrieves the bytes of a number.
+	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
+	/// <returns>The array</returns>
+	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<std::decay_t<Number>>>>
+	constexpr auto to_array(Number&& number, bool big_endian = true) noexcept
+	{
+		using decayed_number_type = std::decay_t<Number>;
+
+		return details::number_move_bits_helper<decayed_number_type>(std::make_index_sequence<sizeof(decayed_number_type)>{}, big_endian, [&](auto&&... parts)
+			{
+				return std::array<std::uint8_t, sizeof(decayed_number_type)>
+				{
+					((static_cast<std::uintmax_t>(std::forward<Number>(number)) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...
+				};
+			});
+	}
+
+	/// <summary>
+	/// Concatenates arrays.
+	/// </summary>
+	/// <typeparam name="...Arrays">The array types</typeparam>
+	/// <param name="...arrays">The arrays</param>
+	/// <returns>The merged array</returns>
+	template<typename... Arrays, typename = std::enable_if_t<std::conjunction_v<is_std_array<std::decay_t<Arrays>>...>>>
+	constexpr auto concat_arrays(Arrays&&... arrays) noexcept
+	{
+		return details::concat_arrays_impl(std::make_index_sequence<sizeof...(Arrays)>{}, std::forward<Arrays>(arrays)...);
 	}
 }

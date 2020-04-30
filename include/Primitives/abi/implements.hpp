@@ -133,10 +133,11 @@ namespace glasssix::exposing::impl
 	/// <param name="derived">The derived object</param>
 	/// <returns>The ABI</returns>
 	template<typename Interface, typename Derived>
-	inline constexpr auto to_abi(Derived&& derived) noexcept -> std::enable_if_t<std::conjunction_v<std::is_lvalue_reference<Derived>, is_implements<Derived>, is_derived_from_unknown_object<Interface>>, abi_t<Interface>*>
+	inline constexpr auto to_abi(Derived&& derived) noexcept -> std::enable_if_t<std::conjunction_v<std::is_lvalue_reference<Derived>, is_implements<std::decay_t<Derived>>, is_derived_from_unknown_object<Interface>>, abi_t<Interface>*>
 	{
-		using producer_type = producer<Derived, Interface>;
-		using producer_ref_type = std::conditional_t<std::is_const_v<std::decay_t<derived>>, std::add_const_t<producer_type>&, producer_type&>;
+		using decayed_derived_type = std::decay_t<Derived>;
+		using producer_type = producer<decayed_derived_type, Interface>;
+		using producer_ref_type = std::conditional_t<std::is_const_v<std::remove_reference_t<Derived>>, std::add_const_t<producer_type>&, producer_type&>;
 		
 		return meta::get_standard_layout_first_member<abi_t<Interface>*>(static_cast<producer_ref_type>(derived));
 	}
@@ -254,5 +255,35 @@ namespace glasssix::exposing::impl
 		}
 	private:
 		std::atomic_uint32_t reference_count_;
+	};
+}
+
+namespace glasssix::exposing
+{
+
+
+	/// <summary>
+	/// A helper class to generate standard ABI implementations for a derived class.
+	/// </summary>
+	template<typename Derived, typename... Interfaces>
+	struct implements : impl::producers<Derived, Interfaces...>, impl::unknown_object_impl<Derived>
+	{
+		using implements_type = implements;
+		using root_implements_type = impl::unknown_object_impl<Derived>;
+
+		bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
+		{
+			return root_implements_type::query_interface(id, object);
+		}
+
+		std::uint32_t G6_ABI_CALL add_ref() noexcept
+		{
+			return root_implements_type::add_ref();
+		}
+
+		std::uint32_t G6_ABI_CALL release() noexcept
+		{
+			return root_implements_type::release();
+		}
 	};
 }

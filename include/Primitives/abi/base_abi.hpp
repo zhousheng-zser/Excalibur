@@ -31,10 +31,17 @@ namespace glasssix::exposing::impl
 		static constexpr auto value{ abi<T>::id };
 	};
 
+	template<typename T>
+	struct category<T, std::void_t<typename abi<T>::category_type>>
+	{
+		using type = typename abi<T>::category_type;
+	};
+
 	/// <summary>
 	/// Specialization for enum type.
 	/// </summary>
-	template<typename Enum> struct abi<Enum, std::enable_if<std::is_enum_v<Enum>>>
+	template<typename Enum>
+	struct abi<Enum, std::enable_if<std::is_enum_v<Enum>>>
 	{
 		using type = std::underlying_type_t<Enum>;
 	};
@@ -44,8 +51,9 @@ namespace glasssix::exposing::impl
 	/// </summary>
 	template<> struct abi<exposing::unknown_object>
 	{
+		using category_type = interface_category;
 		static constexpr guid id{ "00000000-0000-0000-C000-000000000046" };
-
+		
 		struct type
 		{
 			virtual bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept = 0;
@@ -208,7 +216,6 @@ namespace glasssix::exposing
 		~unknown_object() noexcept
 		{
 		}
-
 
 		unknown_object& operator=(const unknown_object& right) noexcept
 		{
