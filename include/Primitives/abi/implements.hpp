@@ -90,7 +90,7 @@ namespace glasssix::exposing::impl
 
 		operator produced_ref<Interface> const() const noexcept
 		{
-			return const_cast<produce_for<Derived, Interface>*>(&vtable_);
+			return const_cast<details::produce_for<Derived, Interface>*>(&vtable_);
 		}
 	private:
 		details::produce_for<Derived, Interface> vtable_;
@@ -260,8 +260,6 @@ namespace glasssix::exposing::impl
 
 namespace glasssix::exposing
 {
-
-
 	/// <summary>
 	/// A helper class to generate standard ABI implementations for a derived class.
 	/// </summary>

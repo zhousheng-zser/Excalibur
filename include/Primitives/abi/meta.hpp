@@ -2,6 +2,7 @@
 
 #include <array>
 #include <tuple>
+#include <limits>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -87,7 +88,7 @@ namespace glasssix::exposing::meta
 	struct std_array_traits<std::array<T, Size>>
 	{
 		using element_type = T;
-		static constexpr std::size_t value = Size;
+		static constexpr std::size_t size = Size;
 	};
 
 	/// <summary>
@@ -100,7 +101,7 @@ namespace glasssix::exposing::meta
 	/// Gets the size of a std::array.
 	/// </summary>
 	template<typename Array>
-	inline constexpr std::size_t std_array_size_v = std_array_traits<std::decay_t<Array>>::value;
+	inline constexpr std::size_t std_array_size_v = std_array_traits<std::decay_t<Array>>::size;
 
 	/// <summary>
 	/// Get the sum of numbers.
@@ -118,6 +119,26 @@ namespace glasssix::exposing::meta
 
 	namespace details
 	{
+		constexpr std::optional<std::uint8_t> from_hexadecimal_character(int character) noexcept
+		{
+			if (character >= '0' && character <= '9')
+			{
+				return character - '0';
+			}
+
+			if (character >= 'A' && character <= 'F')
+			{
+				return character - 'A' + 0xA;
+			}
+
+			if (character >= 'a' && character <= 'f')
+			{
+				return character - 'a' + 0xA;
+			}
+
+			return std::nullopt;
+		}
+
 		template<typename Number, typename Callable, std::size_t... Indexes, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
 		constexpr auto number_move_bits_helper(std::index_sequence<Indexes...>, bool big_endian, Callable&& handler) noexcept
 		{
@@ -145,24 +166,38 @@ namespace glasssix::exposing::meta
 			return (details::set_array_value_helper(result.data() + (offset += sizes[Indexes]), std::forward<Arrays>(arrays), std::make_index_sequence<std_array_size_v<Arrays>>{}), ..., result);
 		}
 
-		constexpr std::optional<std::uint8_t> from_hexadecimal_character(int character) noexcept
+		template<bool left, typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+		constexpr auto bitwise_rotate_impl(UnsignedNumber number, int bits) noexcept
 		{
-			if (character >= '0' && character <= '9')
+			using limits_type = std::numeric_limits<UnsignedNumber>;
+			using rotate_impl_type = UnsignedNumber(*)(UnsignedNumber number, int bits);
+
+			constexpr auto numeric_bits = limits_type::digits;
+			constexpr auto rotl_impl = [](UnsignedNumber number, int bits) { return (number << bits) | (number >> (numeric_bits - bits)); };
+			constexpr auto rotr_impl = [](UnsignedNumber number, int bits) { return (number >> bits) | (number << (numeric_bits - bits)); };
+			constexpr auto rotate_impl = left ? static_cast<rotate_impl_type>(rotl_impl) : rotr_impl;
+
+			if (bits == 0)
 			{
-				return character - '0';
+				return number;
 			}
 
-			if (character >= 'A' && character <= 'F')
-			{
-				return character - 'A' + 0xA;
-			}
+			bits %= numeric_bits;
 
-			if (character >= 'a' && character <= 'f')
+			if (bits > 0)
 			{
-				return character - 'a' + 0xA;
+				return rotate_impl(number, bits);
 			}
+			else
+			{
+				return bitwise_rotate_impl<!left>(number, -bits);
+			}
+		}
 
-			return std::nullopt;
+		template<typename Callable, std::size_t... Indexes>
+		constexpr auto apply_index_sequence_impl(Callable&& handler, std::index_sequence<Indexes...>) noexcept
+		{
+			return std::forward<Callable>(handler)(Indexes...);
 		}
 	}
 
@@ -255,16 +290,14 @@ namespace glasssix::exposing::meta
 	/// <param name="number">The number</param>
 	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
 	/// <returns>The array</returns>
-	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<std::decay_t<Number>>>>
-	constexpr auto to_array(Number&& number, bool big_endian = true) noexcept
+	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+	constexpr auto to_array(Number number, bool big_endian = true) noexcept
 	{
-		using decayed_number_type = std::decay_t<Number>;
-
-		return details::number_move_bits_helper<decayed_number_type>(std::make_index_sequence<sizeof(decayed_number_type)>{}, big_endian, [&](auto&&... parts)
+		return details::number_move_bits_helper<Number>(std::make_index_sequence<sizeof(Number)>{}, big_endian, [&](auto&&... parts)
 			{
-				return std::array<std::uint8_t, sizeof(decayed_number_type)>
+				return std::array<std::uint8_t, sizeof(Number)>
 				{
-					((static_cast<std::uintmax_t>(std::forward<Number>(number)) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...
+					((static_cast<std::uintmax_t>(number) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...
 				};
 			});
 	}
@@ -279,5 +312,78 @@ namespace glasssix::exposing::meta
 	constexpr auto concat_arrays(Arrays&&... arrays) noexcept
 	{
 		return details::concat_arrays_impl(std::make_index_sequence<sizeof...(Arrays)>{}, std::forward<Arrays>(arrays)...);
+	}
+
+	/// <summary>
+	/// Computes the result of bitwise left-rotating the value of "number" by "bits" positions.
+	/// This operation is also known as a left circular shift.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The unsigned numeric type</typeparam>
+	/// <param name="number">The unsigned number</param>
+	/// <param name="bits">The bits</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr auto rotl(UnsignedNumber number, int bits) noexcept
+	{
+		return details::bitwise_rotate_impl<true>(number, bits);
+	}
+
+	/// <summary>
+	/// Computes the result of bitwise right-rotating the value of "number" by "bits" positions.
+	/// This operation is also known as a right circular shift.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The unsigned numeric type</typeparam>
+	/// <param name="number">The unsigned number</param>
+	/// <param name="bits">The bits</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr auto rotr(UnsignedNumber number, int bits) noexcept
+	{
+		return details::bitwise_rotate_impl<false>(number, bits);
+	}
+
+	/// <summary>
+	/// Sets certain bit of an unsigned number.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <param name="offset">The bit offset</param>
+	/// <param name="bit">The bit value</param>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr void set_number_bit(UnsignedNumber& number, int offset, std::uint8_t bit) noexcept
+	{
+		number = (number & ~(1UL << offset)) | (bit << offset);
+	}
+
+	/// <summary>
+	/// Calculates the binary logarithm of an unsigned number.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr auto log2(UnsignedNumber number) noexcept
+	{
+		UnsignedNumber result{};
+
+		while ((number >>= 1) != 0)
+		{
+			result++;
+		}
+
+		return result;
+	}
+
+	/// <summary>
+	/// Applies an index sequence to a callable handler.
+	/// </summary>
+	/// <typeparam name="Callable">The callable type</typeparam>
+	/// <param name="Size">The size of the sequence</param>
+	/// <param name="handler">The handler</param>
+	/// <returns>The result of the callable handler</returns>
+	template<std::size_t Size, typename Callable>
+	constexpr decltype(auto) apply_index_sequence(Callable&& handler) noexcept
+	{
+		return details::apply_index_sequence_impl(std::forward<Callable>(handler), std::make_index_sequence<Size>{});
 	}
 }
