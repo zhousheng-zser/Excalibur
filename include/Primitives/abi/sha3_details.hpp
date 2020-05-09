@@ -31,6 +31,11 @@ namespace glasssix::exposing::hashing::sha3_512
 		inline constexpr std::size_t word_bits = std::numeric_limits<word_type>::digits;
 
 		/// <summary>
+		/// l = log2(w).
+		/// </summary>
+		inline constexpr std::size_t log2_word_bits = meta::log2(word_bits);
+
+		/// <summary>
 		/// A common factor which is commonly used, i.e. number 5.
 		/// </summary>
 		inline constexpr std::size_t common_factor = 5;
@@ -155,7 +160,7 @@ namespace glasssix::exposing::hashing::sha3_512
 		constexpr void step_mapping_rho(hash_context& context) noexcept
 		{
 			// For t from 0 to 23, (t + 1)(t + 2) / 2 mod w.
-			// Here it generates a table for lookup at compile-time.
+			// Generates a table at compile-time.
 			constexpr auto rotation_bits = []
 			{
 				state_array result;
@@ -185,7 +190,7 @@ namespace glasssix::exposing::hashing::sha3_512
 					// For all z such that 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, (z ¨C (t + 1)(t + 2) / 2) mod w].
 					// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
 					// (x, y) = (y, (2x + 3y) mod 5)
-					context.immediate_state(y, 2 * x + 3 * y) = meta::rotl(context.state(x, y), rotation_bits(x, y));
+					context.immediate_state(y, 2 * x + 3 * y) = meta::rotl(context.state(x, y), static_cast<int>(rotation_bits(x, y)));
 				}
 			}
 		}
@@ -231,10 +236,8 @@ namespace glasssix::exposing::hashing::sha3_512
 		/// <returns>The result</returns>
 		constexpr std::uint8_t step_mapping_helper_rc(word_type number) noexcept
 		{
-			constexpr std::uint8_t max_byte = std::numeric_limits<std::uint8_t>::max();
-
 			// If t mod 255 = 0, return 1.
-			if (number % max_byte == 0)
+			if (number % 0xFF == 0)
 			{
 				return 1;
 			}
@@ -244,7 +247,7 @@ namespace glasssix::exposing::hashing::sha3_512
 			std::uint8_t bit = 0;
 			word_type result = 0b0000'0001;
 
-			for (std::size_t i = 1; i <= number % max_byte; i++)
+			for (std::size_t i = 1; i <= number % 0xFF; i++)
 			{
 				// For i from 1 to t mod 255, let:
 				// a.R = 0 || R;
@@ -275,11 +278,12 @@ namespace glasssix::exposing::hashing::sha3_512
 		/// <param name="round">The index of the current round</param>
 		constexpr void step_mapping_tau(hash_context& context, std::size_t round) noexcept
 		{
-			constexpr std::size_t log2_word_bits = meta::log2(word_bits);
 			constexpr auto func_rc = [](std::size_t round)
 			{
+				// Let RC = 0w.
+				// For j from 0 to l, let RC[2j ¨C 1] = rc(j + 7ir).
 				word_type result = 0;
-
+				
 				for (std::size_t i = 0; i < log2_word_bits; i++)
 				{
 					meta::set_number_bit(result, (1 << i) - 1, step_mapping_helper_rc(i + 7 * round));
@@ -288,13 +292,37 @@ namespace glasssix::exposing::hashing::sha3_512
 				return result;
 			};
 			
-			constexpr auto rc_table = []
-			{
-				return meta::apply_index_sequence<round_size>([](auto... indexes) { return std::array<word_type, sizeof...(indexes)>{ func_rc(indexes)... }; });
-			}();
+			// Generates a RC table at compile-time.
+			constexpr auto rc_table = meta::apply_index_sequence<round_size>([](auto... indexes)
+				{
+					return std::array<word_type, sizeof...(indexes)>{ func_rc(indexes)... };
+				});
 
+			// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, z].
+			// For all z such that 0 ¡Ü z < w, let A¡ä [0, 0, z] = A¡ä [0, 0, z] ¨’ RC[z].
+			// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
 			context.state = context.immediate_state;
 			context.state(0, 0) ^= rc_table[round];
+		}
+
+		/// <summary>
+		/// A function that implements the KECCAK-p[b, nr] permutation.
+		/// </summary>
+		/// <param name="context">The hash context</param>
+		constexpr void keccak_p(hash_context& context) noexcept
+		{
+			for (std::size_t i = 0; i < round_size; i++)
+			{
+				step_mapping_theta(context);
+				step_mapping_rho(context);
+				step_mapping_pi(context);
+				step_mapping_chi(context);
+				step_mapping_tau(context, i);
+			}
+		}
+
+		constexpr void sponge() noexcept
+		{
 		}
 	}
 }

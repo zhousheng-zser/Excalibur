@@ -123,7 +123,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\implements.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\sha3_512.hpp">
+    <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>

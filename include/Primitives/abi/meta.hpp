@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <variant>
 #include <optional>
 #include <string_view>
 #include <type_traits>
@@ -110,11 +111,11 @@ namespace glasssix::exposing::meta
 	/// <param name="...args">The numbers</param>
 	/// <returns>The sum</returns>
 	template<typename... Numbers, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Numbers>...>>>
-	constexpr auto sum(Numbers&&... args) noexcept
+	constexpr auto sum(Numbers... args) noexcept
 	{
 		using result_type = std::common_type_t<Numbers...>;
 
-		return (static_cast<result_type>(std::forward<Numbers>(args)) + ...);
+		return (static_cast<result_type>(args) + ...);
 	}
 
 	namespace details
@@ -139,15 +140,22 @@ namespace glasssix::exposing::meta
 			return std::nullopt;
 		}
 
+		template<typename Callable, std::size_t... Indexes>
+		constexpr auto apply_index_sequence_impl(Callable&& handler, std::index_sequence<Indexes...>) noexcept
+		{
+			return std::forward<Callable>(handler)(Indexes...);
+		}
+
 		template<typename Number, typename Callable, std::size_t... Indexes, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
 		constexpr auto number_move_bits_helper(std::index_sequence<Indexes...>, bool big_endian, Callable&& handler) noexcept
 		{
-			constexpr std::ptrdiff_t total_bits = sizeof(Number) * CHAR_BIT;
-			constexpr std::ptrdiff_t max_move_bits = total_bits - CHAR_BIT;
-			std::ptrdiff_t baseline_move_bits = big_endian ? max_move_bits : 0;
+			constexpr std::size_t byte_bits = std::numeric_limits<std::uint8_t>::digits;
+			constexpr std::size_t total_bits = sizeof(Number) * byte_bits;
+			constexpr std::size_t max_move_bits = total_bits - byte_bits;
+			std::ptrdiff_t baseline_move_bits = big_endian ? static_cast<std::ptrdiff_t>(max_move_bits) : 0;
 			std::ptrdiff_t sign = big_endian ? -1 : 1;
 
-			return std::forward<Callable>(handler)((std::pair{ Indexes, baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * CHAR_BIT })...);
+			return std::forward<Callable>(handler)((std::pair{ Indexes, baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * byte_bits })...);
 		}
 
 		template<typename T, typename U, std::size_t Size, std::size_t... Indexes>
@@ -160,7 +168,7 @@ namespace glasssix::exposing::meta
 		constexpr auto concat_arrays_impl(std::index_sequence<Indexes...>, Arrays&&... arrays) noexcept
 		{
 			constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
-			std::array<std::common_type_t<std_array_element_t<Arrays>...>, (std_array_size_v<Arrays> + ...)> result{};
+			std::array<std::common_type_t<std_array_element_t<Arrays>...>, (std_array_size_v<Arrays> +...)> result{};
 			std::size_t offset = 0;
 
 			return (details::set_array_value_helper(result.data() + (offset += sizes[Indexes]), std::forward<Arrays>(arrays), std::make_index_sequence<std_array_size_v<Arrays>>{}), ..., result);
@@ -193,12 +201,19 @@ namespace glasssix::exposing::meta
 				return bitwise_rotate_impl<!left>(number, -bits);
 			}
 		}
+	}
 
-		template<typename Callable, std::size_t... Indexes>
-		constexpr auto apply_index_sequence_impl(Callable&& handler, std::index_sequence<Indexes...>) noexcept
-		{
-			return std::forward<Callable>(handler)(Indexes...);
-		}
+	/// <summary>
+	/// Applies an index sequence to a callable handler.
+	/// </summary>
+	/// <typeparam name="Callable">The callable type</typeparam>
+	/// <param name="Size">The size of the sequence</param>
+	/// <param name="handler">The handler</param>
+	/// <returns>The result of the callable handler</returns>
+	template<std::size_t Size, typename Callable>
+	constexpr decltype(auto) apply_index_sequence(Callable&& handler) noexcept
+	{
+		return details::apply_index_sequence_impl(std::forward<Callable>(handler), std::make_index_sequence<Size>{});
 	}
 
 	/// <summary>
@@ -343,7 +358,20 @@ namespace glasssix::exposing::meta
 	}
 
 	/// <summary>
-	/// Sets certain bit of an unsigned number.
+	/// Gets a certain bit of an unsigned number.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <param name="offset">The bit offset</param>
+	/// <returns>The bit value</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr std::uint8_t get_number_bit(UnsignedNumber number, int offset) noexcept
+	{
+		return ((number & (static_cast<UnsignedNumber>(1) << offset)) >> offset);
+	}
+
+	/// <summary>
+	/// Sets a certain bit of an unsigned number.
 	/// </summary>
 	/// <typeparam name="UnsignedNumber">The numeric type</typeparam>
 	/// <param name="number">The number</param>
@@ -352,7 +380,32 @@ namespace glasssix::exposing::meta
 	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
 	constexpr void set_number_bit(UnsignedNumber& number, int offset, std::uint8_t bit) noexcept
 	{
-		number = (number & ~(1UL << offset)) | (bit << offset);
+		number = (number & ~(static_cast<UnsignedNumber>(1) << offset)) | (static_cast<UnsignedNumber>(bit) << offset);
+	}
+
+	/// <summary>
+	/// Swaps the endian of a number.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The unsigned numeric type</typeparam>
+	/// <param name="number">The unsigned number</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr UnsignedNumber swap_endian(UnsignedNumber number) noexcept
+	{
+		constexpr std::size_t numeric_bits = std::numeric_limits<UnsignedNumber>::digits;
+
+		return details::number_move_bits_helper<UnsignedNumber>(std::make_index_sequence<sizeof(UnsignedNumber)>{}, false, [&](auto&&... pairs)
+			{
+				UnsignedNumber result{};
+
+				return ([&]
+					{
+						std::ptrdiff_t source_offset = (std::forward<decltype(pairs)>(pairs).second);
+						std::ptrdiff_t destination_offset = numeric_bits - source_offset - std::numeric_limits<std::uint8_t>::digits;
+
+						result |= (((number >> source_offset) & 0xFF) << destination_offset);
+					}(), ..., result);
+			});
 	}
 
 	/// <summary>
@@ -372,18 +425,5 @@ namespace glasssix::exposing::meta
 		}
 
 		return result;
-	}
-
-	/// <summary>
-	/// Applies an index sequence to a callable handler.
-	/// </summary>
-	/// <typeparam name="Callable">The callable type</typeparam>
-	/// <param name="Size">The size of the sequence</param>
-	/// <param name="handler">The handler</param>
-	/// <returns>The result of the callable handler</returns>
-	template<std::size_t Size, typename Callable>
-	constexpr decltype(auto) apply_index_sequence(Callable&& handler) noexcept
-	{
-		return details::apply_index_sequence_impl(std::forward<Callable>(handler), std::make_index_sequence<Size>{});
 	}
 }
