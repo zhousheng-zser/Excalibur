@@ -138,4 +138,9 @@
       <UniqueIdentifier>{4d0eddc1-28a6-44f4-9a07-b0395324d146}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
+  <ItemGroup>
+    <Page Include="..\..\include\Primitives\abi\sha3.hpp">
+      <Filter>abi</Filter>
+    </Page>
+  </ItemGroup>
 </Project>

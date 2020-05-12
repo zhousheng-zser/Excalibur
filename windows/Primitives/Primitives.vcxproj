@@ -140,6 +140,9 @@
     <ClCompile Include="..\..\src\Primitives\tensor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="..\..\include\Primitives\abi\sha3.hpp">
+      <SubType>Designer</SubType>
+    </Page>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

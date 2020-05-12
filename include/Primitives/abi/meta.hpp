@@ -13,6 +13,9 @@
 
 namespace glasssix::exposing::meta
 {
+	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
+	inline constexpr bool is_big_endian_v = !is_little_endian_v;
+
 	template<typename...T>
 	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
 
@@ -200,6 +203,20 @@ namespace glasssix::exposing::meta
 			{
 				return bitwise_rotate_impl<!left>(number, -bits);
 			}
+		}
+	}
+
+	/// <summary>
+	/// Copies the bytes of a memory block into another.
+	/// </summary>
+	/// <param name="destination">The destination</param>
+	/// <param name="source">The source</param>
+	/// <param name="size">The size in bytes</param>
+	constexpr void copy_bytes(std::uint8_t* destination, const uint8_t* source, std::size_t size) noexcept
+	{
+		for (std::size_t index = 0; index < size; index++)
+		{
+			*destination++ = *source++;
 		}
 	}
 
