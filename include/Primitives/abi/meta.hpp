@@ -13,6 +13,7 @@
 
 namespace glasssix::exposing::meta
 {
+	inline constexpr std::size_t byte_bits = std::numeric_limits<std::uint8_t>::digits;
 	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
@@ -152,7 +153,6 @@ namespace glasssix::exposing::meta
 		template<typename Number, typename Callable, std::size_t... Indexes, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
 		constexpr auto number_move_bits_helper(std::index_sequence<Indexes...>, bool big_endian, Callable&& handler) noexcept
 		{
-			constexpr std::size_t byte_bits = std::numeric_limits<std::uint8_t>::digits;
 			constexpr std::size_t total_bits = sizeof(Number) * byte_bits;
 			constexpr std::size_t max_move_bits = total_bits - byte_bits;
 			std::ptrdiff_t baseline_move_bits = big_endian ? static_cast<std::ptrdiff_t>(max_move_bits) : 0;
@@ -170,7 +170,7 @@ namespace glasssix::exposing::meta
 		template<std::size_t... Indexes, typename... Arrays>
 		constexpr auto concat_arrays_impl(std::index_sequence<Indexes...>, Arrays&&... arrays) noexcept
 		{
-			constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
+			static constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
 			std::array<std::common_type_t<std_array_element_t<Arrays>...>, (std_array_size_v<Arrays> +...)> result{};
 			std::size_t offset = 0;
 
@@ -183,9 +183,8 @@ namespace glasssix::exposing::meta
 			using limits_type = std::numeric_limits<UnsignedNumber>;
 			using rotate_impl_type = UnsignedNumber(*)(UnsignedNumber number, int bits);
 
-			constexpr auto numeric_bits = limits_type::digits;
-			constexpr auto rotl_impl = [](UnsignedNumber number, int bits) { return (number << bits) | (number >> (numeric_bits - bits)); };
-			constexpr auto rotr_impl = [](UnsignedNumber number, int bits) { return (number >> bits) | (number << (numeric_bits - bits)); };
+			constexpr auto rotl_impl = [](UnsignedNumber number, int bits) { return (number << bits) | (number >> (limits_type::digits - bits)); };
+			constexpr auto rotr_impl = [](UnsignedNumber number, int bits) { return (number >> bits) | (number << (limits_type::digits - bits)); };
 			constexpr auto rotate_impl = left ? static_cast<rotate_impl_type>(rotl_impl) : rotr_impl;
 
 			if (bits == 0)
@@ -193,7 +192,7 @@ namespace glasssix::exposing::meta
 				return number;
 			}
 
-			bits %= numeric_bits;
+			bits %= limits_type::digits;
 
 			if (bits > 0)
 			{
@@ -316,6 +315,27 @@ namespace glasssix::exposing::meta
 	}
 
 	/// <summary>
+	/// Splits a number into one or more bytes.
+	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
+	/// <typeparam name="Callable">The callble type</typeparam>
+	/// <param name="TruncateSize">The size in bytes of the sequence to be passed to the handler</param>
+	/// <param name="number">The number</param>
+	/// <param name="handler">The handler whose arguments are the bytes of the number</param>
+	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
+	/// <returns>The return value of the handler</returns>
+	template<typename Number, typename Callable, std::size_t TruncateSize = sizeof(Number), typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+	constexpr decltype(auto) split_number(Number number, Callable&& handler, bool big_endian = true, std::integral_constant<std::size_t, TruncateSize> = {}) noexcept
+	{
+		constexpr std::size_t real_size = std::min(TruncateSize, sizeof(Number));
+
+		return details::number_move_bits_helper<Number>(std::make_index_sequence<real_size>{}, big_endian, [&](auto&&... parts)
+			{
+				return std::forward<Callable>(handler)(static_cast<std::uint8_t>((static_cast<std::uintmax_t>(number) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...);
+			});
+	}
+
+	/// <summary>
 	/// Retrieves the bytes of a number.
 	/// </summary>
 	/// <typeparam name="Number">The numeric type</typeparam>
@@ -325,15 +345,9 @@ namespace glasssix::exposing::meta
 	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
 	constexpr auto to_array(Number number, bool big_endian = true) noexcept
 	{
-		return details::number_move_bits_helper<Number>(std::make_index_sequence<sizeof(Number)>{}, big_endian, [&](auto&&... parts)
-			{
-				return std::array<std::uint8_t, sizeof(Number)>
-				{
-					((static_cast<std::uintmax_t>(number) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...
-				};
-			});
+		return split_number(number, [](auto... bytes) { return std::array<std::uint8_t, sizeof(Number)>{ bytes... }; }, big_endian);
 	}
-
+	
 	/// <summary>
 	/// Concatenates arrays.
 	/// </summary>
@@ -384,7 +398,7 @@ namespace glasssix::exposing::meta
 	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
 	constexpr std::uint8_t get_number_bit(UnsignedNumber number, int offset) noexcept
 	{
-		return ((number & (static_cast<UnsignedNumber>(1) << offset)) >> offset);
+		return static_cast<std::uint8_t>((number >> offset) & 0x01);
 	}
 
 	/// <summary>
@@ -401,7 +415,7 @@ namespace glasssix::exposing::meta
 	}
 
 	/// <summary>
-	/// Swaps the endian of a number.
+	/// Swaps the endianness of a number.
 	/// </summary>
 	/// <typeparam name="UnsignedNumber">The unsigned numeric type</typeparam>
 	/// <param name="number">The unsigned number</param>
@@ -411,18 +425,37 @@ namespace glasssix::exposing::meta
 	{
 		constexpr std::size_t numeric_bits = std::numeric_limits<UnsignedNumber>::digits;
 
-		return details::number_move_bits_helper<UnsignedNumber>(std::make_index_sequence<sizeof(UnsignedNumber)>{}, false, [&](auto&&... pairs)
+		return apply_index_sequence<sizeof(UnsignedNumber)>([&](auto... indexes)
 			{
 				UnsignedNumber result{};
 
 				return ([&]
 					{
-						std::ptrdiff_t source_offset = (std::forward<decltype(pairs)>(pairs).second);
-						std::ptrdiff_t destination_offset = numeric_bits - source_offset - std::numeric_limits<std::uint8_t>::digits;
+						std::ptrdiff_t source_offset = byte_bits * indexes;
+						std::ptrdiff_t destination_offset = numeric_bits - source_offset - byte_bits;
 
 						result |= (((number >> source_offset) & 0xFF) << destination_offset);
 					}(), ..., result);
 			});
+	}
+
+	/// <summary>
+	/// Swaps the endianness of a number if the platform is big-endian; otherwise just performs nop.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The unsigned numeric type</typeparam>
+	/// <param name="number">The unsigned number</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr UnsignedNumber native_to_little_endian(UnsignedNumber number) noexcept
+	{
+		if constexpr (is_big_endian_v)
+		{
+			return swap_endian(number);
+		}
+		else
+		{
+			return number;
+		}
 	}
 
 	/// <summary>

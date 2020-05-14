@@ -6,24 +6,17 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
-#include <algorithm>
-#include <string_view>
 
 namespace glasssix::exposing::hashing::sha3
 {
 	/// <summary>
 	/// A helper class that digests input data.
 	/// </summary>
+	template<sha3_type Type>
 	class hash_digest
 	{
 	public:
-		/// <summary>
-		/// Creates an instance.
-		/// </summary>
-		/// <param name="type">The type of the algorithm</param>
-		constexpr hash_digest(sha3_type type) noexcept : context_{ type }
-		{
-		}
+		using context_type = details::hash_context<Type>;
 
 		/// <summary>
 		/// Updates the context with a piece of data.
@@ -34,15 +27,6 @@ namespace glasssix::exposing::hashing::sha3
 		constexpr void update(const std::array<std::uint8_t, Size>& data) noexcept
 		{
 			update(data.data(), data.size());
-		}
-
-		/// <summary>
-		/// Updates the context with a string view.
-		/// </summary>
-		/// <param name="str">The string view</param>
-		constexpr void update(std::string_view str) noexcept
-		{
-			update(reinterpret_cast<const std::uint8_t*>(str.data()), str.size());
 		}
 
 		/// <summary>
@@ -69,9 +53,9 @@ namespace glasssix::exposing::hashing::sha3
 				context_.block_index += real_size;
 
 				// Updates the state when the internal buffer is full.
-				if (context_.block_index >= context_.block_size)
+				if (context_.block_index >= context_type::block_size)
 				{
-					details::update_state(context_);
+					details::sponge_step_6(context_);
 					destination_ptr = context_.block.data();
 				}
 			}
@@ -80,11 +64,11 @@ namespace glasssix::exposing::hashing::sha3
 		/// <summary>
 		/// Finalizes the context (pads the data and calculates the final hash value).
 		/// </summary>
-		constexpr void finalize() noexcept
+		constexpr auto finalize() noexcept
 		{
-
+			return details::sponge_finalize(context_);
 		}
 	private:
-		details::hash_context context_;
+		context_type context_;
 	};
 }
