@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <cstddef>
+#include <algorithm>
 
 namespace glasssix::exposing::hashing::sha3
 {

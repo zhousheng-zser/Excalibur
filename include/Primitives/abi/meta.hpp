@@ -8,6 +8,7 @@
 #include <utility>
 #include <variant>
 #include <optional>
+#include <algorithm>
 #include <string_view>
 #include <type_traits>
 
@@ -158,7 +159,7 @@ namespace glasssix::exposing::meta
 			std::ptrdiff_t baseline_move_bits = big_endian ? static_cast<std::ptrdiff_t>(max_move_bits) : 0;
 			std::ptrdiff_t sign = big_endian ? -1 : 1;
 
-			return std::forward<Callable>(handler)((std::pair{ Indexes, baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes) * byte_bits })...);
+			return std::forward<Callable>(handler)((std::pair{ Indexes, baseline_move_bits + sign * static_cast<std::ptrdiff_t>(Indexes * byte_bits) })...);
 		}
 
 		template<typename T, typename U, std::size_t Size, std::size_t... Indexes>
@@ -475,5 +476,28 @@ namespace glasssix::exposing::meta
 		}
 
 		return result;
+	}
+
+	/// <summary>
+	/// Calculates (a - b) % c in which a, b and c are unsigned numbers.
+	/// Overflow is fixed up here.
+	/// </summary>
+	/// <typeparam name="UnsignedNumber">The numeric type</typeparam>
+	/// <param name="minuend">The minuend</param>
+	/// <param name="subtrahend">The subtrahend</param>
+	/// <param name="divisor">The divisor</param>
+	/// <returns>The result</returns>
+	template<typename UnsignedNumber, typename = std::enable_if_t<std::is_unsigned_v<UnsignedNumber>>>
+	constexpr auto minus_mod_unsigned(UnsignedNumber minuend, UnsignedNumber subtrahend, UnsignedNumber divisor) noexcept
+	{
+		if (minuend >= subtrahend)
+		{
+			return (minuend - subtrahend) % divisor;
+		}
+
+		UnsignedNumber subtraction = minuend - subtrahend;
+		UnsignedNumber addition = (subtraction / divisor + (subtraction % divisor != 0 ? 1 : 0)) * divisor;
+		
+		return (subtraction + addition) % divisor;
 	}
 }
