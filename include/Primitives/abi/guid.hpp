@@ -1,6 +1,7 @@
 #pragma once
 
 #include "meta.hpp"
+#include "sha3.hpp"
 
 #include <array>
 #include <cstddef>
@@ -94,7 +95,7 @@ namespace glasssix::exposing
 			return !(*this == right);
 		}
 	};
-
+	
 	/// <summary>
 	/// Converts a GUID to an array.
 	/// </summary>
@@ -109,5 +110,34 @@ namespace glasssix::exposing
 			meta::to_array(id.data3, is_big_endian),
 			id.data4
 		);
+	}
+
+	/// <summary>
+	/// Creates a GUID from a byte buffer.
+	/// </summary>
+	/// <param name="Size">The size in bytes</param>
+	/// <param name="data">The input data</param>
+	/// <returns>The guid</returns>
+	template<std::size_t Size>
+	constexpr guid create_guid_from_bytes(const std::array<std::uint8_t, Size>& data) noexcept
+	{
+		constexpr guid root_guid{ "2A4F92A8-051D-48DE-8833-7837A9D30699" };
+		constexpr details::size_offset offset_data1{ 0, sizeof(guid::data1) };
+		constexpr details::size_offset offset_data2{ offset_data1.offset_end(), sizeof(guid::data2) };
+		constexpr details::size_offset offset_data3{ offset_data2.offset_end(), sizeof(guid::data3) };
+		constexpr details::size_offset offset_data4{ offset_data3.offset_end(), sizeof(guid::data4) };
+
+		// Computes SHA3-512 of the data.
+		auto combined_data = meta::concat_arrays(to_array(root_guid), data);
+		auto hash = hashing::sha3::hash_sha3_512(combined_data);
+
+		// Truncates the hash and creates a GUID.
+		return guid
+		{
+			meta::make_number<std::uint32_t>(meta::sub_array<offset_data1.offset, offset_data1.size>::get(hash)),
+			meta::make_number<std::uint16_t>(meta::sub_array<offset_data2.offset, offset_data2.size>::get(hash)),
+			meta::make_number<std::uint16_t>(meta::sub_array<offset_data3.offset, offset_data3.size>::get(hash)),
+			meta::sub_array<offset_data4.offset, offset_data4.size>::get(hash)
+		};
 	}
 }

@@ -171,7 +171,7 @@ namespace glasssix::exposing::meta
 		template<std::size_t... Indexes, typename... Arrays>
 		constexpr auto concat_arrays_impl(std::index_sequence<Indexes...>, Arrays&&... arrays) noexcept
 		{
-			static constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
+			constexpr std::array<std::size_t, sizeof...(Arrays) + 1> sizes{ 0, std_array_size_v<Arrays>... };
 			std::array<std::common_type_t<std_array_element_t<Arrays>...>, (std_array_size_v<Arrays> +...)> result{};
 			std::size_t offset = 0;
 
@@ -348,7 +348,7 @@ namespace glasssix::exposing::meta
 	{
 		return split_number(number, [](auto... bytes) { return std::array<std::uint8_t, sizeof(Number)>{ bytes... }; }, big_endian);
 	}
-	
+
 	/// <summary>
 	/// Concatenates arrays.
 	/// </summary>
@@ -497,7 +497,20 @@ namespace glasssix::exposing::meta
 
 		UnsignedNumber subtraction = minuend - subtrahend;
 		UnsignedNumber addition = (subtraction / divisor + (subtraction % divisor != 0 ? 1 : 0)) * divisor;
-		
+
 		return (subtraction + addition) % divisor;
 	}
+
+	/// <summary>
+	/// Gets a sub array from an array.
+	/// </summary>
+	template<std::size_t Index, std::size_t Size>
+	struct sub_array
+	{
+		template<typename T, std::size_t FullSize, typename = std::enable_if_t<Index < FullSize && Index + Size <= FullSize>>
+		static constexpr auto get(const std::array<T, FullSize>& data) noexcept
+		{
+			return apply_index_sequence<Size>([&](auto... indexes) { return std::array<T, Size>{ data[Index + indexes]... }; });
+		}
+	};
 }

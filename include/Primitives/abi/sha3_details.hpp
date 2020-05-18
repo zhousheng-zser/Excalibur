@@ -290,7 +290,7 @@ namespace glasssix::exposing::hashing::sha3::details
 	inline constexpr auto step_mapping_rho_rotation_bits = []
 	{
 		std::array<int, sponge_words> result{};
-		
+
 		/// (x, y) = (1, 0)
 		/// For t from 0 to 23, (t + 1)(t + 2) / 2 mod w
 		for (std::size_t x = 1, y = 0, t = 0, tmp = 0; t < 24; t++)
@@ -376,7 +376,7 @@ namespace glasssix::exposing::hashing::sha3::details
 				((context.immediate[indexes] = meta::rotl(context.state[indexes], step_mapping_rho_rotation_bits[indexes])), ...);
 			});
 	}
-	
+
 	/// <summary>
 	/// A step mapping function named ¦Ð(A) defined in Section 3.2.3.
 	/// </summary>
@@ -505,7 +505,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		keccak_p(context);
 		context.block_index = 0;
 	}
-	
+
 	/// <summary>
 	/// A function that finalizes the state by SPONGE[f, pad, r](N, d) (when r = block size) defined in Algorithm 8, Section 4 and Section 4.
 	/// </summary>
