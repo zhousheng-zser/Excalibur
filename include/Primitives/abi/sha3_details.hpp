@@ -180,14 +180,20 @@ namespace glasssix::exposing::hashing::sha3::details
 				meta::split_number(data_[buffer_words], [&](auto... bytes) { ((buffer[index++] = bytes), ...); }, false, std::integral_constant<std::size_t, remaining_bytes>{});
 			}
 		}
-	private:
+
+		/// <summary>
+		/// Calculates the absoluate index of a given (x, y) coordinate.
+		/// </summary>
+		/// <param name="x">The x coordinate</param>
+		/// <param name="y">The y coordinate</param>
+		/// <returns>The absolute index</returns>
 		static constexpr std::size_t calculate_index(std::size_t x, std::size_t y) noexcept
 		{
 			// A[x, y, z] = S[w(5y + x) + z] defined in Section 3.1.2.
 			// The calculation is simplied as follows because values of a lane (values along z coordinate) are combined into a word (std::uint64_t).
 			return common_factor * (y % common_factor) + (x % common_factor);
 		}
-
+	private:
 		std::array<word_type, sponge_words> data_;
 	};
 
@@ -279,18 +285,17 @@ namespace glasssix::exposing::hashing::sha3::details
 	}
 
 	/// <summary>
-	/// (x, y) = (1, 0)
-	/// For t from 0 to 24, (t + 1)(t + 2) / 2 mod w, defined in Section 3.2.2.
-	/// Generates a table of rotation bits for ¦Ñ(A) at compile-time.
+	/// Generates a table of rotation bits for ¦Ñ(A) at compile-time, defined in Section 3.2.2.
 	/// </summary>
 	inline constexpr auto step_mapping_rho_rotation_bits = []
 	{
-		state_array result;
+		std::array<int, sponge_words> result{};
 		
-		// Step 1 defined in Section 3.2.2 is combined into the loop, so t is from 0 to (23 + 1) = 24.
+		/// (x, y) = (1, 0)
+		/// For t from 0 to 23, (t + 1)(t + 2) / 2 mod w
 		for (std::size_t x = 1, y = 0, t = 0, tmp = 0; t < 24; t++)
 		{
-			result(x, y) = (((t + 1) * (t + 2)) >> 1) % word_bits;
+			result[state_array::calculate_index(x, y)] = (((t + 1) * (t + 2)) >> 1) % word_bits;
 
 			// (x, y) = (y, (2x + 3y) mod 5)
 			tmp = y;
@@ -359,20 +364,17 @@ namespace glasssix::exposing::hashing::sha3::details
 	constexpr void step_mapping_rho(hash_context<Type>& context) noexcept
 	{
 		// For all z such that 0 ¡Ü z ¡Ü w, let A'[0, 0, z] = A[0, 0, z].
-		// This operation is omitted and combined into the following loop.
+		context.immediate(0, 0) = context.state(0, 0);
 
 		// (x, y) = (1, 0)
-		// For t from 0 to (23 + 1) = 24.
-		for (std::size_t x = 0; x < common_factor; x++)
-		{
-			for (std::size_t y = 0; y < common_factor; y++)
+		// For t from 0 to 23.
+		meta::apply_index_sequence<step_mapping_rho_rotation_bits.size()>([&](auto... indexes)
 			{
 				// For all z such that 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, (z ¨C (t + 1)(t + 2) / 2) mod w].
 				// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
 				// (x, y) = (y, (2x + 3y) mod 5)
-				context.immediate(y, 2 * x + 3 * y) = meta::rotl(context.state(x, y), static_cast<int>(step_mapping_rho_rotation_bits(x, y)));
-			}
-		}
+				((context.immediate[indexes] = meta::rotl(context.state[indexes], step_mapping_rho_rotation_bits[indexes])), ...);
+			});
 	}
 	
 	/// <summary>
@@ -408,8 +410,7 @@ namespace glasssix::exposing::hashing::sha3::details
 			{
 				// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, z] ¨’((A[(x + 1) mod 5, y, z] ¨’ 1) ¡¤ A[(x + 2) mod 5, y, z]).
 				// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
-				//context.immediate(x, y) = context.state(x, y) ^ (~context.state(x + 1, y) & context.state(x + 2, y));
-				context.state(x, y) = context.immediate(x, y) ^ (~context.immediate(x + 1, y) & context.immediate(x + 2, y));
+				context.immediate(x, y) = context.state(x, y) ^ (~context.state(x + 1, y) & context.state(x + 2, y));
 			}
 		}
 	}
@@ -426,7 +427,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, z].
 		// For all z such that 0 ¡Ü z < w, let A¡ä [0, 0, z] = A¡ä [0, 0, z] ¨’ RC[z].
 		// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
-		//context.state = context.immediate;
+		context.state = context.immediate;
 		context.state(0, 0) ^= step_mapping_tau_rc_table[round];
 	}
 
@@ -442,7 +443,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		{
 			step_mapping_theta(context);
 			step_mapping_rho(context);
-			//step_mapping_pi(context);
+			step_mapping_pi(context);
 			step_mapping_chi(context);
 			step_mapping_tau(context, i);
 		}
