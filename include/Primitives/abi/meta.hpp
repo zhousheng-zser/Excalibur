@@ -18,7 +18,13 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
-	template<typename...T>
+	template<typename T, typename... Args>
+	struct is_same_any : std::bool_constant<std::disjunction_v<std::is_same<T, Args>...>>{};
+
+	template<typename T, typename... Args>
+	inline constexpr bool is_same_any_v = is_same_any<T, Args...>::value;
+
+	template<typename... T>
 	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
 
 	template<template<typename> typename Condition, typename>

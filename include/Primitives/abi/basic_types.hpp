@@ -18,58 +18,58 @@ namespace glasssix::exposing::impl
 	template<> inline constexpr auto& name_v<float> = "f4";
 	template<> inline constexpr auto& name_v<double> = "f8";
 
-	template<> struct category<bool>
+	template<> struct type_identity<bool>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::int8_t>
+	template<> struct type_identity<std::int8_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::int16_t>
+	template<> struct type_identity<std::int16_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::int32_t>
+	template<> struct type_identity<std::int32_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::int64_t>
+	template<> struct type_identity<std::int64_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::uint8_t>
+	template<> struct type_identity<std::uint8_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::uint16_t>
+	template<> struct type_identity<std::uint16_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::uint32_t>
+	template<> struct type_identity<std::uint32_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<std::uint64_t>
+	template<> struct type_identity<std::uint64_t>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<float>
+	template<> struct type_identity<float>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 
-	template<> struct category<double>
+	template<> struct type_identity<double>
 	{
-		using type = basic_category;
+		using type = type_identity_primitive;
 	};
 }

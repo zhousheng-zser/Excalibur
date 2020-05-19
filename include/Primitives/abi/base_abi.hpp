@@ -25,16 +25,31 @@ namespace glasssix::exposing::impl
 	template<typename T>
 	using abi_t = typename abi<T>::type;
 
+	/// <summary>
+	/// Stores the GUID of a ABI.
+	/// </summary>
 	template<typename T>
 	struct guid_storage<T, std::void_t<decltype(abi<T>::id)>>
 	{
-		static constexpr auto value{ abi<T>::id };
+		static constexpr auto& value{ abi<T>::id };
 	};
 
-	template<typename T>
-	struct category<T, std::void_t<typename abi<T>::category_type>>
+	/// <summary>
+	/// Stores the GUID of a generic interface ABI.
+	/// </summary>
+	template<template<typename...> typename T, typename... Args>
+	struct guid_storage<T<Args...>, std::void_t<decltype(abi<T<Args...>>::id)>>
 	{
-		using type = typename abi<T>::category_type;
+		static constexpr auto value{ create_guid_from_bytes(meta::concat_arrays(to_array(abi<T<Args...>>::id), type_signature_v<Args>...)) };
+	};
+
+	/// <summary>
+	/// The type identity of a ABI.
+	/// </summary>
+	template<typename T>
+	struct type_identity<T, std::void_t<typename abi<T>::identity_type>>
+	{
+		using type = typename abi<T>::identity_type;
 	};
 
 	/// <summary>
@@ -51,7 +66,7 @@ namespace glasssix::exposing::impl
 	/// </summary>
 	template<> struct abi<exposing::unknown_object>
 	{
-		using category_type = interface_category;
+		using identity_type = type_identity_interface;
 		static constexpr guid id{ "00000000-0000-0000-C000-000000000046" };
 		
 		struct type
@@ -61,7 +76,7 @@ namespace glasssix::exposing::impl
 			virtual std::uint32_t G6_ABI_CALL release() noexcept = 0;
 		};
 	};
-
+	
 	using unknown_object = abi_t<exposing::unknown_object>;
 
 	/// <summary>
@@ -134,7 +149,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <param name="value">The ABI</param>
-	inline void copy_from_abi(unknown_object& object, void* value) noexcept
+	void copy_from_abi(unknown_object& object, void* value) noexcept
 	{
 		object = nullptr;
 
@@ -150,7 +165,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <param name="value">The ABI</param>
-	inline void copy_to_abi(const unknown_object& object, void*& value) noexcept
+	void copy_to_abi(const unknown_object& object, void*& value) noexcept
 	{
 		if (value = get_abi(object))
 		{
@@ -164,9 +179,9 @@ namespace glasssix::exposing::impl
 	template<typename To, typename From>
 	auto as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_derived_from_unknown_object<From>, is_derived_from_unknown_object<To>>>
 	{
-		unknown_object result;
+		exposing::unknown_object result;
 
-		if (ptr; ptr && !ptr->query_interface(guid_of_v<To>, put_abi(result)))
+		if (ptr && !ptr->query_interface(guid_of_v<To>, put_abi(result)))
 		{
 			throw glasssix_abi_no_interface{};
 		}
@@ -177,7 +192,7 @@ namespace glasssix::exposing::impl
 	template<typename To, typename From>
 	auto try_as(From* ptr) -> std::enable_if_t<std::conjunction_v<is_derived_from_unknown_object<From>, is_derived_from_unknown_object<To>>>
 	{
-		unknown_object result;
+		exposing::unknown_object result;
 
 		if (ptr)
 		{

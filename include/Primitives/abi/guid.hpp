@@ -25,7 +25,7 @@ namespace glasssix::exposing
 	}
 	
 	/// <summary>
-	/// Defines a GUID.
+	/// Globally Unique Identifier (GUID).
 	/// </summary>
 	struct guid
 	{
@@ -121,14 +121,14 @@ namespace glasssix::exposing
 	template<std::size_t Size>
 	constexpr guid create_guid_from_bytes(const std::array<std::uint8_t, Size>& data) noexcept
 	{
-		constexpr guid root_guid{ "2A4F92A8-051D-48DE-8833-7837A9D30699" };
+		constexpr guid guid_root{ "2A4F92A8-051D-48DE-8833-7837A9D30699" };
 		constexpr details::size_offset offset_data1{ 0, sizeof(guid::data1) };
 		constexpr details::size_offset offset_data2{ offset_data1.offset_end(), sizeof(guid::data2) };
 		constexpr details::size_offset offset_data3{ offset_data2.offset_end(), sizeof(guid::data3) };
 		constexpr details::size_offset offset_data4{ offset_data3.offset_end(), sizeof(guid::data4) };
 
 		// Computes SHA3-512 of the data.
-		auto combined_data = meta::concat_arrays(to_array(root_guid), data);
+		auto combined_data = meta::concat_arrays(to_array(guid_root), data);
 		auto hash = hashing::sha3::hash_sha3_512(combined_data);
 
 		// Truncates the hash and creates a GUID.

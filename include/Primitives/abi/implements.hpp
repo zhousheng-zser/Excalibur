@@ -202,6 +202,18 @@ namespace glasssix::exposing::impl
 	};
 
 	/// <summary>
+	/// Provides support for implicitly casting to an interface.
+	/// </summary>
+	template<typename Derived, typename Interface>
+	struct interface_castable
+	{
+		operator Interface() const noexcept
+		{
+			return static_cast<const Derived&>(*this).template try_as<Interface>();
+		}
+	};
+
+	/// <summary>
 	/// A class that implements the fundamental functions of glasssix::exposing::unknown_object.
 	/// </summary>
 	template<typename Derived>
@@ -283,5 +295,13 @@ namespace glasssix::exposing
 		{
 			return root_implements_type::release();
 		}
+	};
+
+	/// <summary>
+	/// A helper class to support implicitly casting to one or more interfaces.
+	/// </summary>
+	template<typename Derived, typename... Interfaces>
+	struct inherits : impl::interface_castable<Derived, Interfaces>...
+	{
 	};
 }

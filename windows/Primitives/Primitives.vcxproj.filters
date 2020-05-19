@@ -108,9 +108,6 @@
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\basic_types.hpp">
-      <Filter>abi</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\guid.hpp">
       <Filter>abi</Filter>
     </ClInclude>

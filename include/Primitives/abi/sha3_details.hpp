@@ -207,7 +207,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		static constexpr std::size_t final_hash_size = available_sha3_type_traits[static_cast<std::size_t>(Type)].final_hash_size;
 
 		state_array state;
-		state_array immediate;
+		state_array intermediate;
 		std::size_t block_index;
 		std::array<word_type, 5> tmp;
 		std::array<std::uint8_t, block_size> block;
@@ -237,7 +237,7 @@ namespace glasssix::exposing::hashing::sha3::details
 			tmp = {};
 			block = {};
 			state.reset();
-			immediate.reset();
+			intermediate.reset();
 			block_index = 0;
 		}
 	};
@@ -364,7 +364,7 @@ namespace glasssix::exposing::hashing::sha3::details
 	constexpr void step_mapping_rho(hash_context<Type>& context) noexcept
 	{
 		// For all z such that 0 ¡Ü z ¡Ü w, let A'[0, 0, z] = A[0, 0, z].
-		context.immediate(0, 0) = context.state(0, 0);
+		context.intermediate(0, 0) = context.state(0, 0);
 
 		// (x, y) = (1, 0)
 		// For t from 0 to 23.
@@ -373,7 +373,7 @@ namespace glasssix::exposing::hashing::sha3::details
 				// For all z such that 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, (z ¨C (t + 1)(t + 2) / 2) mod w].
 				// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
 				// (x, y) = (y, (2x + 3y) mod 5)
-				((context.immediate[indexes] = meta::rotl(context.state[indexes], step_mapping_rho_rotation_bits[indexes])), ...);
+				((context.intermediate[indexes] = meta::rotl(context.state[indexes], step_mapping_rho_rotation_bits[indexes])), ...);
 			});
 	}
 
@@ -391,7 +391,7 @@ namespace glasssix::exposing::hashing::sha3::details
 			{
 				// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[(x + 3y) mod 5, x, z].
 				// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
-				context.state(x, y) = context.immediate(x + 3 * y, x);
+				context.state(x, y) = context.intermediate(x + 3 * y, x);
 			}
 		}
 	}
@@ -410,7 +410,7 @@ namespace glasssix::exposing::hashing::sha3::details
 			{
 				// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, z] ¨’((A[(x + 1) mod 5, y, z] ¨’ 1) ¡¤ A[(x + 2) mod 5, y, z]).
 				// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
-				context.immediate(x, y) = context.state(x, y) ^ (~context.state(x + 1, y) & context.state(x + 2, y));
+				context.intermediate(x, y) = context.state(x, y) ^ (~context.state(x + 1, y) & context.state(x + 2, y));
 			}
 		}
 	}
@@ -427,7 +427,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		// For all triples (x, y, z) such that 0 ¡Ü x < 5, 0 ¡Ü y < 5, and 0 ¡Ü z < w, let A¡ä[x, y, z] = A[x, y, z].
 		// For all z such that 0 ¡Ü z < w, let A¡ä [0, 0, z] = A¡ä [0, 0, z] ¨’ RC[z].
 		// Here a lane (values along z coordinate) is represented as a word (std::uint64_t).
-		context.state = context.immediate;
+		context.state = context.intermediate;
 		context.state(0, 0) ^= step_mapping_tau_rc_table[round];
 	}
 
