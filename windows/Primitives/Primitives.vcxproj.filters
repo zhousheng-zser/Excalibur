@@ -19,6 +19,9 @@
     <ClCompile Include="..\..\src\Primitives\tensor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp">
+      <Filter>abi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
@@ -121,6 +124,12 @@
       <Filter>abi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>

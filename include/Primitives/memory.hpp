@@ -8,7 +8,7 @@
 #include <type_traits>
 
 // For pointer alignment
-constexpr auto MALLOC_ALIGN = 32;
+inline constexpr std::size_t g6_malloc_align = 32;
 
 namespace glasssix
 {
@@ -27,20 +27,20 @@ namespace glasssix
 		/// Throwing exceptions across DLL boundaries is very dangerous for possible different C++ standard libraries.
 		/// Thus, we simply terminate the process if any fatal error occurs.
 		/// </remarks>
-		[[noreturn]] EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate();
+		[[noreturn]] EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate() noexcept;
 
 		/// <summary>
 		/// Allocates a piece of memory on the heap.
 		/// </summary>
 		/// <param name="size">The size in bytes</param>
 		/// <returns>The memory pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size);
+		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size) noexcept;
 
 		/// <summary>
 		/// Frees a piece of memory on the heap.
 		/// </summary>
 		/// <param name="memory">The memory pointer</param>
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory);
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory) noexcept;
 
 		/// <summary>
 		/// Frees a piece of memory on the heap.
@@ -48,7 +48,7 @@ namespace glasssix
 		/// <param name="memory">The memory pointer</param>
 		/// <param name="size">The size in bytes</param>
 		/// <returns>The memory pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size);
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size) noexcept;
 
 		/// <summary>
 		/// Allocates a piece of memory with aligned size.
@@ -56,7 +56,7 @@ namespace glasssix
 		/// <param name="size">The size in bytes</param>
 		/// <param name="alignment">Pointer alignment size</param>
 		/// <returns>The aligned-pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = MALLOC_ALIGN);
+		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = g6_malloc_align);
 
 		/// <summary>
 			/// Deallocates a piece of aligned memory.

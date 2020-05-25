@@ -18,6 +18,18 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
+	template<typename T>
+	struct is_const_reference : std::bool_constant<std::conjunction_v<std::is_reference<T>, std::is_const<std::remove_reference_t<T>>>> {};
+
+	template<typename T>
+	inline constexpr bool is_const_reference_v = is_const_reference<T>::value;
+
+	template<typename T>
+	struct is_non_const_reference : std::bool_constant<std::conjunction_v<std::is_reference<T>, std::negation<std::is_const<std::remove_reference_t<T>>>>>{};
+
+	template<typename T>
+	inline constexpr bool is_non_const_reference_v = is_non_const_reference<T>::value;
+
 	template<typename T, typename... Args>
 	struct is_same_any : std::bool_constant<std::disjunction_v<std::is_same<T, Args>...>>{};
 
@@ -246,10 +258,11 @@ namespace glasssix::exposing::meta
 	/// <typeparam name="T">The object type</typeparam>
 	/// <param name="obj">The object</param>
 	/// <returns>The reference to the first member</returns>
-	template<typename FirstMember, typename T, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<std::decay_t<T>>, std::is_lvalue_reference<T>>>>
+	template<typename FirstMember, typename T, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<std::decay_t<T>>>>>
 	constexpr decltype(auto) get_standard_layout_first_member(T&& obj) noexcept
 	{
-		using result_type = std::conditional_t<std::is_const_v<std::remove_reference_t<T>>, std::add_const_t<FirstMember>&, FirstMember&>;
+		using value_type = std::conditional_t<is_const_reference_v<T>, std::add_const_t<FirstMember>, FirstMember>;
+		using result_type = std::conditional_t<std::is_lvalue_reference_v<T>, std::add_lvalue_reference_t<value_type>, std::add_rvalue_reference_t<value_type>>;
 
 		return reinterpret_cast<result_type>(std::forward<T>(obj));
 	}
@@ -261,10 +274,11 @@ namespace glasssix::exposing::meta
 	/// <typeparam name="FirstMember">The type of the first member</typeparam>
 	/// <param name="member">The first member</param>
 	/// <returns>The reference to the object</returns>
-	template<typename T, typename FirstMember, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<T>, std::is_lvalue_reference<FirstMember>>>>
+	template<typename T, typename FirstMember, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<T>>>>
 	constexpr decltype(auto) get_standard_layout_from_first_member(FirstMember&& member) noexcept
 	{
-		using result_type = std::conditional_t<std::is_const_v<std::remove_reference_t<FirstMember>>, std::add_const_t<T>&, T&>;
+		using value_type = std::conditional_t<is_const_reference_v<FirstMember>, std::add_const_t<T>, T>;
+		using result_type = std::conditional_t<std::is_lvalue_reference_v<FirstMember>, std::add_lvalue_reference_t<value_type>, std::add_rvalue_reference_t<value_type>>;
 
 		return reinterpret_cast<result_type>(std::forward<FirstMember>(member));
 	}
@@ -281,7 +295,7 @@ namespace glasssix::exposing::meta
 	{
 		return details::number_move_bits_helper<Number>(std::make_index_sequence<sizeof(Number)>{}, big_endian, [&](auto&&... parts)
 			{
-				return ((static_cast<std::uintmax_t>(data[std::forward<decltype(parts)>(parts).first]) << std::forward<decltype(parts)>(parts).second) + ...);
+				return static_cast<Number>(((static_cast<std::uintmax_t>(data[std::forward<decltype(parts)>(parts).first]) << std::forward<decltype(parts)>(parts).second) + ...));
 			});
 	}
 

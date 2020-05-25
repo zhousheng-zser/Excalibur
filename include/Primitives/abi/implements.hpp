@@ -14,7 +14,7 @@
 
 namespace glasssix::exposing::impl
 {
-	template <typename Derived, typename Interface>
+	template<typename Derived, typename Interface>
 	class producer;
 
 	namespace details
@@ -23,10 +23,7 @@ namespace glasssix::exposing::impl
 		/// Produces an implementation for an interface ABI.
 		/// </summary>
 		template <typename Derived, typename Interface, typename Enable = void>
-		struct produce_for
-		{
-			static_assert(bool{}, "The interface must be derived from glasssix::exposing::unknown_object.");
-		};
+		struct produce_for;
 
 		/// <summary>
 		/// Produces an implementation for an interfacial ABI, which forwards all calls to the derived type.
@@ -112,7 +109,7 @@ namespace glasssix::exposing::impl
 		template<template<typename, typename...> typename Implements, typename Derived, typename... Interfaces>
 		struct pack_implemented_interfaces<Implements<Derived, Interfaces...>>
 		{
-			using type = meta::tuple_if_t<is_derived_from_unknown_object, Interfaces...>;
+			using type = meta::tuple_if_t<is_derived_from_unknown_object, std::tuple<Interfaces...>>;
 		};
 	}
 
@@ -173,7 +170,7 @@ namespace glasssix::exposing::impl
 	class find_interface_by_guid<Derived, std::enable_if_t<is_implements_v<Derived>>>
 	{
 	public:
-		static auto get(Derived& derived, const guid& id) const noexcept
+		static auto get(Derived& derived, const guid& id) noexcept
 		{
 			using packed_type = typename details::pack_implemented_interfaces<typename Derived::implements_type>::type;
 
@@ -181,7 +178,7 @@ namespace glasssix::exposing::impl
 		}
 	private:
 		template<typename Packed, std::size_t... Indexes>
-		static auto get_impl(Derived& derived, const guid& id, std::index_sequence<Indexes...>) const noexcept
+		static auto get_impl(Derived& derived, const guid& id, std::index_sequence<Indexes...>) noexcept
 		{
 			std::array<void*, std::tuple_size_v<Packed>> results =
 			{
@@ -201,11 +198,20 @@ namespace glasssix::exposing::impl
 		}
 	};
 
+	template<typename Interface>
+	struct abi_adapter;
+
 	/// <summary>
-	/// Provides support for implicitly casting to an interface.
+	/// The ABI adapter for an interface.
 	/// </summary>
 	template<typename Derived, typename Interface>
-	struct interface_castable
+	using abi_adapter_t = typename abi_adapter<Interface>::template type<Derived>;
+
+	/// <summary>
+	/// Inherits a ABI adapter for an interface.
+	/// </summary>
+	template<typename Derived, typename Interface>
+	struct inherits_abi_adapter : abi_adapter_t<Derived, Interface>
 	{
 		operator Interface() const noexcept
 		{
@@ -243,7 +249,7 @@ namespace glasssix::exposing::impl
 			{
 				using first_interface_type = first_interface_t<Derived>;
 
-				*object = static_cast<impl::unknown_object*>(to_abi<first_interface_type>(*this));
+				*object = static_cast<impl::abi_unknown_object*>(to_abi<first_interface_type>(*this));
 				add_ref();
 
 				return true;
@@ -301,7 +307,7 @@ namespace glasssix::exposing
 	/// A helper class to support implicitly casting to one or more interfaces.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
-	struct inherits : impl::interface_castable<Derived, Interfaces>...
+	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapter<Derived, Interfaces>...
 	{
 	};
 }

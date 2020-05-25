@@ -33,10 +33,7 @@ namespace glasssix::exposing::impl
 	/// Stores the GUID of a type.
 	/// </summary>
 	template<typename T, typename = void>
-	struct guid_storage
-	{
-		static_assert(bool{}, "Support for ordinary C++ types is disabled.");
-	};
+	struct guid_storage;
 
 	template<typename T>
 	inline constexpr auto& guid_storage_v = guid_storage<T>::value;
@@ -100,10 +97,7 @@ namespace glasssix::exposing::impl
 	/// A type identity.
 	/// </summary>
 	template<typename T, typename = void>
-	struct type_identity
-	{
-		using type = void;
-	};
+	struct type_identity;
 
 	template<typename T>
 	using type_identity_t = typename type_identity<T>::type;
@@ -111,8 +105,14 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// Checks whether a type identity exists.
 	/// </summary>
+	template<typename T, typename = void>
+	struct has_type_identity : std::false_type {};
+
+	/// <summary>
+	/// Checks whether a type identity exists.
+	/// </summary>
 	template<typename T>
-	struct has_type_identity : std::bool_constant<!std::is_same_v<type_identity_t<T>, void>>{};
+	struct has_type_identity<T, std::void_t<type_identity_t<T>>> : std::true_type {};
 	
 	template<typename T>
 	inline constexpr bool has_type_identity_v = has_type_identity<T>::value;
@@ -151,7 +151,7 @@ namespace glasssix::exposing::impl
 	/// Provides support for primitive types.
 	/// </summary>
 	template<typename T>
-	struct type_identity<T, std::enable_if_t<meta::is_same_any_v<T, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>>>
+	struct type_identity<T, std::enable_if_t<meta::is_same_any_v<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>>>
 	{
 		using type = type_identity_primitive;
 	};
@@ -221,7 +221,7 @@ namespace glasssix::exposing::impl
 namespace glasssix::exposing
 {
 	template<typename T>
-	inline constexpr auto& guid_of_v = impl::guid_storage<T>::value;
+	inline constexpr auto& guid_of_v = impl::guid_storage_v<T>;
 
 	template<typename T>
 	constexpr bool is_guid_of(const guid& id) noexcept

@@ -27,8 +27,9 @@ namespace glasssix::exposing
 	/// <summary>
 	/// Globally Unique Identifier (GUID).
 	/// </summary>
-	struct guid
+	class guid
 	{
+	public:
 		std::uint32_t data1;
 		std::uint16_t data2;
 		std::uint16_t data3;
@@ -61,16 +62,10 @@ namespace glasssix::exposing
 			data2 = meta::to_number<std::uint16_t>(str.substr(offset_data2.offset, offset_data2.size));
 			data3 = meta::to_number<std::uint16_t>(str.substr(offset_data3.offset, offset_data3.size));
 
-			auto assign_to_data4 = [&](const details::size_offset& source_offset, std::size_t offset, std::size_t size)
-			{
-				for (std::size_t i = offset, j = source_offset.offset; i < offset + size; i++, j += meta::hexadecimal_character_size_v<std::uint8_t>)
-				{
-					data4[i] = meta::to_number<std::uint8_t>(str.substr(j, meta::hexadecimal_character_size_v<std::uint8_t>));
-				}
-			};
-
-			assign_to_data4(offset_data4_first, 0, 2);
-			assign_to_data4(offset_data4_second, 2, 6);
+			// On MSVC Toolset 14.1, a local lambda implementing the same function cannot compile with error C1001.
+			// Workaround is to create an independent helper function below.
+			assign_to_data4_helper(str, offset_data4_first, 0, 2);
+			assign_to_data4_helper(str, offset_data4_second, 2, 6);
 		}
 
 		constexpr bool operator==(const guid& right) const noexcept
@@ -93,6 +88,14 @@ namespace glasssix::exposing
 		constexpr bool operator!=(const guid& right) const noexcept
 		{
 			return !(*this == right);
+		}
+	private:
+		constexpr void assign_to_data4_helper(std::string_view str, const details::size_offset& source_offset, std::size_t offset, std::size_t size) noexcept
+		{
+			for (std::size_t i = offset, j = source_offset.offset; i < offset + size; i++, j += meta::hexadecimal_character_size_v<std::uint8_t>)
+			{
+				data4[i] = meta::to_number<std::uint8_t>(str.substr(j, meta::hexadecimal_character_size_v<std::uint8_t>));
+			}
 		}
 	};
 	

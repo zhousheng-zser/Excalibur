@@ -7,12 +7,12 @@ namespace glasssix
 {
 	namespace memory
 	{
-		EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate()
+		EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate() noexcept
 		{
 			std::terminate();
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size)
+		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size) noexcept
 		{
 			auto buffer = ::new (std::nothrow) byte_type[size];
 
@@ -26,7 +26,7 @@ namespace glasssix
 			return buffer;
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory)
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory) noexcept
 		{
 			if (memory != nullptr)
 			{
@@ -34,7 +34,7 @@ namespace glasssix
 			}
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size)
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size) noexcept
 		{
 			if (memory != nullptr)
 			{
