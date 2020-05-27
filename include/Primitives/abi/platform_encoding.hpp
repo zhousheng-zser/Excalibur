@@ -97,7 +97,7 @@ namespace glasssix::exposing::platform_encoding::win32
 	/// </summary>
 	/// <param name="utf8_str">The UTF-8 string</param>
 	/// <returns>The wide string</returns>
-	std::wstring utf8_to_wide(utf8_string_view utf8_str) noexcept
+	inline std::wstring utf8_to_wide(utf8_string_view utf8_str) noexcept
 	{
 		return multibyte_to_wide(
 			utf8_str,
@@ -112,7 +112,7 @@ namespace glasssix::exposing::platform_encoding::win32
 	/// </summary>
 	/// <param name="narrow_str">The narrow string</param>
 	/// <returns>The wide string</returns>
-	std::wstring narrow_to_wide(std::string_view narrow_str) noexcept
+	inline std::wstring narrow_to_wide(std::string_view narrow_str) noexcept
 	{
 		return multibyte_to_wide(
 			narrow_str,
@@ -127,7 +127,7 @@ namespace glasssix::exposing::platform_encoding::win32
 	/// </summary>
 	/// <param name="narrow_str">The wide string</param>
 	/// <returns>The narrow string</returns>
-	std::string wide_to_narrow(std::wstring_view wide_str) noexcept
+	inline std::string wide_to_narrow(std::wstring_view wide_str) noexcept
 	{
 		return wide_to_multibyte(
 			wide_str,
@@ -146,7 +146,7 @@ namespace glasssix::exposing::platform_encoding
 	/// </summary>
 	/// <param name="utf8_str">The UTF-8 string</param>
 	/// <returns>The narrow string</returns>
-	std::string utf8_to_narrow(utf8_string_view utf8_str) noexcept
+	inline std::string utf8_to_narrow(utf8_string_view utf8_str) noexcept
 	{
 		// On Linux the default encoding of narrow strings are UTF-8.
 		// On Windows the default encoding of narrow strings are configurated as codepage.

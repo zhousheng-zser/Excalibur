@@ -5,6 +5,7 @@
 #include "base_abi.hpp"
 #include "implements.hpp"
 
+#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -146,8 +147,9 @@ namespace glasssix::exposing
 namespace glasssix::exposing::impl
 {
 	template<typename T>
-	struct param_vector_impl : implements<param_vector_impl<T>, param_vector<T>>
+	class param_vector_impl : implements<param_vector_impl<T>, param_vector<T>>
 	{
+	public:
 		T at(std::uint64_t index)
 		{
 			return T{};
@@ -155,6 +157,7 @@ namespace glasssix::exposing::impl
 
 		void push_back(T item)
 		{
+			buffer_.emplace_back(item);
 		}
 
 		void remove_at(std::uint64_t index)
@@ -168,5 +171,7 @@ namespace glasssix::exposing::impl
 		void clear()
 		{
 		}
+	private:
+		std::vector<T> buffer_;
 	};
 }
