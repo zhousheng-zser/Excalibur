@@ -7,26 +7,6 @@
 #include <cstdint>
 #include <type_traits>
 
-#ifdef _WIN32
-#define G6_ABI_CALL __stdcall
-#else
-#define G6_ABI_CALL
-#endif
-
-#if defined(__has_cpp_attribute) &&  __has_cpp_attribute(no_unique_address)
-#define G6_EBO [[no_unique_address]]
-#elif defined(_MSC_VER)
-#define G6_EBO __declspec(empty_bases)
-#else
-#define G6_EBO
-#endif
-
-#ifdef _MSC_VER
-#define G6_NOVTABLE __declspec(novtable)
-#else
-#define G6_NOVTABLE
-#endif
-
 namespace glasssix::exposing::impl
 {
 	/// <summary>
@@ -102,18 +82,24 @@ namespace glasssix::exposing::impl
 	template<typename T>
 	using type_identity_t = typename type_identity<T>::type;
 
-	/// <summary>
-	/// Checks whether a type identity exists.
-	/// </summary>
-	template<typename T, typename = void>
-	struct has_type_identity : std::false_type {};
+	namespace details
+	{
+		template<typename T, typename = void>
+		struct has_type_identity_top_level : std::false_type {};
+
+		template<typename T>
+		struct has_type_identity_top_level<T, std::void_t<type_identity_t<T>>> : std::true_type {};
+	}
+
+	template<typename T>
+	struct has_type_identity : details::has_type_identity_top_level<T>{};
+	
+	template<template<typename...> typename T, typename... Args>
+	struct has_type_identity<T<Args...>> : std::bool_constant<std::conjunction_v<details::has_type_identity_top_level<T<Args...>>, has_type_identity<Args>...>>{};
 
 	/// <summary>
-	/// Checks whether a type identity exists.
+	/// Checks whether a type identity exists recursively.
 	/// </summary>
-	template<typename T>
-	struct has_type_identity<T, std::void_t<type_identity_t<T>>> : std::true_type {};
-	
 	template<typename T>
 	inline constexpr bool has_type_identity_v = has_type_identity<T>::value;
 
@@ -147,11 +133,20 @@ namespace glasssix::exposing::impl
 	/// </summary>
 	struct type_identity_generic_interface;
 
+	template<typename T>
+	struct is_identity_primitive : std::bool_constant<meta::is_same_any_v<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>>{};
+
+	/// <summary>
+	/// Checks whether a type is an identity primitive type.
+	/// </summary>
+	template<typename T>
+	inline constexpr bool is_identity_primitive_v = is_identity_primitive<T>::value;
+
 	/// <summary>
 	/// Provides support for primitive types.
 	/// </summary>
 	template<typename T>
-	struct type_identity<T, std::enable_if_t<meta::is_same_any_v<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>>>
+	struct type_identity<T, std::enable_if_t<is_identity_primitive_v<T>>>
 	{
 		using type = type_identity_primitive;
 	};

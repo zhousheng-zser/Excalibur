@@ -258,7 +258,7 @@ namespace glasssix::exposing::meta
 	/// <typeparam name="T">The object type</typeparam>
 	/// <param name="obj">The object</param>
 	/// <returns>The reference to the first member</returns>
-	template<typename FirstMember, typename T, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<std::decay_t<T>>>>>
+	template<typename FirstMember, typename T, typename = std::enable_if_t<std::is_standard_layout_v<std::decay_t<T>>>>
 	constexpr decltype(auto) get_standard_layout_first_member(T&& obj) noexcept
 	{
 		using value_type = std::conditional_t<is_const_reference_v<T>, std::add_const_t<FirstMember>, FirstMember>;
@@ -274,7 +274,7 @@ namespace glasssix::exposing::meta
 	/// <typeparam name="FirstMember">The type of the first member</typeparam>
 	/// <param name="member">The first member</param>
 	/// <returns>The reference to the object</returns>
-	template<typename T, typename FirstMember, typename = std::enable_if_t<std::conjunction_v<std::is_standard_layout<T>>>>
+	template<typename T, typename FirstMember, typename = std::enable_if_t<std::is_standard_layout_v<T>>>
 	constexpr decltype(auto) get_standard_layout_from_first_member(FirstMember&& member) noexcept
 	{
 		using value_type = std::conditional_t<is_const_reference_v<FirstMember>, std::add_const_t<T>, T>;

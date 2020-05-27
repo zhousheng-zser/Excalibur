@@ -4,6 +4,7 @@
 #include "guid.hpp"
 #include "meta.hpp"
 #include "exceptions.hpp"
+#include "g6_attributes.hpp"
 
 #include <cstddef>
 #include <utility>
@@ -24,20 +25,38 @@ namespace glasssix::exposing
 
 namespace glasssix::exposing::impl
 {
-	template<typename To, typename From, typename>
+	template<typename To, typename From>
 	To as(From* ptr);
 
-	template<typename To, typename From, typename>
-	To try_as(From* ptr);
+	template<typename To, typename From>
+	To try_as(From* ptr) noexcept;
 
-	template<typename T, typename Enable = void>
-	struct abi
-	{
-		using type = T;
-	};
+	template<typename T, typename = void>
+	struct abi;
 
 	template<typename T>
 	using abi_t = typename abi<T>::type;
+
+	namespace details
+	{
+		template<typename T, typename = void>
+		struct has_abi_type_top_level : std::false_type {};
+
+		template<typename T>
+		struct has_abi_type_top_level<T, std::void_t<abi_t<T>>> : std::true_type {};
+	}
+
+	template<typename T>
+	struct has_abi_type : details::has_abi_type_top_level<T>{};
+	
+	template<template<typename...> typename T, typename... Args>
+	struct has_abi_type<T<Args...>> : std::bool_constant<std::conjunction_v<details::has_abi_type_top_level<T<Args...>>, has_abi_type<Args>...>>{};
+
+	/// <summary>
+	/// Checks whether a type contains a corresponding ABI type recursively.
+	/// </summary>
+	template<typename T>
+	inline constexpr bool has_abi_type_v = has_abi_type<T>::value;
 
 	/// <summary>
 	/// Stores the GUID of a ABI.
@@ -94,6 +113,48 @@ namespace glasssix::exposing::impl
 
 	template<typename T>
 	inline constexpr bool is_derived_from_unknown_object_v = is_derived_from_unknown_object<T>::value;
+
+	/// <summary>
+	/// The ABI is its own for a primitive type.
+	/// </summary>
+	template<typename T>
+	struct abi<T, std::enable_if_t<is_identity_primitive_v<T>>>
+	{
+		using type = T;
+	};
+
+	template<typename T, typename = void>
+	struct abi_in;
+
+	/// <summary>
+	/// An input argument of an ABI function.
+	/// </summary>
+	template<typename T>
+	using abi_in_t = typename abi_in<T>::type;
+
+	template<typename T>
+	struct abi_in<T, std::enable_if_t<is_identity_primitive_v<T>>>
+	{
+		using type = abi_t<T>;
+	};
+
+	template<typename T>
+	struct abi_in<T, std::enable_if_t<is_derived_from_unknown_object_v<T>>>
+	{
+		using type = void*;
+	};
+
+	template<typename T>
+	struct abi_out
+	{
+		using type = abi_in_t<T>*;
+	};
+
+	/// <summary>
+	/// An output argument of an ABI function.
+	/// </summary>
+	template<typename T>
+	using abi_out_t = typename abi_out<T>::type;
 }
 
 namespace glasssix::exposing
@@ -243,6 +304,18 @@ namespace glasssix::exposing
 	{
 		return meta::get_standard_layout_first_member<impl::abi_unknown_object*>(object);
 	}
+	
+	/// <summary>
+	/// Gets the ABI of a primitive object.
+	/// </summary>
+	/// <typeparam name="T">The object type</typeparam>
+	/// <param name="object">The object</param>
+	/// <returns>The ABI</returns>
+	template<typename T, typename = std::enable_if_t<impl::is_identity_primitive_v<T>>>
+	decltype(auto) get_abi(const T& object) noexcept
+	{
+		return meta::get_standard_layout_first_member<impl::abi_t<T>>(object);
+	}
 
 	/// <summary>
 	/// Gets a pointer to the ABI of an object with type information erased.
@@ -254,6 +327,20 @@ namespace glasssix::exposing
 		object = nullptr;
 
 		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<impl::abi_unknown_object*>(object));
+	}
+
+	/// <summary>
+	/// Gets a pointer to the ABI of a primitive object.
+	/// </summary>
+	/// <typeparam name="T">The object type</typeparam>
+	/// <param name="object">The object</param>
+	/// <returns>The pointer to the ABI</returns>
+	template<typename T, typename = std::enable_if_t<impl::is_identity_primitive_v<T>>>
+	auto put_abi(T& object) noexcept
+	{
+		object = {};
+
+		return &meta::get_standard_layout_first_member<impl::abi_t<T>>(object);
 	}
 
 	/// <summary>
@@ -287,31 +374,98 @@ namespace glasssix::exposing
 	}
 
 	/// <summary>
+	/// Detaches the ABI from a primitive object.
+	/// </summary>
+	/// <param name="object">The object</param>
+	/// <returns>The ABI detached from the object</returns>
+	template<typename T, typename = std::enable_if_t<impl::is_identity_primitive_v<T>>>
+	auto detach_abi(T&& object) noexcept
+	{
+		impl::abi_t<std::decay_t<T>> result{};
+
+		return (meta::get_standard_layout_from_first_member<std::decay_t<T>>(result) = std::forward<T>(object), result);
+	}
+
+	/// <summary>
 	/// Duplicates an ABI and assignes it to an object with the reference count increased.
 	/// </summary>
 	/// <param name="object">The object</param>
-	/// <param name="value">The ABI</param>
-	inline void copy_from_abi(unknown_object& object, void* value) noexcept
+	/// <param name="abi">The ABI</param>
+	inline void copy_from_abi(unknown_object& object, void* abi) noexcept
 	{
-		if (value)
+		if (abi)
 		{
-			static_cast<impl::abi_unknown_object*>(value)->add_ref();
+			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
 		}
 
-		*put_abi(object) = value;
+		*put_abi(object) = abi;
+	}
+
+	/// <summary>
+	/// Duplicates an ABI and assignes it to a primitve object.
+	/// </summary>
+	/// <typeparam name="T">The object type</typeparam>
+	/// <typeparam name="Abi">The ABI type</typeparam>
+	/// <param name="object">The object</param>
+	/// <param name="abi">The ABI</param>
+	template<typename T, typename Abi, typename = std::enable_if_t<std::conjunction_v<impl::is_identity_primitive<T>, std::is_same<impl::abi_t<T>, std::decay_t<Abi>>>>>
+	void copy_from_abi(T& object, Abi&& abi) noexcept
+	{
+		*put_abi(object) = std::forward<Abi>(abi);
 	}
 
 	/// <summary>
 	/// Copy the ABI of an object to another ABI with the reference count increased.
 	/// </summary>
 	/// <param name="object">The object</param>
-	/// <param name="value">The ABI</param>
-	inline void copy_to_abi(const unknown_object& object, void*& value) noexcept
+	/// <param name="abi">The ABI</param>
+	inline void copy_to_abi(const unknown_object& object, void*& abi) noexcept
 	{
-		if (value = get_abi(object))
+		if (abi = get_abi(object))
 		{
-			static_cast<impl::abi_unknown_object*>(value)->add_ref();
+			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
 		}
+	}
+
+	/// <summary>
+	/// Copy the ABI of a primitive object to another ABI.
+	/// </summary>
+	/// <typeparam name="T">The object type</typeparam>
+	/// <param name="object">The object</param>
+	/// <param name="abi">The ABI</param>
+	template<typename T, typename = std::enable_if_t<impl::is_identity_primitive_v<T>>>
+	void copy_to_abi(const unknown_object& object, impl::abi_t<T>& abi) noexcept
+	{
+		abi = get_abi(object);
+	}
+
+	/// <summary>
+	/// Creates an interface from an ABI.
+	/// </summary>
+	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <param name="abi">The ABI</param>
+	/// <returns>The interface</returns>
+	template<typename Interface, typename = std::enable_if_t<impl::is_derived_from_unknown_object_v<Interface>>>
+	Interface create_from_abi(void* abi)
+	{
+		Interface result{};
+
+		return (copy_from_abi(result, abi), result);
+	}
+
+	/// <summary>
+	/// Creates a primitive type from an ABI.
+	/// </summary>
+	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <typeparam name="ABI">The ABI type</typeparam>
+	/// <param name="abi">The ABI</param>
+	/// <returns>The interface</returns>
+	template<typename T, typename Abi, typename = std::enable_if_t<std::conjunction_v<impl::is_identity_primitive<T>, std::is_same<impl::abi_t<T>, std::decay_t<Abi>>>>>
+	T create_from_abi(Abi&& abi)
+	{
+		T result{};
+
+		return (copy_from_abi(result, std::forward<Abi>(abi)), result);
 	}
 }
 

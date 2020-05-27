@@ -4,6 +4,8 @@
 #include "base.hpp"
 #include "base_abi.hpp"
 #include "dllexport.hpp"
+#include "g6_attributes.hpp"
+#include "platform_encoding.hpp"
 #include "pure_c_handle_utils.h"
 
 #include <cstddef>
@@ -16,28 +18,19 @@
 namespace glasssix::exposing
 {
 	class param_string;
-
-#if __cpp_char8_t >= 201811L
-	using utf8_char = char8_t;
-#else
-	using utf8_char = char;
-#endif
-
-	using utf8_string = std::basic_string<utf8_char>;
-	using utf8_string_view = std::basic_string_view<utf8_char>;
 }
 
 namespace glasssix::exposing::allocations
 {
 	DEFINE_PURE_C_HANDLE(param_string);
 
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept;
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
-	void EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
-	const utf8_char* EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
-	std::size_t EXPORT_EXCALIBUR_PRIMITIVES get_param_string_size(param_string_handle str) noexcept;
+	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept;
+	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
+	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
+	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
+	extern "C" void EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
+	extern "C" const utf8_char* EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
+	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES get_param_string_size(param_string_handle str) noexcept;
 }
 
 namespace glasssix::exposing::impl
@@ -251,6 +244,16 @@ namespace glasssix::exposing
 	private:
 		allocations::param_string_handle handle_;
 	};
+
+	/// <summary>
+	/// Converts a string to a platform-dependent narrow string.
+	/// </summary>
+	/// <param name="str">The string</param>
+	/// <returns>The narrow string</returns>
+	inline std::string to_narrow(const param_string& str) noexcept
+	{
+		platform_encoding::utf8_to_narrow(str);
+	}
 
 	/// <summary>
 	/// Gets the ABI of a string with type information erased.

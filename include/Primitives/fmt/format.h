@@ -3269,7 +3269,7 @@ namespace internal {
 template<typename... Ts>
 struct void_ { typedef void type; };
 
-template <typename T, typename Enable = void>
+template <typename T, typename = void>
 struct it_category : std::false_type {};
 
 template <typename T>

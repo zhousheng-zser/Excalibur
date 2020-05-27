@@ -98,11 +98,13 @@
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\guid.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
     <ClInclude Include="..\..\include\Primitives\blas.hpp" />
@@ -134,6 +136,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp" />
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />

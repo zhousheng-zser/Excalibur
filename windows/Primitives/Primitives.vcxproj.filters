@@ -22,6 +22,9 @@
     <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp">
       <Filter>abi</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp">
+      <Filter>abi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
@@ -130,6 +133,12 @@
       <Filter>abi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,20 +1,12 @@
 #include "abi/param_string.hpp"
+#include "abi/platform_encoding.hpp"
 #include "memory.hpp"
 
 #include <new>
 #include <string>
 #include <cstring>
 #include <string_view>
-
-#ifdef _WIN32
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#ifndef NOMINMAX
-#define NOMINMAX
-#endif
-#include <Windows.h>
-#endif
+#include <type_traits>
 
 namespace glasssix::exposing::allocations
 {
@@ -43,79 +35,6 @@ namespace glasssix::exposing::allocations
 
 			return header;
 		}
-
-#ifdef _WIN32
-		template<typename T>
-		std::wstring narrow_to_wide(std::basic_string_view<T> narrow_str, bool utf8) noexcept
-		{
-			std::wstring result;
-			std::uint32_t code_page = utf8 ? CP_UTF8 : CP_ACP;
-
-			if (int wide_size = MultiByteToWideChar(code_page, 0, narrow_str.data(), static_cast<int>(narrow_str.size()), nullptr, 0); wide_size > 0)
-			{
-				result.resize(wide_size);
-				wide_size = MultiByteToWideChar(code_page, 0, narrow_str.data(), static_cast<int>(narrow_str.size()), result.data(), wide_size);
-			}
-
-			if (wide_size <= 0)
-			{
-				result.clear();
-			}
-
-			return result;
-		}
-
-		template<typename T>
-		std::basic_string<T> wide_to_narrow(std::wstring_view wide_str, bool utf8) noexcept
-		{
-			std::basic_string<T> result;
-			std::uint32_t code_page = utf8 ? CP_UTF8 : CP_ACP;
-
-			if (int utf8_size = WideCharToMultiByte(code_page, 0, wide_str.data(), static_cast<int>(wide_str.size()), nullptr, 0, nullptr, nullptr); utf8_size > 0)
-			{
-				result.resize(utf8_size);
-				WideCharToMultiByte(code_page, 0, wide_str.data(), static_cast<int>(wide_str.size()), reinterpret_cast<char*>(result.data()), utf8_size, nullptr, nullptr);
-			}
-
-			if (utf8_size <= 0)
-			{
-				result.clear();
-			}
-
-			return result;
-		}
-#endif
-		/// <summary>
-		/// Converts a narrow string to a UTF-8 string.
-		/// </summary>
-		/// <param name="narrow_str">The narrow string</param>
-		/// <returns>The UTF-8 string</returns>
-		utf8_string narrow_to_utf8(std::string_view narrow_str) noexcept
-		{
-#ifdef _WIN32
-			return wide_to_narrow<utf8_char>(narrow_to_wide(narrow_str, false), true);
-#else
-			utf8_string result(narrow_str.size(), u8'\0');
-
-			return (std::memcpy(result.data(), narrow_str.data(), narrow_str.size()), result);
-#endif
-		}
-
-		/// <summary>
-		/// Converts a UTF-8 string to a narrow string.
-		/// </summary>
-		/// <param name="utf8_str">The UTF-8 string</param>
-		/// <returns>The narrow string</returns>
-		std::string utf8_to_narrow(utf8_string_view utf8_str) noexcept
-		{
-#ifdef _WIN32
-			return wide_to_narrow<char>(narrow_to_wide(utf8_str, true), false);
-#else
-			std::string result(utf8_str.size(), '\0');
-
-			return (std::memcpy(result.data(), utf8_str.data(), utf8_str.size()), result);
-#endif
-		}
 	}
 
 	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept
@@ -137,9 +56,28 @@ namespace glasssix::exposing::allocations
 
 	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept
 	{
-		auto utf8_str = narrow_to_utf8(std::string_view{ narrow_str, size });
+#ifdef _WIN32
+		return narrow_str ?
+			platform_encoding::win32::wide_to_multibyte(
+				platform_encoding::win32::narrow_to_wide(std::string_view{ narrow_str, size }),
+				true,
+				[](std::size_t size) { auto header = create_param_string_header(size); return std::tuple{ header, header->data }; },
+				[](param_string_header*& header) { memory::heap_free(header); header = nullptr; }
+				) :
+			nullptr;
+#else
+		if (narrow_str == nullptr)
+		{
+			return nullptr;
+		}
 
-		return create_param_string(utf8_str.c_str(), utf8_str.size());
+		if (auto header = create_param_string_header(size))
+		{
+			return (std::memcpy(header->data, narrow_str, size), header);
+		}
+
+		return nullptr;
+#endif
 	}
 
 	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept
@@ -163,7 +101,7 @@ namespace glasssix::exposing::allocations
 
 		auto header_left = pure_c::from_handle<param_string_header>(left);
 		auto header_right = pure_c::from_handle<param_string_header>(right);
-		
+
 		if (auto concat_header = create_param_string_header(header_left->size + header_right->size))
 		{
 			std::memcpy(concat_header->data, header_left->data, header_left->size);
