@@ -107,9 +107,7 @@ namespace glasssix::exposing::impl
 	/// Checks whether a type is an ABI interface.
 	/// </summary>
 	template<typename T>
-	struct is_derived_from_unknown_object : std::bool_constant<std::conjunction_v<std::is_base_of<unknown_object, T>, std::is_standard_layout<T>>>
-	{
-	};
+	struct is_derived_from_unknown_object : std::bool_constant<std::conjunction_v<std::is_base_of<unknown_object, T>, std::is_standard_layout<T>>>{};
 
 	template<typename T>
 	inline constexpr bool is_derived_from_unknown_object_v = is_derived_from_unknown_object<T>::value;

@@ -5,8 +5,8 @@
 #include <new>
 #include <string>
 #include <cstring>
-#include <string_view>
 #include <type_traits>
+#include <string_view>
 
 namespace glasssix::exposing::allocations
 {

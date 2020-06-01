@@ -5,6 +5,7 @@
 #include "base_abi.hpp"
 #include "g6_attributes.hpp"
 
+#include <new>
 #include <tuple>
 #include <array>
 #include <atomic>
@@ -27,9 +28,12 @@ namespace glasssix::exposing::impl
 	template <typename Derived, typename Interface>
 	struct interface_vtable_base<Derived, Interface, std::enable_if_t<is_derived_from_unknown_object_v<Interface>>> : abi_t<Interface>
 	{
+		using implements_interface_vtable_type = implements_interface_vtable<Derived, Interface>;
+
 		Derived& self() noexcept
 		{
-			return static_cast<Derived&>(meta::get_standard_layout_from_first_member<implements_interface_vtable<Derived, Interface>>(*this));
+			return static_cast<Derived&>(reinterpret_cast<implements_interface_vtable_type&>(*this));
+			//return static_cast<Derived&>(meta::get_standard_layout_from_first_member<implements_interface_vtable_type>(*this));
 		}
 
 		virtual bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept override
@@ -59,7 +63,7 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// A reference to a interfacial vtable.
 	/// </summary>
-	template <typename Interface>
+	template<typename Interface>
 	struct interface_vtable_ref : Interface
 	{
 		interface_vtable_ref(void* ptr) noexcept : Interface{ nullptr }
@@ -72,10 +76,10 @@ namespace glasssix::exposing::impl
 			detach_abi(*this);
 		}
 
-		interface_vtable_ref(const interface_vtable_ref&) = delete;
-		interface_vtable_ref(interface_vtable_ref&&) = delete;
-		interface_vtable_ref& operator=(const interface_vtable_ref&) = delete;
-		interface_vtable_ref& operator=(interface_vtable_ref&&) = delete;
+		interface_vtable_ref(const interface_vtable_ref&) noexcept = delete;
+		interface_vtable_ref(interface_vtable_ref&&) noexcept = delete;
+		interface_vtable_ref& operator=(const interface_vtable_ref&) noexcept = delete;
+		interface_vtable_ref& operator=(interface_vtable_ref&&) noexcept = delete;
 		void* operator new(std::size_t) = delete;
 	};
 
@@ -86,14 +90,18 @@ namespace glasssix::exposing::impl
 	class implements_interface_vtable
 	{
 	public:
-		friend interface_vtable<Derived, Interface>;
+		using vtable_type = interface_vtable<Derived, Interface>;
+		friend vtable_type;
+		
+		template<typename Interface, typename Derived, typename>
+		friend constexpr auto to_abi(Derived& derived) noexcept;
 
 		operator interface_vtable_ref<Interface>() const noexcept
 		{
-			return const_cast<interface_vtable<Derived, Interface>*>(&vtable_);
+			return interface_vtable_ref<Interface>{ const_cast<vtable_type*>(&vtable_) };
 		}
 	private:
-		interface_vtable<Derived, Interface> vtable_;
+		vtable_type vtable_;
 	};
 
 	namespace details
@@ -114,6 +122,9 @@ namespace glasssix::exposing::impl
 		{
 			using type = meta::tuple_if_t<is_derived_from_unknown_object, std::tuple<Interfaces...>>;
 		};
+
+		template<typename Derived>
+		using pack_implemented_interfaces_t = typename pack_implemented_interfaces<Derived>::type;
 	}
 
 	template<typename T, typename = void>
@@ -133,9 +144,9 @@ namespace glasssix::exposing::impl
 	/// <param name="derived">The derived object</param>
 	/// <returns>The ABI</returns>
 	template<typename Interface, typename Derived, typename = std::enable_if_t<std::conjunction_v<is_implements<Derived>, is_derived_from_unknown_object<Interface>>>>
-	constexpr auto to_abi(const Derived* derived) noexcept
+	constexpr auto to_abi(Derived& derived) noexcept
 	{
-		return static_cast<abi_t<Interface>*>(get_abi(&derived));
+		return static_cast<abi_t<Interface>*>(&static_cast<implements_interface_vtable<Derived, Interface>&>(derived).vtable_);
 	}
 
 	/// <summary>
@@ -150,7 +161,7 @@ namespace glasssix::exposing::impl
 	template<typename Derived>
 	struct first_interface<Derived, std::enable_if_t<is_implements_v<Derived>>>
 	{
-		using type = meta::tuple_first_t<typename details::pack_implemented_interfaces<typename Derived::implements_type>::type>;
+		using type = meta::tuple_first_t<details::pack_implemented_interfaces_t<typename Derived::implements_type>>;
 	};
 
 	/// <summary>
@@ -169,15 +180,15 @@ namespace glasssix::exposing::impl
 	class find_interface_by_guid<Derived, std::enable_if_t<is_implements_v<Derived>>>
 	{
 	public:
-		static auto get(Derived& derived, const guid& id) noexcept
+		static void* get(Derived& derived, const guid& id) noexcept
 		{
-			using packed_type = typename details::pack_implemented_interfaces<typename Derived::implements_type>::type;
+			using packed_type = details::pack_implemented_interfaces_t<typename Derived::implements_type>;
 
-			return get_impl(derived, id, std::make_index_sequence<std::tuple_size_v<packed_type>>);
+			return get_impl<packed_type>(derived, id, std::make_index_sequence<std::tuple_size_v<packed_type>>{});
 		}
 	private:
 		template<typename Packed, std::size_t... Indexes>
-		static auto get_impl(Derived& derived, const guid& id, std::index_sequence<Indexes...>) noexcept
+		static void* get_impl(Derived& derived, const guid& id, std::index_sequence<Indexes...>) noexcept
 		{
 			std::array<void*, std::tuple_size_v<Packed>> results =
 			{
@@ -187,11 +198,11 @@ namespace glasssix::exposing::impl
 					using interface_type = std::tuple_element_t<Indexes, Packed>;
 					constexpr auto interface_id = guid_of_v<interface_type>;
 
-					return interface_id == id ? to_abi<interface_type>(&derived) : nullptr;
+					return interface_id == id ? to_abi<interface_type>(derived) : nullptr;
 				}()...
 			};
 
-			auto iter = std::find_if(results.begin(), results.end(), [](exposing::unknown_object* inner) -> bool { return inner; });
+			auto iter = std::find_if(results.begin(), results.end(), [](void* inner) -> bool { return inner; });
 
 			return iter != results.end() ? *iter : nullptr;
 		}
@@ -240,7 +251,7 @@ namespace glasssix::exposing::impl
 		unknown_object_impl() : reference_count_{ 1 }
 		{
 		}
-
+		
 		bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			if (object == nullptr)
@@ -248,7 +259,7 @@ namespace glasssix::exposing::impl
 				return false;
 			}
 
- 			if (*object = find_interface_by_guid<Derived>::get(*this, id))
+ 			if (*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id))
 			{
 				add_ref();
 
@@ -260,11 +271,13 @@ namespace glasssix::exposing::impl
 			{
 				using first_interface_type = first_interface_t<Derived>;
 
-				*object = static_cast<impl::abi_unknown_object*>(to_abi<first_interface_type>(this));
+				*object = static_cast<impl::abi_unknown_object*>(to_abi<first_interface_type>(static_cast<Derived&>(*this)));
 				add_ref();
 
 				return true;
 			}
+
+			return false;
 		}
 
 		std::uint32_t G6_ABI_CALL add_ref() noexcept
@@ -275,12 +288,16 @@ namespace glasssix::exposing::impl
 
 		std::uint32_t G6_ABI_CALL release() noexcept
 		{
-			if (std::uint32_t count = reference_count_.fetch_sub(1, std::memory_order_release) - 1; count == 0)
+			std::uint32_t count = reference_count_.fetch_sub(1, std::memory_order_release) - 1;
+
+			if (count == 0)
 			{
 				// Ensures serialized running.
 				std::atomic_thread_fence(std::memory_order_acquire);
 				delete this;
 			}
+
+			return count;
 		}
 	private:
 		std::atomic_uint32_t reference_count_;

@@ -32,6 +32,7 @@ namespace glasssix::exposing::impl
 		struct type : abi_unknown_object
 		{
 			virtual void G6_ABI_CALL at(abi_in_t<std::uint64_t> index, abi_out_t<T> result) noexcept = 0;
+			virtual void G6_ABI_CALL set_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept = 0;
 			virtual void G6_ABI_CALL push_back(abi_in_t<T> item) noexcept = 0;
 			virtual void G6_ABI_CALL remove_at(abi_in_t<std::uint64_t> index) noexcept = 0;
 			virtual void G6_ABI_CALL insert_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept = 0;
@@ -48,6 +49,15 @@ namespace glasssix::exposing::impl
 		virtual void G6_ABI_CALL at(abi_in_t<std::uint64_t> index, abi_out_t<T> result) noexcept override try
 		{
 			*result = detach_abi(this->self().at(index));
+		}
+		catch (...)
+		{
+
+		}
+
+		virtual void G6_ABI_CALL set_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept override try
+		{
+			this->self().set_at(index, create_from_abi<T>(item));
 		}
 		catch (...)
 		{
@@ -90,7 +100,7 @@ namespace glasssix::exposing::impl
 
 		}
 	};
-
+	
 	/// <summary>
 	/// The ABI adapter of a param_vector.
 	/// </summary>
@@ -107,7 +117,12 @@ namespace glasssix::exposing::impl
 				return (this->self_abi().at(index, put_abi(result)), result);
 			}
 
-			void push_back(T item)
+			void set_at(std::uint64_t index, const T& item)
+			{
+				this->self_abi().set_at(index, get_abi(item));
+			}
+
+			void push_back(const T& item)
 			{
 				this->self_abi().push_back(get_abi(item));
 			}
@@ -117,7 +132,7 @@ namespace glasssix::exposing::impl
 				this->self_abi().remove_at(get_abi(index));
 			}
 
-			void insert_at(std::uint64_t index, T element)
+			void insert_at(std::uint64_t index, const T& element)
 			{
 				this->self_abi().insert_at(get_abi(index), get_abi(element));
 			}
@@ -147,29 +162,37 @@ namespace glasssix::exposing
 namespace glasssix::exposing::impl
 {
 	template<typename T>
-	class param_vector_impl : implements<param_vector_impl<T>, param_vector<T>>
+	class param_vector_impl : public implements<param_vector_impl<T>, param_vector<T>>
 	{
 	public:
 		T at(std::uint64_t index)
 		{
-			return T{};
+			return buffer_[index];
 		}
 
-		void push_back(T item)
+		void set_at(std::uint64_t index, const T& item)
+		{
+			buffer_[index] = item;
+		}
+
+		void push_back(const T& item)
 		{
 			buffer_.emplace_back(item);
 		}
 
 		void remove_at(std::uint64_t index)
 		{
+			buffer_.erase(buffer_.begin() + index);
 		}
 
-		void insert_at(std::uint64_t index, T element)
+		void insert_at(std::uint64_t index, const T& item)
 		{
+			buffer_.insert(buffer_.begin() + index, item);
 		}
 
 		void clear()
 		{
+			buffer_.clear();
 		}
 	private:
 		std::vector<T> buffer_;
