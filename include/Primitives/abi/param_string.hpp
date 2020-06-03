@@ -24,13 +24,13 @@ namespace glasssix::exposing::allocations
 {
 	DEFINE_PURE_C_HANDLE(param_string);
 
-	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept;
-	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
-	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
-	extern "C" param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
-	extern "C" void EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
-	extern "C" const utf8_char* EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
-	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES get_param_string_size(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_param_string_size(param_string_handle str) noexcept;
 }
 
 namespace glasssix::exposing::impl

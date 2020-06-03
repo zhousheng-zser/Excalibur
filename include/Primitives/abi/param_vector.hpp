@@ -1,9 +1,9 @@
 #pragma once
 
-#include "meta.hpp"
 #include "base.hpp"
 #include "base_abi.hpp"
 #include "implements.hpp"
+#include "exceptions.hpp"
 
 #include <vector>
 #include <cstddef>
@@ -31,76 +31,52 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
-			virtual void G6_ABI_CALL at(abi_in_t<std::uint64_t> index, abi_out_t<T> result) noexcept = 0;
-			virtual void G6_ABI_CALL set_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept = 0;
-			virtual void G6_ABI_CALL push_back(abi_in_t<T> item) noexcept = 0;
-			virtual void G6_ABI_CALL remove_at(abi_in_t<std::uint64_t> index) noexcept = 0;
-			virtual void G6_ABI_CALL insert_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept = 0;
-			virtual void G6_ABI_CALL clear() noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL at(std::uint64_t index, abi_out_t<T> result) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL set_at(std::uint64_t index, abi_in_t<T> item) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL push_back(abi_in_t<T> item) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL remove_at(std::uint64_t index) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL insert_at(std::uint64_t index, abi_in_t<T> item) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL clear() noexcept = 0;
 		};
 	};
-	
+
 	/// <summary>
 	/// The vtable of a param_vector.
 	/// </summary>
 	template<typename Derived, typename T>
 	struct interface_vtable<Derived, param_vector<T>> : interface_vtable_base<Derived, param_vector<T>>
 	{
-		virtual void G6_ABI_CALL at(abi_in_t<std::uint64_t> index, abi_out_t<T> result) noexcept override try
+		virtual std::int32_t G6_ABI_CALL at(std::uint64_t index, abi_out_t<T> result) noexcept override
 		{
-			*result = detach_abi(this->self().at(index));
-		}
-		catch (...)
-		{
-
+			return abi_safe_call([&] { *result = detach_abi(this->self().at(index)); });
 		}
 
-		virtual void G6_ABI_CALL set_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept override try
+		virtual std::int32_t G6_ABI_CALL set_at(std::uint64_t index, abi_in_t<T> item) noexcept override
 		{
-			this->self().set_at(index, create_from_abi<T>(item));
+			return abi_safe_call([&] { this->self().set_at(index, create_from_abi<T>(item)); });
 		}
-		catch (...)
+		
+		virtual std::int32_t G6_ABI_CALL push_back(abi_in_t<T> item) noexcept override
 		{
-
-		}
-
-		virtual void G6_ABI_CALL push_back(abi_in_t<T> item) noexcept override try
-		{
-			this->self().push_back(create_from_abi<T>(item));
-		}
-		catch (...)
-		{
-			
+			return abi_safe_call([&] { this->self().push_back(create_from_abi<T>(item)); });
 		}
 
-		virtual void G6_ABI_CALL remove_at(abi_in_t<std::uint64_t> index) noexcept override try
+		virtual std::int32_t G6_ABI_CALL remove_at(std::uint64_t index) noexcept override
 		{
-			this->self().remove_at(index);
+			return abi_safe_call([&] { this->self().remove_at(index); });
 		}
-		catch (...)
+		
+		virtual std::int32_t G6_ABI_CALL insert_at(std::uint64_t index, abi_in_t<T> item) noexcept override
 		{
-
+			return abi_safe_call([&] { this->self().insert_at(index, create_from_abi<T>(item)); });
 		}
-
-		virtual void G6_ABI_CALL insert_at(abi_in_t<std::uint64_t> index, abi_in_t<T> item) noexcept override try
+		
+		virtual std::int32_t G6_ABI_CALL clear() noexcept override
 		{
-			this->self().insert_at(index, create_from_abi<T>(item));
-		}
-		catch (...)
-		{
-
-		}
-
-		virtual void G6_ABI_CALL clear() noexcept override try
-		{
-			this->self().clear();
-		}
-		catch (...)
-		{
-
+			return abi_safe_call([&] { this->self().clear(); });
 		}
 	};
-	
+
 	/// <summary>
 	/// The ABI adapter of a param_vector.
 	/// </summary>
@@ -113,33 +89,33 @@ namespace glasssix::exposing::impl
 			T at(std::uint64_t index)
 			{
 				T result{};
-				
-				return (this->self_abi().at(index, put_abi(result)), result);
+
+				return (check_abi_result(this->self_abi().at(index, put_abi(result))), result);
 			}
 
 			void set_at(std::uint64_t index, const T& item)
 			{
-				this->self_abi().set_at(index, get_abi(item));
+				check_abi_result(this->self_abi().set_at(index, get_abi(item)));
 			}
 
 			void push_back(const T& item)
 			{
-				this->self_abi().push_back(get_abi(item));
+				check_abi_result(this->self_abi().push_back(get_abi(item)));
 			}
 
 			void remove_at(std::uint64_t index)
 			{
-				this->self_abi().remove_at(get_abi(index));
+				check_abi_result(this->self_abi().remove_at(get_abi(index)));
 			}
 
 			void insert_at(std::uint64_t index, const T& element)
 			{
-				this->self_abi().insert_at(get_abi(index), get_abi(element));
+				check_abi_result(this->self_abi().insert_at(get_abi(index), get_abi(element)));
 			}
 
 			void clear()
 			{
-				this->self_abi().clear();
+				check_abi_result(this->self_abi().clear());
 			}
 		};
 	};

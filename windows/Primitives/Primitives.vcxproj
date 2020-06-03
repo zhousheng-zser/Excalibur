@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\guid.hpp" />

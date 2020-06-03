@@ -19,19 +19,19 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
 	template<typename T>
-	struct is_const_reference : std::bool_constant<std::conjunction_v<std::is_reference<T>, std::is_const<std::remove_reference_t<T>>>> {};
+	struct is_const_reference : std::conjunction<std::is_reference<T>, std::is_const<std::remove_reference_t<T>>> {};
 
 	template<typename T>
 	inline constexpr bool is_const_reference_v = is_const_reference<T>::value;
 
 	template<typename T>
-	struct is_non_const_reference : std::bool_constant<std::conjunction_v<std::is_reference<T>, std::negation<std::is_const<std::remove_reference_t<T>>>>>{};
+	struct is_non_const_reference : std::conjunction<std::is_reference<T>, std::negation<std::is_const<std::remove_reference_t<T>>>>{};
 
 	template<typename T>
 	inline constexpr bool is_non_const_reference_v = is_non_const_reference<T>::value;
 
 	template<typename T, typename... Args>
-	struct is_same_any : std::bool_constant<std::disjunction_v<std::is_same<T, Args>...>>{};
+	struct is_same_any : std::disjunction<std::is_same<T, Args>...>{};
 
 	template<typename T, typename... Args>
 	inline constexpr bool is_same_any_v = is_same_any<T, Args...>::value;

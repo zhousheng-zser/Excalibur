@@ -141,6 +141,9 @@
     <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp">
       <Filter>abi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

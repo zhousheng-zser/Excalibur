@@ -37,7 +37,7 @@ namespace glasssix::exposing::allocations
 		}
 	}
 
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept
 	{
 		if (str == nullptr)
 		{
@@ -54,7 +54,7 @@ namespace glasssix::exposing::allocations
 		return nullptr;
 	}
 
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept
 	{
 #ifdef _WIN32
 		return narrow_str ?
@@ -63,7 +63,7 @@ namespace glasssix::exposing::allocations
 				true,
 				[](std::size_t size) { auto header = create_param_string_header(size); return std::tuple{ header, header->data }; },
 				[](param_string_header*& header) { memory::heap_free(header); header = nullptr; }
-				) :
+			) :
 			nullptr;
 #else
 		if (narrow_str == nullptr)
@@ -80,7 +80,7 @@ namespace glasssix::exposing::allocations
 #endif
 	}
 
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept
 	{
 		if (str == nullptr)
 		{
@@ -92,7 +92,7 @@ namespace glasssix::exposing::allocations
 		return create_param_string(header->data, header->size);
 	}
 
-	param_string_handle EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept
 	{
 		if (left == nullptr || right == nullptr)
 		{
@@ -113,17 +113,17 @@ namespace glasssix::exposing::allocations
 		return nullptr;
 	}
 
-	void EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL free_param_string(param_string_handle str) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL free_param_string(param_string_handle str) noexcept
 	{
 		memory::heap_free(str);
 	}
 
-	const utf8_char* EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept
 	{
 		return str ? pure_c::from_handle<param_string_header>(str)->data : nullptr;
 	}
 
-	std::size_t EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_param_string_size(param_string_handle str) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_param_string_size(param_string_handle str) noexcept
 	{
 		return str ? pure_c::from_handle<param_string_header>(str)->size : 0;
 	}

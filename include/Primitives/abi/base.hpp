@@ -95,7 +95,7 @@ namespace glasssix::exposing::impl
 	struct has_type_identity : details::has_type_identity_top_level<T>{};
 	
 	template<template<typename...> typename T, typename... Args>
-	struct has_type_identity<T<Args...>> : std::bool_constant<std::conjunction_v<details::has_type_identity_top_level<T<Args...>>, has_type_identity<Args>...>>{};
+	struct has_type_identity<T<Args...>> : std::conjunction<details::has_type_identity_top_level<T<Args...>>, has_type_identity<Args>...>{};
 
 	/// <summary>
 	/// Checks whether a type identity exists recursively.
@@ -124,9 +124,10 @@ namespace glasssix::exposing::impl
 	struct type_identity_enum;
 
 	/// <summary>
-	/// Classes.
+	/// Tables.
 	/// </summary>
-	struct type_identity_class;
+	template<typename... Fields>
+	struct type_identity_table;
 
 	/// <summary>
 	/// Generic public interfaces.
@@ -134,21 +135,30 @@ namespace glasssix::exposing::impl
 	struct type_identity_generic_interface;
 
 	template<typename T>
-	struct is_identity_primitive : std::bool_constant<meta::is_same_any_v<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>>{};
-
+	struct is_primitive : meta::is_same_any<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>{};
+	
 	/// <summary>
-	/// Checks whether a type is an identity primitive type.
+	/// Checks whether a type is a primitive type.
 	/// </summary>
 	template<typename T>
-	inline constexpr bool is_identity_primitive_v = is_identity_primitive<T>::value;
+	inline constexpr bool is_primitive_v = is_primitive<T>::value;
 
 	/// <summary>
 	/// Provides support for primitive types.
 	/// </summary>
 	template<typename T>
-	struct type_identity<T, std::enable_if_t<is_identity_primitive_v<T>>>
+	struct type_identity<T, std::enable_if_t<is_primitive_v<T>>>
 	{
 		using type = type_identity_primitive;
+	};
+
+	/// <summary>
+	/// Provides support for enum types.
+	/// </summary>
+	template<typename T>
+	struct type_identity<T, std::enable_if_t<std::is_enum_v<T>>>
+	{
+		using type = type_identity_enum;
 	};
 
 	/// <summary>
@@ -198,6 +208,13 @@ namespace glasssix::exposing::impl
 	{
 		static constexpr auto guid_generic_interface{ to_array(guid{ "47534958-0000-4749-4E54-455246414345" }) };
 		static constexpr auto value{ meta::concat_arrays(guid_generic_interface, to_array(guid_storage_v<T>)) };
+	};
+
+	template<typename... Fields, typename T>
+	struct type_identity_signature<type_identity_table<Fields...>, T>
+	{
+		static constexpr auto guid_table{ to_array(guid{ "47534958-0000-0000-0000-007461626C65" }) };
+		static constexpr auto value{ meta::concat_arrays(guid_table, to_array(guid_storage_v<T>)) };
 	};
 
 	/// <summary>

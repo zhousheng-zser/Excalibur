@@ -19,24 +19,54 @@ namespace glasssix::exposing::impl
 	template<typename Derived, typename Interface>
 	class implements_interface_vtable;
 
-	template <typename Derived, typename Interface, typename = void>
+	template<typename Derived, typename Interface, typename = void>
 	struct interface_vtable_base;
+
+	namespace details
+	{
+		template<typename Derived, typename T>
+		struct implements_interface_vtables_impl;
+
+		template<typename Derived, typename... Interfaces>
+		struct implements_interface_vtables_impl<Derived, std::tuple<Interfaces...>> : implements_interface_vtable<Derived, Interfaces>...
+		{
+		};
+
+		template<typename Derived>
+		struct pack_implemented_interfaces;
+
+		template<template<typename, typename...> typename Implements, typename Derived, typename... Interfaces>
+		struct pack_implemented_interfaces<Implements<Derived, Interfaces...>>
+		{
+			using type = meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>;
+		};
+
+		template<typename Derived>
+		using pack_implemented_interfaces_t = typename pack_implemented_interfaces<Derived>::type;
+	}
+
+	template<typename T, typename = void>
+	struct is_implements : std::false_type {};
+
+	template<typename T>
+	struct is_implements<T, std::void_t<typename T::implements_type>> : std::true_type {};
+
+	template<typename T>
+	inline constexpr bool is_implements_v = is_implements<T>::value;
 
 	/// <summary>
 	/// The unknown_object vtable of an interface ABI, which forwards all calls to the derived type.
 	/// </summary>
-	template <typename Derived, typename Interface>
-	struct interface_vtable_base<Derived, Interface, std::enable_if_t<is_derived_from_unknown_object_v<Interface>>> : abi_t<Interface>
+	template<typename Derived, typename Interface>
+	struct interface_vtable_base<Derived, Interface, std::enable_if_t<is_well_defined_interface_v<Interface>>> : abi_t<Interface>, std::tuple<void*>
 	{
-		using implements_interface_vtable_type = implements_interface_vtable<Derived, Interface>;
-
 		Derived& self() noexcept
 		{
-			return static_cast<Derived&>(reinterpret_cast<implements_interface_vtable_type&>(*this));
-			//return static_cast<Derived&>(meta::get_standard_layout_from_first_member<implements_interface_vtable_type>(*this));
+			// For C++ conformance, put workaround here to avoid reinterpret_cast between non-standard-layout objects.
+			return static_cast<Derived&>(*static_cast<implements_interface_vtable<Derived, Interface>*>(std::get<void*>(*this)));
 		}
 
-		virtual bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept override
+		virtual std::int32_t G6_ABI_CALL query_interface(guid id, void** object) noexcept override
 		{
 			return self().query_interface(id, object);
 		}
@@ -55,7 +85,7 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// The vtable of an interface ABI, which forwards all calls to the derived type.
 	/// </summary>
-	template <typename Derived, typename Interface>
+	template<typename Derived, typename Interface>
 	struct interface_vtable : interface_vtable_base<Derived, Interface>
 	{
 	};
@@ -86,7 +116,7 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// Implements a vtable for an interfacial ABI.
 	/// </summary>
-	template <typename Derived, typename Interface>
+	template<typename Derived, typename Interface>
 	class implements_interface_vtable
 	{
 	public:
@@ -96,6 +126,15 @@ namespace glasssix::exposing::impl
 		template<typename Interface, typename Derived, typename>
 		friend constexpr auto to_abi(Derived& derived) noexcept;
 
+		implements_interface_vtable() noexcept
+		{
+			std::get<void*>(vtable_) = this;
+		}
+
+		/// <summary>
+		/// Converts to one of the implemented interfaces.
+		/// </summary>
+		/// <returns>The interface</returns>
 		operator interface_vtable_ref<Interface>() const noexcept
 		{
 			return interface_vtable_ref<Interface>{ const_cast<vtable_type*>(&vtable_) };
@@ -103,47 +142,15 @@ namespace glasssix::exposing::impl
 	private:
 		vtable_type vtable_;
 	};
-
-	namespace details
-	{
-		template <typename Derived, typename T>
-		struct implements_interface_vtables_impl;
-
-		template <typename Derived, typename... Interfaces>
-		struct implements_interface_vtables_impl<Derived, std::tuple<Interfaces...>> : implements_interface_vtable<Derived, Interfaces>...
-		{
-		};
-
-		template<typename Derived>
-		struct pack_implemented_interfaces;
-
-		template<template<typename, typename...> typename Implements, typename Derived, typename... Interfaces>
-		struct pack_implemented_interfaces<Implements<Derived, Interfaces...>>
-		{
-			using type = meta::tuple_if_t<is_derived_from_unknown_object, std::tuple<Interfaces...>>;
-		};
-
-		template<typename Derived>
-		using pack_implemented_interfaces_t = typename pack_implemented_interfaces<Derived>::type;
-	}
-
-	template<typename T, typename = void>
-	struct is_implements : std::false_type {};
-
-	template<typename T>
-	struct is_implements<T, std::void_t<typename T::implements_type>> : std::true_type {};
-
-	template<typename T>
-	inline constexpr bool is_implements_v = is_implements<T>::value;
-
+	
 	/// <summary>
 	/// Retrieves an interfacial ABI from a derived object.
 	/// </summary>
-	/// <typeparam name="Interface">The interface type</typeparam>
+	/// <typeparam name="Interface">The interfacial type</typeparam>
 	/// <typeparam name="Derived">The derived type</typeparam>
 	/// <param name="derived">The derived object</param>
 	/// <returns>The ABI</returns>
-	template<typename Interface, typename Derived, typename = std::enable_if_t<std::conjunction_v<is_implements<Derived>, is_derived_from_unknown_object<Interface>>>>
+	template<typename Interface, typename Derived, typename = std::enable_if_t<std::conjunction_v<is_implements<Derived>, is_well_defined_interface<Interface>>>>
 	constexpr auto to_abi(Derived& derived) noexcept
 	{
 		return static_cast<abi_t<Interface>*>(&static_cast<implements_interface_vtable<Derived, Interface>&>(derived).vtable_);
@@ -153,7 +160,7 @@ namespace glasssix::exposing::impl
 	/// Implements vtables for interfacial ABIs.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
-	using implements_interface_vtables = details::implements_interface_vtables_impl<Derived, meta::tuple_if_t<is_derived_from_unknown_object, std::tuple<Interfaces...>>>;
+	using implements_interface_vtables = details::implements_interface_vtables_impl<Derived, meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>>;
 
 	template<typename Derived, typename = void>
 	struct first_interface;
@@ -225,7 +232,7 @@ namespace glasssix::exposing::impl
 	{
 		decltype(auto) self_abi() const noexcept
 		{
-			return *static_cast<abi_t<Interface>*>(get_abi(static_cast<const Interface&>(static_cast<const Derived&>(*this))));
+			return *to_abi<Interface>(const_cast<Derived&>(static_cast<const Derived&>(*this)));
 		}
 	};
 
@@ -252,18 +259,18 @@ namespace glasssix::exposing::impl
 		{
 		}
 		
-		bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
+		std::int32_t G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			if (object == nullptr)
 			{
-				return false;
+				return error_null_pointer;
 			}
 
  			if (*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id))
 			{
 				add_ref();
 
-				return true;
+				return error_success;
 			}
 
 			// Provides the implementation of the first interface.
@@ -274,10 +281,10 @@ namespace glasssix::exposing::impl
 				*object = static_cast<impl::abi_unknown_object*>(to_abi<first_interface_type>(static_cast<Derived&>(*this)));
 				add_ref();
 
-				return true;
+				return error_success;
 			}
 
-			return false;
+			return error_no_interface;
 		}
 
 		std::uint32_t G6_ABI_CALL add_ref() noexcept
@@ -315,7 +322,7 @@ namespace glasssix::exposing
 		using implements_type = implements;
 		using root_implements_type = impl::unknown_object_impl<Derived>;
 
-		bool G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
+		abi_result G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			return root_implements_type::query_interface(id, object);
 		}
@@ -338,4 +345,31 @@ namespace glasssix::exposing
 	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapter<Derived, Interfaces>...
 	{
 	};
+
+	/// <summary>
+	/// Creates an in-process instance of an implementation type and returns the default interface.
+	/// </summary>
+	/// <typeparam name="T">The implementation type</typeparam>
+	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <typeparam name="...Args">The types of arguments</typeparam>
+	/// <param name="...args">The arguments</param>
+	/// <returns>The instance</returns>
+	template<typename T, typename Interface, typename... Args, typename = std::enable_if_t<std::conjunction_v<impl::is_implements<T>, impl::is_well_defined_interface<Interface>>>>
+	auto make(Args&&... args)
+	{
+
+	}
+
+	/// <summary>
+	/// Creates an in-process instance of an implementation type and returns the first interface.
+	/// </summary>
+	/// <typeparam name="T">The implementation type</typeparam>
+	/// <typeparam name="...Args">The types of arguments</typeparam>
+	/// <param name="...args">The arguments</param>
+	/// <returns>The instance</returns>
+	template<typename T, typename... Args, typename = std::enable_if_t<impl::is_implements_v<T>>>
+	auto make_as_first(Args&&... args)
+	{
+		return make<T, impl::first_interface_t<T>>(std::forward<Args>(args...));
+	}
 }

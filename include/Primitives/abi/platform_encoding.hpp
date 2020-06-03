@@ -52,7 +52,7 @@ namespace glasssix::exposing::platform_encoding::win32
 		using result_type = meta::tuple_first_t<std::invoke_result_t<BufferGetter, std::size_t>>;
 
 		auto code_page = utf8 ? api::win32::encoding_codepage::utf8 : api::win32::encoding_codepage::system_default;
-		int wide_size = api::win32::get_narrow_to_wide_size(code_page, multibyte_str.data(), multibyte_str.size());
+		std::size_t wide_size = api::win32::get_narrow_to_wide_size(code_page, multibyte_str.data(), multibyte_str.size());
 
 		if (wide_size <= 0)
 		{
@@ -75,7 +75,7 @@ namespace glasssix::exposing::platform_encoding::win32
 		using result_type = meta::tuple_first_t<std::invoke_result_t<BufferGetter, std::size_t>>;
 
 		auto code_page = utf8 ? api::win32::encoding_codepage::utf8 : api::win32::encoding_codepage::system_default;
-		int multibyte_size = api::win32::get_wide_to_narrow_size(code_page, wide_str.data(), wide_str.size());
+		std::size_t multibyte_size = api::win32::get_wide_to_narrow_size(code_page, wide_str.data(), wide_str.size());
 
 		if (multibyte_size <= 0)
 		{
