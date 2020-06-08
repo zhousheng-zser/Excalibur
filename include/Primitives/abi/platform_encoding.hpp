@@ -36,10 +36,10 @@ namespace glasssix::exposing::platform_encoding::api::win32
 		utf8 = 65001
 	};
 	
-	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_narrow_to_wide_size(encoding_codepage codepage, const char* narrow_str, std::size_t size) noexcept;
-	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL get_wide_to_narrow_size(encoding_codepage codepage, const wchar_t* wide_str, std::size_t size) noexcept;
-	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL narrow_to_wide(encoding_codepage codepage, const char* narrow_str, std::size_t narrow_size, wchar_t* wide_char, std::size_t wide_size) noexcept;
-	extern "C" std::size_t EXPORT_EXCALIBUR_PRIMITIVES G6_ABI_CALL wide_to_narrow(encoding_codepage codepage, const wchar_t* wide_str, std::size_t wide_size, char* narrow_char, std::size_t narrow_size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_narrow_to_wide_size(encoding_codepage codepage, const char* narrow_str, std::size_t size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_wide_to_narrow_size(encoding_codepage codepage, const wchar_t* wide_str, std::size_t size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL narrow_to_wide(encoding_codepage codepage, const char* narrow_str, std::size_t narrow_size, wchar_t* wide_char, std::size_t wide_size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL wide_to_narrow(encoding_codepage codepage, const wchar_t* wide_str, std::size_t wide_size, char* narrow_char, std::size_t narrow_size) noexcept;
 #endif
 }
 
@@ -59,9 +59,9 @@ namespace glasssix::exposing::platform_encoding::win32
 			return result_type{};
 		}
 
-		auto [buffer, wide_string_buffer] = std::forward<BufferGetter>(getter)(wide_size);
+		auto [buffer, wide_string_buffer_getter] = std::forward<BufferGetter>(getter)(wide_size);
 
-		if (api::win32::narrow_to_wide(code_page, multibyte_str.data(), multibyte_str.size(), wide_string_buffer, wide_size) <= 0)
+		if (api::win32::narrow_to_wide(code_page, multibyte_str.data(), multibyte_str.size(), wide_string_buffer_getter(buffer), wide_size) <= 0)
 		{
 			std::forward<FailureCleaner>(cleaner)(buffer);
 		}
@@ -82,9 +82,9 @@ namespace glasssix::exposing::platform_encoding::win32
 			return result_type{};
 		}
 
-		auto [buffer, multibyte_string_buffer] = std::forward<BufferGetter>(getter)(multibyte_size);
+		auto [buffer, multibyte_string_buffer_getter] = std::forward<BufferGetter>(getter)(multibyte_size);
 
-		if (api::win32::wide_to_narrow(code_page, wide_str.data(), wide_str.size(), reinterpret_cast<char*>(multibyte_string_buffer), multibyte_size) <= 0)
+		if (api::win32::wide_to_narrow(code_page, wide_str.data(), wide_str.size(), reinterpret_cast<char*>(multibyte_string_buffer_getter(buffer)), multibyte_size) <= 0)
 		{
 			std::forward<FailureCleaner>(cleaner)(buffer);
 		}
@@ -102,7 +102,7 @@ namespace glasssix::exposing::platform_encoding::win32
 		return multibyte_to_wide(
 			utf8_str,
 			true,
-			[](std::size_t size) { std::wstring wide_str(size, L'\0'); auto data = wide_str.data(); return std::tuple{ std::move(wide_str), data }; },
+			[](std::size_t size) { return std::tuple{ std::wstring(size, L'\0'), [](std::wstring& wide_str) { return wide_str.data(); } }; },
 			[](std::wstring& wide_str) { wide_str.clear(); }
 		);
 	}
@@ -117,7 +117,7 @@ namespace glasssix::exposing::platform_encoding::win32
 		return multibyte_to_wide(
 			narrow_str,
 			false,
-			[](std::size_t size) { std::wstring wide_str(size, L'\0'); auto data = wide_str.data(); return std::tuple{ std::move(wide_str), data }; },
+			[](std::size_t size) { return std::tuple{ std::wstring(size, L'\0'), [](std::wstring& wide_str) { return wide_str.data(); } }; },
 			[](std::wstring& wide_str) { wide_str.clear(); }
 		);
 	}
@@ -132,7 +132,7 @@ namespace glasssix::exposing::platform_encoding::win32
 		return wide_to_multibyte(
 			wide_str,
 			false,
-			[](std::size_t size) { std::string narrow_str(size, '\0'); auto data = narrow_str.data(); return std::tuple{ std::move(narrow_str), data }; },
+			[](std::size_t size) { return std::tuple{ std::string(size, '\0'), [](std::string& narrow_str) { return narrow_str.data(); } }; },
 			[](std::string& narrow_str) { narrow_str.clear(); }
 		);
 	}

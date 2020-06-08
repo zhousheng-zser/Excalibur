@@ -161,7 +161,7 @@ namespace glasssix::exposing::impl
 		using type = type_identity_enum;
 	};
 
-	/// <summary>
+	/// <summary> 
 	/// The signature of a type identity.
 	/// </summary>
 	template<typename Identity, typename T>

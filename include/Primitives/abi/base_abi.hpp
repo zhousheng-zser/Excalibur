@@ -4,6 +4,7 @@
 #include "guid.hpp"
 #include "meta.hpp"
 #include "exceptions.hpp"
+#include "param_string.hpp"
 #include "g6_attributes.hpp"
 
 #include <cstddef>
@@ -74,6 +75,17 @@ namespace glasssix::exposing::impl
 	};
 
 	/// <summary>
+	/// The ABI of a param_string.
+	/// </summary>
+	template<> struct abi<param_string>
+	{
+		using identity_type = type_identity_primitive;
+		using type = void*;
+
+		static constexpr guid id{ "47534958-7061-7261-0605-737472696E67" };
+	};
+
+	/// <summary>
 	/// The type identity of a ABI.
 	/// </summary>
 	template<typename T>
@@ -101,7 +113,7 @@ namespace glasssix::exposing::impl
 	using abi_in_t = typename abi_in<T>::type;
 
 	template<typename T>
-	struct abi_in<T, std::enable_if_t<std::disjunction_v<is_primitive<T>, std::is_enum<T>>>>
+	struct abi_in<T, std::enable_if_t<std::disjunction_v<is_primitive<T>, std::is_enum<T>, std::is_same<T, param_string>>>>
 	{
 		using type = abi_t<T>;
 	};

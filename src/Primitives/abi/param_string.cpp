@@ -3,6 +3,7 @@
 #include "memory.hpp"
 
 #include <new>
+#include <atomic>
 #include <string>
 #include <cstring>
 #include <type_traits>
@@ -16,6 +17,7 @@ namespace glasssix::exposing::allocations
 		{
 			utf8_char* data;
 			std::size_t size;
+			std::atomic_uint32_t reference_count;
 		};
 
 		param_string_header* create_param_string_header(std::size_t size) noexcept
@@ -29,6 +31,7 @@ namespace glasssix::exposing::allocations
 				// Otherwise, it is a UB.
 				header->data = new (std::launder(buffer) + sizeof(param_string_header)) utf8_char[size + 1];
 				header->size = size;
+				header->reference_count = 1;
 
 				std::memset(header->data, 0, header->size);
 			}
@@ -61,7 +64,7 @@ namespace glasssix::exposing::allocations
 			platform_encoding::win32::wide_to_multibyte(
 				platform_encoding::win32::narrow_to_wide(std::string_view{ narrow_str, size }),
 				true,
-				[](std::size_t size) { auto header = create_param_string_header(size); return std::tuple{ header, header->data }; },
+				[](std::size_t size) { return std::tuple{ create_param_string_header(size), [](param_string_header* header) { return header->data; } }; },
 				[](param_string_header*& header) { memory::heap_free(header); header = nullptr; }
 			) :
 			nullptr;
@@ -78,6 +81,16 @@ namespace glasssix::exposing::allocations
 
 		return nullptr;
 #endif
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_ref(param_string_handle str) noexcept
+	{
+		if (str == nullptr)
+		{
+			return 0;
+		}
+
+		return (pure_c::from_handle<param_string_header>(str)->reference_count.fetch_add(1, std::memory_order_relaxed), str);
 	}
 
 	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept
@@ -113,9 +126,22 @@ namespace glasssix::exposing::allocations
 		return nullptr;
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL free_param_string(param_string_handle str) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES std::uint32_t G6_ABI_CALL free_param_string(param_string_handle str) noexcept
 	{
-		memory::heap_free(str);
+		if (str == nullptr)
+		{
+			return 0;
+		}
+
+		std::uint32_t count = pure_c::from_handle<param_string_header>(str)->reference_count.fetch_sub(1, std::memory_order_release) - 1;
+
+		if (count == 0)
+		{
+			std::atomic_thread_fence(std::memory_order_acquire);
+			memory::heap_free(str);
+		}
+
+		return count;
 	}
 
 	EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept

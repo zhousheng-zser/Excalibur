@@ -95,6 +95,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />

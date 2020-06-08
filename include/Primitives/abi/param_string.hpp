@@ -1,8 +1,6 @@
 #pragma once
 
 #include "meta.hpp"
-#include "base.hpp"
-#include "base_abi.hpp"
 #include "dllexport.hpp"
 #include "g6_attributes.hpp"
 #include "platform_encoding.hpp"
@@ -26,25 +24,12 @@ namespace glasssix::exposing::allocations
 
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string(const utf8_char* str, std::size_t size) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_ref(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
-	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::uint32_t G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_param_string_size(param_string_handle str) noexcept;
-}
-
-namespace glasssix::exposing::impl
-{
-	/// <summary>
-	/// The ABI of a param_string.
-	/// </summary>
-	template<> struct abi<param_string>
-	{
-		using identity_type = type_identity_primitive;
-		using type = void*;
-
-		static constexpr guid id{ "47534958-7061-7261-0605-737472696E67" };
-	};
 }
 
 namespace glasssix::exposing
@@ -63,7 +48,15 @@ namespace glasssix::exposing
 		/// <summary>
 		/// Creates an instance.
 		/// </summary>
-		param_string() noexcept : handle_{}
+		param_string() noexcept : param_string{ u8"" }
+		{
+		}
+
+		/// <summary>
+		/// Create an instance with an ABI from which ownership is taken.
+		/// </summary>
+		/// <param name="abi">The ABI</param>
+		param_string(void* abi) noexcept : handle_{ static_cast<allocations::param_string_handle>(abi) }
 		{
 		}
 
@@ -92,7 +85,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		param_string(const param_string& other) noexcept : handle_{ allocations::duplicate_param_string(other.handle_) }
+		param_string(const param_string& other) noexcept : handle_{ allocations::create_param_string_ref(other.handle_) }
 		{
 		}
 
@@ -108,7 +101,7 @@ namespace glasssix::exposing
 		param_string& operator=(const param_string& right) noexcept
 		{
 			clear();
-			handle_ = allocations::duplicate_param_string(right.handle_);
+			handle_ = allocations::create_param_string_ref(right.handle_);
 
 			return *this;
 		}
@@ -121,6 +114,11 @@ namespace glasssix::exposing
 			return *this;
 		}
 
+		param_string operator+(const param_string& right) noexcept
+		{
+			return param_string{ allocations::concat_param_string(handle_, right.handle_) };
+		}
+
 		/// <summary>
 		/// Provides access to certain element.
 		/// </summary>
@@ -128,7 +126,7 @@ namespace glasssix::exposing
 		/// <returns>A const reference to the element</returns>
 		const value_type& operator[](std::size_t index) const noexcept
 		{
-			return *(data() + index);
+			return data()[index];
 		}
 
 		/// <summary>
@@ -138,6 +136,15 @@ namespace glasssix::exposing
 		operator view_type() const noexcept
 		{
 			return view_type{ data(), size() };
+		}
+
+		/// <summary>
+		/// Checks whether the string is empty.
+		/// </summary>
+		/// <returns>True if the string is empty; otherwise false</returns>
+		bool empty() const noexcept
+		{
+			return size() == 0;
 		}
 
 		/// <summary>
@@ -185,7 +192,7 @@ namespace glasssix::exposing
 		/// <returns>The iterator</returns>
 		const_reverse_iterator rbegin() const noexcept
 		{
-			return const_reverse_iterator{ begin() };
+			return const_reverse_iterator{ end() };
 		}
 
 		/// <summary>
@@ -221,7 +228,7 @@ namespace glasssix::exposing
 		/// <returns>The iterator</returns>
 		const_reverse_iterator rend() const noexcept
 		{
-			return const_reverse_iterator{ end() };
+			return const_reverse_iterator{ begin() };
 		}
 
 		/// <summary>
@@ -252,7 +259,7 @@ namespace glasssix::exposing
 	/// <returns>The narrow string</returns>
 	inline std::string to_narrow(const param_string& str) noexcept
 	{
-		platform_encoding::utf8_to_narrow(str);
+		return platform_encoding::utf8_to_narrow(str);
 	}
 
 	/// <summary>
@@ -292,11 +299,18 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="str">The string</param>
 	/// <returns>The ABI detached from the string</returns>
-	template<typename ParamString, typename = std::enable_if_t<meta::is_non_const_reference_v<ParamString>>>
-	void* detach_abi(ParamString&& str) noexcept
+	void* detach_abi(param_string& str) noexcept
 	{
-		// When the string is a named rvalue reference, we just pass it to the put_abi function as a lvalue reference (without perfect forwarding).
-		// Thus, the ABI of the string is capable of being exchanged.
+		return std::exchange(*put_abi(str), nullptr);
+	}
+
+	/// <summary>
+	/// Detaches the ABI from a string.
+	/// </summary>
+	/// <param name="str">The string</param>
+	/// <returns>The ABI detached from the string</returns>
+	void* detach_abi(param_string&& str) noexcept
+	{
 		return std::exchange(*put_abi(str), nullptr);
 	}
 
@@ -307,7 +321,7 @@ namespace glasssix::exposing
 	/// <param name="abi">The ABI</param>
 	inline void copy_from_abi(param_string& str, void* abi) noexcept
 	{
-		*put_abi(str) = allocations::duplicate_param_string(static_cast<allocations::param_string_handle>(abi));
+		*put_abi(str) = allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi));
 	}
 
 	/// <summary>
@@ -318,5 +332,15 @@ namespace glasssix::exposing
 	inline void copy_to_abi(const param_string& str, void*& abi) noexcept
 	{
 		abi = get_abi(str);
+	}
+
+	/// <summary>
+	/// Creates a string from an ABI with the reference count increased.
+	/// </summary>
+	/// <param name="abi">The ABI</param>
+	/// <returns>The string</returns>
+	inline param_string create_from_abi(void* abi) noexcept
+	{
+		return param_string{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) };
 	}
 }

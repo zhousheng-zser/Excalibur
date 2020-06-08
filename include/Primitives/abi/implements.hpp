@@ -13,6 +13,9 @@
 #include <utility>
 #include <algorithm>
 #include <type_traits>
+#include <string_view>
+
+#define META_STR(x) decltype(struct { static constexpr std::string_view value = x; }{})::value
 
 namespace glasssix::exposing::impl
 {
@@ -51,8 +54,41 @@ namespace glasssix::exposing::impl
 	template<typename T>
 	struct is_implements<T, std::void_t<typename T::implements_type>> : std::true_type {};
 
+	/// <summary>
+	/// Checks whether a type is an "implements" type.
+	/// </summary>
+	/// <typeparam name="T">The type</typeparam>
 	template<typename T>
 	inline constexpr bool is_implements_v = is_implements<T>::value;
+
+	template<typename T, typename = void>
+	struct has_external_qualified_name : std::false_type {};
+
+	template<typename T>
+	struct has_external_qualified_name<T, std::void_t<decltype(T::external_qualified_name_type::value)>> : std::true_type {};
+
+	/// <summary>
+	/// Checks whether a type contains an external qualified name.
+	/// </summary>
+	/// <typeparam name="T">The type</typeparam>
+	template<typename T>
+	inline constexpr auto& has_external_qualified_name_v = has_external_qualified_name<T>::value;
+
+	template<typename T, typename = void>
+	struct get_external_qualified_name;
+
+	template<typename T>
+	struct get_external_qualified_name<T, std::enable_if_t<has_external_qualified_name_v<T>>>
+	{
+		static constexpr auto& value = T::external_qualified_name_type::value;
+	};
+
+	/// <summary>
+	/// Retrieves the external qualified name of a type if exists.
+	/// </summary>
+	/// <typeparam name="T">The type</typeparam>
+	template<typename T>
+	inline constexpr auto& get_external_qualified_name_v = get_external_qualified_name<T>::value;
 
 	/// <summary>
 	/// The unknown_object vtable of an interface ABI, which forwards all calls to the derived type.
@@ -321,7 +357,7 @@ namespace glasssix::exposing
 	{
 		using implements_type = implements;
 		using root_implements_type = impl::unknown_object_impl<Derived>;
-
+		
 		abi_result G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			return root_implements_type::query_interface(id, object);
@@ -337,13 +373,25 @@ namespace glasssix::exposing
 			return root_implements_type::release();
 		}
 	};
-
+	
 	/// <summary>
 	/// A helper class to support implicitly casting to one or more interfaces.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
 	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapter<Derived, Interfaces>...
 	{
+	};
+
+	/// <summary>
+	/// A helper class that makes the external qualified name of an implementation.
+	/// </summary>
+	template<const std::string_view& name>
+	struct make_external_qualified_name
+	{
+		struct external_qualified_name_type
+		{
+			static constexpr std::string_view value = name;
+		};
 	};
 
 	/// <summary>

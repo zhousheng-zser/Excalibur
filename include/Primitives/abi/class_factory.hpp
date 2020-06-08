@@ -23,16 +23,16 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
-			virtual std::int32_t create_instance(guid id, abi_out_t<unknown_object> object) noexcept = 0;
+			virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept = 0;
 		};
 	};
 
 	template<typename Derived>
 	struct interface_vtable<Derived, class_factory> : interface_vtable_base<Derived, class_factory>
 	{
-		virtual std::int32_t create_instance(guid id, abi_out_t<unknown_object> object) noexcept override
+		virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept override
 		{
-			return abi_safe_call([&] { *object = detach_abi(this->self().create_instance(id)); });
+			return abi_safe_call([&] { *object = detach_abi(this->self().create_instance(create_from_abi(qualified_name))); });
 		}
 	};
 
@@ -41,7 +41,7 @@ namespace glasssix::exposing::impl
 		template<typename Derived>
 		struct type : enable_self_abi_awareness<Derived, class_factory>
 		{
-			unknown_object create_instance(const guid& id)
+			unknown_object create_instance(const param_string& qualified_name)
 			{
 				unknown_object result{ nullptr };
 				

@@ -1,10 +1,15 @@
 #pragma once
 
+#include "param_string.hpp"
+
 #include <cstdint>
 #include <stdexcept>
+#include <unordered_map>
 
 namespace glasssix::exposing
 {
+	class param_string;
+
 	/// <summary>
 	/// Standard codes of the return value of an ABI function.
 	/// </summary>
@@ -40,7 +45,7 @@ namespace glasssix::exposing
 			return code >= 0;
 		}
 	};
-	
+
 	inline constexpr abi_result error_success{ 0 };
 	inline constexpr abi_result error_failure{ -1 };
 	inline constexpr abi_result error_not_implemented{ -2 };
@@ -52,23 +57,62 @@ namespace glasssix::exposing
 	inline constexpr abi_result error_key_not_found{ -8 };
 	inline constexpr abi_result error_bad_alloc{ -9 };
 
+	inline const std::unordered_map<std::int32_t, const param_string> predefined_error_messages
+	{
+		{ error_success, u8"The operation successfully completed." },
+		{ error_failure, u8"The operation failed because of an unknown error." },
+		{ error_not_implemented, u8"The operation was not implemented." },
+		{ error_null_pointer, u8"One of the parameters was null." },
+		{ error_invalid_argument, u8"One of the parameters were invalid." },
+		{ error_out_of_bounds, u8"The index was out of bounds." },
+		{ error_no_interface, u8"The specified interface was not found." },
+		{ error_invalid_operation, u8"The operation was invalid." },
+		{ error_bad_alloc, u8"The allocation reported failure." }
+	};
+
+	/// <summary>
+	/// Gets a predefined error message by a ABI result code.
+	/// </summary>
+	/// <param name="result">The result code</param>
+	/// <returns>The error message</returns>
+	inline const param_string& get_predefined_error_message(abi_result result) noexcept
+	{
+		auto iter = predefined_error_messages.find(result);
+
+		return iter != predefined_error_messages.end() ? iter->second : predefined_error_messages.find(error_failure)->second;
+	}
+
 	/// <summary>
 	/// An ABI exception.
 	/// </summary>
 	class abi_error
 	{
 	public:
-		abi_error(abi_result result) noexcept : result_{ result }
+		abi_error(abi_result result) noexcept : abi_error{ result, get_predefined_error_message(result) }
 		{
-			
 		}
 
-		abi_result to_result() const noexcept
+		abi_error(abi_result result, const param_string& what) noexcept : result_{ result }, what_{ what }
+		{
+		}
+
+		abi_result result() const noexcept
 		{
 			return result_;
 		}
+
+		utf8_string_view what() const noexcept
+		{
+			return what_;
+		}
+
+		std::string what_to_narrow() const noexcept
+		{
+			return to_narrow(what_);
+		}
 	private:
 		abi_result result_;
+		param_string what_;
 	};
 
 	struct abi_failure : abi_error
@@ -102,12 +146,12 @@ namespace glasssix::exposing
 	struct abi_out_of_bounds : abi_error
 	{
 		abi_out_of_bounds() noexcept : abi_error{ error_out_of_bounds }
-		{										  
-		}										  
-	};											  
-												  
-	struct abi_no_interface : abi_error			  
-	{											  
+		{
+		}
+	};
+
+	struct abi_no_interface : abi_error
+	{
 		abi_no_interface() noexcept : abi_error{ error_no_interface }
 		{
 		}
@@ -162,7 +206,7 @@ namespace glasssix::exposing
 		}
 		catch (const abi_error& e)
 		{
-			return e.to_result();
+			return e.result();
 		}
 	}
 
