@@ -147,6 +147,9 @@
     <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp">
       <Filter>abi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

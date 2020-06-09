@@ -4,6 +4,7 @@
 #include "dllexport.hpp"
 #include "g6_attributes.hpp"
 #include "platform_encoding.hpp"
+#include "fundamental_semantics.hpp"
 #include "pure_c_handle_utils.h"
 
 #include <cstddef>
@@ -26,6 +27,8 @@ namespace glasssix::exposing::allocations
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_from_narrow(const char* narrow_str, std::size_t size) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_param_string_ref(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL duplicate_param_string(param_string_handle str) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_c_string_with_param_string(const utf8_char* left, param_string_handle right) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string_with_c_string(param_string_handle left, const utf8_char* right) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::uint32_t G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
@@ -56,7 +59,7 @@ namespace glasssix::exposing
 		/// Create an instance with an ABI from which ownership is taken.
 		/// </summary>
 		/// <param name="abi">The ABI</param>
-		param_string(void* abi) noexcept : handle_{ static_cast<allocations::param_string_handle>(abi) }
+		param_string(take_over_abi_from_void_ptr abi) noexcept : handle_{ abi.to<allocations::param_string_handle>() }
 		{
 		}
 
@@ -114,9 +117,29 @@ namespace glasssix::exposing
 			return *this;
 		}
 
-		param_string operator+(const param_string& right) noexcept
+		friend param_string operator+(const utf8_char* left, const param_string& right) noexcept
 		{
-			return param_string{ allocations::concat_param_string(handle_, right.handle_) };
+			return param_string{ allocations::concat_c_string_with_param_string(left, right.handle_) };
+		}
+
+		friend param_string operator+(const param_string& left, const utf8_char* right) noexcept
+		{
+			return param_string{ allocations::concat_param_string_with_c_string(left.handle_, right) };
+		}
+
+		friend param_string operator+(utf8_string_view left, const param_string& right) noexcept
+		{
+			return param_string{ allocations::concat_c_string_with_param_string(left.data(), right.handle_) };
+		}
+
+		friend param_string operator+(const param_string& left, utf8_string_view right) noexcept
+		{
+			return param_string{ allocations::concat_param_string_with_c_string(left.handle_, right.data()) };
+		}
+
+		friend param_string operator+(const param_string& left, const param_string& right) noexcept
+		{
+			return param_string{ allocations::concat_param_string(left.handle_, right.handle_) };
 		}
 
 		/// <summary>
@@ -257,9 +280,19 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="str">The string</param>
 	/// <returns>The narrow string</returns>
-	inline std::string to_narrow(const param_string& str) noexcept
+	inline std::string to_narrow_string(const utf8_string_view str) noexcept
 	{
 		return platform_encoding::utf8_to_narrow(str);
+	}
+
+	/// <summary>
+	/// Converts a narrow string to a string.
+	/// </summary>
+	/// <param name="narrow_str">The narrow string</param>
+	/// <returns>The string</returns>
+	inline param_string to_param_string(std::string_view narrow_str) noexcept
+	{
+		return param_string{ allocations::create_param_string_from_narrow(narrow_str.data(), narrow_str.size()) };
 	}
 
 	/// <summary>

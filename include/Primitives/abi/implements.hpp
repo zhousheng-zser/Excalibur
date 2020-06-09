@@ -4,6 +4,7 @@
 #include "base.hpp"
 #include "base_abi.hpp"
 #include "g6_attributes.hpp"
+#include "fundamental_semantics.hpp"
 
 #include <new>
 #include <tuple>
@@ -291,10 +292,16 @@ namespace glasssix::exposing::impl
 	class G6_NOVTABLE unknown_object_impl
 	{
 	public:
-		unknown_object_impl() : reference_count_{ 1 }
+		unknown_object_impl() noexcept : ref_count_{ 1 }
 		{
+			++get_module_ref_count();
 		}
 		
+		virtual ~unknown_object_impl() noexcept
+		{
+			--get_module_ref_count();
+		}
+
 		std::int32_t G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			if (object == nullptr)
@@ -325,25 +332,22 @@ namespace glasssix::exposing::impl
 
 		std::uint32_t G6_ABI_CALL add_ref() noexcept
 		{
-			// A relaxed memory order results in improved efficiency.
-			return reference_count_.fetch_add(1, std::memory_order_relaxed) + 1;
+			return ++ref_count_;
 		}
 
 		std::uint32_t G6_ABI_CALL release() noexcept
 		{
-			std::uint32_t count = reference_count_.fetch_sub(1, std::memory_order_release) - 1;
+			std::uint32_t count = --ref_count_;
 
 			if (count == 0)
 			{
-				// Ensures serialized running.
-				std::atomic_thread_fence(std::memory_order_acquire);
 				delete this;
 			}
 
 			return count;
 		}
 	private:
-		std::atomic_uint32_t reference_count_;
+		atomic_ref_count ref_count_;
 	};
 }
 

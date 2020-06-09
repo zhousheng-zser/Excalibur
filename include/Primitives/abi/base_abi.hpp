@@ -6,6 +6,7 @@
 #include "exceptions.hpp"
 #include "param_string.hpp"
 #include "g6_attributes.hpp"
+#include "fundamental_semantics.hpp"
 
 #include <cstddef>
 #include <utility>
@@ -153,7 +154,7 @@ namespace glasssix::exposing::impl
 	{
 		static constexpr auto value{ create_guid_from_bytes(meta::concat_arrays(to_array(abi<T<Args...>>::id), type_signature_v<Args>...)) };
 	};
-	
+
 	/// <summary>
 	/// The root interface ABI.
 	/// </summary>
@@ -192,7 +193,7 @@ namespace glasssix::exposing
 		/// Create an instance with an ABI from which ownership is taken.
 		/// </summary>
 		/// <param name="abi">The ABI</param>
-		unknown_object(void* abi) noexcept : abi_{ static_cast<impl::abi_unknown_object*>(abi) }
+		unknown_object(take_over_abi_from_void_ptr abi) noexcept : abi_{ abi.to<impl::abi_unknown_object*>() }
 		{
 		}
 
@@ -320,7 +321,7 @@ namespace glasssix::exposing
 	{
 		return meta::get_standard_layout_first_member<impl::abi_unknown_object*>(object);
 	}
-	
+
 	/// <summary>
 	/// Gets the ABI of a primitive object.
 	/// </summary>

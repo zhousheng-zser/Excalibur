@@ -108,7 +108,7 @@ namespace glasssix::exposing
 
 		std::string what_to_narrow() const noexcept
 		{
-			return to_narrow(what_);
+			return to_narrow_string(what_);
 		}
 	private:
 		abi_result result_;
