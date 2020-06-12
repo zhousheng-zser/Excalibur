@@ -5,6 +5,7 @@
 #include "implements.hpp"
 #include "exceptions.hpp"
 #include "param_string.hpp"
+#include "param_vector.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -24,6 +25,7 @@ namespace glasssix::exposing::impl
 		struct type : abi_unknown_object
 		{
 			virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept = 0;
+			virtual std::int32_t get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept = 0;
 		};
 	};
 
@@ -32,20 +34,41 @@ namespace glasssix::exposing::impl
 	{
 		virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept override
 		{
-			return abi_safe_call([&] { *object = detach_abi(this->self().create_instance(create_from_abi(qualified_name))); });
+			return abi_safe_call([&] { *object = detach_abi(this->self().create_instance(create_from_abi<param_string>(qualified_name))); });
+		}
+
+		virtual std::int32_t get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept override
+		{
+			return abi_safe_call([&] { *result = detach_abi(this->self().get_qualified_names()); });
 		}
 	};
 
 	template<> struct abi_adapter<class_factory>
 	{
 		template<typename Derived>
-		struct type : enable_self_abi_awareness<Derived, class_factory>
+		struct type : enable_self_abi_awareness<class_factory>
 		{
+			/// <summary>
+			/// Creates an instance by a qualified name.
+			/// </summary>
+			/// <param name="qualified_name">The qualified name</param>
+			/// <returns>The instance</returns>
 			unknown_object create_instance(const param_string& qualified_name)
 			{
 				unknown_object result{ nullptr };
 				
-				return (check_abi_result(this->self_abi().create_instance(id, put_abi(result))), result);
+				return (check_abi_result(this->self_abi().create_instance(get_abi(qualified_name), put_abi(result))), result);
+			}
+
+			/// <summary>
+			/// Gets the available qualified names.
+			/// </summary>
+			/// <returns>The qualified names</returns>
+			param_vector<param_string> get_qualified_names()
+			{
+				param_vector<param_string> result{ nullptr };
+
+				return (check_abi_result(this->self_abi().get_qualified_names(put_abi(result))), result);
 			}
 		};
 	};
@@ -55,8 +78,6 @@ namespace glasssix::exposing
 {
 	struct class_factory : inherits<class_factory>
 	{
-		class_factory(std::nullptr_t = nullptr) noexcept
-		{
-		}
+		using inherits::inherits;
 	};
 }

@@ -244,13 +244,13 @@ namespace glasssix
 
 			if (base_num <= neighbors_max_length)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking neighborsMaxLength to " << base_num << ".";
+				//LOG(WARNING) << "Warning: small dataset, shrinking neighborsMaxLength to " << base_num << ".";
 				neighbors_max_length = base_num;
 			}
 
 			if (base_num <= range)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking range to " << base_num << ".";
+				//LOG(WARNING) << "Warning: small dataset, shrinking range to " << base_num << ".";
 				range = base_num;
 			}
 

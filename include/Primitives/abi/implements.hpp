@@ -3,6 +3,8 @@
 #include "meta.hpp"
 #include "base.hpp"
 #include "base_abi.hpp"
+#include "dll_loader.hpp"
+#include "param_string.hpp"
 #include "g6_attributes.hpp"
 #include "fundamental_semantics.hpp"
 
@@ -10,13 +12,14 @@
 #include <tuple>
 #include <array>
 #include <atomic>
+#include <memory>
 #include <cstddef>
 #include <utility>
 #include <algorithm>
 #include <type_traits>
 #include <string_view>
 
-#define META_STR(x) decltype(struct { static constexpr std::string_view value = x; }{})::value
+#define META_STR(x) decltype(struct { static constexpr glasssix::exposing::utf8_string_view value = x; }{})::value
 
 namespace glasssix::exposing::impl
 {
@@ -61,6 +64,19 @@ namespace glasssix::exposing::impl
 	/// <typeparam name="T">The type</typeparam>
 	template<typename T>
 	inline constexpr bool is_implements_v = is_implements<T>::value;
+
+	template<typename T, typename = void>
+	struct has_unique_release : std::false_type {};
+
+	template<typename T>
+	struct has_unique_release < T, std::void_t<decltype(T::unique_release(std::unique_ptr<T>{})) >> : std::true_type{};
+
+	/// <summary>
+	/// Checks whether a type contains a static function named unique_release.
+	/// </summary>
+	/// <typeparam name="T">The type</typeparam>
+	template<typename T>
+	inline constexpr bool has_unique_release_v = has_unique_release<T>::value;
 
 	template<typename T, typename = void>
 	struct has_external_qualified_name : std::false_type {};
@@ -118,7 +134,7 @@ namespace glasssix::exposing::impl
 			return self().release();
 		}
 	};
-	
+
 	/// <summary>
 	/// The vtable of an interface ABI, which forwards all calls to the derived type.
 	/// </summary>
@@ -159,7 +175,7 @@ namespace glasssix::exposing::impl
 	public:
 		using vtable_type = interface_vtable<Derived, Interface>;
 		friend vtable_type;
-		
+
 		template<typename Interface, typename Derived, typename>
 		friend constexpr auto to_abi(Derived& derived) noexcept;
 
@@ -179,7 +195,7 @@ namespace glasssix::exposing::impl
 	private:
 		vtable_type vtable_;
 	};
-	
+
 	/// <summary>
 	/// Retrieves an interfacial ABI from a derived object.
 	/// </summary>
@@ -224,6 +240,12 @@ namespace glasssix::exposing::impl
 	class find_interface_by_guid<Derived, std::enable_if_t<is_implements_v<Derived>>>
 	{
 	public:
+		/// <summary>
+		/// Gets the ABI of an interface by specified ID.
+		/// </summary>
+		/// <param name="derived">The derived object</param>
+		/// <param name="id">The ID</param>
+		/// <returns>The ABI</returns>
 		static void* get(Derived& derived, const guid& id) noexcept
 		{
 			using packed_type = details::pack_implemented_interfaces_t<typename Derived::implements_type>;
@@ -260,16 +282,16 @@ namespace glasssix::exposing::impl
 	/// </summary>
 	template<typename Derived, typename Interface>
 	using abi_adapter_t = typename abi_adapter<Interface>::template type<Derived>;
-	
+
 	/// <summary>
 	/// A helper class that enables casting to the derived type of an interface.
 	/// </summary>
-	template<typename Derived, typename Interface, typename = std::enable_if_t<has_abi_type_v<Interface>>>
+	template<typename Interface, typename = std::enable_if_t<has_abi_type_v<Interface>>>
 	struct enable_self_abi_awareness
 	{
 		decltype(auto) self_abi() const noexcept
 		{
-			return *to_abi<Interface>(const_cast<Derived&>(static_cast<const Derived&>(*this)));
+			return *static_cast<abi_t<Interface>*>(get_abi(static_cast<const Interface&>(*this)));
 		}
 	};
 
@@ -296,7 +318,7 @@ namespace glasssix::exposing::impl
 		{
 			++get_module_ref_count();
 		}
-		
+
 		virtual ~unknown_object_impl() noexcept
 		{
 			--get_module_ref_count();
@@ -309,7 +331,7 @@ namespace glasssix::exposing::impl
 				return error_null_pointer;
 			}
 
- 			if (*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id))
+			if (*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id))
 			{
 				add_ref();
 
@@ -341,7 +363,16 @@ namespace glasssix::exposing::impl
 
 			if (count == 0)
 			{
-				delete this;
+				// Call the unique_release routine for deferred operations if the derived type defines it.
+				if constexpr (has_unique_release_v<Derived>)
+				{
+					ref_count_ = 1;
+					Derived::unique_release(std::unique_ptr<Derived>{ static_cast<Derived*>(this) });
+				}
+				else
+				{
+					delete this;
+				}
 			}
 
 			return count;
@@ -361,7 +392,7 @@ namespace glasssix::exposing
 	{
 		using implements_type = implements;
 		using root_implements_type = impl::unknown_object_impl<Derived>;
-		
+
 		abi_result G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			return root_implements_type::query_interface(id, object);
@@ -377,24 +408,38 @@ namespace glasssix::exposing
 			return root_implements_type::release();
 		}
 	};
-	
+
 	/// <summary>
 	/// A helper class to support implicitly casting to one or more interfaces.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
 	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapter<Derived, Interfaces>...
 	{
+		/// <summary>
+		/// Creates an instance with nullptr.
+		/// </summary>
+		inherits(std::nullptr_t = nullptr) noexcept : unknown_object{ nullptr }
+		{
+		}
+
+		/// <summary>
+		/// Create an instance with an ABI from which ownership is taken.
+		/// </summary>
+		/// <param name="abi">The ABI</param>
+		inherits(take_over_abi_from_void_ptr abi) noexcept : unknown_object{ abi }
+		{
+		}
 	};
 
 	/// <summary>
 	/// A helper class that makes the external qualified name of an implementation.
 	/// </summary>
-	template<const std::string_view& name>
+	template<const utf8_string_view& name>
 	struct make_external_qualified_name
 	{
 		struct external_qualified_name_type
 		{
-			static constexpr std::string_view value = name;
+			static constexpr utf8_string_view value = name;
 		};
 	};
 
@@ -409,7 +454,7 @@ namespace glasssix::exposing
 	template<typename T, typename Interface, typename... Args, typename = std::enable_if_t<std::conjunction_v<impl::is_implements<T>, impl::is_well_defined_interface<Interface>>>>
 	auto make(Args&&... args)
 	{
-
+		return Interface{ take_over_abi_from_void_ptr{ impl::to_abi<Interface>(*new T(std::forward<Args>(args)...)) } };
 	}
 
 	/// <summary>
@@ -422,6 +467,12 @@ namespace glasssix::exposing
 	template<typename T, typename... Args, typename = std::enable_if_t<impl::is_implements_v<T>>>
 	auto make_as_first(Args&&... args)
 	{
-		return make<T, impl::first_interface_t<T>>(std::forward<Args>(args...));
+		return make<T, impl::first_interface_t<T>>(std::forward<Args>(args)...);
+	}
+
+	template<typename Interface, typename = std::enable_if_t<impl::is_well_defined_interface_v<Interface>>>
+	auto make_from_dll(utf8_string_view path)
+	{
+
 	}
 }

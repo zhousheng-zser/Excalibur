@@ -36,6 +36,24 @@ namespace glasssix::exposing::meta
 	template<typename T, typename... Args>
 	inline constexpr bool is_same_any_v = is_same_any<T, Args...>::value;
 
+	template<typename T>
+	struct noumenon
+	{
+		using type = T;
+	};
+
+	template<typename T>
+	using noumenon_t = typename noumenon<T>::type;
+
+	template<template<typename> typename Container, typename T, std::size_t Dimension>
+	struct make_multidimensional_container : noumenon<Container<typename make_multidimensional_container<Container, T, Dimension - 1>::type>> {};
+
+	template<template<typename> typename Container, typename T>
+	struct make_multidimensional_container<Container, T, 0> : noumenon<T> {};
+
+	template<template<typename> typename Container, typename T, std::size_t Dimension>
+	using make_multidimensional_container_t = typename make_multidimensional_container<Container, T, Dimension>::type;
+
 	template<typename... T>
 	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
 

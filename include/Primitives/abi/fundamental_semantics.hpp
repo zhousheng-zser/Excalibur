@@ -1,9 +1,17 @@
 #pragma once
 
+#include "g6_attributes.hpp"
+
 #include <atomic>
 #include <cstdint>
 #include <exception>
 #include <type_traits>
+
+namespace glasssix::exposing::dll_routines
+{
+	using dll_can_unload_now_handler_type = bool(G6_ABI_CALL*)() noexcept;
+	using dll_create_factory_handler_type = std::int32_t(G6_ABI_CALL*)(void** factory) noexcept;
+}
 
 namespace glasssix::exposing
 {

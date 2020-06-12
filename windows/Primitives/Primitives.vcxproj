@@ -99,6 +99,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\dll_loader.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp" />
@@ -135,9 +136,9 @@
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
     <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
-    <ClInclude Include="..\..\include\Primitives\unknown_object.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Primitives\abi\dll_loader.cpp" />
     <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp" />
     <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp" />
     <ClCompile Include="..\..\src\Primitives\cpu.cpp" />

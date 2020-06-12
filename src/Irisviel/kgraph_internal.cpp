@@ -308,17 +308,17 @@ namespace glasssix
 
 			if (base_num <= params.k)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking params.K to " << base_num - 1 << ".";
+				//LOG(WARNING) << "Warning: small dataset, shrinking params.K to " << base_num - 1 << ".";
 				params.k = base_num - 1;
 			}
 			if (base_num <= params.pool_size)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking poolSize to " << base_num - 1 << ".";
+				//LOG(WARNING) << "Warning: small dataset, shrinking poolSize to " << base_num - 1 << ".";
 				params.pool_size = base_num - 1;
 			}
 			if (base_num <= params.reverse_pool_size)
 			{
-				LOG(WARNING) << "Warning: small dataset, shrinking reversePoolSize to " << base_num - 1 << ".";
+				//LOG(WARNING) << "Warning: small dataset, shrinking reversePoolSize to " << base_num - 1 << ".";
 				params.reverse_pool_size = base_num - 1;
 			}
 

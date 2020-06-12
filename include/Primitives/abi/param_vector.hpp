@@ -31,6 +31,7 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
+			virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL at(std::uint64_t index, abi_out_t<T> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL set_at(std::uint64_t index, abi_in_t<T> item) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL push_back(abi_in_t<T> item) noexcept = 0;
@@ -46,6 +47,11 @@ namespace glasssix::exposing::impl
 	template<typename Derived, typename T>
 	struct interface_vtable<Derived, param_vector<T>> : interface_vtable_base<Derived, param_vector<T>>
 	{
+		virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept override
+		{
+			return abi_safe_call([&] { *result = detach_abi(this->self().size()); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL at(std::uint64_t index, abi_out_t<T> result) noexcept override
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().at(index)); });
@@ -84,8 +90,15 @@ namespace glasssix::exposing::impl
 	struct abi_adapter<param_vector<T>>
 	{
 		template<typename Derived>
-		struct type : enable_self_abi_awareness<Derived, param_vector<T>>
+		struct type : enable_self_abi_awareness<param_vector<T>>
 		{
+			std::uint64_t size()
+			{
+				std::uint64_t result = 0;
+				
+				return (check_abi_result(this->self_abi().size(put_abi(result))), result);
+			}
+
 			T at(std::uint64_t index)
 			{
 				T result{};
@@ -129,9 +142,7 @@ namespace glasssix::exposing
 	template<typename T>
 	struct param_vector : inherits<param_vector<T>>
 	{
-		param_vector(std::nullptr_t = nullptr) noexcept
-		{
-		}
+		using inherits<param_vector<T>>::inherits;
 	};
 }
 
@@ -141,6 +152,20 @@ namespace glasssix::exposing::impl
 	class param_vector_impl : public implements<param_vector_impl<T>, param_vector<T>>
 	{
 	public:
+		param_vector_impl()
+		{
+		}
+
+		template<typename... Args, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<Args, T>...>>>
+		param_vector_impl(Args&&... args) : buffer_{ std::forward<Args>(args)... }
+		{
+		}
+
+		std::uint64_t size()
+		{
+			return buffer_.size();
+		}
+
 		T at(std::uint64_t index)
 		{
 			return buffer_[index];
@@ -173,4 +198,33 @@ namespace glasssix::exposing::impl
 	private:
 		std::vector<T> buffer_;
 	};
+}
+
+namespace glasssix::exposing
+{
+	/// <summary>
+	/// Creates a N-dimensional param_vector.
+	/// </summary>
+	/// <typeparam name="T">The element type</typeparam>
+	/// <returns>The result</returns>
+	template<typename T, std::size_t Dimension = 1, typename = std::enable_if_t<std::conjunction_v<impl::has_abi_type<T>>>>
+	auto make_param_vector()
+	{
+		using element_type = meta::make_multidimensional_container_t<param_vector, T, Dimension - 1>;
+
+		return make_as_first<impl::param_vector_impl<element_type>>();
+	}
+
+	/// <summary>
+	/// Creates a one-dimensional param_vector.
+	/// </summary>
+	/// <typeparam name="T">The element type</typeparam>
+	/// <typeparam name="...Args">The types of the initializer</typeparam>
+	/// <param name="...args">The initializer</param>
+	/// <returns>The result</returns>
+	template<typename T, typename... Args, typename = std::enable_if_t<std::conjunction_v<impl::has_abi_type<T>, std::is_convertible<Args, T>...>>>
+	param_vector<T> make_param_vector(Args&&... args)
+	{
+		return make_as_first<impl::param_vector_impl<T>>(std::forward<Args>(args)...);
+	}
 }

@@ -307,26 +307,25 @@ namespace glasssix::exposing
 
 	/// <summary>
 	/// Gets a pointer to the ABI of a string with type information erased.
+	/// The ABI will not be cleared and the caller must ensure safety.
+	/// </summary>
+	/// <param name="str">The string</param>
+	/// <returns>The pointer to the ABI</returns>
+	inline void** put_abi_dangerous(param_string& str) noexcept
+	{
+		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<allocations::param_string_handle>(str));
+	}
+
+	/// <summary>
+	/// Gets a pointer to the ABI of a string with type information erased.
 	/// </summary>
 	/// <param name="str">The string</param>
 	/// <returns>The pointer to the ABI</returns>
 	inline void** put_abi(param_string& str) noexcept
 	{
-		str.clear();
-		
-		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<allocations::param_string_handle>(str));
+		return (str.clear(), put_abi_dangerous(str));
 	}
 
-	/// <summary>
-	/// Attaches an ABI to a string.
-	/// </summary>
-	/// <param name="str">The string</param>
-	/// <param name="abi">The ABI</param>
-	inline void attach_abi(param_string& str, void* abi) noexcept
-	{
-		*put_abi(str) = abi;
-	}
-	
 	/// <summary>
 	/// Detaches the ABI from a string.
 	/// </summary>
@@ -334,7 +333,7 @@ namespace glasssix::exposing
 	/// <returns>The ABI detached from the string</returns>
 	void* detach_abi(param_string& str) noexcept
 	{
-		return std::exchange(*put_abi(str), nullptr);
+		return std::exchange(*put_abi_dangerous(str), nullptr);
 	}
 
 	/// <summary>
@@ -344,7 +343,7 @@ namespace glasssix::exposing
 	/// <returns>The ABI detached from the string</returns>
 	void* detach_abi(param_string&& str) noexcept
 	{
-		return std::exchange(*put_abi(str), nullptr);
+		return std::exchange(*put_abi_dangerous(str), nullptr);
 	}
 
 	/// <summary>
@@ -372,7 +371,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The string</returns>
-	inline param_string create_from_abi(void* abi) noexcept
+	param_string create_string_from_abi(void* abi) noexcept
 	{
 		return param_string{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) };
 	}

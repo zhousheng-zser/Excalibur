@@ -20,9 +20,6 @@ namespace glasssix::exposing
 	void* detach_abi(T&& object) noexcept;
 	void* get_abi(const unknown_object& object) noexcept;
 	void** put_abi(unknown_object& object) noexcept;
-	void attach_abi(unknown_object& object, void* value) noexcept;
-	void copy_from_abi(unknown_object& object, void* value) noexcept;
-	void copy_to_abi(const unknown_object& object, void*& value) noexcept;
 }
 
 namespace glasssix::exposing::impl
@@ -336,14 +333,36 @@ namespace glasssix::exposing
 
 	/// <summary>
 	/// Gets a pointer to the ABI of an object with type information erased.
+	/// The ABI will not be cleared and the caller must ensure safety.
+	/// </summary>
+	/// <param name="object">The object</param>
+	/// <returns>The pointer to the ABI</returns>
+	inline void** put_abi_dangerous(unknown_object& object) noexcept
+	{
+		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<impl::abi_unknown_object*>(object));
+	}
+
+	/// <summary>
+	/// Gets a pointer to the ABI of a primitive object.
+	/// The ABI will not be cleared and the caller must ensure safety.
+	/// </summary>
+	/// <typeparam name="T">The object type</typeparam>
+	/// <param name="object">The object</param>
+	/// <returns>The pointer to the ABI</returns>
+	template<typename T, typename = std::enable_if_t<impl::is_primitive_v<T>>>
+	auto put_abi_dangerous(T& object) noexcept
+	{
+		return &meta::get_standard_layout_first_member<impl::abi_t<T>>(object);
+	}
+
+	/// <summary>
+	/// Gets a pointer to the ABI of an object with type information erased.
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <returns>The pointer to the ABI</returns>
 	inline void** put_abi(unknown_object& object) noexcept
 	{
-		object = nullptr;
-
-		return reinterpret_cast<void**>(&meta::get_standard_layout_first_member<impl::abi_unknown_object*>(object));
+		return (object = nullptr, put_abi_dangerous(object));
 	}
 
 	/// <summary>
@@ -355,19 +374,7 @@ namespace glasssix::exposing
 	template<typename T, typename = std::enable_if_t<impl::is_primitive_v<T>>>
 	auto put_abi(T& object) noexcept
 	{
-		object = {};
-
-		return &meta::get_standard_layout_first_member<impl::abi_t<T>>(object);
-	}
-
-	/// <summary>
-	/// Attaches an ABI to an object.
-	/// </summary>
-	/// <param name="object">The object</param>
-	/// <param name="abi">The ABI</param>
-	inline void attach_abi(unknown_object& object, void* abi) noexcept
-	{
-		*put_abi(object) = abi;
+		return (object = {}, put_abi_dangerous(object));
 	}
 
 	/// <summary>
@@ -375,7 +382,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <returns>The ABI detached from the object</returns>
-	template<typename T, typename = std::enable_if_t<std::disjunction_v<std::conjunction<meta::is_non_const_reference<T>, impl::is_well_defined_interface<std::decay_t<T>>>, std::is_null_pointer<T>>>>
+	template<typename T, typename = std::enable_if_t<std::disjunction_v<impl::is_well_defined_interface<std::decay_t<T>>, std::is_null_pointer<T>>>>
 	void* detach_abi(T&& object) noexcept
 	{
 		if constexpr (std::is_null_pointer_v<T>)
@@ -386,7 +393,7 @@ namespace glasssix::exposing
 		{
 			// When the object is a named rvalue reference, we just pass it to the put_abi function as a lvalue reference (without perfect forwarding).
 			// Thus, the ABI of the object is capable of being exchanged.
-			return std::exchange(*put_abi(object), nullptr);
+			return std::exchange(*put_abi_dangerous(object), nullptr);
 		}
 	}
 
@@ -457,32 +464,40 @@ namespace glasssix::exposing
 	}
 
 	/// <summary>
-	/// Creates an interface from an ABI.
+	/// Creates an interface or a string from an ABI.
 	/// </summary>
-	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <typeparam name="T">The type</typeparam>
 	/// <param name="abi">The ABI</param>
-	/// <returns>The interface</returns>
-	template<typename Interface, typename = std::enable_if_t<impl::is_well_defined_interface_v<Interface>>>
-	Interface create_from_abi(void* abi)
+	/// <returns>The result</returns>
+	template<typename T, typename = std::enable_if_t<std::disjunction_v<impl::is_well_defined_interface<T>, std::is_same<T, param_string>>>>
+	T create_from_abi(void* abi) noexcept
 	{
-		Interface result{};
+		if constexpr (std::is_same_v<T, param_string>)
+		{
+			return create_string_from_abi(abi);
+		}
+		else
+		{
+			if (abi)
+			{
+				static_cast<impl::abi_unknown_object*>(abi)->add_ref();
+			}
 
-		return (copy_from_abi(result, abi), result);
+			return T{ take_over_abi_from_void_ptr{ abi } };
+		}
 	}
 
 	/// <summary>
 	/// Creates a primitive type from an ABI.
 	/// </summary>
-	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <typeparam name="T">The primitive type</typeparam>
 	/// <typeparam name="ABI">The ABI type</typeparam>
 	/// <param name="abi">The ABI</param>
-	/// <returns>The interface</returns>
+	/// <returns>The result</returns>
 	template<typename T, typename Abi, typename = std::enable_if_t<std::conjunction_v<impl::is_primitive<T>, std::is_same<impl::abi_t<T>, std::decay_t<Abi>>>>>
-	T create_from_abi(Abi&& abi)
+	T create_from_abi(Abi&& abi) noexcept
 	{
-		T result{};
-
-		return (copy_from_abi(result, std::forward<Abi>(abi)), result);
+		return T{ std::forward<Abi>(abi) };
 	}
 }
 

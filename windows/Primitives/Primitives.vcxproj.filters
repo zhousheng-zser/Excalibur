@@ -25,6 +25,9 @@
     <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp">
       <Filter>abi</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\dll_loader.cpp">
+      <Filter>abi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
@@ -102,9 +105,6 @@
     <ClInclude Include="..\..\include\Primitives\fmt\format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\unknown_object.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\scope_guard.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -148,6 +148,9 @@
       <Filter>abi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\dll_loader.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>
