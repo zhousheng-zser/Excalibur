@@ -1,4 +1,4 @@
-#include "abi/dll_loader.hpp"
+#include "abi/component_loader.hpp"
 
 #include <type_traits>
 

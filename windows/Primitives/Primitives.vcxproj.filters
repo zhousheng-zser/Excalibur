@@ -25,7 +25,7 @@
     <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp">
       <Filter>abi</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\abi\dll_loader.cpp">
+    <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp">
       <Filter>abi</Filter>
     </ClCompile>
   </ItemGroup>
@@ -150,7 +150,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\dll_loader.hpp">
+    <ClInclude Include="..\..\include\Primitives\abi\component_loader.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>
