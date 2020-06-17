@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <utility>
 #include <iterator>
+#include <functional>
 #include <type_traits>
 #include <string_view>
 
@@ -30,6 +31,9 @@ namespace glasssix::exposing::allocations
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_c_string_with_param_string(const utf8_char* left, param_string_handle right) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string_with_c_string(param_string_handle left, const utf8_char* right) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL concat_param_string(param_string_handle left, param_string_handle right) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_c_string_with_param_string(const utf8_char* left, param_string_handle right) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_param_string_with_c_string(param_string_handle left, const utf8_char* right) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_param_string(param_string_handle left, param_string_handle right) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::uint32_t G6_ABI_CALL free_param_string(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES const utf8_char* G6_ABI_CALL get_param_string_data(param_string_handle str) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::size_t G6_ABI_CALL get_param_string_size(param_string_handle str) noexcept;
@@ -115,6 +119,31 @@ namespace glasssix::exposing
 			handle_ = std::exchange(right.handle_, nullptr);
 
 			return *this;
+		}
+
+		friend bool operator==(const utf8_char* left, const param_string& right) noexcept
+		{
+			return allocations::compare_c_string_with_param_string(left, right.handle_);
+		}
+
+		friend bool operator==(const param_string& left, const utf8_char* right) noexcept
+		{
+			return allocations::compare_param_string_with_c_string(left.handle_, right);
+		}
+
+		friend bool operator==(utf8_string_view left, const param_string& right) noexcept
+		{
+			return allocations::compare_c_string_with_param_string(left.data(), right.handle_);
+		}
+
+		friend bool operator==(const param_string& left, utf8_string_view right) noexcept
+		{
+			return allocations::compare_param_string_with_c_string(left.handle_, right.data());
+		}
+
+		friend bool operator==(const param_string& left, const param_string& right) noexcept
+		{
+			return allocations::compare_param_string(left.handle_, right.handle_);
 		}
 
 		friend param_string operator+(const utf8_char* left, const param_string& right) noexcept
@@ -331,7 +360,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="str">The string</param>
 	/// <returns>The ABI detached from the string</returns>
-	void* detach_abi(param_string& str) noexcept
+	inline void* detach_abi(param_string& str) noexcept
 	{
 		return std::exchange(*put_abi_dangerous(str), nullptr);
 	}
@@ -341,7 +370,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="str">The string</param>
 	/// <returns>The ABI detached from the string</returns>
-	void* detach_abi(param_string&& str) noexcept
+	inline void* detach_abi(param_string&& str) noexcept
 	{
 		return std::exchange(*put_abi_dangerous(str), nullptr);
 	}
@@ -371,8 +400,19 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The string</returns>
-	param_string create_string_from_abi(void* abi) noexcept
+	inline param_string create_string_from_abi(void* abi) noexcept
 	{
 		return param_string{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) };
 	}
+}
+
+namespace std
+{
+	template<> struct hash<glasssix::exposing::param_string>
+	{
+		std::size_t operator()(const glasssix::exposing::param_string& str) const
+		{
+			return std::hash<glasssix::exposing::param_string::view_type>{}(str);
+		}
+	};
 }

@@ -157,6 +157,43 @@ namespace glasssix::exposing::allocations
 		return concat_c_string(header_left->data, header_left->size, header_right->data, header_right->size);
 	}
 
+	EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_c_string_with_param_string(const utf8_char* left, param_string_handle right) noexcept
+	{
+		if (left == nullptr || right == nullptr)
+		{
+			return left == right;
+		}
+
+		auto header_right = pure_c::from_handle<param_string_header>(right);
+
+		return left == utf8_string_view{ header_right->data, header_right->size };
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_param_string_with_c_string(param_string_handle left, const utf8_char* right) noexcept
+	{
+		if (left == nullptr || right == nullptr)
+		{
+			return left == right;
+		}
+
+		auto header_left = pure_c::from_handle<param_string_header>(left);
+
+		return utf8_string_view{ header_left->data, header_left->size } == right;
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES bool G6_ABI_CALL compare_param_string(param_string_handle left, param_string_handle right) noexcept
+	{
+		if (left == nullptr || right == nullptr)
+		{
+			return left == right;
+		}
+
+		auto header_left = pure_c::from_handle<param_string_header>(left);
+		auto header_right = pure_c::from_handle<param_string_header>(right);
+
+		return utf8_string_view{ header_left->data, header_left->size } == utf8_string_view{ header_right->data, header_right->size };
+	}
+
 	EXPORT_EXCALIBUR_PRIMITIVES std::uint32_t G6_ABI_CALL free_param_string(param_string_handle str) noexcept
 	{
 		if (str == nullptr)

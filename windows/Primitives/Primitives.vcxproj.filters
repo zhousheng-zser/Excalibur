@@ -153,6 +153,9 @@
     <ClInclude Include="..\..\include\Primitives\abi\component_loader.hpp">
       <Filter>abi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

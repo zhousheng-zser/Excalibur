@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
 
 namespace glasssix::exposing
@@ -47,6 +48,7 @@ namespace glasssix::exposing
 	};
 
 	inline constexpr abi_result error_success{ 0 };
+	inline constexpr abi_result error_success_false{ 1 };
 	inline constexpr abi_result error_failure{ -1 };
 	inline constexpr abi_result error_not_implemented{ -2 };
 	inline constexpr abi_result error_null_pointer{ -3 };
@@ -60,6 +62,7 @@ namespace glasssix::exposing
 	inline const std::unordered_map<std::int32_t, const param_string> predefined_error_messages
 	{
 		{ error_success, u8"The operation successfully completed." },
+		{ error_success_false, u8"The operation successfully completed with a false value." },
 		{ error_failure, u8"The operation failed because of an unknown error." },
 		{ error_not_implemented, u8"The operation was not implemented." },
 		{ error_null_pointer, u8"One of the parameters was null." },
@@ -80,6 +83,16 @@ namespace glasssix::exposing
 		auto iter = predefined_error_messages.find(result);
 
 		return iter != predefined_error_messages.end() ? iter->second : predefined_error_messages.find(error_failure)->second;
+	}
+
+	/// <summary>
+	/// Converts a boolean to a ABI result code.
+	/// </summary>
+	/// <param name="value">The boolean value</param>
+	/// <returns>The result code</returns>
+	inline abi_result to_abi_result(bool value) noexcept
+	{
+		return value ? error_success : error_success_false;
 	}
 
 	/// <summary>
@@ -219,7 +232,14 @@ namespace glasssix::exposing
 	template<typename Callable>
 	abi_result abi_safe_call(Callable&& handler) noexcept try
 	{
-		return (std::forward<Callable>(handler)(), error_success);
+		if constexpr (std::is_convertible_v<decltype(std::declval<Callable>()()), abi_result>)
+		{
+			return std::forward<Callable>(handler)();
+		}
+		else
+		{
+			return (std::forward<Callable>(handler)(), error_success);
+		}
 	}
 	catch (...)
 	{

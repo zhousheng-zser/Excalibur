@@ -59,7 +59,6 @@ namespace glasssix::exposing
 						factory.get_qualified_names();
 
 						std::lock_guard<std::mutex> guard{ lock_ };
-						
 					}
 
 					return false;

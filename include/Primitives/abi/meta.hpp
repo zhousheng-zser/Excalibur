@@ -18,6 +18,30 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
+	namespace details
+	{
+		template<typename Tuple, typename = void>
+		struct has_common_type_impl : std::false_type{};
+
+		template<typename... Args>
+		struct has_common_type_impl<std::tuple<Args...>, std::void_t<std::common_type_t<Args...>>> : std::true_type{};
+	}
+
+	template<typename T>
+	struct noumenon
+	{
+		using type = T;
+	};
+
+	template<typename T>
+	using noumenon_t = typename noumenon<T>::type;
+
+	template<typename... Args>
+	struct has_common_type : details::has_common_type_impl<std::tuple<Args...>>{};
+
+	template<typename... Args>
+	inline constexpr bool has_common_type_v = has_common_type<Args...>::value;
+
 	template<typename T>
 	struct is_const_reference : std::conjunction<std::is_reference<T>, std::is_const<std::remove_reference_t<T>>> {};
 
@@ -35,15 +59,6 @@ namespace glasssix::exposing::meta
 
 	template<typename T, typename... Args>
 	inline constexpr bool is_same_any_v = is_same_any<T, Args...>::value;
-
-	template<typename T>
-	struct noumenon
-	{
-		using type = T;
-	};
-
-	template<typename T>
-	using noumenon_t = typename noumenon<T>::type;
 
 	template<template<typename> typename Container, typename T, std::size_t Dimension>
 	struct make_multidimensional_container : noumenon<Container<typename make_multidimensional_container<Container, T, Dimension - 1>::type>> {};

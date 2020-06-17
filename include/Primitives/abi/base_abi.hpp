@@ -16,8 +16,6 @@ namespace glasssix::exposing
 {
 	class unknown_object;
 
-	template<typename T, typename>
-	void* detach_abi(T&& object) noexcept;
 	void* get_abi(const unknown_object& object) noexcept;
 	void** put_abi(unknown_object& object) noexcept;
 }
@@ -382,7 +380,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <returns>The ABI detached from the object</returns>
-	template<typename T, typename = std::enable_if_t<std::disjunction_v<impl::is_well_defined_interface<std::decay_t<T>>, std::is_null_pointer<T>>>>
+	template<typename T, std::enable_if_t<std::disjunction_v<impl::is_well_defined_interface<std::decay_t<T>>, std::is_null_pointer<T>>>* = nullptr>
 	void* detach_abi(T&& object) noexcept
 	{
 		if constexpr (std::is_null_pointer_v<T>)
@@ -402,7 +400,7 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="object">The object</param>
 	/// <returns>The ABI detached from the object</returns>
-	template<typename T, typename = std::enable_if_t<impl::is_primitive_v<T>>>
+	template<typename T, std::enable_if_t<impl::is_primitive_v<std::decay_t<T>>>* = nullptr>
 	auto detach_abi(T&& object) noexcept
 	{
 		impl::abi_t<std::decay_t<T>> result{};
