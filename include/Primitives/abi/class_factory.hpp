@@ -46,7 +46,7 @@ namespace glasssix::exposing::impl
 	template<> struct abi_adapter<class_factory>
 	{
 		template<typename Derived>
-		struct type : enable_self_abi_awareness<class_factory>
+		struct type : enable_self_abi_awareness<Derived, class_factory>
 		{
 			/// <summary>
 			/// Creates an instance by a qualified name.

@@ -4,6 +4,7 @@
 #include "base_abi.hpp"
 #include "implements.hpp"
 #include "exceptions.hpp"
+#include "iterable_object.hpp"
 
 #include <vector>
 #include <cstddef>
@@ -61,7 +62,7 @@ namespace glasssix::exposing::impl
 		{
 			return abi_safe_call([&] { this->self().set_at(index, create_from_abi<T>(item)); });
 		}
-		
+
 		virtual std::int32_t G6_ABI_CALL push_back(abi_in_t<T> item) noexcept override
 		{
 			return abi_safe_call([&] { this->self().push_back(create_from_abi<T>(item)); });
@@ -71,12 +72,12 @@ namespace glasssix::exposing::impl
 		{
 			return abi_safe_call([&] { this->self().remove_at(index); });
 		}
-		
+
 		virtual std::int32_t G6_ABI_CALL insert_at(std::uint64_t index, abi_in_t<T> item) noexcept override
 		{
 			return abi_safe_call([&] { this->self().insert_at(index, create_from_abi<T>(item)); });
 		}
-		
+
 		virtual std::int32_t G6_ABI_CALL clear() noexcept override
 		{
 			return abi_safe_call([&] { this->self().clear(); });
@@ -90,43 +91,43 @@ namespace glasssix::exposing::impl
 	struct abi_adapter<param_vector<T>>
 	{
 		template<typename Derived>
-		struct type : enable_self_abi_awareness<param_vector<T>>
+		struct type : enable_self_abi_awareness<Derived, param_vector<T>>
 		{
-			std::uint64_t size()
+			std::uint64_t size() const
 			{
 				std::uint64_t result = 0;
-				
+
 				return (check_abi_result(this->self_abi().size(put_abi(result))), result);
 			}
 
-			T at(std::uint64_t index)
+			T at(std::uint64_t index) const
 			{
 				T result{};
 
 				return (check_abi_result(this->self_abi().at(index, put_abi(result))), result);
 			}
 
-			void set_at(std::uint64_t index, const T& item)
+			void set_at(std::uint64_t index, const T& item) const
 			{
 				check_abi_result(this->self_abi().set_at(index, get_abi(item)));
 			}
 
-			void push_back(const T& item)
+			void push_back(const T& item) const
 			{
 				check_abi_result(this->self_abi().push_back(get_abi(item)));
 			}
 
-			void remove_at(std::uint64_t index)
+			void remove_at(std::uint64_t index) const
 			{
 				check_abi_result(this->self_abi().remove_at(get_abi(index)));
 			}
 
-			void insert_at(std::uint64_t index, const T& element)
+			void insert_at(std::uint64_t index, const T& element) const
 			{
 				check_abi_result(this->self_abi().insert_at(get_abi(index), get_abi(element)));
 			}
 
-			void clear()
+			void clear() const
 			{
 				check_abi_result(this->self_abi().clear());
 			}
@@ -137,21 +138,27 @@ namespace glasssix::exposing::impl
 namespace glasssix::exposing
 {
 	/// <summary>
-	/// A mutable vector that is capable of being parameters.
+	/// A mutable vector.
 	/// </summary>
 	template<typename T>
-	struct param_vector : inherits<param_vector<T>>
+	struct param_vector : inherits<param_vector<T>, iterable_object<T>>
 	{
-		using inherits<param_vector<T>>::inherits;
+		using inherits<param_vector<T>, iterable_object<T>>::inherits;
 	};
 }
 
 namespace glasssix::exposing::impl
 {
+	/// <summary>
+	/// An implementation of a param_vector.
+	/// </summary>
+	/// <typeparam name="T">The element type</typeparam>
 	template<typename T>
 	class param_vector_impl : public implements<param_vector_impl<T>, param_vector<T>>
 	{
 	public:
+		class object_iterator_impl;
+
 		param_vector_impl()
 		{
 		}
@@ -161,12 +168,12 @@ namespace glasssix::exposing::impl
 		{
 		}
 
-		std::uint64_t size()
+		std::uint64_t size() const
 		{
 			return buffer_.size();
 		}
 
-		T at(std::uint64_t index)
+		T at(std::uint64_t index) const
 		{
 			return buffer_[index];
 		}
@@ -195,7 +202,41 @@ namespace glasssix::exposing::impl
 		{
 			buffer_.clear();
 		}
+
+		object_iterator<T> get_iterator() const
+		{
+			return make_as_first<object_iterator_impl>(*this);
+		}
 	private:
+		/// <summary>
+		/// Implements an object iterator.
+		/// </summary>
+		class object_iterator_impl : public implements<object_iterator_impl, object_iterator<T>>
+		{
+		public:
+			object_iterator_impl(const param_vector_impl& impl) : index_{}, impl_ { impl }
+			{
+			}
+
+			T current() const
+			{
+				return impl_.at(index_);
+			}
+
+			bool valid() const
+			{
+				return index_ < impl_.size();
+			}
+
+			bool move_to_next()
+			{
+				return ++index_ < impl_.size();
+			}
+		private:
+			std::uint64_t index_;
+			const param_vector_impl& impl_;
+		};
+
 		std::vector<T> buffer_;
 	};
 }
@@ -223,7 +264,7 @@ namespace glasssix::exposing
 	/// <param name="...args">The initializer</param>
 	/// <returns>The result</returns>
 	template<typename T, typename... Args, typename = std::enable_if_t<std::conjunction_v<impl::has_abi_type<T>, std::is_convertible<Args, T>...>>>
-	param_vector<T> make_param_vector(Args&&... args)
+	auto make_param_vector(Args&&... args)
 	{
 		return make_as_first<impl::param_vector_impl<T>>(std::forward<Args>(args)...);
 	}

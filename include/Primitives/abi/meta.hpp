@@ -18,15 +18,6 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_little_endian_v = static_cast<const std::uint8_t&>(static_cast<std::uint32_t>(0x1234)) == 0x34;
 	inline constexpr bool is_big_endian_v = !is_little_endian_v;
 
-	namespace details
-	{
-		template<typename Tuple, typename = void>
-		struct has_common_type_impl : std::false_type{};
-
-		template<typename... Args>
-		struct has_common_type_impl<std::tuple<Args...>, std::void_t<std::common_type_t<Args...>>> : std::true_type{};
-	}
-
 	template<typename T>
 	struct noumenon
 	{
@@ -35,6 +26,24 @@ namespace glasssix::exposing::meta
 
 	template<typename T>
 	using noumenon_t = typename noumenon<T>::type;
+
+	namespace details
+	{
+		template<typename Tuple, typename = void>
+		struct has_common_type_impl : std::false_type{};
+
+		template<typename... Args>
+		struct has_common_type_impl<std::tuple<Args...>, std::void_t<std::common_type_t<Args...>>> : std::true_type{};
+
+		template<typename Tuple, typename... Args>
+		struct tuple_unique_impl : noumenon<Tuple> {};
+
+		template <typename... Args, typename Current, typename... Rests>
+		struct tuple_unique_impl<std::tuple<Args...>, Current, Rests...> : std::conditional_t<std::disjunction_v<std::is_same<Current, Args>...>, tuple_unique_impl<std::tuple<Args...>, Rests...>, tuple_unique_impl<std::tuple<Args..., Current>, Rests...>> {};
+
+		template<typename Tuple, typename... Args>
+		using tuple_unique_impl_t = typename tuple_unique_impl<Tuple, Args...>::type;
+	}
 
 	template<typename... Args>
 	struct has_common_type : details::has_common_type_impl<std::tuple<Args...>>{};
@@ -69,10 +78,10 @@ namespace glasssix::exposing::meta
 	template<template<typename> typename Container, typename T, std::size_t Dimension>
 	using make_multidimensional_container_t = typename make_multidimensional_container<Container, T, Dimension>::type;
 
-	template<typename... T>
-	using tuple_cat_t = decltype(std::tuple_cat(std::declval<T>()...));
+	template<typename... Tuples>
+	using tuple_cat_t = decltype(std::tuple_cat(std::declval<Tuples>()...));
 
-	template<template<typename> typename Condition, typename>
+	template<template<typename> typename Condition, typename Tuple>
 	struct tuple_if;
 
 	template<template<typename> typename Condition, typename... Args>
@@ -95,6 +104,42 @@ namespace glasssix::exposing::meta
 
 	template<typename Tuple>
 	using tuple_first_t = typename tuple_first<Tuple>::type;
+
+	template<template<typename> typename Selector, typename Tuple>
+	struct tuple_select;
+
+	template<template<typename> typename Selector, typename... Args>
+	struct tuple_select<Selector, std::tuple<Args...>>
+	{
+		using type = std::tuple<typename Selector<Args>::type...>;
+	};
+
+	template<template<typename> typename Selector, typename Tuple>
+	using tuple_select_t = typename tuple_select<Selector, Tuple>::type;
+
+	template<template<typename> typename Selector, typename Tuple>
+	struct tuple_select_many;
+
+	template<template<typename> typename Selector, typename... Args>
+	struct tuple_select_many<Selector, std::tuple<Args...>>
+	{
+		using type = tuple_cat_t<typename Selector<Args>::type...>;
+	};
+
+	template<template<typename> typename Selector, typename Tuple>
+	using tuple_select_many_t = typename tuple_select_many<Selector, Tuple>::type;
+
+	template <typename Tuple>
+	struct tuple_unique;
+
+	template <typename... Args>
+	struct tuple_unique<std::tuple<Args...>>
+	{
+		using type = details::tuple_unique_impl_t<std::tuple<>, Args...>;
+	};
+
+	template <typename Tuple>
+	using tuple_unique_t = typename tuple_unique<Tuple>::type;
 
 	template<typename... Args>
 	struct first_of_template_arguments

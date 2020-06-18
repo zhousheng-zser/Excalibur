@@ -119,7 +119,7 @@ namespace glasssix::exposing::impl
 	{
 		using type = void*;
 	};
-
+	
 	template<typename T>
 	struct abi_out
 	{
@@ -240,6 +240,16 @@ namespace glasssix::exposing
 			release();
 
 			return *this;
+		}
+
+		friend bool operator==(const unknown_object& left, const unknown_object& right) noexcept
+		{
+			return left.abi_ == right.abi_;
+		}
+
+		friend bool operator!=(const unknown_object& left, const unknown_object& right) noexcept
+		{
+			return !(left == right);
 		}
 
 		/// <summary>
@@ -503,7 +513,7 @@ namespace glasssix::exposing::impl
 {
 	namespace details
 	{
-		template<typename To, bool has_exception, typename From, typename = std::enable_if_t<std::conjunction_v<is_well_defined_interface<From>, is_well_defined_interface<To>>>>
+		template<typename To, bool has_exception, typename From, typename = /*std::enable_if_t<std::conjunction_v<is_well_defined_interface<From>, is_well_defined_interface<To>>>*/void>
 		To as_impl(From* ptr)
 		{
 			To result{ nullptr };

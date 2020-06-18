@@ -146,6 +146,31 @@ namespace glasssix::exposing
 			return allocations::compare_param_string(left.handle_, right.handle_);
 		}
 
+		friend bool operator!=(const utf8_char* left, const param_string& right) noexcept
+		{
+			return !(left == right);
+		}
+
+		friend bool operator!=(const param_string& left, const utf8_char* right) noexcept
+		{
+			return !(left == right);
+		}
+
+		friend bool operator!=(utf8_string_view left, const param_string& right) noexcept
+		{
+			return !(left == right);
+		}
+
+		friend bool operator!=(const param_string& left, utf8_string_view right) noexcept
+		{
+			return !(left == right);
+		}
+
+		friend bool operator!=(const param_string& left, const param_string& right) noexcept
+		{
+			return !(left == right);
+		}
+
 		friend param_string operator+(const utf8_char* left, const param_string& right) noexcept
 		{
 			return param_string{ allocations::concat_c_string_with_param_string(left, right.handle_) };

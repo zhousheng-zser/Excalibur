@@ -156,6 +156,9 @@
     <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp">
       <Filter>abi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

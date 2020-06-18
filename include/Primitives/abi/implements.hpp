@@ -28,28 +28,18 @@ namespace glasssix::exposing::impl
 	template<typename Derived, typename Interface, typename = void>
 	struct interface_vtable_base;
 
-	namespace details
-	{
-		template<typename Derived, typename T>
-		struct implements_interface_vtables_impl;
+	template<typename T, typename = void>
+	struct is_inherits : std::false_type {};
 
-		template<typename Derived, typename... Interfaces>
-		struct implements_interface_vtables_impl<Derived, std::tuple<Interfaces...>> : implements_interface_vtable<Derived, Interfaces>...
-		{
-		};
+	template<typename T>
+	struct is_inherits<T, std::void_t<typename T::inherits_type>> : std::true_type {};
 
-		template<typename Derived>
-		struct pack_implemented_interfaces;
-
-		template<template<typename, typename...> typename Implements, typename Derived, typename... Interfaces>
-		struct pack_implemented_interfaces<Implements<Derived, Interfaces...>>
-		{
-			using type = meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>;
-		};
-
-		template<typename Derived>
-		using pack_implemented_interfaces_t = typename pack_implemented_interfaces<Derived>::type;
-	}
+	/// <summary>
+	/// Checks whether a type is an "inherits" type.
+	/// </summary>
+	/// <typeparam name="T">The type</typeparam>
+	template<typename T>
+	inline constexpr bool is_inherits_v = is_inherits<T>::value;
 
 	template<typename T, typename = void>
 	struct is_implements : std::false_type {};
@@ -64,11 +54,94 @@ namespace glasssix::exposing::impl
 	template<typename T>
 	inline constexpr bool is_implements_v = is_implements<T>::value;
 
+	template<typename T>
+	struct get_inherits
+	{
+		using type = typename T::inherits_type;
+	};
+
+	template<typename T>
+	using get_inherits_t = typename get_inherits<T>::type;
+
+	template<typename T>
+	struct get_implements
+	{
+		using type = typename T::implements_type;
+	};
+
+	template<typename T>
+	using get_implements_t = typename get_implements<T>::type;
+
+	namespace details
+	{
+		template<typename Derived, typename T>
+		struct implements_interface_vtables_impl;
+
+		template<typename Derived, typename... Interfaces>
+		struct implements_interface_vtables_impl<Derived, std::tuple<Interfaces...>> : implements_interface_vtable<Derived, Interfaces>...
+		{
+		};
+
+		template<typename ImplementsOrInherits>
+		struct get_top_level_interfaces;
+
+		template<template<typename, typename...> typename ImplementsOrInherits, typename Derived, typename... Interfaces>
+		struct get_top_level_interfaces<ImplementsOrInherits<Derived, Interfaces...>>
+		{
+			using type = meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>;
+		};
+		
+		/// <summary>
+		/// Creates a tuple to accommodate the implemented or inherited interfaces at the top lovel (not recursively).
+		/// </summary>
+		template<typename ImplementsOrInherits>
+		using get_top_level_interfaces_t = typename get_top_level_interfaces<ImplementsOrInherits>::type;
+
+		template<typename Tuple>
+		struct get_interfaces_recursively_impl;
+
+		template<typename... Interfaces>
+		struct get_interfaces_recursively_impl<std::tuple<Interfaces...>>
+		{
+			using packed_type = meta::tuple_cat_t<get_top_level_interfaces_t<get_inherits_t<Interfaces>>...>;
+			using type = meta::tuple_unique_t<meta::tuple_cat_t<packed_type, typename get_interfaces_recursively_impl<meta::tuple_select_t<get_inherits, packed_type>>::type>>;
+		};
+
+		template<> struct get_interfaces_recursively_impl<std::tuple<>>
+		{
+			using type = std::tuple<>;
+		};
+
+		template<typename Tuple>
+		using get_interfaces_recursively_impl_t = typename get_interfaces_recursively_impl<Tuple>::type;
+
+		template<typename Tuple>
+		struct get_interfaces_recursively;
+
+		template<typename... Args>
+		struct get_interfaces_recursively<std::tuple<Args...>>
+		{
+			using type = meta::tuple_unique_t<meta::tuple_cat_t<std::tuple<Args...>, get_interfaces_recursively_impl_t<std::tuple<Args...>>>>;
+		};
+
+		template<typename Tuple>
+		using get_interfaces_recursively_t = typename get_interfaces_recursively<Tuple>::type;
+
+		template<typename Derived>
+		struct get_implemented_interfaces_recursively
+		{
+			using type = get_interfaces_recursively_t<get_top_level_interfaces_t<get_implements_t<Derived>>>;
+		};
+
+		template<typename Derived>
+		using get_implemented_interfaces_recursively_t = typename get_implemented_interfaces_recursively<Derived>::type;
+	}
+
 	template<typename T, typename = void>
 	struct has_unique_release : std::false_type {};
 
 	template<typename T>
-	struct has_unique_release < T, std::void_t<decltype(T::unique_release(std::unique_ptr<T>{})) >> : std::true_type{};
+	struct has_unique_release<T, std::void_t<decltype(T::unique_release(std::unique_ptr<T>{})) >> : std::true_type{};
 
 	/// <summary>
 	/// Checks whether a type contains a static function named unique_release.
@@ -212,7 +285,7 @@ namespace glasssix::exposing::impl
 	/// Implements vtables for interfacial ABIs.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
-	using implements_interface_vtables = details::implements_interface_vtables_impl<Derived, meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>>;
+	using implements_interface_vtables = details::implements_interface_vtables_impl<Derived, details::get_interfaces_recursively_t<meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>>>;
 
 	template<typename Derived, typename = void>
 	struct first_interface;
@@ -220,7 +293,7 @@ namespace glasssix::exposing::impl
 	template<typename Derived>
 	struct first_interface<Derived, std::enable_if_t<is_implements_v<Derived>>>
 	{
-		using type = meta::tuple_first_t<details::pack_implemented_interfaces_t<typename Derived::implements_type>>;
+		using type = meta::tuple_first_t<details::get_implemented_interfaces_recursively_t<Derived>>;
 	};
 
 	/// <summary>
@@ -247,7 +320,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The ABI</returns>
 		static void* get(Derived& derived, const guid& id) noexcept
 		{
-			using packed_type = details::pack_implemented_interfaces_t<typename Derived::implements_type>;
+			using packed_type = details::get_implemented_interfaces_recursively_t<Derived>;
 
 			return get_impl<packed_type>(derived, id, std::make_index_sequence<std::tuple_size_v<packed_type>>{});
 		}
@@ -259,7 +332,7 @@ namespace glasssix::exposing::impl
 			{
 				[&]
 				{
-					using implements_type = typename Derived::implements_type;
+					using implements_type = get_implements_t<Derived>;
 					using interface_type = std::tuple_element_t<Indexes, Packed>;
 					constexpr auto interface_id = guid_of_v<interface_type>;
 
@@ -285,12 +358,12 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// A helper class that enables casting to the derived type of an interface.
 	/// </summary>
-	template<typename Interface, typename = std::enable_if_t<has_abi_type_v<Interface>>>
+	template<typename Derived, typename Interface, typename = std::enable_if_t<has_abi_type_v<Interface>>>
 	struct enable_self_abi_awareness
 	{
 		decltype(auto) self_abi() const noexcept
 		{
-			return *static_cast<abi_t<Interface>*>(get_abi(static_cast<const Interface&>(*this)));
+			return *static_cast<abi_t<Interface>*>(get_abi(static_cast<const Interface&>(static_cast<const Derived&>(*this))));
 		}
 	};
 
@@ -304,6 +377,25 @@ namespace glasssix::exposing::impl
 		{
 			return static_cast<const Derived&>(*this).template try_as<Interface>();
 		}
+	};
+
+	namespace details
+	{
+		template<typename Derived, typename T>
+		struct inherits_abi_adapters_impl;
+
+		template<typename Derived, typename... Interfaces>
+		struct inherits_abi_adapters_impl<Derived, std::tuple<Interfaces...>> : inherits_abi_adapter<Derived, Interfaces>...
+		{
+		};
+	}
+
+	/// <summary>
+	/// Inherits a ABI adapter for an interface recursively (including all implicitly inherited ones).
+	/// </summary>
+	template<typename Derived, typename... Interfaces>
+	struct inherits_abi_adapters : details::inherits_abi_adapters_impl<Derived, details::get_interfaces_recursively_t<meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>>>
+	{
 	};
 
 	/// <summary>
@@ -392,7 +484,7 @@ namespace glasssix::exposing
 		using implements_type = implements;
 		using root_implements_type = impl::unknown_object_impl<Derived>;
 
-		abi_result G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
+		std::int32_t G6_ABI_CALL query_interface(const guid& id, void** object) noexcept
 		{
 			return root_implements_type::query_interface(id, object);
 		}
@@ -412,8 +504,10 @@ namespace glasssix::exposing
 	/// A helper class to support implicitly casting to one or more interfaces.
 	/// </summary>
 	template<typename Derived, typename... Interfaces>
-	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapter<Derived, Interfaces>...
+	struct inherits : unknown_object, impl::abi_adapter_t<Derived, Derived>, impl::inherits_abi_adapters<Derived, Interfaces...>
 	{
+		using inherits_type = inherits;
+
 		/// <summary>
 		/// Creates an instance with nullptr.
 		/// </summary>
@@ -443,7 +537,7 @@ namespace glasssix::exposing
 	};
 
 	/// <summary>
-	/// Creates an in-process instance of an implementation type and returns the default interface.
+	/// Creates an in-process instance of an implementation type.
 	/// </summary>
 	/// <typeparam name="T">The implementation type</typeparam>
 	/// <typeparam name="Interface">The interfacial type</typeparam>
