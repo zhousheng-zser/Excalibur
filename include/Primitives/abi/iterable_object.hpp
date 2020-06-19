@@ -87,7 +87,7 @@ namespace glasssix::exposing::impl
 			return abi_safe_call([&] { *result = detach_abi(this->self().get_iterator()); });
 		}
 	};
-	
+
 	/// <summary>
 	/// The ABI adapter of an object iterator.
 	/// </summary>
@@ -148,7 +148,7 @@ namespace glasssix::exposing::impl
 			object_iterator<T> get_iterator() const
 			{
 				object_iterator<T> result{ nullptr };
-				
+
 				return (check_abi_result(this->self_abi().get_iterator(put_abi(result))), result);
 			}
 		};
@@ -175,15 +175,15 @@ namespace glasssix::exposing
 		using inherits<iterable_object<T>>::inherits;
 	};
 
-	template<template<typename> typename T, typename U, typename = std::enable_if_t<std::is_convertible_v<T<U>, iterable_object<U>>>>
-	auto begin(const T<U>& obj) noexcept
+	template<typename T, typename = std::void_t<decltype(std::declval<T>().get_iterator())>>
+	auto begin(T&& obj) noexcept
 	{
-		return obj.get_iterator();
+		return std::forward<T>(obj).get_iterator();
 	}
 
-	template<template<typename> typename T, typename U, typename = std::enable_if_t<std::is_convertible_v<T<U>, iterable_object<U>>>>
-	auto end(const T<U>& obj) noexcept
+	template<typename T, typename = std::void_t<decltype(std::declval<T>().get_iterator())>>
+	auto end(T&& obj) noexcept
 	{
-		return iterable_object<U>{};
+		return decltype(std::declval<T>().get_iterator()){};
 	}
 }

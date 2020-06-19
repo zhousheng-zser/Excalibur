@@ -4,6 +4,7 @@
 #include "base_abi.hpp"
 #include "implements.hpp"
 #include "exceptions.hpp"
+#include "iterable_object.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -20,6 +21,9 @@ namespace glasssix::exposing
 
 	template<typename Key, typename Value>
 	struct param_hash_map;
+
+	template<typename Key, typename Value, typename>
+	auto make_param_pair(Key&& key, Value&& value);
 }
 
 namespace glasssix::exposing::impl
@@ -218,9 +222,9 @@ namespace glasssix::exposing
 	/// A hash map.
 	/// </summary>
 	template<typename Key, typename Value>
-	struct param_hash_map : inherits<param_hash_map<Key, Value>>
+	struct param_hash_map : inherits<param_hash_map<Key, Value>, iterable_object<param_pair<Key, Value>>>
 	{
-		using inherits<param_hash_map<Key, Value>>::inherits;
+		using inherits<param_hash_map<Key, Value>, iterable_object<param_pair<Key, Value>>>::inherits;
 	};
 }
 
@@ -257,6 +261,8 @@ namespace glasssix::exposing::impl
 	class param_hash_map_impl : public implements<param_hash_map_impl<Key, Value>, param_hash_map<Key, Value>>
 	{
 	public:
+		class object_iterator_impl;
+
 		param_hash_map_impl()
 		{
 		}
@@ -306,7 +312,41 @@ namespace glasssix::exposing::impl
 		{
 			buffer_.clear();
 		}
+
+		object_iterator<param_pair<Key, Value>> get_iterator() const
+		{
+			return make_as_first<object_iterator_impl>(*this);
+		}
 	private:
+		/// <summary>
+		/// Implements an object iterator.
+		/// </summary>
+		class object_iterator_impl : public implements<object_iterator_impl, object_iterator<param_pair<Key, Value>>>
+		{
+		public:
+			object_iterator_impl(const param_hash_map_impl& impl) : iter_{ impl.buffer_.begin() }, iter_end_{ impl.buffer_.end() }
+			{
+			}
+
+			param_pair<Key, Value> current() const
+			{
+				return make_param_pair(iter_->first, iter_->second);
+			}
+
+			bool valid() const
+			{
+				return iter_ != iter_end_;
+			}
+
+			bool move_to_next()
+			{
+				return ++iter_ != iter_end_;
+			}
+		private:
+			typename std::unordered_map<Key, Value>::const_iterator iter_;
+			typename std::unordered_map<Key, Value>::const_iterator iter_end_;
+		};
+
 		std::unordered_map<Key, Value> buffer_;
 	};
 }

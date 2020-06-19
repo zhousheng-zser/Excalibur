@@ -3,6 +3,7 @@
 #include <mutex>
 #include <memory>
 #include <utility>
+#include <cstdint>
 #include <type_traits>
 
 namespace glasssix
@@ -20,12 +21,12 @@ namespace glasssix
 		static Object& instance(Args&&... args)
 		{
 			static std::once_flag flag;
-			static std::aligned_storage_t<sizeof(Object), alignof(Object)> buffer;
+			alignas(Object) static std::uint8_t buffer[sizeof(Object)];
 			static Object* result = nullptr;
 
-			std::call_once(flag, [&] { result = new (buffer) Object{ std::forward<Args>(args)... }; });
+			std::call_once(flag, [&] { result = ::new (buffer) Object{ std::forward<Args>(args)... }; });
 			
-			return result;
+			return *result;
 		}
 	protected:
 		singleton() = default;

@@ -3,6 +3,7 @@
 #include "singleton.hpp"
 #include "dllexport.hpp"
 #include "exceptions.hpp"
+#include "filesystem.hpp"
 #include "g6_attributes.hpp"
 #include "class_factory.hpp"
 #include "pure_c_handle_utils.h"
@@ -11,6 +12,8 @@
 #include <mutex>
 #include <vector>
 #include <memory>
+#include <algorithm>
+#include <type_traits>
 #include <unordered_map>
 
 namespace glasssix::exposing::dll
@@ -38,10 +41,10 @@ namespace glasssix::exposing
 	/// <summary>
 	/// A manager for in-process components (that is a component from within a DLL).
 	/// </summary>
-	class in_process_component_loader final : public singleton<in_process_component_loader>
+	class component_loader final : public singleton<component_loader>
 	{
 	public:
-		friend singleton;
+		friend singleton<component_loader>;
 
 		/// <summary>
 		/// Adds a module.
@@ -56,9 +59,15 @@ namespace glasssix::exposing
 				{
 					if (class_factory factory{ nullptr }; dll_create_factory(put_abi(factory)) == error_success)
 					{
-						factory.get_qualified_names();
+						auto names = factory.get_qualified_names();
+						{
+							std::lock_guard<std::mutex> guard{ lock_ };
 
-						std::lock_guard<std::mutex> guard{ lock_ };
+							modules_.emplace_back(handle);
+							factories_.insert_or_assign(factory.get_component_name(), factory);
+						}
+
+						return true;
 					}
 
 					return false;
@@ -74,21 +83,56 @@ namespace glasssix::exposing
 		/// Adds a few modules.
 		/// </summary>
 		/// <param name="paths">The paths</param>
-		/// <returns>True if all the opeartions succeed; otherwise false</returns>
-		bool add_module(std::initializer_list<utf8_string_view> paths) noexcept
+		/// <returns>The count of successfully loaded modules</returns>
+		std::size_t add_modules(std::initializer_list<utf8_string_view> paths) noexcept
 		{
-			bool success = false;
+			return std::count_if(paths.begin(), paths.end(), [&](utf8_string_view path) { return add_module(path); });
+		}
 
-			for (auto& item : paths)
+		/// <summary>
+		/// Finds modules in a directory
+		/// </summary>
+		/// <param name="directory">The directory</param>
+		/// <param name="recursive">Indicates whether to find modules recursively</param>
+		/// <returns>The count of successfully loaded modules</returns>
+		std::size_t add_modules_in_directory(const fs::path& directory, bool recursive = false) noexcept
+		{
+			if (recursive)
 			{
-				success = add_module(item);
+				return add_modules_in_directory_impl<true>(directory);
 			}
+			else
+			{
+				return add_modules_in_directory_impl<false>(directory);
+			}
+		}
 
-			return success;
+		/// <summary>
+		/// Lookups a class factory by qualified name.
+		/// </summary>
+		/// <param name="qualified_name">The qualified name</param>
+		/// <returns>The class factory</returns>
+		class_factory lookup(utf8_string_view qualified_name) const noexcept
+		{
+			auto iter = factories_.find(qualified_name);
+
+			return iter != factories_.end() ? iter->second : nullptr;
 		}
 	private:
+		template<bool recursive>
+		std::size_t add_modules_in_directory_impl(const fs::path& directory) noexcept
+		{
+			using iterator_type = std::conditional_t<recursive, fs::recursive_directory_iterator, fs::directory_iterator>;
+
+			std::error_code code;
+			iterator_type iter_end;
+			iterator_type iter_begin{ directory, fs::directory_options::skip_permission_denied, code };
+			
+			return std::count_if(iter_begin, iter_end, [&](const fs::directory_entry& item) { return item.path().has_extension() && item.path().extension() == ".dll" ? add_module(item.path().u8string()) : false; });
+		}
+
 		std::mutex lock_;
-		std::vector<std::shared_ptr<dll::dll_handle>> modules_;
-		std::unordered_map<utf8_string, class_factory> factories_;
+		std::vector<dll::dll_handle_ptr> modules_;
+		std::unordered_map<param_string, class_factory> factories_;
 	};
 }

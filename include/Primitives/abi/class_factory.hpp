@@ -26,6 +26,7 @@ namespace glasssix::exposing::impl
 		{
 			virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept = 0;
 			virtual std::int32_t get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept = 0;
+			virtual std::int32_t get_component_name(abi_out_t<param_string> result) noexcept = 0;
 		};
 	};
 
@@ -41,6 +42,11 @@ namespace glasssix::exposing::impl
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().get_qualified_names()); });
 		}
+
+		virtual std::int32_t get_component_name(abi_out_t<param_string> result) noexcept override
+		{
+			return abi_safe_call([&] { *result = detach_abi(this->self().get_component_name()); });
+		}
 	};
 
 	template<> struct abi_adapter<class_factory>
@@ -53,7 +59,7 @@ namespace glasssix::exposing::impl
 			/// </summary>
 			/// <param name="qualified_name">The qualified name</param>
 			/// <returns>The instance</returns>
-			unknown_object create_instance(const param_string& qualified_name)
+			unknown_object create_instance(const param_string& qualified_name) const
 			{
 				unknown_object result{ nullptr };
 				
@@ -64,11 +70,22 @@ namespace glasssix::exposing::impl
 			/// Gets the available qualified names.
 			/// </summary>
 			/// <returns>The qualified names</returns>
-			param_vector<param_string> get_qualified_names()
+			param_vector<param_string> get_qualified_names() const
 			{
 				param_vector<param_string> result{ nullptr };
 
 				return (check_abi_result(this->self_abi().get_qualified_names(put_abi(result))), result);
+			}
+
+			/// <summary>
+			/// Gets the name of the component.
+			/// </summary>
+			/// <returns>The name of the component</returns>
+			param_string get_component_name() const
+			{
+				param_string result;
+
+				return (check_abi_result(this->self_abi().get_component_name(put_abi(result))), result);
 			}
 		};
 	};

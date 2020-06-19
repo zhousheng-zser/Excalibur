@@ -14,7 +14,6 @@
     <ClInclude Include="..\..\include\Irisviel\database_cache.hpp" />
     <ClInclude Include="..\..\include\Irisviel\distance.hpp" />
     <ClInclude Include="..\..\include\Irisviel\dynamic_buffer.hpp" />
-    <ClInclude Include="..\..\include\Irisviel\filesystem.hpp" />
     <ClInclude Include="..\..\include\Irisviel\filesystem_utils.hpp" />
     <ClInclude Include="..\..\include\Irisviel\index_builder.hpp" />
     <ClInclude Include="..\..\include\Irisviel\irisviel_c.h" />

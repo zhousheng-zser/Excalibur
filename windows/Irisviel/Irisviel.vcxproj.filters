@@ -48,9 +48,6 @@
     <ClInclude Include="..\..\include\Irisviel\dynamic_buffer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Irisviel\filesystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Irisviel\database_feature_observer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

@@ -9,8 +9,8 @@
 #include <variant>
 #include <optional>
 #include <algorithm>
-#include <string_view>
 #include <type_traits>
+#include <string_view>
 
 namespace glasssix::exposing::meta
 {
@@ -204,6 +204,22 @@ namespace glasssix::exposing::meta
 	/// </summary>
 	template<typename Array>
 	inline constexpr std::size_t std_array_size_v = std_array_traits<std::decay_t<Array>>::size;
+
+	template<auto left, auto right>
+	struct get_min : std::integral_constant<std::common_type_t<decltype(left), decltype(right)>, std::min(left, right)>
+	{
+	};
+
+	template<auto left, auto right>
+	inline constexpr auto get_min_v = get_min<left, right>::value;
+
+	template<auto left, auto right>
+	struct get_max : std::integral_constant<std::common_type_t<decltype(left), decltype(right)>, std::max(left, right)>
+	{
+	};
+
+	template<auto left, auto right>
+	inline constexpr auto get_max_v = get_max<left, right>::value;
 
 	/// <summary>
 	/// Get the sum of numbers.
@@ -426,9 +442,7 @@ namespace glasssix::exposing::meta
 	template<typename Number, typename Callable, std::size_t TruncateSize = sizeof(Number), typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
 	constexpr decltype(auto) split_number(Number number, Callable&& handler, bool big_endian = true, std::integral_constant<std::size_t, TruncateSize> = {}) noexcept
 	{
-		constexpr std::size_t real_size = std::min(TruncateSize, sizeof(Number));
-
-		return details::number_move_bits_helper<Number>(std::make_index_sequence<real_size>{}, big_endian, [&](auto&&... parts)
+		return details::number_move_bits_helper<Number>(std::make_index_sequence<get_min_v<TruncateSize, sizeof(Number)>>{}, big_endian, [&](auto&&... parts)
 			{
 				return std::forward<Callable>(handler)(static_cast<std::uint8_t>((static_cast<std::uintmax_t>(number) >> std::forward<decltype(parts)>(parts).second) & 0xFF)...);
 			});

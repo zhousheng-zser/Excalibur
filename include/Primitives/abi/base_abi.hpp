@@ -518,7 +518,7 @@ namespace glasssix::exposing::impl
 		{
 			To result{ nullptr };
 
-			if (ptr && !ptr->query_interface(guid_of_v<To>, put_abi(result)))
+			if (ptr && !abi_result{ ptr->query_interface(guid_of_v<To>, put_abi(result)) }.no_error())
 			{
 				if constexpr (has_exception)
 				{

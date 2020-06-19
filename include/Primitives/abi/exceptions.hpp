@@ -195,7 +195,7 @@ namespace glasssix::exposing
 	/// Catches the current exception and converts it to an ABI result code.
 	/// </summary>
 	/// <returns>The ABI result code</returns>
-	abi_result current_exception_to_result() noexcept
+	inline abi_result current_exception_to_result() noexcept
 	{
 		try
 		{
@@ -250,7 +250,7 @@ namespace glasssix::exposing
 	/// Checks a result code and throws an exception if neccessary.
 	/// </summary>
 	/// <param name="result">The result code</param>
-	void check_abi_result(abi_result result)
+	inline void check_abi_result(abi_result result)
 	{
 		if (!result.no_error())
 		{

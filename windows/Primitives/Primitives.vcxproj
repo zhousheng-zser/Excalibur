@@ -107,6 +107,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_any.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
@@ -116,8 +117,8 @@
     <ClInclude Include="..\..\include\Primitives\blas.hpp" />
     <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
     <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\filesystem.hpp" />
     <ClInclude Include="..\..\include\Primitives\fmt\format.h" />
-    <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp" />
     <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
     <ClInclude Include="..\..\include\Primitives\environment.hpp" />
     <ClInclude Include="..\..\include\Primitives\hash_utils.hpp" />

@@ -18,8 +18,6 @@
 #include <type_traits>
 #include <string_view>
 
-#define META_STR(x) decltype(struct { static constexpr glasssix::exposing::utf8_string_view value = x; }{})::value
-
 namespace glasssix::exposing::impl
 {
 	template<typename Derived, typename Interface>
@@ -90,7 +88,7 @@ namespace glasssix::exposing::impl
 		{
 			using type = meta::tuple_if_t<is_well_defined_interface, std::tuple<Interfaces...>>;
 		};
-		
+
 		/// <summary>
 		/// Creates a tuple to accommodate the implemented or inherited interfaces at the top lovel (not recursively).
 		/// </summary>
@@ -124,6 +122,9 @@ namespace glasssix::exposing::impl
 			using type = meta::tuple_unique_t<meta::tuple_cat_t<std::tuple<Args...>, get_interfaces_recursively_impl_t<std::tuple<Args...>>>>;
 		};
 
+		/// <summary>
+		/// Gets all interfaces recursively.
+		/// </summary>
 		template<typename Tuple>
 		using get_interfaces_recursively_t = typename get_interfaces_recursively<Tuple>::type;
 
@@ -133,6 +134,9 @@ namespace glasssix::exposing::impl
 			using type = get_interfaces_recursively_t<get_top_level_interfaces_t<get_implements_t<Derived>>>;
 		};
 
+		/// <summary>
+		/// Gets the implemented interfaces of a "implements" type recursively.
+		/// </summary>
 		template<typename Derived>
 		using get_implemented_interfaces_recursively_t = typename get_implemented_interfaces_recursively<Derived>::type;
 	}
@@ -141,7 +145,7 @@ namespace glasssix::exposing::impl
 	struct has_unique_release : std::false_type {};
 
 	template<typename T>
-	struct has_unique_release<T, std::void_t<decltype(T::unique_release(std::unique_ptr<T>{})) >> : std::true_type{};
+	struct has_unique_release < T, std::void_t<decltype(T::unique_release(std::unique_ptr<T>{})) >> : std::true_type{};
 
 	/// <summary>
 	/// Checks whether a type contains a static function named unique_release.

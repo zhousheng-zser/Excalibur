@@ -99,9 +99,6 @@
     <ClInclude Include="..\..\include\Primitives\tensor.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\fmt\format.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -157,6 +154,12 @@
       <Filter>abi</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\filesystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_any.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>
