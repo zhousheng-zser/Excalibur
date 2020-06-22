@@ -55,6 +55,7 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
+			virtual std::int32_t G6_ABI_CALL empty(abi_out_t<bool> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL get_value(abi_in_t<Key> key, abi_out_t<Value> value) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL try_get_value(abi_in_t<Key> key, abi_out_t<Value> value, abi_out_t<bool> result) noexcept = 0;
@@ -88,6 +89,11 @@ namespace glasssix::exposing::impl
 	template<typename Derived, typename Key, typename Value>
 	struct interface_vtable<Derived, param_hash_map<Key, Value>> : interface_vtable_base<Derived, param_hash_map<Key, Value>>
 	{
+		virtual std::int32_t G6_ABI_CALL empty(abi_out_t<bool> result) noexcept override
+		{
+			return abi_safe_call([&] { *result = detach_abi(this->self().empty()); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept override
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().size()); });
@@ -100,7 +106,7 @@ namespace glasssix::exposing::impl
 
 		virtual std::int32_t G6_ABI_CALL try_get_value(abi_in_t<Key> key, abi_out_t<Value> value, abi_out_t<bool> result) noexcept override
 		{
-			Value tmp{};
+			Value tmp{ null_value_v<Value> };
 			abi_result result_code;
 			
 			return (result_code = abi_safe_call([&] { *result = this->self().try_get_value(create_from_abi<Key>(key), tmp); }), *value = detach_abi(tmp), result_code);
@@ -136,6 +142,13 @@ namespace glasssix::exposing::impl
 		template<typename Derived>
 		struct type : enable_self_abi_awareness<Derived, param_hash_map<Key, Value>>
 		{
+			bool empty() const
+			{
+				bool result = false;
+
+				return (check_abi_result(this->self_abi().empty(put_abi(result))), result);
+			}
+
 			std::uint64_t size() const
 			{
 				std::uint64_t result = 0;
@@ -145,7 +158,7 @@ namespace glasssix::exposing::impl
 
 			Value get_value(const Key& key) const
 			{
-				Value result{};
+				Value result{ null_value_v<Value> };
 
 				return (check_abi_result(this->self_abi().get_value(get_abi(key), put_abi(result))), result);
 			}
@@ -154,7 +167,7 @@ namespace glasssix::exposing::impl
 			{
 				bool result = false;
 
-				return (value = {}, check_abi_result(this->self_abi().try_get_value(get_abi(key), put_abi(value), put_abi(result))), result);
+				return (value = null_value_v<Value>, check_abi_result(this->self_abi().try_get_value(get_abi(key), put_abi(value), put_abi(result))), result);
 			}
 
 			void add_or_update(const Key& key, const Value& value) const
@@ -192,14 +205,14 @@ namespace glasssix::exposing::impl
 		{
 			Key key() const
 			{
-				Key result{};
+				Key result{ null_value_v<Key> };
 
 				return (check_abi_result(this->self_abi().key(put_abi(result))), result);
 			}
 
 			Value value() const
 			{
-				Value result{};
+				Value result{ null_value_v<Value> };
 
 				return (check_abi_result(this->self_abi().value(put_abi(result))), result);
 			}
@@ -269,6 +282,11 @@ namespace glasssix::exposing::impl
 
 		param_hash_map_impl(std::initializer_list<std::pair<const Key, Value>> list) : buffer_(std::move(list))
 		{
+		}
+
+		bool empty() const
+		{
+			return buffer_.empty();
 		}
 
 		std::uint64_t size() const

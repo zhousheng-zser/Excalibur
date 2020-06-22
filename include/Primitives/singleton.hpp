@@ -21,10 +21,10 @@ namespace glasssix
 		static Object& instance(Args&&... args)
 		{
 			static std::once_flag flag;
-			alignas(Object) static std::uint8_t buffer[sizeof(Object)];
+			static std::aligned_storage_t<sizeof(Object), alignof(Object)> buffer;
 			static Object* result = nullptr;
 
-			std::call_once(flag, [&] { result = ::new (buffer) Object{ std::forward<Args>(args)... }; });
+			std::call_once(flag, [&] { result = ::new (&buffer) Object{ std::forward<Args>(args)... }; });
 			
 			return *result;
 		}

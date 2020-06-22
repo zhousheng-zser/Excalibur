@@ -99,7 +99,7 @@ namespace glasssix::exposing::impl
 		{
 			T current() const
 			{
-				T result{};
+				T result{ null_value_v<T> };
 
 				return (check_abi_result(this->self_abi().current(put_abi(result))), result);
 			}

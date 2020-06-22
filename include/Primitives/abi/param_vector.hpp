@@ -32,12 +32,14 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
+			virtual std::int32_t G6_ABI_CALL empty(abi_out_t<bool> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL at(std::uint64_t index, abi_out_t<T> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL set_at(std::uint64_t index, abi_in_t<T> item) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL push_back(abi_in_t<T> item) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL remove_at(std::uint64_t index) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL insert_at(std::uint64_t index, abi_in_t<T> item) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL contains(abi_in_t<T> item, abi_out_t<bool> result) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL clear() noexcept = 0;
 		};
 	};
@@ -48,6 +50,11 @@ namespace glasssix::exposing::impl
 	template<typename Derived, typename T>
 	struct interface_vtable<Derived, param_vector<T>> : interface_vtable_base<Derived, param_vector<T>>
 	{
+		virtual std::int32_t G6_ABI_CALL empty(abi_out_t<bool> result) noexcept override
+		{
+			return abi_safe_call([&] { *result = detach_abi(this->self().empty()); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL size(abi_out_t<std::uint64_t> result) noexcept override
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().size()); });
@@ -78,6 +85,11 @@ namespace glasssix::exposing::impl
 			return abi_safe_call([&] { this->self().insert_at(index, create_from_abi<T>(item)); });
 		}
 
+		virtual std::int32_t G6_ABI_CALL contains(abi_in_t<T> item, abi_out_t<bool> result) noexcept override
+		{
+			return abi_safe_call([&] { this->self().contains(create_from_abi<T>(item)); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL clear() noexcept override
 		{
 			return abi_safe_call([&] { this->self().clear(); });
@@ -93,6 +105,18 @@ namespace glasssix::exposing::impl
 		template<typename Derived>
 		struct type : enable_self_abi_awareness<Derived, param_vector<T>>
 		{
+			T operator[](std::uint64_t index) const
+			{
+				return at(index);
+			}
+
+			bool empty() const
+			{
+				bool result = false;
+
+				return (check_abi_result(this->self_abi().empty(put_abi(result))), result);
+			}
+
 			std::uint64_t size() const
 			{
 				std::uint64_t result = 0;
@@ -102,7 +126,7 @@ namespace glasssix::exposing::impl
 
 			T at(std::uint64_t index) const
 			{
-				T result{};
+				T result{ null_value_v<T> };
 
 				return (check_abi_result(this->self_abi().at(index, put_abi(result))), result);
 			}
@@ -125,6 +149,13 @@ namespace glasssix::exposing::impl
 			void insert_at(std::uint64_t index, const T& element) const
 			{
 				check_abi_result(this->self_abi().insert_at(get_abi(index), get_abi(element)));
+			}
+
+			bool contains(const T& item) const
+			{
+				bool result = false;
+
+				return (check_abi_result(this->self_abi().contains(get_abi(item), put_abi(result))), result);
 			}
 
 			void clear() const
@@ -168,6 +199,11 @@ namespace glasssix::exposing::impl
 		{
 		}
 
+		bool empty() const
+		{
+			return buffer_.empty();
+		}
+
 		std::uint64_t size() const
 		{
 			return buffer_.size();
@@ -203,6 +239,11 @@ namespace glasssix::exposing::impl
 			buffer_.clear();
 		}
 
+		bool contains(const T& item) const
+		{
+			return std::any_of(buffer_.begin(), buffer_.end(), [&](const T& inner) { return item == inner; });
+		}
+
 		object_iterator<T> get_iterator() const
 		{
 			return make_as_first<object_iterator_impl>(*this);
@@ -214,7 +255,7 @@ namespace glasssix::exposing::impl
 		class object_iterator_impl : public implements<object_iterator_impl, object_iterator<T>>
 		{
 		public:
-			object_iterator_impl(const param_vector_impl& impl) : index_{}, impl_ { impl }
+			object_iterator_impl(const param_vector_impl& impl) : index_{}, impl_{ impl }
 			{
 			}
 

@@ -96,6 +96,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />
@@ -107,7 +108,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
-    <ClInclude Include="..\..\include\Primitives\abi\param_any.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
@@ -155,6 +156,9 @@
     <Page Include="..\..\include\Primitives\abi\sha3.hpp">
       <SubType>Designer</SubType>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\include\Primitives\abi\g6_abi_types.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

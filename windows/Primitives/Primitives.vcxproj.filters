@@ -159,7 +159,10 @@
     <ClInclude Include="..\..\include\Primitives\filesystem.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\param_any.hpp">
+    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp">
+      <Filter>abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp">
       <Filter>abi</Filter>
     </ClInclude>
   </ItemGroup>
@@ -178,5 +181,10 @@
     <Page Include="..\..\include\Primitives\abi\sha3.hpp">
       <Filter>abi</Filter>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\include\Primitives\abi\g6_abi_types.natvis">
+      <Filter>abi</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

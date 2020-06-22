@@ -150,6 +150,27 @@ namespace glasssix::exposing::impl
 		static constexpr auto value{ create_guid_from_bytes(meta::concat_arrays(to_array(abi<T<Args...>>::id), type_signature_v<Args>...)) };
 	};
 
+	template<typename T, typename = void>
+	struct null_value;
+
+	template<typename T>
+	struct null_value<T, std::enable_if_t<std::is_convertible_v<std::nullptr_t, T>>>
+	{
+		static constexpr std::nullptr_t value{};
+	};
+
+	template<typename T>
+	struct null_value<T, std::enable_if_t<is_primitive_v<T>>>
+	{
+		static constexpr T value{};
+	};
+
+	/// <summary>
+	/// Gets a null type of a specified type.
+	/// </summary>
+	template<typename T>
+	inline constexpr auto& null_value_v = null_value<T>::value;
+
 	/// <summary>
 	/// The root interface ABI.
 	/// </summary>
@@ -261,7 +282,7 @@ namespace glasssix::exposing
 		/// Indicates whether the ABI is valid.
 		/// </summary>
 		/// <returns>True if the ABI is valid; otherwise false</returns>
-		explicit operator bool() const noexcept
+		operator bool() const noexcept
 		{
 			return abi_;
 		}

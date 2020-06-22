@@ -24,26 +24,26 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
-			virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept = 0;
-			virtual std::int32_t get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept = 0;
-			virtual std::int32_t get_component_name(abi_out_t<param_string> result) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept = 0;
+			virtual std::int32_t G6_ABI_CALL get_component_name(abi_out_t<param_string> result) noexcept = 0;
 		};
 	};
 
 	template<typename Derived>
 	struct interface_vtable<Derived, class_factory> : interface_vtable_base<Derived, class_factory>
 	{
-		virtual std::int32_t create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept override
+		virtual std::int32_t G6_ABI_CALL create_instance(abi_in_t<param_string> qualified_name, abi_out_t<unknown_object> object) noexcept override
 		{
 			return abi_safe_call([&] { *object = detach_abi(this->self().create_instance(create_from_abi<param_string>(qualified_name))); });
 		}
 
-		virtual std::int32_t get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept override
+		virtual std::int32_t G6_ABI_CALL get_qualified_names(abi_out_t<param_vector<param_string>> result) noexcept override
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().get_qualified_names()); });
 		}
 
-		virtual std::int32_t get_component_name(abi_out_t<param_string> result) noexcept override
+		virtual std::int32_t G6_ABI_CALL get_component_name(abi_out_t<param_string> result) noexcept override
 		{
 			return abi_safe_call([&] { *result = detach_abi(this->self().get_component_name()); });
 		}
@@ -83,8 +83,8 @@ namespace glasssix::exposing::impl
 			/// <returns>The name of the component</returns>
 			param_string get_component_name() const
 			{
-				param_string result;
-
+				param_string result{ nullptr };
+				
 				return (check_abi_result(this->self_abi().get_component_name(put_abi(result))), result);
 			}
 		};

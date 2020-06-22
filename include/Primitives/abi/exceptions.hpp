@@ -58,6 +58,7 @@ namespace glasssix::exposing
 	inline constexpr abi_result error_invalid_operation{ -7 };
 	inline constexpr abi_result error_key_not_found{ -8 };
 	inline constexpr abi_result error_bad_alloc{ -9 };
+	inline constexpr abi_result error_not_initialized{ -10 };
 
 	inline const std::unordered_map<std::int32_t, const param_string> predefined_error_messages
 	{
@@ -70,7 +71,8 @@ namespace glasssix::exposing
 		{ error_out_of_bounds, u8"The index was out of bounds." },
 		{ error_no_interface, u8"The specified interface was not found." },
 		{ error_invalid_operation, u8"The operation was invalid." },
-		{ error_bad_alloc, u8"The allocation reported failure." }
+		{ error_bad_alloc, u8"The allocation reported failure." },
+		{ error_not_initialized, u8"The object has not been initialized yet." }
 	};
 
 	/// <summary>
@@ -191,6 +193,13 @@ namespace glasssix::exposing
 		}
 	};
 
+	struct abi_not_initialized : abi_error
+	{
+		abi_not_initialized() noexcept : abi_error{ error_not_initialized }
+		{
+		}
+	};
+
 	/// <summary>
 	/// Catches the current exception and converts it to an ABI result code.
 	/// </summary>
@@ -274,6 +283,8 @@ namespace glasssix::exposing
 				throw abi_key_not_found{};
 			case error_bad_alloc:
 				throw abi_bad_alloc{};
+			case error_not_initialized:
+				throw abi_not_initialized{};
 			default:
 				throw abi_failure{};
 			}

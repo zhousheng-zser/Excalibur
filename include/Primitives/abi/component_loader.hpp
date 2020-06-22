@@ -9,6 +9,7 @@
 #include "pure_c_handle_utils.h"
 #include "platform_encoding.hpp"
 
+#include <tuple>
 #include <mutex>
 #include <vector>
 #include <memory>
@@ -53,6 +54,16 @@ namespace glasssix::exposing
 		/// <returns>True if the opeartion succeeds; otherwise false</returns>
 		bool add_module(utf8_string_view path) noexcept
 		{
+			return add_module_with_factory(path);
+		}
+
+		/// <summary>
+		/// Adds a module and returns the class factory.
+		/// </summary>
+		/// <param name="path">The path</param>
+		/// <returns>The class factory</returns>
+		class_factory add_module_with_factory(utf8_string_view path) noexcept
+		{
 			if (dll::dll_handle_ptr handle{ dll::load_library(path.data()), &dll::free_library })
 			{
 				if (auto dll_create_factory = static_cast<dll_routines::dll_create_factory_handler_type>(dll::get_symbol_address(handle.get(), dll_routines::dll_create_factory_handler_name.data())))
@@ -60,23 +71,24 @@ namespace glasssix::exposing
 					if (class_factory factory{ nullptr }; dll_create_factory(put_abi(factory)) == error_success)
 					{
 						auto names = factory.get_qualified_names();
+						auto component_name = factory.get_component_name();
 						{
 							std::lock_guard<std::mutex> guard{ lock_ };
 
 							modules_.emplace_back(handle);
-							factories_.insert_or_assign(factory.get_component_name(), factory);
+							factories_.insert_or_assign(component_name, factory);
 						}
 
-						return true;
+						return factory;
 					}
 
-					return false;
+					return nullptr;
 				}
 
-				return false;
+				return nullptr;
 			}
 
-			return false;
+			return nullptr;
 		}
 
 		/// <summary>
@@ -90,20 +102,62 @@ namespace glasssix::exposing
 		}
 
 		/// <summary>
-		/// Finds modules in a directory
+		/// Adds a few modules and returns the available class factories.
+		/// </summary>
+		/// <param name="paths">The paths</param>
+		/// <returns>The class factories of the successfully loaded modules</returns>
+		param_vector<class_factory> add_modules_with_factories(std::initializer_list<utf8_string_view> paths) noexcept
+		{
+			auto result = make_param_vector<class_factory>();
+
+			for (auto& item : paths)
+			{
+				if (auto factory = add_module_with_factory(item))
+				{
+					result.push_back(factory);
+				}
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Finds modules in a directory and adds them.
 		/// </summary>
 		/// <param name="directory">The directory</param>
 		/// <param name="recursive">Indicates whether to find modules recursively</param>
 		/// <returns>The count of successfully loaded modules</returns>
-		std::size_t add_modules_in_directory(const fs::path& directory, bool recursive = false) noexcept
+		std::size_t add_modules_in_directory(utf8_string_view directory, bool recursive = false) noexcept
 		{
+			auto handler = [this](std::size_t& result, const fs::path& item) { if (add_module(item.u8string())) { result++; } };
+
 			if (recursive)
 			{
-				return add_modules_in_directory_impl<true>(directory);
+				return for_each_dll_files<true, std::size_t>(directory, handler);
 			}
 			else
 			{
-				return add_modules_in_directory_impl<false>(directory);
+				return for_each_dll_files<false, std::size_t>(directory, handler);
+			}
+		}
+
+		/// <summary>
+		/// Finds modules in a directory, adds them and returns the available class factories.
+		/// </summary>
+		/// <param name="directory">The directory</param>
+		/// <param name="recursive">Indicates whether to find modules recursively</param>
+		/// <returns>The class factories of the successfully loaded modules</returns>
+		param_vector<class_factory> add_modules_with_factories_in_directory(utf8_string_view directory, bool recursive = false) noexcept
+		{
+			auto handler = [this](param_vector<class_factory>& result, const fs::path& item) { if (auto factory = add_module_with_factory(item.u8string())) { result.push_back(factory); } };
+
+			if (recursive)
+			{
+				return for_each_dll_files<true, param_vector<class_factory>>(directory, handler, make_param_vector<class_factory>());
+			}
+			else
+			{
+				return for_each_dll_files<true, param_vector<class_factory>>(directory, handler, make_param_vector<class_factory>());
 			}
 		}
 
@@ -119,16 +173,23 @@ namespace glasssix::exposing
 			return iter != factories_.end() ? iter->second : nullptr;
 		}
 	private:
-		template<bool recursive>
-		std::size_t add_modules_in_directory_impl(const fs::path& directory) noexcept
+		template<bool recursive, typename Result, typename Callable>
+		auto for_each_dll_files(utf8_string_view directory, Callable&& handler, Result&& initial_value = {}) noexcept
 		{
 			using iterator_type = std::conditional_t<recursive, fs::recursive_directory_iterator, fs::directory_iterator>;
 
 			std::error_code code;
-			iterator_type iter_end;
-			iterator_type iter_begin{ directory, fs::directory_options::skip_permission_denied, code };
-			
-			return std::count_if(iter_begin, iter_end, [&](const fs::directory_entry& item) { return item.path().has_extension() && item.path().extension() == ".dll" ? add_module(item.path().u8string()) : false; });
+			Result result{ std::forward<Result>(initial_value) };
+
+			for (auto& item : iterator_type{ to_narrow_string(directory), fs::directory_options::skip_permission_denied, code })
+			{
+				if (item.path().has_extension() && item.path().extension() == ".dll")
+				{
+					std::forward<Callable>(handler)(result, item.path());
+				}
+			}
+
+			return result;
 		}
 
 		std::mutex lock_;
