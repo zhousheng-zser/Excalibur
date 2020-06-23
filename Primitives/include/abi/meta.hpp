@@ -30,10 +30,10 @@ namespace glasssix::exposing::meta
 	namespace details
 	{
 		template<typename Tuple, typename = void>
-		struct has_common_type_impl : std::false_type {};
+		struct has_common_type_impl : std::false_type{};
 
 		template<typename... Args>
-		struct has_common_type_impl<std::tuple<Args...>, std::void_t<std::common_type_t<Args...>>> : std::true_type {};
+		struct has_common_type_impl<std::tuple<Args...>, std::void_t<std::common_type_t<Args...>>> : std::true_type{};
 
 		template<typename Tuple, typename... Args>
 		struct tuple_unique_impl : noumenon<Tuple> {};
@@ -46,7 +46,7 @@ namespace glasssix::exposing::meta
 	}
 
 	template<typename... Args>
-	struct has_common_type : details::has_common_type_impl<std::tuple<Args...>> {};
+	struct has_common_type : details::has_common_type_impl<std::tuple<Args...>>{};
 
 	template<typename... Args>
 	inline constexpr bool has_common_type_v = has_common_type<Args...>::value;
@@ -58,13 +58,13 @@ namespace glasssix::exposing::meta
 	inline constexpr bool is_const_reference_v = is_const_reference<T>::value;
 
 	template<typename T>
-	struct is_non_const_reference : std::conjunction<std::is_reference<T>, std::negation<std::is_const<std::remove_reference_t<T>>>> {};
+	struct is_non_const_reference : std::conjunction<std::is_reference<T>, std::negation<std::is_const<std::remove_reference_t<T>>>>{};
 
 	template<typename T>
 	inline constexpr bool is_non_const_reference_v = is_non_const_reference<T>::value;
 
 	template<typename T, typename... Args>
-	struct is_same_any : std::disjunction<std::is_same<T, Args>...> {};
+	struct is_same_any : std::disjunction<std::is_same<T, Args>...>{};
 
 	template<typename T, typename... Args>
 	inline constexpr bool is_same_any_v = is_same_any<T, Args...>::value;
@@ -538,21 +538,20 @@ namespace glasssix::exposing::meta
 	{
 		constexpr std::size_t numeric_bits = std::numeric_limits<UnsignedNumber>::digits;
 
-		UnsignedNumber result{};
-		std::ptrdiff_t source_offset = 0;
-		std::ptrdiff_t destination_offset = 0;
+		return apply_index_sequence<sizeof(UnsignedNumber)>([&](auto... indexes)
+			{
+				UnsignedNumber result{};
 
-		for (std::size_t i = 0; i < sizeof(UnsignedNumber); i++)
-		{
-			source_offset = byte_bits * i;
-			destination_offset = numeric_bits - source_offset - byte_bits;
+				return ([&]
+					{
+						std::ptrdiff_t source_offset = byte_bits * indexes;
+						std::ptrdiff_t destination_offset = numeric_bits - source_offset - byte_bits;
 
-			result |= (((number >> source_offset) & 0xFF) << destination_offset);
-		}
-
-		return result;
+						result |= (((number >> source_offset) & 0xFF) << destination_offset);
+					}(), ..., result);
+			});
 	}
-	
+
 	/// <summary>
 	/// Swaps the endianness of a number if the platform is big-endian; otherwise just performs nop.
 	/// </summary>
@@ -620,10 +619,10 @@ namespace glasssix::exposing::meta
 	template<std::size_t Index, std::size_t Size>
 	struct sub_array
 	{
-		template<typename T, std::size_t FullSize, typename = std::enable_if_t<Index < FullSize&& Index + Size <= FullSize>>
-			static constexpr auto get(const std::array<T, FullSize>& data) noexcept
-			{
-				return apply_index_sequence<Size>([&](auto... indexes) { return std::array<T, Size>{ data[Index + indexes]... }; });
-			}
+		template<typename T, std::size_t FullSize, typename = std::enable_if_t<Index < FullSize && Index + Size <= FullSize>>
+		static constexpr auto get(const std::array<T, FullSize>& data) noexcept
+		{
+			return apply_index_sequence<Size>([&](auto... indexes) { return std::array<T, Size>{ data[Index + indexes]... }; });
+		}
 	};
 }

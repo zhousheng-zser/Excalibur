@@ -252,8 +252,8 @@ namespace glasssix::exposing::impl
 		using vtable_type = interface_vtable<Derived, Interface>;
 		friend vtable_type;
 
-		template<typename OtherInterface, typename OtherDerived, typename>
-		friend constexpr auto to_abi(OtherDerived& derived) noexcept;
+		template<typename Interface, typename Derived, typename>
+		friend constexpr auto to_abi(Derived& derived) noexcept;
 
 		implements_interface_vtable() noexcept
 		{
@@ -275,14 +275,14 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// Retrieves an interfacial ABI from a derived object.
 	/// </summary>
-	/// <typeparam name="OtherInterface">The interfacial type</typeparam>
-	/// <typeparam name="OtherDerived">The derived type</typeparam>
+	/// <typeparam name="Interface">The interfacial type</typeparam>
+	/// <typeparam name="Derived">The derived type</typeparam>
 	/// <param name="derived">The derived object</param>
 	/// <returns>The ABI</returns>
-	template<typename OtherInterface, typename OtherDerived, typename = std::enable_if_t<std::conjunction_v<is_implements<OtherDerived>, is_well_defined_interface<OtherInterface>>>>
-	constexpr auto to_abi(OtherDerived& derived) noexcept
+	template<typename Interface, typename Derived, typename = std::enable_if_t<std::conjunction_v<is_implements<Derived>, is_well_defined_interface<Interface>>>>
+	constexpr auto to_abi(Derived& derived) noexcept
 	{
-		return static_cast<abi_t<OtherInterface>*>(&static_cast<implements_interface_vtable<OtherDerived, OtherInterface>&>(derived).vtable_);
+		return static_cast<abi_t<Interface>*>(&static_cast<implements_interface_vtable<Derived, Interface>&>(derived).vtable_);
 	}
 
 	/// <summary>
@@ -334,7 +334,14 @@ namespace glasssix::exposing::impl
 		{
 			std::array<void*, std::tuple_size_v<Packed>> results =
 			{
-				(guid_of_v<std::tuple_element_t<Indexes, Packed>> == id ? to_abi<std::tuple_element_t<Indexes, Packed>>(derived) : nullptr)...
+				[&]
+				{
+					using implements_type = get_implements_t<Derived>;
+					using interface_type = std::tuple_element_t<Indexes, Packed>;
+					constexpr auto interface_id = guid_of_v<interface_type>;
+
+					return interface_id == id ? to_abi<interface_type>(derived) : nullptr;
+				}()...
 			};
 
 			auto iter = std::find_if(results.begin(), results.end(), [](void* inner) -> bool { return inner; });
@@ -419,7 +426,7 @@ namespace glasssix::exposing::impl
 				return error_null_pointer;
 			}
 
-			if ((*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id)))
+			if (*object = find_interface_by_guid<Derived>::get(static_cast<Derived&>(*this), id))
 			{
 				add_ref();
 

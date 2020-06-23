@@ -474,7 +474,7 @@ namespace glasssix::exposing
 	/// <param name="abi">The ABI</param>
 	inline void copy_to_abi(const unknown_object& object, void*& abi) noexcept
 	{
-		if ((abi = get_abi(object)))
+		if (abi = get_abi(object))
 		{
 			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
 		}

@@ -188,6 +188,8 @@ namespace glasssix::exposing::impl
 	class param_vector_impl : public implements<param_vector_impl<T>, param_vector<T>>
 	{
 	public:
+		class object_iterator_impl;
+
 		param_vector_impl()
 		{
 		}

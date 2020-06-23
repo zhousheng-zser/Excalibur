@@ -21,11 +21,9 @@ namespace glasssix::exposing::dll
 {
 	DEFINE_PURE_C_HANDLE(dll);
 
-	using symbol_func_ptr = void(*)();
-
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES dll_handle G6_ABI_CALL load_library(const utf8_char * path) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL free_library(dll_handle handle) noexcept;
-	extern "C" EXPORT_EXCALIBUR_PRIMITIVES symbol_func_ptr G6_ABI_CALL get_symbol_address(dll_handle handle, const utf8_char * name) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_symbol_address(dll_handle handle, const utf8_char * name) noexcept;
 
 	using dll_handle_ptr = std::shared_ptr<std::remove_pointer_t<dll_handle>>;
 }
@@ -68,7 +66,7 @@ namespace glasssix::exposing
 		{
 			if (dll::dll_handle_ptr handle{ dll::load_library(path.data()), &dll::free_library })
 			{
-				if (auto dll_create_factory = reinterpret_cast<dll_routines::dll_create_factory_handler_type>(dll::get_symbol_address(handle.get(), dll_routines::dll_create_factory_handler_name.data())))
+				if (auto dll_create_factory = static_cast<dll_routines::dll_create_factory_handler_type>(dll::get_symbol_address(handle.get(), dll_routines::dll_create_factory_handler_name.data())))
 				{
 					if (class_factory factory{ nullptr }; dll_create_factory(put_abi(factory)) == error_success)
 					{
@@ -135,11 +133,11 @@ namespace glasssix::exposing
 
 			if (recursive)
 			{
-				return for_each_dll_files<true>(directory, handler, std::size_t{});
+				return for_each_dll_files<true, std::size_t>(directory, handler);
 			}
 			else
 			{
-				return for_each_dll_files<false>(directory, handler, std::size_t{});
+				return for_each_dll_files<false, std::size_t>(directory, handler);
 			}
 		}
 
@@ -155,11 +153,11 @@ namespace glasssix::exposing
 
 			if (recursive)
 			{
-				return for_each_dll_files<true>(directory, handler, make_param_vector<class_factory>());
+				return for_each_dll_files<true, param_vector<class_factory>>(directory, handler, make_param_vector<class_factory>());
 			}
 			else
 			{
-				return for_each_dll_files<true>(directory, handler, make_param_vector<class_factory>());
+				return for_each_dll_files<true, param_vector<class_factory>>(directory, handler, make_param_vector<class_factory>());
 			}
 		}
 
@@ -176,7 +174,7 @@ namespace glasssix::exposing
 		}
 	private:
 		template<bool recursive, typename Result, typename Callable>
-		Result for_each_dll_files(utf8_string_view directory, Callable&& handler, Result&& initial_value) noexcept
+		auto for_each_dll_files(utf8_string_view directory, Callable&& handler, Result&& initial_value = {}) noexcept
 		{
 			using iterator_type = std::conditional_t<recursive, fs::recursive_directory_iterator, fs::directory_iterator>;
 

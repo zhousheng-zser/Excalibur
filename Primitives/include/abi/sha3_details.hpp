@@ -350,7 +350,7 @@ namespace glasssix::exposing::hashing::sha3::details
 		{
 			for (std::size_t y = 0; y < common_factor; y++)
 			{
-				context.state(x, y) ^= (context.tmp[meta::minus_mod_unsigned<std::size_t>(x, 1, common_factor)] ^ meta::rotl(context.tmp[(x + 1) % common_factor], 1));
+				context.state(x, y) ^= (context.tmp[meta::minus_mod_unsigned(x, 1ULL, common_factor)] ^ meta::rotl(context.tmp[(x + 1) % common_factor], 1));
 			}
 		}
 	}

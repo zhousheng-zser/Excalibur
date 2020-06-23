@@ -274,6 +274,8 @@ namespace glasssix::exposing::impl
 	class param_hash_map_impl : public implements<param_hash_map_impl<Key, Value>, param_hash_map<Key, Value>>
 	{
 	public:
+		class object_iterator_impl;
+
 		param_hash_map_impl()
 		{
 		}

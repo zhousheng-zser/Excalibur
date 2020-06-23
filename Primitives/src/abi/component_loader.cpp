@@ -25,7 +25,7 @@ namespace glasssix::exposing::dll
 #ifdef _WIN32
 		return path ? pure_c::to_handle<dll_handle>(LoadLibraryA(platform_encoding::utf8_to_narrow(path).c_str())) : nullptr;
 #else
-		return path ? pure_c::to_handle<dll_handle>(dlopen(platform_encoding::utf8_to_narrow(path).c_str(), RTLD_LAZY | RTLD_LOCAL)) : nullptr;
+		return path ? pure_c::to_handle<dll_handle>(dlopen(platform_encoding::utf8_to_narrow(path).c_str()), RTLD_LAZY | RTLD_LOCAL) : nullptr;
 #endif
 	}
 
@@ -41,7 +41,7 @@ namespace glasssix::exposing::dll
 		}
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES symbol_func_ptr G6_ABI_CALL get_symbol_address(dll_handle handle, const utf8_char* name) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_symbol_address(dll_handle handle, const utf8_char* name) noexcept
 	{
 		if (handle == nullptr || name == nullptr)
 		{
@@ -49,9 +49,9 @@ namespace glasssix::exposing::dll
 		}
 
 #ifdef _WIN32
-		return reinterpret_cast<symbol_func_ptr>(GetProcAddress(pure_c::from_handle<std::remove_pointer_t<HMODULE>>(handle), platform_encoding::utf8_to_narrow(name).c_str()));
+		return GetProcAddress(pure_c::from_handle<std::remove_pointer_t<HMODULE>>(handle), platform_encoding::utf8_to_narrow(name).c_str());
 #else
-		return reinterpret_cast<symbol_func_ptr>(dlsym(pure_c::from_handle<void>(handle), platform_encoding::utf8_to_narrow(name).c_str()));
+		return dlsym(pure_c::from_handle<void>(handle), platform_encoding::utf8_to_narrow(name).c_str());
 #endif
 	}
 }
