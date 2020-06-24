@@ -72,7 +72,7 @@ namespace glasssix::exposing::impl
 	{
 		static constexpr guid value{ "47534958-0000-0000-0000-444F55424C45" };
 	};
-
+	
 	/// <summary>
 	/// A type identity.
 	/// </summary>
@@ -135,7 +135,7 @@ namespace glasssix::exposing::impl
 	struct type_identity_generic_interface;
 
 	template<typename T>
-	struct is_primitive : meta::is_same_any<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double>{};
+	struct is_primitive : meta::is_same_any<T, guid, bool, std::int8_t, std::int16_t, std::int32_t, std::int64_t, std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, std::intptr_t, std::uintptr_t, float, double>{};
 	
 	/// <summary>
 	/// Checks whether a type is a primitive type.

@@ -143,4 +143,21 @@ namespace glasssix::exposing
 			meta::sub_array<offset_data4.offset, offset_data4.size>::get(hash)
 		};
 	}
+
+	/// <summary>
+	/// Converts a GUID to a char array.
+	/// </summary>
+	/// <param name="id">The GUID</param>
+	/// <param name="hyphenated">A boolean that indicates whether the result is hyphenated</param>
+	/// <returns>The array</returns>
+	constexpr auto to_char_array(const guid& id, bool hyphenated = true) noexcept
+	{
+		return meta::concat_arrays(
+			meta::to_char_array(id.data1), std::array<char, 1>{ '-' },
+			meta::to_char_array(id.data2), std::array<char, 1>{ '-' },
+			meta::to_char_array(id.data3), std::array<char, 1>{ '-' },
+			meta::to_char_array(meta::sub_array<0, 2>::get(id.data4)), std::array<char, 1>{ '-' },
+			meta::to_char_array(meta::sub_array<2, 6>::get(id.data4))
+		);
+	}
 }

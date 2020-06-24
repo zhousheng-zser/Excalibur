@@ -1,5 +1,6 @@
 #pragma once
 
+#include "guid.hpp"
 #include "meta.hpp"
 #include "dllexport.hpp"
 #include "g6_attributes.hpp"
@@ -364,6 +365,19 @@ namespace glasssix::exposing
 	inline param_string to_param_string(std::string_view narrow_str) noexcept
 	{
 		return param_string{ allocations::create_param_string_from_narrow(narrow_str.data(), narrow_str.size()) };
+	}
+	
+	/// <summary>
+	/// Converts a GUID to a string.
+	/// </summary>
+	/// <param name="id">The GUID</param>
+	/// <param name="hyphenated">A boolean that indicates whether the string is hyphenated</param>
+	/// <returns>The string</returns>
+	inline param_string to_param_string(const guid& id, bool hyphenated = true) noexcept
+	{
+		auto chars = to_char_array(id, hyphenated);
+
+		return to_param_string(std::string_view{ chars.data(), chars.size() });
 	}
 
 	/// <summary>

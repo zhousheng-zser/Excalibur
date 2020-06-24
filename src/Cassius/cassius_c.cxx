@@ -1,21 +1,26 @@
-#include "../../include/Cassius/cassius_c.h"
-#include "../../include/Primitives/memory.hpp"
+#include "cassius_c.h"
+#include "CassiusFeature.hpp"
+#include "Primitives/memory.hpp"
 
 #include <cstring>
 
-glasssix::cassius::CassiusFeature* Cassius_NewInstance(int device)
+using namespace glasssix::pure_c;
+using namespace glasssix::memory;
+using namespace glasssix::cassius;
+
+cassius_handle Cassius_NewInstance(int device)
 {
-	return new glasssix::cassius::CassiusFeature(device);
+	return to_handle<cassius_handle>(new CassiusFeature(device));
 }
 
-void Cassius_ReleaseInstance(glasssix::cassius::CassiusFeature* instance)
+void Cassius_ReleaseInstance(cassius_handle instance)
 {
 	delete instance;
 }
 
 unsigned char* Cassius_getVersion()
 {
-	auto version = glasssix::cassius::CassiusFeature::getVersion();
+	auto version = CassiusFeature::getVersion();
 	std::size_t size = std::strlen(version) + 1;
 	auto str = glasssix::memory::heap_alloc_elements<unsigned char>(size);
 
@@ -24,11 +29,11 @@ unsigned char* Cassius_getVersion()
 	return str;
 }
 
-float* Cassius_Forward(glasssix::cassius::CassiusFeature* instance, unsigned char* input_data, int num, int order)
+float* Cassius_Forward(cassius_handle instance, unsigned char* input_data, int num, int order)
 {
 	if (num > 0)
 	{
-		std::vector<std::vector<float> > feature = instance->Forward(input_data, num, order);
+		auto feature = from_handle<CassiusFeature>(instance)->Forward(input_data, num, order);
 		auto result = glasssix::memory::heap_alloc_elements<float>(static_cast<std::size_t>(num) * 512);
 
 		for (std::size_t i = 0; i < num; i++)

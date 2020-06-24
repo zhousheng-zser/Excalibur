@@ -257,6 +257,13 @@ namespace glasssix::exposing::meta
 			return std::nullopt;
 		}
 
+		constexpr auto to_hexadecimal_character(std::uint8_t byte) noexcept
+		{
+			constexpr std::string_view hexadecimal_characters{ "0123456789ABCDEF" };
+
+			return std::array<char, hexadecimal_character_size_v<std::uint8_t>>{ hexadecimal_characters[byte >> 4], hexadecimal_characters[byte & 0xF] };
+		}
+
 		template<typename Callable, std::size_t... Indexes>
 		constexpr auto apply_index_sequence_impl(Callable&& handler, std::index_sequence<Indexes...>) noexcept
 		{
@@ -474,6 +481,32 @@ namespace glasssix::exposing::meta
 	}
 
 	/// <summary>
+	/// Converts a number to a char array.
+	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
+	/// <returns>The array</returns>
+	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+	constexpr auto to_char_array(Number number, bool big_endian = true) noexcept
+	{
+		return split_number(number, [](auto... bytes) { return concat_arrays(details::to_hexadecimal_character(bytes)...); }, big_endian);
+	}
+
+	/// <summary>
+	/// Converts a numeric array to a char array.
+	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
+	/// <param name="numbers">The numeric array</param>
+	/// <param name="big_endian">A boolean that indicates whether the byte order is big-endian</param>
+	/// <returns>The array</returns>
+	template<typename Number, std::size_t Size, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+	constexpr auto to_char_array(const std::array<Number, Size>& numbers, bool big_endian = true) noexcept
+	{
+		return meta::apply_index_sequence<Size>([&](auto... indexes) { return meta::concat_arrays(to_char_array(numbers[indexes], big_endian)...); });
+	}
+	
+	/// <summary>
 	/// Computes the result of bitwise left-rotating the value of "number" by "bits" positions.
 	/// This operation is also known as a left circular shift.
 	/// </summary>
@@ -552,7 +585,7 @@ namespace glasssix::exposing::meta
 
 		return result;
 	}
-	
+
 	/// <summary>
 	/// Swaps the endianness of a number if the platform is big-endian; otherwise just performs nop.
 	/// </summary>
