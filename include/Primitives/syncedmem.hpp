@@ -23,9 +23,7 @@ namespace glasssix
 
 			size_t size() { return size_; }
 			const Dtype* cpu_data();
-			//void set_cpu_data(Dtype* data); // DEPTRCATED!
 			const Dtype* gpu_data();
-			//void set_gpu_data(Dtype* data); // DEPTRCATED!
 			Dtype* mutable_cpu_data();
 			Dtype* mutable_gpu_data();
 #ifdef USE_CUDA
@@ -35,6 +33,9 @@ namespace glasssix
 		private:
 			Dtype* cpu_ptr_;
 			Dtype* gpu_ptr_;
+#ifdef VULKAN
+			VkBufferMemory* gpu_ptr_;
+#endif
 			pool_allocator<Dtype>* allocator_;
 			size_t size_;
 			SyncedHead head_;

@@ -91,7 +91,7 @@ namespace glasssix
 		 * \brief dump profile data
 		 * \param fn file name
 		 */
-		void DumpProfile(const char *fn) const
+		void dump_profile(const char *fn) const
 		{
 			CHECK(scope_stack_.empty());
 			CHECK_EQ(state_, not_running);
@@ -125,13 +125,19 @@ namespace glasssix
 		/*! \brief turn on profiler */
 		void turn_on()
 		{
-			CHECK_EQ(state_, not_running) << "Profile is already running.";
+			if (state_ == running)
+			{
+				LOG(WARNING) << "Profile is already running.";
+			}
 			state_ = running;
 		}
 		/*! \brief turn off profiler */
 		void turn_off()
 		{
-			CHECK_EQ(state_, running) << "Profile is not running.";
+			if (state_ == not_running)
+			{
+				LOG(WARNING) << "Profile is not running.";
+			}
 			CHECK(scope_stack_.empty()) << "Profile scope stack is not empty, with size = "
 				<< scope_stack_.size();
 			state_ = not_running;

@@ -11,7 +11,7 @@ extern "C" {
 #include <cblas.h>// USE OpenBLAS
 } 
 #else
-#include "Julius/julius.hpp" //USE Glasssix Julius BLAS
+#include "../../include/Julius/julius.hpp" //USE Glasssix Julius BLAS
 #endif
 
 // A simple way to define the vsl unary functions. The operation should

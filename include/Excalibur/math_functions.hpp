@@ -60,6 +60,18 @@ namespace glasssix
 
 			static void cpu_abs(const int N, const float* a, float* y);
 
+			template <typename Dtype>
+			static void cpu_add(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_sub(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_mul(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_div(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
 			//solve equation by Gauss Elimination Method(global principal component sort), only support: (M, N) * (N, 1) = (M, 1)
 			static std::vector<float> gauss_all(std::vector<std::vector<float> > A, std::vector<float> B)
 			{
