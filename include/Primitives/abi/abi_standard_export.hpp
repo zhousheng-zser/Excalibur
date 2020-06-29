@@ -50,6 +50,12 @@ namespace glasssix::exposing
 		template<const utf8_string_view& ComponentName, typename... ComponentImpls>
 		struct make_standard_export_functions_impl<ComponentName, std::tuple<ComponentImpls...>, std::enable_if_t<std::conjunction_v<std::is_default_constructible<ComponentImpls>..., impl::has_external_qualified_name<ComponentImpls>...>>>
 		{
+			template<typename Impl>
+			static unknown_object make_component_impl()
+			{
+				return make_as_first<Impl>();
+			}
+
 			/// <summary>
 			/// Implements a corresponding class factory.
 			/// </summary>
@@ -58,7 +64,7 @@ namespace glasssix::exposing
 				inline static std::unordered_map<param_string, std::function<unknown_object()>> map;
 				inline static static_initializer initializer{ [&]
 					{
-						((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, []()->unknown_object { return make_as_first<ComponentImpls>(); }), ...));
+						((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, &make_component_impl<ComponentImpls>), ...));
 					}
 				};
 

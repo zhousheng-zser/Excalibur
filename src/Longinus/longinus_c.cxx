@@ -1,5 +1,7 @@
 #include "Longinus/longinus_c.h"
 #include "Primitives/memory.hpp"
+
+#include <vector>
 #include <cstring>
 
 using glasssix::memory::heap_free;
@@ -35,7 +37,7 @@ void Longinus_set(glasssix::longinus::LonginusDetector* instance, int type, int 
 }
 
 #ifdef TRIAL
-int Longinus_detect(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_basic** ptr, unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors)
+int Longinus_detect(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_basic** ptr, const unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors)
 {
 	std::vector<glasssix::longinus::face_rect_basic> vec = instance->detect(gray, width, height, step, minSize, scale, min_neighbors, false, false);
 	int num = vec.size();
@@ -53,7 +55,7 @@ int Longinus_detect(glasssix::longinus::LonginusDetector* instance, glasssix::lo
 	return num;
 }
 
-int Longinus_detectWithInfo(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors, int order)
+int Longinus_detectWithInfo(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, const unsigned char* gray, int width, int height, int step, int minSize, float scale, int min_neighbors, int order)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detect(gray, width, height, step, minSize, scale, min_neighbors, order, false, false);
 	int num = vec.size();
@@ -130,7 +132,7 @@ int Longinus_matchWithInfo(glasssix::longinus::LonginusDetector* instance, glass
 	return num;
 }
 
-int Longinus_detectRetina(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int min_win, int height, int width, int order, float threshold)
+int Longinus_detectRetina(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, const unsigned char* image, int min_win, int height, int width, int order, float threshold)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectRetina(image, min_win, height, width, order, threshold);
 	int num = vec.size();
@@ -148,7 +150,7 @@ int Longinus_detectRetina(glasssix::longinus::LonginusDetector* instance, glasss
 	return num;
 }
 
-int Longinus_detectEx(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
+int Longinus_detectEx(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, const unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectEx(image, 3, height, width, minSize, threshold, 1.0f / factor, stage, order);
 	int num = vec.size();
@@ -166,7 +168,7 @@ int Longinus_detectEx(glasssix::longinus::LonginusDetector* instance, glasssix::
 	return num;
 }
 
-int Longinus_detectEx_Mobile(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
+int Longinus_detectEx_Mobile(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, const unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectEx_mobile(image, 3, height, width, minSize, threshold, 1.0f / factor, stage, order);
 	int num = vec.size();
@@ -184,7 +186,7 @@ int Longinus_detectEx_Mobile(glasssix::longinus::LonginusDetector* instance, gla
 	return num;
 }
 
-unsigned char* Longinus_alignFace(glasssix::longinus::LonginusDetector* instance, unsigned char* ori_image, int n, int height, int width, int* bbox, int* landmarks)
+unsigned char* Longinus_alignFace(glasssix::longinus::LonginusDetector* instance, const unsigned char* ori_image, int n, int height, int width, int* bbox, int* landmarks)
 {
 	if (n)
 	{
@@ -205,7 +207,7 @@ unsigned char* Longinus_alignFace(glasssix::longinus::LonginusDetector* instance
 		return nullptr;
 }
 
-unsigned char* Longinus_alignFaceFromCropped(glasssix::longinus::LonginusDetector* instance, unsigned char* ori_image, int n, int height, int width)
+unsigned char* Longinus_alignFaceFromCropped(glasssix::longinus::LonginusDetector* instance, const unsigned char* ori_image, int n, int height, int width)
 {
 	if (n)
 	{
@@ -218,7 +220,7 @@ unsigned char* Longinus_alignFaceFromCropped(glasssix::longinus::LonginusDetecto
 		return nullptr;
 }
 
-int Longinus_detectEx_Mobile_nir(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
+int Longinus_detectEx_Mobile_nir(glasssix::longinus::LonginusDetector* instance, glasssix::longinus::face_rect_with_face_info** ptr, const unsigned char* image, int height, int width, int minSize, float* threshold, float factor, int stage, int order)
 {
 	std::vector<glasssix::longinus::face_rect_with_face_info> vec = instance->detectEx_mobile_nir(image, 3, height, width, minSize, threshold, 1.0f / factor, stage, order);
 	int num = vec.size();
@@ -236,8 +238,8 @@ int Longinus_detectEx_Mobile_nir(glasssix::longinus::LonginusDetector* instance,
 	return num;
 }
 
-extern "C" LONGINUS_C_EXPORT void detectEx_mobile_pair(glasssix::longinus::LonginusDetector * instance, glasssix::longinus::face_rect_with_face_info * *vsl_rect_ptr, int* vsl_rect_num, unsigned char* vsl_image, int vsl_height, int vsl_width, int vsl_minSize, float* vsl_threshold, float vsl_factor, int vsl_stage, int vsl_order,
-	glasssix::longinus::face_rect_with_face_info * *nir_rect_ptr, int* nir_rect_num, unsigned char* nir_image, int nir_height, int nir_width, int nir_minSize, float* nir_threshold, float nir_factor, int nir_stage, int nir_order)
+extern "C" LONGINUS_C_EXPORT void detectEx_mobile_pair(glasssix::longinus::LonginusDetector * instance, glasssix::longinus::face_rect_with_face_info * *vsl_rect_ptr, int* vsl_rect_num, const unsigned char* vsl_image, int vsl_height, int vsl_width, int vsl_minSize, float* vsl_threshold, float vsl_factor, int vsl_stage, int vsl_order,
+	glasssix::longinus::face_rect_with_face_info * *nir_rect_ptr, int* nir_rect_num, const unsigned char* nir_image, int nir_height, int nir_width, int nir_minSize, float* nir_threshold, float nir_factor, int nir_stage, int nir_order)
 {
 	std::vector<std::vector<glasssix::longinus::face_rect_with_face_info> > result = instance->detectEx_mobile_pair(vsl_image, 3, vsl_height, vsl_width, vsl_minSize, vsl_threshold, 1.0f / vsl_factor, vsl_stage, vsl_order,
 		nir_image, 3, nir_height, nir_width, nir_minSize, nir_threshold, 1.0f / nir_factor, nir_stage, nir_order);
@@ -268,7 +270,7 @@ extern "C" LONGINUS_C_EXPORT void detectEx_mobile_pair(glasssix::longinus::Longi
 	}
 }
 
-bool Longinus_blur_judge_vsl(glasssix::longinus::LonginusDetector* instance, unsigned char* vsl_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
+bool Longinus_blur_judge_vsl(glasssix::longinus::LonginusDetector* instance, const unsigned char* vsl_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
 {
 	std::vector<std::vector<int> > bbox_vec;
 	std::vector<std::vector<int> > landmarks_vec;
@@ -290,7 +292,7 @@ bool Longinus_blur_judge_vsl(glasssix::longinus::LonginusDetector* instance, uns
 	return false;
 }
 
-bool Longinus_black_white_judge_vsl(glasssix::longinus::LonginusDetector* instance, unsigned char* vsl_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
+bool Longinus_black_white_judge_vsl(glasssix::longinus::LonginusDetector* instance, const unsigned char* vsl_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
 {
 	std::vector<std::vector<int> > bbox_vec;
 	std::vector<std::vector<int> > landmarks_vec;
@@ -312,7 +314,7 @@ bool Longinus_black_white_judge_vsl(glasssix::longinus::LonginusDetector* instan
 	return false;
 }
 
-bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector* instance, unsigned char* nir_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
+bool Longinus_face_nose_judget_nir(glasssix::longinus::LonginusDetector* instance, const unsigned char* nir_color_image, int height, int width, int n, int* bbox, int* landmarks, float* thresh, float** value, int order)
 {
 	std::vector<std::vector<int> > bbox_vec;
 	std::vector<std::vector<int> > landmarks_vec;

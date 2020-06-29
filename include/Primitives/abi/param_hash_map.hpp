@@ -21,9 +21,6 @@ namespace glasssix::exposing
 
 	template<typename Key, typename Value>
 	struct param_hash_map;
-
-	template<typename Key, typename Value, typename>
-	auto make_param_pair(Key&& key, Value&& value);
 }
 
 namespace glasssix::exposing::impl
@@ -252,7 +249,7 @@ namespace glasssix::exposing::impl
 		}
 
 		template<typename First, typename Second, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<First, Key>, std::is_convertible<Second, Value>>>>
-		param_pair_impl(First&& key, Second&& value) : key_{ std::move(key) }, value_{ std::move(value)}
+		param_pair_impl(First&& key, Second&& value) : key_{ std::forward<First>(key) }, value_{ std::forward<Second>(value) }
 		{
 		}
 
@@ -269,7 +266,27 @@ namespace glasssix::exposing::impl
 		Key key_;
 		Value value_;
 	};
+}
 
+namespace glasssix::exposing
+{
+	/// <summary>
+	/// Creates a key-value pair.
+	/// </summary>
+	/// <typeparam name="Key">The key type</typeparam>
+	/// <typeparam name="Value">The value type</typeparam>
+	/// <param name="key">The key</param>
+	/// <param name="value">The value</param>
+	/// <returns>The pair</returns>
+	template<typename Key, typename Value, typename = std::enable_if_t<std::conjunction_v<impl::has_abi_type<std::decay_t<Key>>, impl::has_abi_type<std::decay_t<Value>>>>>
+	auto make_param_pair(Key&& key, Value&& value)
+	{
+		return make_as_first<impl::param_pair_impl<std::decay_t<Key>, std::decay_t<Value>>>(std::forward<Key>(key), std::forward<Value>(value));
+	}
+}
+
+namespace glasssix::exposing::impl
+{
 	template<typename Key, typename Value>
 	class param_hash_map_impl : public implements<param_hash_map_impl<Key, Value>, param_hash_map<Key, Value>>
 	{
@@ -369,20 +386,6 @@ namespace glasssix::exposing::impl
 
 namespace glasssix::exposing
 {
-	/// <summary>
-	/// Creates a key-value pair.
-	/// </summary>
-	/// <typeparam name="Key">The key type</typeparam>
-	/// <typeparam name="Value">The value type</typeparam>
-	/// <param name="key">The key</param>
-	/// <param name="value">The value</param>
-	/// <returns>The pair</returns>
-	template<typename Key, typename Value, typename = std::enable_if_t<std::conjunction_v<impl::has_abi_type<std::decay_t<Key>>, impl::has_abi_type<std::decay_t<Value>>>>>
-	auto make_param_pair(Key&& key, Value&& value)
-	{
-		return make_as_first<impl::param_pair_impl<std::decay_t<Key>, std::decay_t<Value>>>(std::forward<Key>(key), std::forward<Value>(value));
-	}
-
 	/// <summary>
 	/// Creates a hash map.
 	/// </summary>

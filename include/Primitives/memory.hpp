@@ -8,7 +8,7 @@
 #include <type_traits>
 
 // For pointer alignment
-inline constexpr std::size_t g6_malloc_align = 32;
+const std::size_t MALLOC_ALIGN = 32;
 
 namespace glasssix
 {
@@ -56,7 +56,7 @@ namespace glasssix
 		/// <param name="size">The size in bytes</param>
 		/// <param name="alignment">Pointer alignment size</param>
 		/// <returns>The aligned-pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = g6_malloc_align);
+		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = MALLOC_ALIGN);
 
 		/// <summary>
 			/// Deallocates a piece of aligned memory.

@@ -1,7 +1,7 @@
 #ifndef _MATCH_RECTOR_HPP_
 #define _MATCH_RECTOR_HPP_
 
-#include "../Longinus/common.hpp"
+#include "common.hpp"
 
 namespace glasssix 
 {
