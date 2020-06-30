@@ -14,7 +14,7 @@ namespace glasssix
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class pipeline
+		class EXPORT_EXCALIBUR_PRIMITIVES pipeline
 		{
 		public:
 			explicit pipeline()

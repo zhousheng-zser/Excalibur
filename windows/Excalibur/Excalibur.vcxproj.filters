@@ -117,6 +117,9 @@
     <ClInclude Include="..\..\include\Excalibur\operation_scale.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_permute.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\pipeline.cpp">

@@ -23,6 +23,18 @@ namespace glasssix
 				{
 					c_ = atoi(split_string(attrs[i], "=")[1].c_str());
 				}
+				else if (split_string(attrs[i], "=")[0] == "3")
+				{
+					auto means_str = split_string(split_string(attrs[i], "=")[1], ",");
+					for (size_t j = 0; j < means_str.size(); j++)
+					{
+						means_.push_back(atof(means_str[j].c_str()));
+					}
+				}
+				else if (split_string(attrs[i], "=")[0] == "4")
+				{
+					var_ = atof(split_string(attrs[i], "=")[1].c_str());
+				}
 				else if (split_string(attrs[i], "=")[0] == "-23330")
 				{
 					//do nothing
@@ -54,10 +66,7 @@ namespace glasssix
 				{
 					if (channel == 3)
 					{
-						float means[] = { 104.f , 117.f, 123.f };
-						//float means[] = { 0.0 , 0.0, 0.0 };
-						float var = 1.0 / 128;
-						//float var = 1;
+						CHECK_EQ(channel, means_.size());
 						if (bottoms[i]->order() == memory::NCHW)
 						{
 							for (int n = 0; n < num; n++)
@@ -72,7 +81,7 @@ namespace glasssix
 										for (int w = 0; w < width; w++)
 										{
 											top_data[offset + sub_offset + subsub_offset + w] =
-												(bottom_data[offset + sub_offset + subsub_offset + w] - means[c]) * var;
+												(bottom_data[offset + sub_offset + subsub_offset + w] - means_[c]) * var_;
 										}
 									}
 								}
@@ -92,7 +101,7 @@ namespace glasssix
 										for (int c = 0; c < 3; c++)
 										{
 											top_data[offset + sub_offset + subsub_offset + c] =
-												(bottom_data[offset + sub_offset + subsub_offset + c] - means[c]) * var;
+												(bottom_data[offset + sub_offset + subsub_offset + c] - means_[c]) * var_;
 										}
 									}
 								}
@@ -105,7 +114,7 @@ namespace glasssix
 					}
 					else if (channel == 1)
 					{
-						float var = 0.0078125f;
+						CHECK_EQ(channel, means_.size());
 						for (int n = 0; n < num; n++)
 						{
 							int offset = n * height * width;
@@ -115,7 +124,7 @@ namespace glasssix
 								for (int w = 0; w < width; w++)
 								{
 									top_data[offset + subsub_offset + w] =
-										(bottom_data[offset + subsub_offset + w] - 127.5f) * var;
+										(bottom_data[offset + subsub_offset + w] - means_[0]) * var_;
 								}
 							}
 						}
