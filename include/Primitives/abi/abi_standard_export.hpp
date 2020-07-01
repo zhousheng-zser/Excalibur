@@ -9,6 +9,7 @@
 #include "fundamental_semantics.hpp"
 
 #include <tuple>
+#include <mutex>
 #include <atomic>
 #include <cstdint>
 #include <utility>
@@ -62,11 +63,16 @@ namespace glasssix::exposing
 			struct class_factory_impl : implements<class_factory_impl, class_factory>
 			{
 				inline static std::unordered_map<param_string, std::function<unknown_object()>> map;
-				inline static static_initializer initializer{ [&]
-					{
-						((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, &make_component_impl<ComponentImpls>), ...));
-					}
-				};
+
+				/// <summary>
+				/// Creates an instance.
+				/// </summary>
+				class_factory_impl()
+				{
+					static std::once_flag flag;
+
+					std::call_once(flag, [] { ((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, &make_component_impl<ComponentImpls>), ...)) });
+				}
 
 				/// <summary>
 				/// Creates an instance by a qualified name.
