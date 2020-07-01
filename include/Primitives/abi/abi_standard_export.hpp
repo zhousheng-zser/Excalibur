@@ -71,7 +71,7 @@ namespace glasssix::exposing
 				{
 					static std::once_flag flag;
 
-					std::call_once(flag, [] { ((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, &make_component_impl<ComponentImpls>), ...)) });
+					std::call_once(flag, [] { ((map.insert_or_assign(impl::get_external_qualified_name_v<ComponentImpls>, &make_component_impl<ComponentImpls>), ...)); });
 				}
 
 				/// <summary>
