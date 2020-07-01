@@ -28,6 +28,7 @@ namespace glasssix
 				else if (split_string(attrs[i], "=")[0] == "8")
 				{
 					int8_scale_term_ = (bool)atoi(split_string(attrs[i], "=")[1].c_str());
+					params_.set_int8_quantization(int8_scale_term_);
 				}
 				else if (split_string(attrs[i], "=")[0] == "9")
 				{
@@ -65,6 +66,31 @@ namespace glasssix
 					fread(weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
 					mem += num_output_ * sizeof(float);
 				}
+				return mem;
+			}
+			else if (quantize_tag == 871224)
+			{
+				weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
+				fread(weights_i8_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(signed char), fp);
+				mem += weight_data_size_ * sizeof(signed char);
+				// fake float32 data, just for code consistency
+				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, params_.device_, memory::NCHW, nullptr)));
+				if (weight_data_size_ % 4 != 0)
+				{
+					fread(weights_f32_[0]->mutable_cpu_data(), 1, (4 - weight_data_size_ % 4) * sizeof(signed char), fp);
+					mem += 1 * sizeof(signed char);
+				}
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, params_.device_, memory::NCHW, nullptr)));
+					fread(weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
+					mem += num_output_ * sizeof(signed char);
+				}
+				weights_scaletable_i8_.resize(1);
+				fread(weights_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+				featmap_scaletable_i8_.resize(1);
+				fread(featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+				mem += 1 * sizeof(signed char);
 				return mem;
 			}
 			else

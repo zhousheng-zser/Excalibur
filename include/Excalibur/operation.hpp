@@ -67,6 +67,21 @@ namespace glasssix
 				CHECK(!(brain_float16_ && int8_quantization_));
 				CHECK(!(float16_ && int8_quantization_));
 			}
+
+			void set_int8_quantization(bool int8_quantization)
+			{
+				int8_quantization_ = int8_quantization;
+			}
+
+			void set_brain_float16(bool brain_float16)
+			{
+				brain_float16_ = brain_float16;
+			}
+
+			void set_float16(bool float16)
+			{
+				float16_ = float16;
+			}
 		};
 
 		static std::vector<std::string> split_string(const std::string& s, const std::string& c)
@@ -140,7 +155,8 @@ namespace glasssix
 			std::vector<std::shared_ptr<memory::tensor<unsigned short>>> weights_f16_;
 			std::vector<std::shared_ptr<memory::tensor<signed char>>> weights_i8_;
 			operation_param params_;
-			//memory::orderType order_ = memory::orderType::NCHW;
+			std::vector<float> weights_scaletable_i8_;
+			std::vector<float> featmap_scaletable_i8_;
 
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops) 

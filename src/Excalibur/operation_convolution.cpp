@@ -24,24 +24,42 @@ namespace glasssix
 				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
 				fread(weights_f32_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(float), fp);
 				mem += weight_data_size_ * sizeof(float);
-				/*for (size_t i = weights_f32_[0]->count() - 10; i < weights_f32_[0]->count(); i++)
-				{
-					std::cout << weights_f32_[0]->cpu_data()[i] << " ";
-				}
-				std::cout << std::endl;*/
 				if (bias_term_)
 				{
 					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
 					fread(weights_f32_[1]->mutable_cpu_data(), 1, output_channel_ * sizeof(float), fp);
 					mem += output_channel_ * sizeof(float);
 				}
-				return mem;
+			}
+			else if (quantize_tag == 871224)
+			{
+				weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
+				fread(weights_i8_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(signed char), fp);
+				// fake float32 data, just for code consistency
+				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, params_.device_, memory::NCHW, nullptr)));
+				mem += weight_data_size_ * sizeof(signed char);
+				if (weight_data_size_ % 4 != 0)
+				{
+					fread(weights_f32_[0]->mutable_cpu_data(), 1, (4 - weight_data_size_ % 4) * sizeof(signed char), fp);
+					mem += 1 * sizeof(float);
+				}
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
+					fread(weights_f32_[1]->mutable_cpu_data(), 1, output_channel_ * sizeof(float), fp);
+					mem += output_channel_ * sizeof(signed char);
+				}
+				weights_scaletable_i8_.resize(group_);
+				fread(weights_scaletable_i8_.data(), 1, group_ * sizeof(float), fp);
+				featmap_scaletable_i8_.resize(1);
+				fread(featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+				mem += (group_ + 1) * sizeof(signed char);
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
-				return 0;
 			}
+			return mem;
 		}
 
 		template<typename Dtype>
