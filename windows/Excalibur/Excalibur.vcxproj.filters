@@ -194,6 +194,9 @@
     <ClCompile Include="..\..\src\Excalibur\operation_scale.cpp">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\operation_permute.cpp">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\im2col.cu">

@@ -5,7 +5,7 @@
 namespace glasssix
 {
 	template <typename Dtype>
-	static void mat2tensor_cpu(const cv::Mat &srcu, std::shared_ptr<glasssix::memory::tensor<Dtype>>& dst,
+	void mat2tensor_cpu(const cv::Mat &srcu, std::shared_ptr<glasssix::memory::tensor<Dtype>>& dst,
 		glasssix::memory::orderType order = glasssix::memory::NCHW, bool bgr2rgb = false)
 	{
 		if (srcu.data == NULL)

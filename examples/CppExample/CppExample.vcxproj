@@ -101,6 +101,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\CppExample\main.cpp" />
     <ClCompile Include="..\..\src\CppExample\retina_face.cpp" />
+    <ClCompile Include="..\..\src\CppExample\ultra_face.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\windows\Excalibur\Excalibur.vcxproj">
@@ -109,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\CppExample\retina_face.hpp" />
+    <ClInclude Include="..\..\src\CppExample\ultra_face.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

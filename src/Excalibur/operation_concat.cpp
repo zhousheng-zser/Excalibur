@@ -98,6 +98,29 @@ namespace glasssix
 						}
 					}
 				}
+				else if (concat_axis == 2)
+				{
+					for (size_t n = 0; n < concat_shape[0]; n++)
+					{
+						for (size_t c = 0; c < concat_shape[1]; c++)
+						{
+							int top_offset = 0;
+							float* top_data_slice_c = top_data + tops[0]->count(1, 4) * n + tops[0]->count(2, 4) * c;
+							for (int i = 0; i < bottoms.size(); i++)
+							{
+								auto bottom_data_slice_c = bottoms[i]->cpu_data() + bottoms[i]->count(1, 4) * n + bottoms[i]->count(2, 4) * c;
+								math_functions::excalibur_copy(bottoms[i]->count(concat_axis, 4), bottom_data_slice_c,
+									top_data_slice_c + top_offset, bottoms[i]->device());
+								top_offset += bottoms[i]->count(concat_axis, 4);
+							}
+						}
+					}
+					/*for (size_t i = 7000; i < 7100; i++)
+					{
+						std::cout << top_data[i] << " ";
+					}
+					std::cout << std::endl;*/
+				}
 				else
 				{
 					NOT_IMPLEMENTED;

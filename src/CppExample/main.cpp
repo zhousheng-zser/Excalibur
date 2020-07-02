@@ -2,16 +2,20 @@
 #include <opencv2/opencv.hpp>
 #include "../../include/Primitives/profiler.hpp"
 #include "retina_face.hpp"
-
+#include "ultra_face.hpp"
 using namespace glasssix;
 
 int main()
 {
-	std::shared_ptr<excalibur::pipeline<float>> p;
-	p.reset(new excalibur::pipeline<float>("D:\\Research\\DAG\\exdag\\unicorn.phai", "D:\\Research\\DAG\\exdag\\unicorn.racy"));
+	ultra_face ultraface("D:\\Research\\Avalon\\models\\caffe\\slim_320.param",
+		"D:\\Research\\Avalon\\models\\caffe\\slim_320.bin", 320, 240, 1, 0.7);
+	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
+
+	ultraface.detect(img);
+
+
 	retina_face *rf = new retina_face("D:\\Research\\Excalibur\\models\\retina.phai", "D:\\Research\\Excalibur\\models\\retina.racy");
 	
-	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
 	//pro->turn_on();
 	/*cv::Mat small_img;
 	cv::resize(img, small_img, cv::Size(img.cols / 2, img.rows / 2));*/

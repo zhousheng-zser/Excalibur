@@ -152,6 +152,7 @@
     <ClCompile Include="..\..\src\Excalibur\operation_general_conv.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_innerproduct.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_input.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_permute.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_pooling.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_prelu.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_relu.cpp" />
