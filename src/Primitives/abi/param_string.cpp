@@ -38,7 +38,7 @@ namespace glasssix::exposing::allocations
 				header->size = size;
 				header->ref_count = 1;
 
-				return (std::memset(header->data, 0, header->size), header);
+				return (std::memset(header->data, 0, header->size + 1), header);
 			}
 
 			return nullptr;
