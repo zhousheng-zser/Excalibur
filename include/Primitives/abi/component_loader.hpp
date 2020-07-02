@@ -183,10 +183,10 @@ namespace glasssix::exposing
 			return iter != factories_.end() ? iter->second : nullptr;
 		}
 	private:
-		template<bool recursive, typename Result, typename Callable>
+		template<bool Recursive, typename Result, typename Callable>
 		Result for_each_dll_files(utf8_string_view directory, Callable&& handler, Result&& initial_value) noexcept
 		{
-			using iterator_type = std::conditional_t<recursive, fs::recursive_directory_iterator, fs::directory_iterator>;
+			using iterator_type = std::conditional_t<Recursive, fs::recursive_directory_iterator, fs::directory_iterator>;
 
 			std::error_code code;
 			Result result{ std::forward<Result>(initial_value) };
