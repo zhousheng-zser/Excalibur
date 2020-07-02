@@ -10,9 +10,7 @@
 
 #include <tuple>
 #include <mutex>
-#include <atomic>
 #include <cstdint>
-#include <utility>
 #include <functional>
 #include <type_traits>
 #include <string_view>
@@ -33,18 +31,6 @@ namespace glasssix::exposing
 {
 	namespace details
 	{
-		/// <summary>
-		/// A scoped static initializer.
-		/// </summary>
-		struct static_initializer
-		{
-			template<typename Callable, typename... Args>
-			static_initializer(Callable&& handler, Args&&... args)
-			{
-				std::forward<Callable>(handler)(std::forward<Args>(args)...);
-			}
-		};
-
 		template<const utf8_string_view& ComponentName, typename Tuple, typename = void>
 		struct make_standard_export_functions_impl;
 

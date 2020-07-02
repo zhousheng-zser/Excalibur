@@ -35,6 +35,14 @@ namespace glasssix::exposing::dll_routines
 	using dll_can_unload_now_handler_type = bool(G6_ABI_CALL*)() noexcept;
 	using dll_create_factory_handler_type = std::int32_t(G6_ABI_CALL*)(void** factory) noexcept;
 
+#ifdef _WIN32
+	inline constexpr utf8_string_view dll_extension{ u8".dll" };
+#elif defined(__linux__)
+	inline constexpr utf8_string_view dll_extension{ u8".so" };
+#else
+#error "Unsupported Platform."
+#endif
+
 	inline constexpr utf8_string_view dll_can_unload_now_handler_name{ u8"dll_can_unload_now" };
 	inline constexpr utf8_string_view dll_create_factory_handler_name{ u8"dll_create_factory" };
 }
@@ -159,7 +167,7 @@ namespace glasssix::exposing
 			}
 			else
 			{
-				return for_each_dll_files<true>(directory, handler, make_param_vector<class_factory>());
+				return for_each_dll_files<false>(directory, handler, make_param_vector<class_factory>());
 			}
 		}
 
@@ -185,7 +193,7 @@ namespace glasssix::exposing
 
 			for (auto& item : iterator_type{ to_narrow_string(directory), fs::directory_options::skip_permission_denied, code })
 			{
-				if (item.path().has_extension() && item.path().extension() == ".dll")
+				if (item.path().has_extension() && item.path().extension() == dll_routines::dll_extension)
 				{
 					std::forward<Callable>(handler)(result, item.path());
 				}

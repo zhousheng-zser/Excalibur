@@ -110,6 +110,7 @@
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_span.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp" />

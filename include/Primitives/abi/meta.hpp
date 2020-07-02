@@ -78,6 +78,15 @@ namespace glasssix::exposing::meta
 	template<template<typename> typename Container, typename T, std::size_t Dimension>
 	using make_multidimensional_container_t = typename make_multidimensional_container<Container, T, Dimension>::type;
 
+	template<typename T, typename Category, typename = void>
+	struct is_iterator_category_same : std::false_type{};
+
+	template<typename T, typename Category>
+	struct is_iterator_category_same<T, Category, std::void_t<typename std::iterator_traits<typename T::iterator>::iterator_category>> : std::is_same<Category, typename std::iterator_traits<typename T::iterator>::iterator_category> {};
+	
+	template<typename T, typename Category>
+	inline constexpr bool is_iterator_category_same_v = is_iterator_category_same<T, Category>::value;
+
 	template<typename... Tuples>
 	using tuple_cat_t = decltype(std::tuple_cat(std::declval<Tuples>()...));
 

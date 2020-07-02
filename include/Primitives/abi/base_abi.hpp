@@ -534,14 +534,14 @@ namespace glasssix::exposing::impl
 {
 	namespace details
 	{
-		template<typename To, bool has_exception, typename From, typename = std::enable_if_t<std::conjunction_v<std::is_base_of<abi_unknown_object, From>, is_well_defined_interface<To>>>>
+		template<typename To, bool HasException, typename From, typename = std::enable_if_t<std::conjunction_v<std::is_base_of<abi_unknown_object, From>, is_well_defined_interface<To>>>>
 		To as_impl(From* ptr)
 		{
 			To result{ nullptr };
 
 			if (ptr == nullptr)
 			{
-				if constexpr (has_exception)
+				if constexpr (HasException)
 				{
 					throw abi_null_pointer{};
 				}
@@ -553,7 +553,7 @@ namespace glasssix::exposing::impl
 
 			if (!abi_result{ ptr->query_interface(guid_of_v<To>, put_abi(result)) }.no_error())
 			{
-				if constexpr (has_exception)
+				if constexpr (HasException)
 				{
 					throw abi_no_interface{};
 				}
