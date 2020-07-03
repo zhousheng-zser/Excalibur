@@ -80,15 +80,8 @@ namespace glasssix
 		std::vector<FaceInfo> valid_input;
 		std::shared_ptr<memory::tensor<float>> img_t;
 		mat2tensor_cpu(in, img_t);
-		timer t;
-		t.start();
-		for (size_t i = 0; i < 10; i++)
-		{
-			pipe->forward_cpu(img_t);
-		}
-		t.stop();
-		std::cout << t.get_elapsed_milli_seconds() / 10 << std::endl;
-		auto scores = pipe->get_featmap("277");
+		pipe->forward_cpu(img_t);
+		auto scores = pipe->get_featmap("scores");
 		for (size_t i = 1000; i < 1100; i++)
 		{
 			std::cout << scores->cpu_data()[i] << " ";

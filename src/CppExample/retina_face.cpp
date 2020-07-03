@@ -316,11 +316,12 @@ namespace glasssix
 			anchors_fpn_[key] = anchors_fpn[i];
 			num_anchors_[key] = anchors_fpn[i].size();
 		}
+		allocator = new memory::pool_allocator<float>();
 	}
 
 	retina_face::~retina_face()
 	{
-
+		delete allocator;
 	}
 
 	std::vector<anchor_box> retina_face::bbox_pred(std::vector<anchor_box> anchors, std::vector<cv::Vec4f> regress)
@@ -503,6 +504,7 @@ namespace glasssix
 		//auto blob_data = mclc.Forward(std::vector<cv::Mat>{img}, net_id);
 		std::shared_ptr<glasssix::memory::tensor<float>> temp;
 		mat2tensor_cpu(img, temp, glasssix::memory::NCHW, false);
+		temp->set_allocator(allocator);
 		auto blob_data = pipe->forward_cpu(temp);
 		t1 = (double)cv::getTickCount() - t1;
 		std::cout << "infer compute time :" << t1 * 1000.0 / cv::getTickFrequency() << " ms \n";

@@ -81,6 +81,7 @@ namespace glasssix
 			}
 
 			//
+			//allocator_ = new memory::pool_allocator<Dtype>();
 
 			for (size_t i = 0; i < op_params_.size(); i++)
 			{

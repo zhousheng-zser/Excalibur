@@ -63,7 +63,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
-      <PreprocessorDefinitions>_OPENMP;EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -84,7 +84,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>false</ConformanceMode>
-      <PreprocessorDefinitions>_OPENMP;EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>true</OpenMPSupport>
@@ -119,13 +119,17 @@
     <ClInclude Include="..\..\include\Excalibur\operation_crop.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_deconvlution.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_deconvolutiondepthwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_detectionoutput.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_eltwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_flatten.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_innerproduct.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_input.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_make_border.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_normalize.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_permute.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_pooling.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_prelu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_priorbox.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_reflector.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_general_conv.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_relu.hpp" />

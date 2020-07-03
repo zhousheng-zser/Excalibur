@@ -28,7 +28,14 @@ namespace glasssix
 #ifdef CAFFE_SUPPORT
 			explicit pipeline(std::string prototxt, std::string caffemodel);
 #endif //!CAFFE_SUPPORT
-			~pipeline() {};
+			~pipeline() 
+			{
+				/*if (allocator_)
+				{
+					delete allocator_;
+					allocator_ = nullptr;
+				}*/
+			};
 
 			void init_weights(std::string model_file);
 
@@ -63,6 +70,7 @@ namespace glasssix
 			std::vector<std::shared_ptr<operation<Dtype>>> operations_;
 			std::vector<operation_param> op_params_;
 			//
+			//memory::pool_allocator<Dtype>* allocator;
 			std::vector<std::shared_ptr<memory::tensor<Dtype>>> featmaps_;
 			//std::vector<std::shared_ptr<memory::tensor<unsigned short>>> half_featmaps_;
 			std::map<std::string, int> operation_names_index_;

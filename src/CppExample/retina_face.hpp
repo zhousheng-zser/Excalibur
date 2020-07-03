@@ -83,6 +83,7 @@ namespace glasssix
 
 	private:
 		std::shared_ptr<glasssix::excalibur::pipeline<float>> pipe;
+		memory::pool_allocator<float>* allocator;
 		int device_;
 		float nms_threshold;
 		std::vector<float> ratio_;

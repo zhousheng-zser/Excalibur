@@ -37,10 +37,31 @@ namespace glasssix
 				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));
 				float* top_data = tops[i]->mutable_cpu_data();
 				const float* bottom_data = bottoms[i]->cpu_data();
-				for (size_t j = 0; j < bottoms[i]->count(); j++)
+				const int count = bottoms[i]->count();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //SSE or AVX
+				int simd_times = (count - count % 4) / 4;
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+				for (int j = 0; j < simd_times; j++)
+				{
+					__m128 d = _mm_load_ps(bottom_data + 4 * j);
+					d = _mm_max_ps(_mm_setzero_ps(), d);
+					_mm_store_ps(top_data + 4 * j, d);
+				}
+				for (int j = 4 * simd_times; j < bottoms[i]->count(); j++)
 				{
 					top_data[j] = bottom_data[j] >= 0.0f ? bottom_data[j] : 0.0f;
 				}
+#else
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+				for (int j = 0; j < bottoms[i]->count(); j++)
+				{
+					top_data[j] = bottom_data[j] >= 0.0f ? bottom_data[j] : 0.0f;
+				}
+#endif
 			}
 		}
 

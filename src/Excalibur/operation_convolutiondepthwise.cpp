@@ -2,6 +2,7 @@
 #include "../../include/Excalibur/operation_convolutiondepthwise.hpp"
 #include "./operation_make_border.hpp"
 #include <algorithm>
+#include "../../include/Primitives/profiler.hpp"
 
 namespace glasssix
 {
@@ -140,8 +141,7 @@ namespace glasssix
 					break;
 				}
 			}
-			
-			//operation_convolution<Dtype>::forward_cpu_f32(bottoms, tops);
+
 		}
 
 		template<typename Dtype>
@@ -255,27 +255,35 @@ namespace glasssix
 		void operation_convolutiondepthwise<Dtype>::forward_k3s1_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
+			/*profiler *p = profiler::get();
+			p->scope_start("make_border");*/
 			std::shared_ptr<memory::tensor<float>> bottom_bordered;
+			// time cost 2ms in make_border!
 			make_border<float>(bottom, bottom_bordered, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
 			if (bottom_bordered->order() != memory::NCHW)
 			{
 				bottom_bordered->convert_order();
 			}
+			/*p->scope_end();
+			p->scope_start("reset");*/
 			top.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			float* top_data = top->mutable_cpu_data();
 			const int top_cstep = top->count(2, 4);
 			const int bottom_cstep = bottom_bordered->count(2, 4);
 			auto bottom_data = bottom_bordered->cpu_data();
+			const int real_width = bottom_bordered->width();
 			const float* weights_data = weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
 			if (bias_term_)
 			{
 				bias_data = weights_f32_[1]->cpu_data();
 			}
-			//#ifdef _OPENMP
-			//#pragma omp parallel for
-			//#endif
+			/*p->scope_end();
+			p->scope_start("exec");*/
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
 			for (int g = 0; g < group_; g++)
 			{
 				float *out = top_data + g * top_cstep;
@@ -287,9 +295,9 @@ namespace glasssix
 				const float* img0 = bottom_data + g * bottom_cstep;
 
 				const float* r0 = img0;
-				const float* r1 = img0 + bottom_bordered->width();
-				const float* r2 = img0 + bottom_bordered->width() * 2;
-				const float* r3 = img0 + bottom_bordered->width() * 3;
+				const float* r1 = img0 + real_width;
+				const float* r2 = img0 + real_width * 2;
+				const float* r3 = img0 + real_width * 3;
 
 				const float* k0 = weights_data0;
 				const float* k1 = weights_data0 + 3;
@@ -323,10 +331,10 @@ namespace glasssix
 						outptr2++;
 					}
 
-					r0 += 2 + bottom_bordered->width();
-					r1 += 2 + bottom_bordered->width();
-					r2 += 2 + bottom_bordered->width();
-					r3 += 2 + bottom_bordered->width();
+					r0 += 2 + real_width;
+					r1 += 2 + real_width;
+					r2 += 2 + real_width;
+					r3 += 2 + real_width;
 
 					outptr += output_dim_w_;
 					outptr2 += output_dim_w_;
@@ -403,18 +411,24 @@ namespace glasssix
 				}
 #endif
 			}
+
+			//p->scope_end();
 		}
 
 		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_k3s2_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
+			profiler *p = profiler::get();
+			p->scope_start("make_border");
 			std::shared_ptr<memory::tensor<float>> bottom_bordered;
 			make_border<float>(bottom, bottom_bordered, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
 			if (bottom_bordered->order() != memory::NCHW)
 			{
 				bottom_bordered->convert_order();
 			}
+			p->scope_end();
+			p->scope_start("reset");
 			top.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			float* top_data = top->mutable_cpu_data();
@@ -428,6 +442,11 @@ namespace glasssix
 				bias_data = weights_f32_[1]->cpu_data();
 			}
 			const int tailstep = bottom_bordered->width() - 2 * output_dim_w_ + bottom_bordered->width();
+			p->scope_end();
+			p->scope_start("exec");
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
 			for (int g = 0; g < group_; g++)
 			{
 				float *out = top_data + g * top_cstep;
@@ -502,6 +521,8 @@ namespace glasssix
 #endif
 
 			}
+
+			p->scope_end();
 		}
 
 		INSTANCE_CLASS(operation_convolutiondepthwise);

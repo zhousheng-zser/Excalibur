@@ -84,11 +84,11 @@ namespace glasssix
 			output_offset_ = output_channel_ * output_spatial_dim_ / group_;
 			if (order == memory::NCHW)
 			{
-				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_}, params_.device_, order, nullptr));
+				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_}, params_.device_, order, bottoms[0]->allocator()));
 			}
 			else if (order == memory::NHWC)
 			{
-				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_channel_}, params_.device_, order, nullptr));
+				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_channel_}, params_.device_, order, bottoms[0]->allocator()));
 			}
 			else
 			{
@@ -96,11 +96,11 @@ namespace glasssix
 			}
 			float* top_data = tops[0]->mutable_cpu_data();
 			int top_dim_ = tops[0]->count(1, 4);
-			col_buffer_.reset(new memory::tensor<float>(std::vector<int>{kernel_dim_ / group_, output_dim_h_, output_dim_w_}, params_.device_, memory::NCHW, nullptr));
+			col_buffer_.reset(new memory::tensor<float>(std::vector<int>{kernel_dim_ / group_, output_dim_h_, output_dim_w_}, params_.device_, memory::NCHW, bottoms[0]->allocator()));
 			col_buffer_data = col_buffer_->mutable_cpu_data();
 			if (bias_term_)
 			{
-				bias_multiplier_.reset(new memory::tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, params_.device_, memory::NCHW, nullptr));
+				bias_multiplier_.reset(new memory::tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, params_.device_, memory::NCHW, bottoms[0]->allocator()));
 				bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
 				math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
 				bias_data = weights_f32_[1]->cpu_data();

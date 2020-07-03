@@ -11,19 +11,19 @@ int main()
 		"D:\\Research\\Avalon\\models\\caffe\\slim_320.bin", 320, 240, 1, 0.7);
 	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
 
-	ultraface.detect(img);
+	//ultraface.detect(img);
 
-
+	
 	retina_face *rf = new retina_face("D:\\Research\\Excalibur\\models\\retina.phai", "D:\\Research\\Excalibur\\models\\retina.racy");
 	
 	//pro->turn_on();
 	/*cv::Mat small_img;
 	cv::resize(img, small_img, cv::Size(img.cols / 2, img.rows / 2));*/
 	auto face_info = rf->detect(img, 0.3);
-	/*for (size_t i = 0; i < 5; i++)
+	for (size_t i = 0; i < 5; i++)
 	{
 		rf->detect(img, 0.3);
-	}*/
+	}
 	/*profiler* pro = profiler::get();
 	pro->turn_off();
 	pro->dump_profile("D:\\Research\\Excalibur\\models\\retina_480.json");*/

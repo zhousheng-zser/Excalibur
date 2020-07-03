@@ -19,10 +19,10 @@ namespace glasssix
 				const float alpha, const float* A, const float* B, const float beta,
 				float* C);
 
-			static void cpu_fgemm(const CBLAS_TRANSPOSE TransA,
+			/*static void cpu_fgemm(const CBLAS_TRANSPOSE TransA,
 				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 				const float alpha, const signed char* A, const signed char* B, const float beta,
-				int* C);
+				int* C);*/
 
 			static void cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 				const int N, const float alpha, const float* A, const float* x,
