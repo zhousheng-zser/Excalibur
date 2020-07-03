@@ -2,6 +2,7 @@
 
 #include "base.hpp"
 #include "base_abi.hpp"
+#include "fundamental_semantics.hpp"
 
 #include <cstdint>
 #include <cstddef>
@@ -32,13 +33,43 @@ namespace glasssix::exposing
 		/// </summary>
 		/// <typeparam name="Container">The container type</typeparam>
 		/// <param name="container">The container</param>
-		template<typename Container, typename = std::enable_if_t<meta::is_iterator_category_same_v<Container, std::random_access_iterator_tag>>>
-		param_span(Container&& container) noexcept
+		template<typename Container, typename = std::enable_if_t<meta::is_iterator_category_same_v<std::decay_t<Container>, std::random_access_iterator_tag>>>
+		param_span(Container&& container) noexcept : data_{ &*std::forward<Container>(container).begin() }, size_{ std::forward<Container>(container).end() - std::forward<Container>(container).begin() }
 		{
+		}
 
+		/// <summary>
+		/// Create an instance with an ABI from which ownership is taken.
+		/// </summary>
+		/// <param name="abi">The ABI</param>
+		param_span(take_over_abi_from_void_ptr abi)
+		{
+			*this = *abi.to<param_span*>();
+		}
+
+		T* data() const noexcept
+		{
+			return data_;
+		}
+
+		std::size_t size() const noexcept
+		{
+			return size_;
 		}
 	private:
 		T* data_;
 		std::size_t size_;
+	};
+}
+
+namespace glasssix::exposing::impl
+{
+	template<typename T>
+	struct abi<param_span<T>>
+	{
+		using identity_type = type_identity_primitive;
+		using type = void*;
+
+		static constexpr guid id{ "4BBC2561-97C4-4C12-A413-7636DBCD70F9" };
 	};
 }

@@ -36,9 +36,9 @@ namespace glasssix::exposing::dll_routines
 	using dll_create_factory_handler_type = std::int32_t(G6_ABI_CALL*)(void** factory) noexcept;
 
 #ifdef _WIN32
-	inline constexpr utf8_string_view dll_extension{ u8".dll" };
+	inline constexpr std::string_view dll_extension{ u8".dll" };
 #elif defined(__linux__)
-	inline constexpr utf8_string_view dll_extension{ u8".so" };
+	inline constexpr std::string_view dll_extension{ u8".so" };
 #else
 #error "Unsupported Platform."
 #endif

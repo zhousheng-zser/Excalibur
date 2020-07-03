@@ -25,7 +25,7 @@ namespace glasssix::exposing::dll
 #ifdef _WIN32
 		return path ? pure_c::to_handle<dll_handle>(LoadLibraryA(platform_encoding::utf8_to_narrow(path).c_str())) : nullptr;
 #else
-		return path ? pure_c::to_handle<dll_handle>(dlopen(platform_encoding::utf8_to_narrow(path).c_str(), RTLD_LAZY | RTLD_LOCAL)) : nullptr;
+		return path ? pure_c::to_handle<dll_handle>(dlopen(platform_encoding::utf8_to_narrow(path).c_str(), RTLD_NOW)) : nullptr;
 #endif
 	}
 

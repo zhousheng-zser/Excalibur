@@ -7,6 +7,7 @@
 #include "platform_encoding.hpp"
 #include "fundamental_semantics.hpp"
 #include "pure_c_handle_utils.h"
+#include "hash_utils.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -468,7 +469,9 @@ namespace std
 	{
 		std::size_t operator()(const glasssix::exposing::param_string& str) const
 		{
-			return std::hash<glasssix::exposing::param_string::view_type>{}(str);
+			std::size_t result = 0;
+
+			return (std::for_each(str.begin(), str.end(), [&](glasssix::exposing::utf8_char item) { glasssix::utils::hash_combine(result, item); }), result);
 		}
 	};
 }
