@@ -21,7 +21,7 @@ namespace glasssix
 		M = old_N; \
 		N = old_M; \
 		ldc = N; \
-		C = memory::aligned_heap_alloc(M*N * sizeof(float), 32); \
+		C = (float *)memory::aligned_heap_alloc(M*N * sizeof(float), 32); \
 	}
 
 #define SWAP_C \

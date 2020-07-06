@@ -285,11 +285,13 @@ __forceinline float _mm512_sumall_ps(__m512 r)
 
 	EXPORT_EXCALIBUR_PRIMITIVES void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group);
 
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 	// convert float32 to float16 with SIMD
 	EXPORT_EXCALIBUR_PRIMITIVES void float2half(const float* floats, unsigned short* halfs, int length);
 
 	// convert float16 to float32 with SIMD
 	EXPORT_EXCALIBUR_PRIMITIVES void half2float(const unsigned short* halfs, float* floats, int length);
+#endif
 
 	EXPORT_EXCALIBUR_PRIMITIVES float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias);
 

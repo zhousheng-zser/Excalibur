@@ -169,6 +169,7 @@ namespace glasssix
 		}
 	}
 
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 	void float2half(const float* floats, unsigned short* halfs, int length)
 	{
 		int f16c = (int)support_F16C();//check f16c instruction support
@@ -224,6 +225,7 @@ namespace glasssix
 			floats[i] = float16_to_float32(halfs[i]);
 		}
 	}
+#endif
 
 	float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias)
 	{
