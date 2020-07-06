@@ -440,59 +440,6 @@ namespace glasssix::exposing
 	}
 
 	/// <summary>
-	/// Duplicates an ABI and assignes it to an object with the reference count increased.
-	/// </summary>
-	/// <param name="object">The object</param>
-	/// <param name="abi">The ABI</param>
-	inline void copy_from_abi(unknown_object& object, void* abi) noexcept
-	{
-		if (abi)
-		{
-			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
-		}
-
-		*put_abi(object) = abi;
-	}
-
-	/// <summary>
-	/// Duplicates an ABI and assignes it to a primitve object.
-	/// </summary>
-	/// <typeparam name="T">The object type</typeparam>
-	/// <typeparam name="Abi">The ABI type</typeparam>
-	/// <param name="object">The object</param>
-	/// <param name="abi">The ABI</param>
-	template<typename T, typename Abi, typename = std::enable_if_t<std::conjunction_v<impl::is_primitive<T>, std::is_same<impl::abi_t<T>, std::decay_t<Abi>>>>>
-	void copy_from_abi(T& object, Abi&& abi) noexcept
-	{
-		*put_abi(object) = std::forward<Abi>(abi);
-	}
-
-	/// <summary>
-	/// Copy the ABI of an object to another ABI with the reference count increased.
-	/// </summary>
-	/// <param name="object">The object</param>
-	/// <param name="abi">The ABI</param>
-	inline void copy_to_abi(const unknown_object& object, void*& abi) noexcept
-	{
-		if ((abi = get_abi(object)))
-		{
-			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
-		}
-	}
-
-	/// <summary>
-	/// Copy the ABI of a primitive object to another ABI.
-	/// </summary>
-	/// <typeparam name="T">The object type</typeparam>
-	/// <param name="object">The object</param>
-	/// <param name="abi">The ABI</param>
-	template<typename T, typename = std::enable_if_t<impl::is_primitive_v<T>>>
-	void copy_to_abi(const unknown_object& object, impl::abi_t<T>& abi) noexcept
-	{
-		abi = get_abi(object);
-	}
-
-	/// <summary>
 	/// Creates an interface or a string from an ABI.
 	/// </summary>
 	/// <typeparam name="T">The type</typeparam>

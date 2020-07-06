@@ -1,11 +1,6 @@
 #include <algorithm>
 #include <vector>
 
-#ifdef __ANDROID__
-#include <task_scheduler.hpp>
-#include <business_task_id.hpp>
-#endif
-
 #include "LonginusDetector.hpp"
 #include "ImageOperation.hpp"
 #include "Romancia/banshee.hpp"
@@ -474,14 +469,7 @@ namespace glasssix
 		std::vector<unsigned char> LonginusDetector::impl::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width,
 			std::vector<std::vector<int>> bbox, std::vector<std::vector<int> >landmarks) const
 		{
-#ifdef __ANDROID__
-			return glasssix::task_scheduler::current().commit(glasssix::business_task_id::extraction_and_alignment, [=]
-			{
-				return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
-			}).get();
-#else
 			return bansheelia_->alignFace(ori_image, n, channels, height, width, bbox, landmarks);
-#endif
 		}
 		
 		
@@ -497,17 +485,8 @@ namespace glasssix
 		/// <param name="width">ori_image width</param>
 		std::vector<unsigned char> LonginusDetector::impl::alignFace(const unsigned char* ori_image, int n, int channels, int height, int width) const
 		{
-#ifdef __ANDROID__
-			return glasssix::task_scheduler::current().commit(glasssix::business_task_id::extraction_and_alignment, [=]
-			{
-				return bansheelia_->alignFace(ori_image, n, channels, height, width);
-			}).get();
-#else
 			return bansheelia_->alignFace(ori_image, n, channels, height, width);
-#endif
 		}
-
-
 
 		/// <summary>
         /// detect humanface using RetinaFace
@@ -522,14 +501,7 @@ namespace glasssix
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectRetina(const unsigned char *img_data, int min_win, int img_height, int img_width, int img_order, float threshold) const
 		{
 			std::vector<face_rect_with_face_info> output;
-
-#ifdef __ANDROID__
-			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=] {
-				return retina_->detect(img_data, img_channel, img_height, img_width, img_order, threshold);
-			}).get();
-#else
 			auto res = retina_->detect(img_data, min_win, img_height, img_width, img_order, threshold);
-#endif
 
 			for (auto i = 0; i < res.size(); i++)
 			{
@@ -569,15 +541,7 @@ namespace glasssix
 			const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			std::vector<face_rect_with_face_info> output;
-
-#ifdef __ANDROID__
-			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=]
-			{
-				return diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-			}).get();
-#else
 			auto res = diodorus_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-#endif
 
 			for (auto i = 0; i < res.size(); i++)
 			{
@@ -695,15 +659,7 @@ namespace glasssix
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx_mobile(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			std::vector<face_rect_with_face_info> output;
-
-#ifdef __ANDROID__
-			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::detection_living_and_blurring, [=]
-			{
-				return diodorus_mobile_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-			}).get();
-#else
 			auto res = diodorus_mobile_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-#endif
 
 			for (auto i = 0; i < res.size(); i++)
 			{
@@ -743,15 +699,7 @@ namespace glasssix
 		std::vector<face_rect_with_face_info> LonginusDetector::impl::detectEx_mobile_nir(const unsigned char* image, const int channels, const int height, const int width, const int minSize, const float* threshold, const float factor, const int stage, const int order) const
 		{
 			std::vector<face_rect_with_face_info> output;
-
-#ifdef __ANDROID__
-			auto res = glasssix::task_scheduler::current().commit(glasssix::business_task_id::nir_detection, [=]
-			{
-				return diodorus_mobile_nir_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-			}).get();
-#else
 			auto res = diodorus_mobile_nir_->Detect(image, channels, height, width, minSize, threshold, factor, stage, order);
-#endif
 
 			for (auto i = 0; i < res.size(); i++)
 			{

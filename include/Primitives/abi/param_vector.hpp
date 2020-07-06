@@ -4,6 +4,7 @@
 #include "base_abi.hpp"
 #include "implements.hpp"
 #include "exceptions.hpp"
+#include "param_span.hpp"
 #include "iterable_object.hpp"
 
 #include <vector>
@@ -11,6 +12,7 @@
 #include <cstdint>
 #include <utility>
 #include <iterator>
+#include <algorithm>
 #include <type_traits>
 
 namespace glasssix::exposing
@@ -192,6 +194,10 @@ namespace glasssix::exposing::impl
 		{
 		}
 
+		param_vector_impl(param_span<T> data) : buffer_(data.data(), data.size())
+		{
+		}
+
 		template<typename... Args, typename = std::enable_if_t<std::conjunction_v<std::is_convertible<Args, T>...>>>
 		param_vector_impl(Args&&... args) : buffer_{ std::forward<Args>(args)... }
 		{
@@ -306,5 +312,19 @@ namespace glasssix::exposing
 	auto make_param_vector(Args&&... args)
 	{
 		return make_as_first<impl::param_vector_impl<T>>(std::forward<Args>(args)...);
+	}
+
+	/// <summary>
+	/// Creates a one-dimensional param_vector from a data span.
+	/// </summary>
+	/// <typeparam name="T">The element type</typeparam>
+	/// <typeparam name="...Args">The types of the initializer</typeparam>
+	/// <param name="...args">The initializer</param>
+	/// <param name="data">The data span</param>
+	/// <returns>The result</returns>
+	template<typename T, typename = std::enable_if_t<impl::has_abi_type_v<T>>>
+	auto make_param_vector(param_span<T> data)
+	{
+		return make_as_first<impl::param_vector_impl<T>>(data);
 	}
 }

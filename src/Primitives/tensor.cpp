@@ -341,7 +341,7 @@ namespace glasssix
 		tensor<Dtype> tensor<Dtype>::channel(int c)
 		{
 			CHECK_GE(c, 0);
-			if (order_ = NCHW)
+			if (order_ == NCHW)
 			{
 				CHECK_LE(c, shape_[1]);
 				return tensor<Dtype>(shape_[2], shape_[3], (Dtype*)data_->cpu_data() + c * step_, device_, NCHW, allocator_);
@@ -373,7 +373,7 @@ namespace glasssix
 		Dtype* tensor<Dtype>::row(int y)
 		{
 			CHECK_GE(y, 0);
-			if (order_ = NCHW)
+			if (order_ == NCHW)
 			{
 				CHECK_LE(y, shape_[2]);
 				return data_->mutable_cpu_data() + y * shape_[3];

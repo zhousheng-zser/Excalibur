@@ -54,6 +54,7 @@ private:
 #define Declear_Params(layername) float *layername##_##bias, *layername##_##weights, *layername##_##scales;\
 signed char *layername##_##weights_int8;
 
+#ifdef x86
 #ifdef USE_MKL
 #define Copy_Params(layer_para, netname, datatype)\
 if(datatype == INT_MAX){\
@@ -71,7 +72,14 @@ if(datatype == USHRT_MAX) {\
 layer_para =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layer_para) / sizeof(unsigned short) * sizeof(float), MALLOC_ALIGN); \
 half2float((unsigned short*)netname##_##layer_para,layer_para,sizeof(netname##_##layer_para) / sizeof(unsigned short));}
 #endif
-
+#else
+#define Copy_Params(layer_para, netname, datatype)\
+if(datatype == INT_MAX){\
+layer_para =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layer_para), MALLOC_ALIGN); \
+memcpy(layer_para, netname##_##layer_para, sizeof(netname##_##layer_para));}\
+if(datatype == USHRT_MAX) {\
+NOT_IMPLEMENTED;}
+#endif
 
 #define Copy_Int8_to_FP32_Params(layername, netname)\
 layername##_##weights =  (float*)glasssix::memory::aligned_heap_alloc(sizeof(netname##_##layername##_##weights) / sizeof(signed char) * sizeof(float), MALLOC_ALIGN); \

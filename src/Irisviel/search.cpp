@@ -290,7 +290,10 @@ namespace glasssix
 			{
 				uint32_t id = init_ids[i];
 				if (id >= base_num_)continue;
+
+#ifdef _WIN32
 				_mm_prefetch(opt_graph_ + node_size_ * id, _MM_HINT_T0);
+#endif
 			}
 #endif
 
@@ -335,7 +338,7 @@ namespace glasssix
 					return_neighbors[i].flag = false;
 					uint32_t n = return_neighbors[i].id;
 
-#if SIMD_TYPE >= SIMDTYPE_SSE
+#if SIMD_TYPE >= SIMDTYPE_SSE && defined(_WIN32)
 					_mm_prefetch(opt_graph_ + node_size_ * n + data_len_, _MM_HINT_T0);
 #endif
 
@@ -343,7 +346,7 @@ namespace glasssix
 					uint32_t MaxM = *neighbors;
 					neighbors++;
 
-#if SIMD_TYPE >= SIMDTYPE_SSE
+#if SIMD_TYPE >= SIMDTYPE_SSE && defined(_WIN32)
 					for (uint32_t m = 0; m < MaxM; ++m)
 						_mm_prefetch(opt_graph_ + node_size_ * neighbors[m], _MM_HINT_T0);
 #endif

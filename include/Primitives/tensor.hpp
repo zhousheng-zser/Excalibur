@@ -146,7 +146,7 @@ namespace glasssix
 				return device_ >= 0 ? gpu_data_any() : cpu_data_any();
 			}
 
-			virtual void copy_from(const void* data, size_t size);
+			virtual void copy_from(const void* data, size_t size) override;
 
 			virtual int num() const override
 			{

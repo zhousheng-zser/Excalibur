@@ -2,12 +2,13 @@
 #ifndef _LOGGER_HPP_
 #define _LOGGER_HPP_
 
-#include <ctime>
-#include <sstream>
 #include <map>
+#include <ctime>
+#include <chrono>
+#include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <chrono>
+#include <cstdlib>
 
 #include "compiler.hpp"
 

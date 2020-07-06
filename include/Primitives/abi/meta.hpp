@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <utility>
-#include <variant>
 #include <optional>
 #include <algorithm>
 #include <type_traits>

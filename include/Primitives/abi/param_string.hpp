@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <utility>
 #include <iterator>
+#include <algorithm>
 #include <functional>
 #include <type_traits>
 #include <string_view>
@@ -430,26 +431,6 @@ namespace glasssix::exposing
 	inline void* detach_abi(param_string&& str) noexcept
 	{
 		return std::exchange(*put_abi_dangerous(str), nullptr);
-	}
-
-	/// <summary>
-	/// Duplicates an ABI and assignes it to a new string.
-	/// </summary>
-	/// <param name="str">The string</param>
-	/// <param name="abi">The ABI</param>
-	inline void copy_from_abi(param_string& str, void* abi) noexcept
-	{
-		*put_abi(str) = allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi));
-	}
-
-	/// <summary>
-	/// Copy the ABI of a string to another ABI..
-	/// </summary>
-	/// <param name="str">The string</param>
-	/// <param name="abi">The ABI</param>
-	inline void copy_to_abi(const param_string& str, void*& abi) noexcept
-	{
-		abi = get_abi(str);
 	}
 
 	/// <summary>

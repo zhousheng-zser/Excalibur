@@ -1,4 +1,6 @@
 #include "../../include/Julius/julius_gemm_align.hpp"
+#include "Primitives/memory.hpp"
+
 #include <malloc.h>
 
 namespace glasssix
@@ -19,7 +21,7 @@ namespace glasssix
 		M = old_N; \
 		N = old_M; \
 		ldc = N; \
-		C = malloc(M*N * sizeof(float), 32); \
+		C = memory::aligned_heap_alloc(M*N * sizeof(float), 32); \
 	}
 
 #define SWAP_C \
@@ -32,7 +34,7 @@ namespace glasssix
 				old_C[n*old_ldc + m] = C[m*ldc + n]; \
 			} \
 		} \
-		free(C); \
+		memory::aligned_heap_free(C); \
 	}
 
 			int sgemm_AnoTrans_Btrans_special(int M, int N, int K, const float* A, int lda, const float* Bt, int ldb, float* C, int ldc)
@@ -691,7 +693,7 @@ namespace glasssix
 						old_C[n * old_ldc + m] = C[m * ldc + n];
 					}
 				}
-				free(C);
+				memory::aligned_heap_free(C);
 			}
 		}
 
