@@ -57,7 +57,7 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<Dtype>> dst_temp;
 			if (src->order() == memory::NCHW)
 			{
-				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order()));
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, channels, dst_height, dst_width}, src->device(), src->order(), src->allocator()));
 				Dtype* dst_data = dst_temp->mutable_cpu_data();
 				const Dtype* src_data = src->cpu_data();
 
@@ -67,11 +67,14 @@ namespace glasssix
 					{
 						int src_n_offset = n * src_num_offset;
 						int dst_n_offset = n * dst_num_offset;
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
 						for (int ch = 0; ch < channels; ++ch)
 						{
 							int src_channel_offset = ch * src_offset;
 							int dst_channel_offset = ch * dst_offset;
-
+							
 							//top
 							for (int row = 0; row < top; row++)
 							{
@@ -110,6 +113,7 @@ namespace glasssix
 									dst_data[dst_n_offset + dst_index + col] = fill_pixel_value;
 								}
 							}
+							
 						}
 					}
 				}

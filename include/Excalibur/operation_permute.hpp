@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _OPERATION_INPUT_HPP_
-#define _OPERATION_INPUT_HPP_
+#ifndef _OPERATION_PREMUTE_HPP_
+#define _OPERATION_PREMUTE_HPP_
 #include "operation.hpp"
 
 namespace glasssix
@@ -8,14 +8,14 @@ namespace glasssix
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class operation_input : public operation<Dtype>
+		class operation_permute : public operation<Dtype>
 		{
 		public:
-			explicit operation_input(const operation_param& param);
+			explicit operation_permute(const operation_param& param);
 
 			virtual const char* type() const { return params_.type_.c_str(); }
 
-			virtual ~operation_input() {}
+			virtual ~operation_permute() {}
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
@@ -32,13 +32,8 @@ namespace glasssix
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 		private:
-			int w_ = 0;
-			int h_ = 0;
-			int c_ = 0;
-			float var_ = 1.0f;
-			std::vector<float> means_;
+			int permute_type_;
 		};
 	}
 }
-#endif // !_OPERATION_INPUT_HPP_
-
+#endif // !_OPERATION_PREMUTE_HPP_
