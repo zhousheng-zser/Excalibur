@@ -1,10 +1,9 @@
 #include "hera.hpp"
 #include "hera_data.hpp"
-#include <glasssix/tensor.hpp>
-#include <glasssix/syncedmem.hpp>
+
 #include <numeric>
 
-using namespace glasssix::excalibur;
+using namespace glasssix::memory;
 
 namespace glasssix
 {
