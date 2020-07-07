@@ -119,7 +119,7 @@ namespace glasssix::exposing::impl
 	{
 		using type = void*;
 	};
-	
+
 	template<typename T>
 	struct abi_out
 	{
@@ -440,27 +440,20 @@ namespace glasssix::exposing
 	}
 
 	/// <summary>
-	/// Creates an interface or a string from an ABI.
+	/// Creates an interface from an ABI.
 	/// </summary>
 	/// <typeparam name="T">The type</typeparam>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The result</returns>
-	template<typename T, typename = std::enable_if_t<std::disjunction_v<impl::is_well_defined_interface<T>, std::is_same<T, param_string>>>>
+	template<typename T, std::enable_if_t<impl::is_well_defined_interface_v<T>>* = nullptr>
 	T create_from_abi(void* abi) noexcept
 	{
-		if constexpr (std::is_same_v<T, param_string>)
+		if (abi)
 		{
-			return create_param_string_from_abi(abi);
+			static_cast<impl::abi_unknown_object*>(abi)->add_ref();
 		}
-		else
-		{
-			if (abi)
-			{
-				static_cast<impl::abi_unknown_object*>(abi)->add_ref();
-			}
 
-			return T{ take_over_abi_from_void_ptr{ abi } };
-		}
+		return T{ take_over_abi_from_void_ptr{ abi } };
 	}
 
 	/// <summary>

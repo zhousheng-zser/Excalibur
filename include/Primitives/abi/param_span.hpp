@@ -164,6 +164,18 @@ namespace glasssix::exposing::impl
 
 		static constexpr guid id{ "4BBC2561-97C4-4C12-A413-7636DBCD70F9" };
 	};
+
+	template<typename T, typename = void>
+	struct is_param_span : std::false_type{};
+
+	template<template<typename, typename = void> typename ParamSpan, typename T>
+	struct is_param_span<ParamSpan<T>> : std::is_same<ParamSpan<T>, param_span<T>>{};
+
+	/// <summary>
+	/// Checks whether a type is a span.
+	/// </summary>
+	template<typename T>
+	inline constexpr bool is_param_span_v = is_param_span<T>::value;
 }
 
 namespace glasssix::exposing
@@ -231,10 +243,11 @@ namespace glasssix::exposing
 	/// <summary>
 	/// Creates a span from an ABI.
 	/// </summary>
+	/// <typeparam name="T">The span type</typeparam>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The span</returns>
-	template<typename T>
-	param_span<T> create_param_span_from_abi(void* abi) noexcept
+	template<typename T, std::enable_if_t<impl::is_param_span_v<T>>* = nullptr>
+	T create_from_abi(void* abi) noexcept
 	{
 		return param_span<T>{ take_over_abi_from_void_ptr{ abi } };
 	}

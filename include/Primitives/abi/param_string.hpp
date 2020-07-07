@@ -436,11 +436,13 @@ namespace glasssix::exposing
 	/// <summary>
 	/// Creates a string from an ABI with the reference count increased.
 	/// </summary>
+	/// <typeparam name="T">The string type</typeparam>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The string</returns>
-	inline param_string create_param_string_from_abi(void* abi) noexcept
+	template<typename T, std::enable_if_t<std::is_same_v<T, param_string>>* = nullptr>
+	T create_from_abi(void* abi) noexcept
 	{
-		return param_string{ take_over_abi_from_void_ptr{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) } };
+		return T{ take_over_abi_from_void_ptr{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) } };
 	}
 }
 
