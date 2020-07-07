@@ -277,6 +277,4 @@ namespace glasssix
 		};
 	}
 }
-
-
 #endif // _MATH_FUNCTIONS_HPP_

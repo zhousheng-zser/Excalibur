@@ -35,6 +35,10 @@ namespace glasssix
 		private:
 			std::shared_ptr<memory::tensor<float>> U_;
 			std::shared_ptr<memory::tensor<float>> V_;
+			std::shared_ptr<memory::tensor<float>> kernel_tm;
+	
+			void forward_cpu_int8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 			void forward_winograd_f32(std::shared_ptr < memory::tensor<float>>& bottom,
 				std::shared_ptr < memory::tensor<float>>& top);
@@ -44,6 +48,9 @@ namespace glasssix
 
 			void forward_k3s2_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 				std::shared_ptr < memory::tensor<float>>& top);
+		
+			int dequantize_int8(const std::shared_ptr<memory::tensor<signed char>>& src,
+				std::shared_ptr<memory::tensor<float>>& dst, std::vector<float> scale);
 		};
 	}
 }

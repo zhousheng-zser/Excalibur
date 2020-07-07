@@ -6,6 +6,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <unordered_map>
 #include "operation.hpp"
 #include "../../include/Excalibur/dag.hpp"
 
@@ -19,10 +20,13 @@ namespace glasssix
 		public:
 			explicit pipeline()
 			{
-				
+
 			}
 
 			explicit pipeline(std::string param_file, std::string model_file, int device = -1);
+
+			int ex2int(const char* filepath, const char* parampath, const char* binpath);
+			std::vector<std::shared_ptr<memory::tensor<float>>> weight_int8;
 
 
 #ifdef CAFFE_SUPPORT
@@ -54,9 +58,11 @@ namespace glasssix
 				profile_ = false;
 			}
 
+
+
 		private:
 			//param version number
-		    int version_;
+			int version_;
 			// pipeline name
 			std::string name_ = "Unknown Pipeleine Name";
 			//device
@@ -69,6 +75,12 @@ namespace glasssix
 			// Individual operations in the pipeline
 			std::vector<std::shared_ptr<operation<Dtype>>> operations_;
 			std::vector<operation_param> op_params_;
+
+			std::map<std::string, std::vector<float> > blob_scale_table;
+			std::map<std::string, std::vector<float> > weight_scale_table;
+
+			std::map<int, std::shared_ptr<memory::tensor<float>>> weights_;
+			std::map<int, std::shared_ptr<memory::tensor<float>>> bias_;
 			//
 			//memory::pool_allocator<Dtype>* allocator;
 			std::vector<std::shared_ptr<memory::tensor<Dtype>>> featmaps_;
@@ -79,7 +91,7 @@ namespace glasssix
 			bfsvisitor<node<std::string>> bfs_ops_;
 			std::vector<std::string> output_featmap_names_;
 			std::vector<std::string> input_featmap_names_;
-			
+
 			std::vector<int> ops_execution_order_;
 			std::vector<std::pair<std::vector<int>, std::vector<int>>> ops_io_featmap_;
 			int find_parent_op_index(std::string inputfeatmap);
@@ -88,6 +100,13 @@ namespace glasssix
 			std::vector<int> get_op_output_featmap_idx(std::string op_name);
 			std::vector<std::string> read_param_file(std::string filepath);
 
+
+
+			static bool read_int8scale_table(const char* filepath, std::map<std::string, std::vector<float> >& blob_scale_table,
+				std::map<std::string, std::vector<float> >& weight_scale_table);
+			int pipeline<Dtype>::quantize_convolution();
+			int pipeline<Dtype>::save(const char* parampath, const char* binpath);
+			int pipeline<Dtype>::fprintf_param_float_array(int id, std::string m, FILE* pp);
 			//
 			bool profile_ = false;
 			/*std::map<std::string, int> weights_mem_cost_;

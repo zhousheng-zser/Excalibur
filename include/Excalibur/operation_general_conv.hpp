@@ -18,7 +18,7 @@ namespace glasssix
 
 			virtual ~operation_general_conv() {}
 
-		protected:
+		public:
 			/// parameters
 			int output_channel_ = 0;
 			int kernel_size_w_ = 0;
@@ -59,6 +59,9 @@ namespace glasssix
 			int weight_offset_;
 			int col_offset_;
 			int output_offset_;
+
+			std::shared_ptr<memory::tensor<float>> weight_data;
+			std::shared_ptr<memory::tensor<float>> bias_data;
 		};
 	}
 }
