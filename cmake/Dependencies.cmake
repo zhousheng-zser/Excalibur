@@ -1,6 +1,9 @@
-#if(DEFINED x86)
-#	add_definitions(-Dx86)
-#endif()
+if(DEFINED x86)
+	add_definitions(-Dx86)
+endif()
+if(DEFINED FMT_HEADER_ONLY)
+	add_definitions(-DFMT_HEADER_ONLY)
+endif()
 
 set(BLAS "None" CACHE STRING "Selected BLAS library")
 set_property(CACHE BLAS PROPERTY STRINGS "None;MKL;Open")
@@ -23,10 +26,6 @@ endif()
 
 if(COSINE_DISTANCE)
 	add_definitions(-DCOSINE_DISTANCE)
-endif()
-
-if(FMT_HEADER_ONLY)
-	add_definitions(-DFMT_HEADER_ONLY)
 endif()
 
 if(USE_CUDA)

@@ -2,26 +2,28 @@ if(USE_CUDA)
 	remove_definitions(-DUSE_CUDA)
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
+
 if(WITH_JNI)
-	set(IRISVIEL_TARGET_NAME Irisvika)
+include_directories(../../include/Irisviel 
+			${JNI_INCLUDE})
 else()
-	set(IRISVIEL_TARGET_NAME Irisviel)
+include_directories(../../include/Irisviel)
 endif()
 
-file(GLOB IRISVIEL_SOURCE_FILES ${GLASSSIX_EXCALIBUR_SOURCE}/Irisviel/*.cpp ${GLASSSIX_EXCALIBUR_SOURCE}/Irisviel/*.cxx)
+file(GLOB Irisviel_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Irisviel/*.cxx)
 
 if(WITH_JNI)
-	file(GLOB IRISVIEL_JNI_SOURCE_FILES ${GLASSSIX_EXCALIBUR_JNI}/Irisvika/*.cpp)
+	file(GLOB Irisviel_jni_source_files ${CMAKE_CURRENT_SOURCE_DIR}/../../jni/jni/Irisvika/*.cpp)
 endif()
 
 if(WITH_JNI)
-	add_library(${IRISVIEL_TARGET_NAME} ${IRISVIEL_SOURCE_FILES} ${IRISVIEL_JNI_SOURCE_FILES})
-	target_include_directories(${IRISVIEL_TARGET_NAME} ${GLASSSIX_EXCALIBUR_INCLUDE}/Irisviel ${JNI_INCLUDE})
+	add_library(Irisvika ${Irisviel_source_files} ${Irisviel_jni_source_files})
+	target_link_libraries(Irisvika Primitives stdc++fs)
+	add_dependencies(Irisvika Primitives)
 else()
-	add_library(${IRISVIEL_TARGET_NAME} ${IRISVIEL_SOURCE_FILES})
-	target_include_directories(${IRISVIEL_TARGET_NAME} PRIVATE ${GLASSSIX_EXCALIBUR_INCLUDE}/Irisviel ${GLASSSIX_EXCALIBUR_INCLUDE})
+	add_library(Irisviel ${Irisviel_source_files})
+	target_link_libraries(Irisviel Primitives stdc++fs)
+	add_dependencies(Irisviel Primitives)
 endif()
 
-add_dependencies(${IRISVIEL_TARGET_NAME} ${PRIMITIVES_TARGET_NAME})
-
-target_link_libraries(${IRISVIEL_TARGET_NAME} ${PRIMITIVES_TARGET_NAME} stdc++fs)
