@@ -117,6 +117,21 @@
     <ClInclude Include="..\..\include\Excalibur\operation_scale.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_permute.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_flatten.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_normalize.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_priorbox.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_detectionoutput.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\pipeline.cpp">
@@ -189,6 +204,9 @@
       <Filter>Source Files\ops</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\operation_scale.cpp">
+      <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\operation_permute.cpp">
       <Filter>Source Files\ops</Filter>
     </ClCompile>
   </ItemGroup>

@@ -15,7 +15,7 @@ namespace glasssix
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class pipeline
+		class EXPORT_EXCALIBUR_PRIMITIVES pipeline
 		{
 		public:
 			explicit pipeline()
@@ -32,7 +32,14 @@ namespace glasssix
 #ifdef CAFFE_SUPPORT
 			explicit pipeline(std::string prototxt, std::string caffemodel);
 #endif //!CAFFE_SUPPORT
-			~pipeline() {};
+			~pipeline() 
+			{
+				/*if (allocator_)
+				{
+					delete allocator_;
+					allocator_ = nullptr;
+				}*/
+			};
 
 			void init_weights(std::string model_file);
 
@@ -75,6 +82,7 @@ namespace glasssix
 			std::map<int, std::shared_ptr<memory::tensor<float>>> weights_;
 			std::map<int, std::shared_ptr<memory::tensor<float>>> bias_;
 			//
+			//memory::pool_allocator<Dtype>* allocator;
 			std::vector<std::shared_ptr<memory::tensor<Dtype>>> featmaps_;
 			//std::vector<std::shared_ptr<memory::tensor<unsigned short>>> half_featmaps_;
 			std::map<std::string, int> operation_names_index_;

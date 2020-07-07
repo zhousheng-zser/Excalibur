@@ -100,11 +100,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\CppExample\main.cpp" />
+    <ClCompile Include="..\..\src\CppExample\retina_face.cpp" />
+    <ClCompile Include="..\..\src\CppExample\ultra_face.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\windows\Longinus\Longinus.vcxproj">
-      <Project>{9700e429-6846-4c83-89cf-1881147fe5d6}</Project>
+    <ProjectReference Include="..\..\windows\Excalibur\Excalibur.vcxproj">
+      <Project>{546e42e9-516a-4d09-bbe0-d3d567ac1328}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\CppExample\retina_face.hpp" />
+    <ClInclude Include="..\..\src\CppExample\ultra_face.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
