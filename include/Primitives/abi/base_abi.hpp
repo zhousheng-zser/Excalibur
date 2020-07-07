@@ -450,7 +450,7 @@ namespace glasssix::exposing
 	{
 		if constexpr (std::is_same_v<T, param_string>)
 		{
-			return create_string_from_abi(abi);
+			return create_param_string_from_abi(abi);
 		}
 		else
 		{

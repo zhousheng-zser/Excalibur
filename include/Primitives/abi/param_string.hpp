@@ -438,9 +438,9 @@ namespace glasssix::exposing
 	/// </summary>
 	/// <param name="abi">The ABI</param>
 	/// <returns>The string</returns>
-	inline param_string create_string_from_abi(void* abi) noexcept
+	inline param_string create_param_string_from_abi(void* abi) noexcept
 	{
-		return param_string{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) };
+		return param_string{ take_over_abi_from_void_ptr{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) } };
 	}
 }
 

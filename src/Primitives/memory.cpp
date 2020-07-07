@@ -14,7 +14,7 @@ namespace glasssix
 
 		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size) noexcept
 		{
-			auto buffer = ::new (std::nothrow) byte_type[size];
+			auto buffer = ::operator new(size);
 
 			// Allocation failure is a fatal error.
 			// As is the principle, we just terminate the process.
@@ -30,7 +30,7 @@ namespace glasssix
 		{
 			if (memory != nullptr)
 			{
-				::operator delete[](memory);
+				::operator delete(memory);
 			}
 		}
 
@@ -38,7 +38,7 @@ namespace glasssix
 		{
 			if (memory != nullptr)
 			{
-				::operator delete[](memory, size);
+				::operator delete(memory, size);
 			}
 		}
 

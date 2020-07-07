@@ -168,7 +168,7 @@ namespace glasssix::exposing::impl
 
 namespace glasssix::exposing
 {
-	/*/// <summary>
+	/// <summary>
 	/// Gets the ABI of a span with type information erased.
 	/// </summary>
 	/// <typeparam name="T">The element type</typeparam>
@@ -218,22 +218,24 @@ namespace glasssix::exposing
 	}
 
 	/// <summary>
-	/// Detaches the ABI from a string.
+	/// Detaches the ABI from a span.
 	/// </summary>
-	/// <param name="str">The string</param>
-	/// <returns>The ABI detached from the string</returns>
-	inline void* detach_abi(param_string&& str) noexcept
+	/// <param name="span">The span</param>
+	/// <returns>The ABI detached from the span</returns>
+	template<typename T>
+	void* detach_abi(param_span<T>&& span) noexcept
 	{
-		return std::exchange(*put_abi_dangerous(str), nullptr);
+		return std::exchange(*put_abi_dangerous(span), nullptr);
 	}
 
 	/// <summary>
-	/// Creates a string from an ABI with the reference count increased.
+	/// Creates a span from an ABI.
 	/// </summary>
 	/// <param name="abi">The ABI</param>
-	/// <returns>The string</returns>
-	inline param_string create_string_from_abi(void* abi) noexcept
+	/// <returns>The span</returns>
+	template<typename T>
+	param_span<T> create_param_span_from_abi(void* abi) noexcept
 	{
-		return param_string{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) };
-	}*/
+		return param_span<T>{ take_over_abi_from_void_ptr{ abi } };
+	}
 }
