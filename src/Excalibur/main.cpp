@@ -73,35 +73,22 @@ static void mat2tensor_cpu(const cv::Mat &srcu, std::shared_ptr<memory::tensor<D
 int main()
 {
 	auto all = new memory::pool_allocator<float>();
-	/*std::shared_ptr<memory::tensor<float>> t1, t2;
-	t1.reset(new memory::tensor<float>(100, -1, memory::NCHW, all));
-	t2.reset(new memory::tensor<float>(2, -1, memory::NCHW, all));
-
-	auto t1d = t1->mutable_cpu_data();
-	auto t2d = t2->mutable_cpu_data();*/
-
 	profiler* pro = profiler::get();
-	excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Research\\Excalibur\\models\\retina.phai",
-		"D:\\Research\\Excalibur\\models\\retina.racy");
+	excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Research\\Excalibur\\models\\unicorn.phai",
+		"D:\\Research\\Excalibur\\models\\unicorn.racy");
 	p.enable_profiler();
-	//cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswvisible.jpg");
-	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
+	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswvisible.jpg");
+	//cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
 	std::shared_ptr<memory::tensor<float>> temp;
-	//temp.reset(new memory::tensor<float>(std::vector<int>{1,3,12,12 }));
 	//cv::resize(img, img, cv::Size(320, 320));
 	mat2tensor_cpu(img, temp, memory::NCHW, false);
 	temp->set_allocator(all);
-	/*for (size_t i = 0; i < temp->count(); i++)
-	{
-		std::cout << temp->cpu_data()[i] << " ";
-	}*/
 	auto res_vec = p.forward_cpu(temp);
-	auto res = p.get_featmap("fc5");
+	auto res = p.get_featmap("conv5_dw");
 	for (size_t i = 0; i < 10; i++)
 	{
 		p.forward_cpu(temp);
 	}
-
 	const float* res_data = res->cpu_data();
 	int count = res->count() >= 100 ? 100 : res->count();
 	for (size_t i = res->count() - 100; i < res->count(); i++)
@@ -110,15 +97,11 @@ int main()
 		{
 			std::cout << std::endl;
 		}
-		/*if (res_data[i] != 0)
-		{
-			std::cout << i << std::endl;
-		}*/
 		std::cout << res_data[i] << " ";
 	}
 	std::cout << std::endl;
 	pro->turn_off();
-	pro->dump_profile("D:\\retina_face.json");
+	pro->dump_profile("D:\\unicorn.json");
 	//pro->turn_off();
 	return 0;
 }

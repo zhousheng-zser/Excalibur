@@ -117,6 +117,7 @@
     <ClInclude Include="..\..\include\Excalibur\operation_convolution.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_convolutiondepthwise.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_crop.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_cut_border.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_deconvlution.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_deconvolutiondepthwise.hpp" />
     <ClInclude Include="..\..\include\Excalibur\operation_detectionoutput.hpp" />

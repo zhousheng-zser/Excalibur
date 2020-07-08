@@ -99,9 +99,6 @@
     <ClInclude Include="..\..\include\Excalibur\operation_convolutiondepthwise.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Excalibur\operation_make_border.hpp">
-      <Filter>Header Files\ops</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\operation_deconvlution.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
@@ -130,6 +127,12 @@
       <Filter>Header Files\ops</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Excalibur\operation_detectionoutput.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_make_border.hpp">
+      <Filter>Header Files\ops</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\operation_cut_border.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
   </ItemGroup>
