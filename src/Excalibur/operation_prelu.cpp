@@ -62,9 +62,9 @@ namespace glasssix
 							int offset = n * ch * step + c * step;
 							if (share_channel_)
 							{
-//#ifdef _OPENMP
-//#pragma omp parallel for
-//#endif
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2) 
+#endif
 								for (int j = 0; j < step; j++)
 								{
 									top_data[offset + j] =
@@ -73,9 +73,9 @@ namespace glasssix
 							}
 							else
 							{
-//#ifdef _OPENMP
-//#pragma omp parallel for
-//#endif
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2) 
+#endif
 								for (int j = 0; j < step; j++)
 								{
 									top_data[offset + j] =
