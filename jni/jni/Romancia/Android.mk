@@ -16,7 +16,7 @@
 LOCAL_PATH := $(call my-dir)/../../../src/Romancia
 include $(CLEAR_VARS)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Romancia
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Romancia $(LOCAL_PATH)/../../include
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
 LOCAL_MODULE := Romancia
 LOCAL_SRC_FILES := banshee.cpp romancia.cpp

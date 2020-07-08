@@ -17,21 +17,19 @@ ifeq ($(TRIAL), 0)
 	LOCAL_PATH := $(call my-dir)
 	include $(CLEAR_VARS)
 
-	SRC_PATH := $(LOCAL_PATH)/../../../src/Cassius
+	SRC_PATH := $(LOCAL_PATH)/../../../src/Primitives
 
-	LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Cassius $(LOCAL_PATH)/../../../include/Primitives $(LOCAL_PATH)/../../../include
+	LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Primitives
 	LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-	LOCAL_MODULE := Cassius
-	LOCAL_SRC_FILES := $(SRC_PATH)/CassiusFeature.cpp $(SRC_PATH)/unicorn.cpp \
-						$(SRC_PATH)/cassius_c.cxx
+	LOCAL_MODULE := Primitives
+	LOCAL_SRC_FILES := $(SRC_PATH)/cpu.cpp $(SRC_PATH)/gpu.cpp \
+						$(SRC_PATH)/syncedmem.cpp $(SRC_PATH)/memory.cpp \
+						$(SRC_PATH)/tensor.cpp $(SRC_PATH)/simd_types.cpp \
+						$(SRC_PATH)/abi/component_loader.cpp \
+						$(SRC_PATH)/abi/param_string.cpp \
+						$(SRC_PATH)/abi/platform_encoding.cpp
 
 	LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
-	LOCAL_CPPFLAGS += -D$(QUANTIZATION_TYPE)
-	LOCAL_STATIC_LIBRARIES := Excalibur
-
-ifeq ($(TRIAL), 1)
-	LOCAL_LDLIBS += -L$(OPENCV_ANDROID_SDK_ROOT)/sdk/native/libs/$(APP_ABI) -lopencv_java3
-endif
 
 	include $(BUILD_SHARED_LIBRARY)
 

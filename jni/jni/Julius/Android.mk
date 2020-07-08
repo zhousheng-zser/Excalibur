@@ -16,11 +16,11 @@
 LOCAL_PATH := $(call my-dir)/../../../src/Julius
 include $(CLEAR_VARS)
 
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Julius
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Julius $(LOCAL_PATH)/../../include
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
 LOCAL_MODULE := Julius
 LOCAL_SRC_FILES := julius.cpp julius_asum.cpp julius_axpby.cpp \
-					julius_dot.cpp julius_gemm.cpp julius_gemv.cpp \
+					julius_dot.cpp julius_gemm.cpp julius_gemm_align.cpp julius_gemm_auto.cpp julius_gemv.cpp \
 					julius_nrm2.cpp julius_scal.cpp julius_sdot.cpp
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)

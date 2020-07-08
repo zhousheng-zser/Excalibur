@@ -17,13 +17,21 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 SRC_PATH := $(LOCAL_PATH)/../../../src/Irisviel
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Irisviel
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Irisviel $(LOCAL_PATH)/../../../include
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Irisvika
-LOCAL_SRC_FILES := $(SRC_PATH)/distance.cpp $(SRC_PATH)/index.cpp $(SRC_PATH)/IrisvielSearch.cpp \
-					$(SRC_PATH)/kGraph.cpp $(SRC_PATH)/nGraph.cpp $(SRC_PATH)/search.cpp \
-					Irisvika-jni.cpp
+LOCAL_MODULE := Irisviel
+LOCAL_SRC_FILES := $(SRC_PATH)/database_business_wrapper.cpp $(SRC_PATH)/database_cache.cpp $(SRC_PATH)/database_feature_observer.cpp \
+					$(SRC_PATH)/database_header.cpp $(SRC_PATH)/database_manager.cpp $(SRC_PATH)/database_record.cpp \
+					$(SRC_PATH)/distance.cpp $(SRC_PATH)/face_service.cpp $(SRC_PATH)/filesystem_utils.cpp $(SRC_PATH)/index_builder.cpp \
+					$(SRC_PATH)/irisviel_c.cxx $(SRC_PATH)/irisviel_search.cpp $(SRC_PATH)/kgraph_internal.cpp \
+					$(SRC_PATH)/memory_mapping.cpp $(SRC_PATH)/memory_mapping_operator.cpp $(SRC_PATH)/ngraph_internal.cpp \
+					$(SRC_PATH)/search.cpp 
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
+ifeq ($(COSINE_DISTANCE), 1)
+	LOCAL_CPPFLAGS += -DCOSINE_DISTANCE
+endif
+
+LOCAL_STATIC_LIBRARIES := Primitives
 
 include $(BUILD_SHARED_LIBRARY)

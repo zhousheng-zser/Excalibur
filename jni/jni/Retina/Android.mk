@@ -13,22 +13,14 @@
 # limitations under the License.
 #
 
-LOCAL_PATH := $(call my-dir)
+LOCAL_PATH := $(call my-dir)/../../../src/Retina
 include $(CLEAR_VARS)
 
-SRC_PATH := $(LOCAL_PATH)/../../../src/Gaius
-
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Gaius $(LOCAL_PATH)/../../../include
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../include/Retina $(LOCAL_PATH)/../../include
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Gaius
-LOCAL_SRC_FILES := $(SRC_PATH)/GaiusFeature.cpp $(SRC_PATH)/unicorn_mobile.cpp $(SRC_PATH)/unicorn_mobile_mask.cpp \
-					$(SRC_PATH)/gaius_c.cxx
+LOCAL_MODULE := Retina
+LOCAL_SRC_FILES := retina_net.cpp RetinaFace.cpp
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
-LOCAL_STATIC_LIBRARIES := Excalibur Primitives
-
-ifeq ($(USE_OPENCV), 1)
-	LOCAL_LDLIBS += -L$(OPENCV_ANDROID_SDK_ROOT)/sdk/native/libs/$(APP_ABI) -lopencv_java3
-endif
-
-include $(BUILD_SHARED_LIBRARY)
+LOCAL_STATIC_LIBRARIES := Excalibur
+include $(BUILD_STATIC_LIBRARY)

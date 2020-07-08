@@ -17,12 +17,12 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 SRC_PATH := $(LOCAL_PATH)/../../../src/Longinus
-LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Longinus
+LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Longinus $(LOCAL_PATH)/../../../include
 LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
-LOCAL_MODULE := Longimila
+LOCAL_MODULE := Longinus
 LOCAL_SRC_FILES := $(SRC_PATH)/common.cpp $(SRC_PATH)/ImageOperation.cpp \
-					$(SRC_PATH)/InternalLonginusCascade.cpp $(SRC_PATH)/LonginusDetector.cpp \
-					$(SRC_PATH)/matcher.cpp Longimila-jni.cpp
+					$(SRC_PATH)/LonginusDetector.cpp \
+					$(SRC_PATH)/matcher.cpp $(SRC_PATH)/longinus_c.cxx
 
 ifeq ($(RELEASE_SDK), 0)
 	LOCAL_SRC_FILES += tinyxml2.cpp
@@ -30,12 +30,14 @@ endif
 
 LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
 
-LOCAL_STATIC_LIBRARIES := Romancia
+LOCAL_STATIC_LIBRARIES := Primitives Romancia Retina Selene
 
 ifeq ($(TRIAL), 0)
 	LOCAL_STATIC_LIBRARIES += Damocles
 endif
 
-LOCAL_LDLIBS += -L$(OPENCV_ANDROID_SDK_ROOT)/sdk/native/libs/$(APP_ABI) -lopencv_java3
+ifeq ($(USE_OPENCV), 1)
+	LOCAL_LDLIBS += -L$(OPENCV_ANDROID_SDK_ROOT)/sdk/native/libs/$(APP_ABI) -lopencv_java3
+endif
 
 include $(BUILD_SHARED_LIBRARY)

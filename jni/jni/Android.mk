@@ -17,7 +17,7 @@ TRIAL := 0
 QUANTIZATION_TYPE := SINGLE
 COSINE_DISTANCE := 1
 USE_OPENMP := 0
-USE_OPENCV := 1
+USE_OPENCV := 0
 
 COMMON_INCLUDES := C:/Tools/vcpkg/installed/x64-windows/include
 OPENCV_ANDROID_SDK_ROOT := E:/OpenCV-android-sdk
@@ -42,6 +42,8 @@ endif
 ifeq ($(USE_OPENCV), 1)
 	EXTRA_CPPFLAGS += -DUSE_OPENCV
 endif
+
+EXTRA_CPPFLAGS += -DFMT_HEADER_ONLY
 
 include $(call all-subdir-makefiles)
 

@@ -19,12 +19,13 @@ ifeq ($(TRIAL), 0)
 	
 	SRC_PATH := $(LOCAL_PATH)/../../../src/Damocles
 
-	LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Damocles
+	LOCAL_C_INCLUDES := $(LOCAL_PATH)/../../../include/Damocles $(LOCAL_PATH)/../../../include
 	LOCAL_C_INCLUDES += $(COMMON_INCLUDES)
 	LOCAL_MODULE := Damocles
 	LOCAL_SRC_FILES := $(SRC_PATH)/damocles.cpp $(SRC_PATH)/mtcnn.cpp \
 						$(SRC_PATH)/mtcnn_onet.cpp $(SRC_PATH)/mtcnn_pnet.cpp $(SRC_PATH)/mtcnn_rnet.cpp \
-						$(SRC_PATH)/mtcnn_mobile.cpp \
+						$(SRC_PATH)/mtcnn_mobile.cpp $(SRC_PATH)/mtcnn_mobile_nir.cpp $(SRC_PATH)/onet_mobile_nir.cpp \
+						$(SRC_PATH)/pnet_mobile_nir.cpp $(SRC_PATH)/rnet_mobile_nir.cpp \
 						$(SRC_PATH)/onet_mobile.cpp $(SRC_PATH)/pnet_mobile.cpp $(SRC_PATH)/rnet_mobile.cpp \
 
 	LOCAL_CPPFLAGS += $(EXTRA_CPPFLAGS)
