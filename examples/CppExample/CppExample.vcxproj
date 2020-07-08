@@ -110,6 +110,9 @@
     <ProjectReference Include="..\..\windows\Longinus\Longinus.vcxproj">
       <Project>{9700e429-6846-4c83-89cf-1881147fe5d6}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\windows\Primitives\Primitives.vcxproj">
+      <Project>{8da2420a-7980-4feb-b6b0-a58430c950ff}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

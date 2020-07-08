@@ -699,7 +699,6 @@ namespace glasssix
 						old_C[n * old_ldc + m] = C[m * ldc + n];
 					}
 				}
-				delete[] C;
 			}
 		}
 
