@@ -441,7 +441,13 @@ namespace glasssix
 				M = old_N;
 				N = old_M;
 				ldc = N;
-				C = (float*)malloc(M * N * sizeof(float));
+
+				if (C)
+				{
+					delete[] C;
+				}
+
+				C = new float[M * N];
 			}
 			int handled = 0;
 
@@ -693,7 +699,7 @@ namespace glasssix
 						old_C[n * old_ldc + m] = C[m * ldc + n];
 					}
 				}
-				memory::aligned_heap_free(C);
+				delete[] C;
 			}
 		}
 

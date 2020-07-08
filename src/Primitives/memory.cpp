@@ -28,7 +28,7 @@ namespace glasssix
 
 		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory) noexcept
 		{
-			if (memory != nullptr)
+			if (memory)
 			{
 				::operator delete(memory);
 			}
