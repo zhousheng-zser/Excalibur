@@ -43,7 +43,7 @@ namespace glasssix::exposing
 		/// <typeparam name="Container">The container type</typeparam>
 		/// <param name="container">The container</param>
 		template<typename Container, typename = std::enable_if_t<meta::is_iterator_category_same_v<std::decay_t<Container>, std::random_access_iterator_tag>>>
-		param_span(Container&& container) noexcept : data_{ &*std::forward<Container>(container).begin() }, size_{ std::forward<Container>(container).end() - std::forward<Container>(container).begin() }
+		param_span(Container&& container) noexcept : data_{ &*std::forward<Container>(container).begin() }, size_{ static_cast<std::size_t>(std::forward<Container>(container).end() - std::forward<Container>(container).begin()) }
 		{
 		}
 

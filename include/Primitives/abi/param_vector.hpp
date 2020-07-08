@@ -194,7 +194,7 @@ namespace glasssix::exposing::impl
 		{
 		}
 
-		param_vector_impl(param_span<T> data) : buffer_(data.data(), data.size())
+		param_vector_impl(param_span<T> data) : buffer_(data.data(), data.data() + data.size())
 		{
 		}
 

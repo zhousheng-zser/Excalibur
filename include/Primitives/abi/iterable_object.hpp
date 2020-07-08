@@ -174,7 +174,27 @@ namespace glasssix::exposing
 	{
 		using inherits<iterable_object<T>>::inherits;
 	};
+}
 
+namespace std
+{
+	/// <summary>
+	/// Adds a specialization for iterator_traits.
+	/// It is a must to implement the pattern because the standard library needs the information to validate and evaluate the iterators.
+	/// </summary>
+	template<typename T>
+	struct iterator_traits<glasssix::exposing::object_iterator<T>>
+	{
+		using iterator_category = std::input_iterator_tag;
+		using value_type = T;
+		using pointer = value_type*;
+		using reference = value_type&;
+		using difference_type = std::ptrdiff_t;
+	};
+}
+
+namespace glasssix::exposing
+{
 	template<typename T, typename = std::void_t<decltype(std::declval<T>().get_iterator())>>
 	auto begin(T&& obj) noexcept
 	{
