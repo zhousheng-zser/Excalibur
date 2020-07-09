@@ -16,7 +16,6 @@ int main()
 
 	for (size_t i = 0; i < 10000; i++)
 	{
-
 		float aaa[3] = { 0.6, 0.7, 0.7 };
 		int n = Longinus_detectEx(d, &info, img.data, img.rows, img.cols, 48, aaa, 1.0 / 0.709f, 3, 1);
 		std::cout << "n:" << n << std::endl;
