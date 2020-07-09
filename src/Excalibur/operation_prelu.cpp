@@ -74,28 +74,53 @@ namespace glasssix
 						{
 							int step = bottoms[i]->count(2, 4);
 							int offset = n * ch * step + c * step;
-							if (share_channel_)
+							int slope_id = share_channel_ ? c : 0;
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_SSE4_2_VERSION) //SSE
+							int simd_times = (count - count % 4) / 4;
+							__m128 slope_vec = _mm_broadcast_ss(slope_data + slope_id);
+							__m128 zero_vec = _mm_setzero_ps();
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+							for (int j = 0; j < simd_times; j++)
 							{
+								__m256 d = _mm_load_ps(bottom_data + 4 * j);
+								d = _mm_add_ps(_mm_max_ps(zero_vec, d), _mm_mul_ps(slope_vec, _mm_min_ps(zero_vec, d)));
+								_mm_store_ps(top_data + 4 * j, d);
+							}
+							for (int j = 4 * simd_times; j < step; j++)
+							{
+								top_data[offset + j] =
+									bottom_data[offset + j] >= 0.0f ? bottom_data[offset + j] : slope_data[slope_id] * bottom_data[offset + j];
+							}
+#elif (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
+							int simd_times = (step - step % 8) / 8;
+							__m256 slope_vec = _mm256_broadcast_ss(slope_data + slope_id);
+							__m256 zero_vec = _mm256_setzero_ps();
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+							for (int j = 0; j < simd_times; j++)
+							{
+								__m256 d = _mm256_load_ps(bottom_data + 8 * j);
+								d = _mm256_add_ps(_mm256_max_ps(zero_vec, d), _mm256_mul_ps(slope_vec, _mm256_min_ps(zero_vec, d)));
+								_mm256_store_ps(top_data + 8 * j, d);
+							}
+							for (int j = 8 * simd_times; j < step; j++)
+							{
+								top_data[offset + j] =
+									bottom_data[offset + j] >= 0.0f ? bottom_data[offset + j] : slope_data[slope_id] * bottom_data[offset + j];
+							}
+#else // Native code
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(2) 
 #endif
-								for (int j = 0; j < step; j++)
-								{
-									top_data[offset + j] =
-										bottom_data[offset + j] >= 0.0f ? bottom_data[offset + j] : slope_data[0] * bottom_data[offset + j];
-								}
-							}
-							else
+							for (int j = 0; j < step; j++)
 							{
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(2) 
-#endif
-								for (int j = 0; j < step; j++)
-								{
-									top_data[offset + j] =
-										bottom_data[offset + j] >= 0.0f ? bottom_data[offset + j] : slope_data[c] * bottom_data[offset + j];
-								}
+								top_data[offset + j] =
+									bottom_data[offset + j] >= 0.0f ? bottom_data[offset + j] : slope_data[slope_id] * bottom_data[offset + j];
 							}
+#endif
 						}
 					}
 				}

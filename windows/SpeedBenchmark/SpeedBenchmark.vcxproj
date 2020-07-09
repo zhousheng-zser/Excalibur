@@ -119,6 +119,9 @@
       <Project>{546e42e9-516a-4d09-bbe0-d3d567ac1328}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\SpeedBenchmark\speedbenchmark.cpp" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
