@@ -17,11 +17,9 @@ namespace glasssix
 
 			virtual ~operation_innerproduct() {}
 
-#ifdef HARDCODE
-			virtual void init_weights() {}
-#else
+			virtual int init_weights();
+
 			virtual int init_weights(FILE *fp);
-#endif //!HARDCODE
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,

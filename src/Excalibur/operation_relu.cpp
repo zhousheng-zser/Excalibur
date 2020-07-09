@@ -64,7 +64,7 @@ namespace glasssix
 					d = _mm256_max_ps(_mm256_setzero_ps(), d);
 					_mm256_store_ps(top_data + 8 * j, d);
 				}
-				for (int j = 4 * simd_times; j < bottoms[i]->count(); j++)
+				for (int j = 8 * simd_times; j < bottoms[i]->count(); j++)
 				{
 					top_data[j] = bottom_data[j] >= 0.0f ? bottom_data[j] : 0.0f;
 				}

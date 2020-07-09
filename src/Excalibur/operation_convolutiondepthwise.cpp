@@ -14,42 +14,42 @@ namespace glasssix
 
 		}
 
-		template<typename Dtype>
-		int operation_convolutiondepthwise<Dtype>::init_weights(FILE *fp)
-		{
-			int mem = operation_convolution::init_weights(fp);
-			if (/*kernel_size_h_ == 3 && kernel_size_w_ == 3*/false)
-			{
-				//F(2,3), calculate U= GgG^T
-				//float G[] = { 1.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.f, 0.f, 1.f };
-				U_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
-				V_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
-				float* U_data = U_->mutable_cpu_data();
-				const float* weights_data = weights_f32_[0]->cpu_data();
-				for (size_t g = 0; g < output_channel_; g++)
-				{
-					const float* w = weights_data + 9 * g;
-					float* u = U_data + 16 * g;
-					u[0] = w[0];
-					u[1] = (w[0] + w[1] + w[2]) / 2;
-					u[2] = (w[0] - w[1] + w[2]) / 2;
-					u[3] = w[2];
-					u[4] = (w[0] + w[3] + w[6]) / 2;
-					u[5] = (w[0] + w[1] + w[2] + w[3] + w[4] + w[5] + w[6] + w[7] + w[8]) / 4;
-					u[6] = (w[0] - w[1] + w[2] + w[3] - w[4] + w[5] + w[6] - w[7] + w[8]) / 4;
-					u[7] = (w[2] + w[5] + w[8]) / 2;
-					u[8] = (w[0] - w[3] + w[6]) / 2;
-					u[9] = (w[0] + w[1] + w[2] - w[3] - w[4] - w[5] + w[6] + w[7] + w[8]) / 4;
-					u[10] = (w[0] - w[1] + w[2] - w[3] + w[4] - w[5] + w[6] - w[7] + w[8]) / 4;
-					u[11] = (w[2] - w[5] + w[8]) / 2;
-					u[12] = w[6];
-					u[13] = (w[6] + w[7] + w[8]) / 2;
-					u[14] = (w[6] - w[7] + w[8]) / 2;
-					u[15] = w[8];
-				}
-			}
-			return mem;
-		}
+		//template<typename Dtype>
+		//int operation_convolutiondepthwise<Dtype>::init_weights(FILE *fp)
+		//{
+		//	int mem = operation_convolution::init_weights(fp);
+		//	if (/*kernel_size_h_ == 3 && kernel_size_w_ == 3*/false)
+		//	{
+		//		//F(2,3), calculate U= GgG^T
+		//		//float G[] = { 1.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.f, 0.f, 1.f };
+		//		U_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
+		//		V_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
+		//		float* U_data = U_->mutable_cpu_data();
+		//		const float* weights_data = weights_f32_[0]->cpu_data();
+		//		for (size_t g = 0; g < output_channel_; g++)
+		//		{
+		//			const float* w = weights_data + 9 * g;
+		//			float* u = U_data + 16 * g;
+		//			u[0] = w[0];
+		//			u[1] = (w[0] + w[1] + w[2]) / 2;
+		//			u[2] = (w[0] - w[1] + w[2]) / 2;
+		//			u[3] = w[2];
+		//			u[4] = (w[0] + w[3] + w[6]) / 2;
+		//			u[5] = (w[0] + w[1] + w[2] + w[3] + w[4] + w[5] + w[6] + w[7] + w[8]) / 4;
+		//			u[6] = (w[0] - w[1] + w[2] + w[3] - w[4] + w[5] + w[6] - w[7] + w[8]) / 4;
+		//			u[7] = (w[2] + w[5] + w[8]) / 2;
+		//			u[8] = (w[0] - w[3] + w[6]) / 2;
+		//			u[9] = (w[0] + w[1] + w[2] - w[3] - w[4] - w[5] + w[6] + w[7] + w[8]) / 4;
+		//			u[10] = (w[0] - w[1] + w[2] - w[3] + w[4] - w[5] + w[6] - w[7] + w[8]) / 4;
+		//			u[11] = (w[2] - w[5] + w[8]) / 2;
+		//			u[12] = w[6];
+		//			u[13] = (w[6] + w[7] + w[8]) / 2;
+		//			u[14] = (w[6] - w[7] + w[8]) / 2;
+		//			u[15] = w[8];
+		//		}
+		//	}
+		//	return mem;
+		//}
 
 		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,

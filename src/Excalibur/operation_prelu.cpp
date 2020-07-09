@@ -1,5 +1,6 @@
 #include "../../include/Excalibur/operation_prelu.hpp"
 #include "../../include/Excalibur/operation_reflector.hpp"
+#include <random>
 
 namespace glasssix
 {
@@ -37,6 +38,19 @@ namespace glasssix
 		{
 			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, params_.device_, memory::NCHW, nullptr)));
 			fread(weights_f32_[0]->mutable_cpu_data(), 1, num_slope_ * sizeof(float), fp);
+			return num_slope_ * sizeof(float);
+		}
+
+		template<typename Dtype>
+		int operation_prelu<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, params_.device_, memory::NCHW, nullptr)));
+			for (size_t i = 0; i < num_slope_; i++)
+			{
+				weights_f32_[0]->mutable_cpu_data()[i] = abs(n(e));
+			}
 			return num_slope_ * sizeof(float);
 		}
 
