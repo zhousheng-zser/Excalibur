@@ -96,13 +96,6 @@ namespace glasssix
 			std::vector<int> get_op_output_featmap_idx(std::string op_name);
 			std::vector<std::string> read_param_file(std::string filepath);
 
-
-
-			static bool read_int8scale_table(const char* filepath, std::map<std::string, std::vector<float> >& blob_scale_table,
-				std::map<std::string, std::vector<float> >& weight_scale_table);
-			int pipeline<Dtype>::quantize_convolution();
-			int pipeline<Dtype>::save(const char* parampath, const char* binpath);
-			int pipeline<Dtype>::fprintf_param_float_array(int id, std::string m, FILE* pp);
 			//
 			bool profile_ = false;
 			/*std::map<std::string, int> weights_mem_cost_;

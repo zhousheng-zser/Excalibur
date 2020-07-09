@@ -333,7 +333,7 @@ namespace glasssix
 			{
 				int mem = operations_[i]->init_weights();
 				weights_mem_cost_ += mem;
-				LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
+				//LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
 			}
 			LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
 		}
@@ -347,10 +347,6 @@ namespace glasssix
 			{
 				p->turn_on();
 				p->scope_start(name_.c_str());
-			}
-			else
-			{
-				p->turn_off();
 			}
 			featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
 			for (size_t i = 0; i < ops_execution_order_.size(); i++)

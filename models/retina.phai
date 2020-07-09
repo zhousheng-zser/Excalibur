@@ -1,6 +1,6 @@
-7767517
+glsv1 Rrtina_Face_Net
 129 148
-Input            data             0 1 data 0=320 1=320 2=3 3=0,0,0 4=1
+Input            data             0 1 data 0=320 1=240 2=3 3=0,0,0 4=1
 Convolution      mobilenet0_conv0_fwd 1 1 data mobilenet0_conv0_fwd 0=8 1=3 2=1 3=2 4=1 5=1 6=216
 ReLU             mobilenet0_relu0_fwd 1 1 mobilenet0_conv0_fwd mobilenet0_relu0_fwd
 ConvolutionDepthwise mobilenet0_conv1_fwd 1 1 mobilenet0_relu0_fwd mobilenet0_conv1_fwd 0=8 1=3 2=1 3=1 4=1 5=1 6=72 7=8
