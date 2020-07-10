@@ -28,6 +28,9 @@
     <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp">
       <Filter>abi</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp">
+      <Filter>abi</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
