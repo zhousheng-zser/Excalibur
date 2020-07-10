@@ -14,7 +14,8 @@ namespace glasssix::exposing::allocations
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_current_exception_what() noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL clear_current_exception_what() noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what(void* what_abi) noexcept;
-	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what = nullptr) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what = nullptr) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, void* optional_inner_what_abi = nullptr) noexcept;
 }
 
 namespace glasssix::exposing
@@ -88,7 +89,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_error(abi_result result, std::string_view inner_narrow_what) noexcept : result_{ result }, what_{ take_over_abi_from_void_ptr{ allocations::create_error_message_from_abi_result(result, inner_narrow_what.data()) } }
+		abi_error(abi_result result, utf8_string_view inner_what) noexcept : result_{ result }, what_{ take_over_abi_from_void_ptr{ allocations::create_error_message_from_abi_result(result, get_abi(inner_what)) } }
 		{
 		}
 
@@ -121,7 +122,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_failure(std::string_view inner_narrow_what) noexcept : abi_error{ error_failure, inner_narrow_what }
+		abi_failure(utf8_string_view inner_what) noexcept : abi_error{ error_failure, inner_what }
 		{
 		}
 
@@ -136,7 +137,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_not_implemented(std::string_view inner_narrow_what) noexcept : abi_error{ error_not_implemented, inner_narrow_what }
+		abi_not_implemented(utf8_string_view inner_what) noexcept : abi_error{ error_not_implemented, inner_what }
 		{
 		}
 
@@ -151,7 +152,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_null_pointer(std::string_view inner_narrow_what) noexcept : abi_error{ error_null_pointer, inner_narrow_what }
+		abi_null_pointer(utf8_string_view inner_what) noexcept : abi_error{ error_null_pointer, inner_what }
 		{
 		}
 
@@ -166,7 +167,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_invalid_argument(std::string_view inner_narrow_what) noexcept : abi_error{ error_invalid_argument, inner_narrow_what }
+		abi_invalid_argument(utf8_string_view inner_what) noexcept : abi_error{ error_invalid_argument, inner_what }
 		{
 		}
 
@@ -181,7 +182,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_out_of_bounds(std::string_view inner_narrow_what) noexcept : abi_error{ error_out_of_bounds, inner_narrow_what }
+		abi_out_of_bounds(utf8_string_view inner_what) noexcept : abi_error{ error_out_of_bounds, inner_what }
 		{
 		}
 
@@ -196,7 +197,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_no_interface(std::string_view inner_narrow_what) noexcept : abi_error{ error_no_interface, inner_narrow_what }
+		abi_no_interface(utf8_string_view inner_what) noexcept : abi_error{ error_no_interface, inner_what }
 		{
 		}
 
@@ -211,7 +212,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_invalid_operation(std::string_view inner_narrow_what) noexcept : abi_error{ error_invalid_operation, inner_narrow_what }
+		abi_invalid_operation(utf8_string_view inner_what) noexcept : abi_error{ error_invalid_operation, inner_what }
 		{
 		}
 
@@ -226,7 +227,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_key_not_found(std::string_view inner_narrow_what) noexcept : abi_error{ error_key_not_found, inner_narrow_what }
+		abi_key_not_found(utf8_string_view inner_what) noexcept : abi_error{ error_key_not_found, inner_what }
 		{
 		}
 
@@ -241,7 +242,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_bad_alloc(std::string_view inner_narrow_what) noexcept : abi_error{ error_bad_alloc, inner_narrow_what }
+		abi_bad_alloc(utf8_string_view inner_what) noexcept : abi_error{ error_bad_alloc, inner_what }
 		{
 		}
 
@@ -256,7 +257,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_not_initialized(std::string_view inner_narrow_what) noexcept : abi_error{ error_not_initialized, inner_narrow_what }
+		abi_not_initialized(utf8_string_view inner_what) noexcept : abi_error{ error_not_initialized, inner_what }
 		{
 		}
 
@@ -277,19 +278,19 @@ namespace glasssix::exposing
 		}
 		catch (const std::bad_alloc& ex)
 		{
-			return (allocations::set_current_exception_what(allocations::create_error_message_from_abi_result(error_bad_alloc, ex.what())), error_bad_alloc);
+			return (allocations::set_current_exception_what_from_abi_result(error_bad_alloc, ex.what()), error_bad_alloc);
 		}
 		catch (const std::out_of_range& ex)
 		{
-			return (allocations::set_current_exception_what(allocations::create_error_message_from_abi_result(error_out_of_bounds, ex.what())), error_out_of_bounds);
+			return (allocations::set_current_exception_what_from_abi_result(error_out_of_bounds, ex.what()), error_out_of_bounds);
 		}
 		catch (const std::invalid_argument& ex)
 		{
-			return (allocations::set_current_exception_what(allocations::create_error_message_from_abi_result(error_invalid_argument, ex.what())), error_invalid_argument);
+			return (allocations::set_current_exception_what_from_abi_result(error_invalid_argument, ex.what()), error_invalid_argument);
 		}
 		catch (const std::exception& ex)
 		{
-			return (allocations::set_current_exception_what(allocations::create_error_message_from_abi_result(error_failure, ex.what())), error_failure);
+			return (allocations::set_current_exception_what_from_abi_result(error_failure, ex.what()), error_failure);
 		}
 		catch (const abi_error& ex)
 		{
@@ -310,7 +311,7 @@ namespace glasssix::exposing
 		{
 			auto result = std::forward<Callable>(handler)();
 
-			return (std::forward<Callable>(handler)(), allocations::clear_current_exception_what(), result);
+			return (std::forward<Callable>(handler)(), result);
 		}
 		else
 		{

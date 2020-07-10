@@ -15,10 +15,11 @@ namespace glasssix::exposing::allocations
 			{ error_failure, u8"The operation failed because of an internal error." },
 			{ error_not_implemented, u8"The operation was not implemented." },
 			{ error_null_pointer, u8"One of the parameters was null." },
-			{ error_invalid_argument, u8"One of the parameters were invalid." },
+			{ error_invalid_argument, u8"One of the parameters was invalid." },
 			{ error_out_of_bounds, u8"The index was out of bounds." },
 			{ error_no_interface, u8"The specified interface was not found." },
 			{ error_invalid_operation, u8"The operation was invalid." },
+			{ error_key_not_found, u8"The key was not found." },
 			{ error_bad_alloc, u8"The allocation reported failure." },
 			{ error_not_initialized, u8"The object has not been initialized yet." }
 		};
@@ -54,10 +55,15 @@ namespace glasssix::exposing::allocations
 		}
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES param_string_handle G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what) noexcept
 	{
-		auto what = optional_inner_narrow_what ?
-			fmt::format("[Exception Code: {}][Message: {}][Details: {}]", code, get_predefined_error_message(code), optional_inner_narrow_what) :
+		set_current_exception_what(create_error_message_from_abi_result(code, get_abi(to_param_string(optional_inner_narrow_what))));
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, void* optional_inner_what_abi) noexcept
+	{
+		auto what = optional_inner_what_abi ?
+			fmt::format("[Exception Code: {}][Message: {}][Details: {}]", code, get_predefined_error_message(code), to_narrow_string(create_from_abi<param_string>(optional_inner_what_abi))) :
 			fmt::format("[Exception Code: {}][Message: {}]", code, get_predefined_error_message(code));
 
 		return detach_abi(to_param_string(what));
