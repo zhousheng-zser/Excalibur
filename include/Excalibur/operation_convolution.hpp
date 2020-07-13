@@ -82,8 +82,8 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<float>> weights1x1_;
 			std::shared_ptr<memory::tensor<float>> col_buffer_;
 			std::shared_ptr<memory::tensor<float>> bias_multiplier_;
-			std::shared_ptr<memory::tensor<float>> kernel_tm_;
-			std::shared_ptr<memory::tensor<float>> kernel_tm_gemm_;
+			std::vector<std::shared_ptr<memory::tensor<float>>> kernel_tm_;
+			std::vector<std::shared_ptr<memory::tensor<float>>> kernel_tm_gemm_;
 			std::shared_ptr<memory::tensor<float>> tmp_;
 			std::shared_ptr<memory::tensor<float>> bottom_im2col_;
 			std::shared_ptr<memory::tensor<float>> bottom_tm_;

@@ -16,6 +16,9 @@ namespace glasssix
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
+			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
 				cublasHandle_t &cublas_handle_,
@@ -29,10 +32,9 @@ namespace glasssix
 		private:
 			std::shared_ptr<memory::tensor<float>> U_;
 			std::shared_ptr<memory::tensor<float>> V_;
-			std::shared_ptr<memory::tensor<float>> kernel_tm;
-	
-			void forward_cpu_int8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+			std::shared_ptr<memory::tensor<float>> kernel_tm_;
+			std::shared_ptr<memory::tensor<float>> border_bottom_;
+
 
 			void forward_winograd_f32(std::shared_ptr < memory::tensor<float>>& bottom,
 				std::shared_ptr < memory::tensor<float>>& top);
