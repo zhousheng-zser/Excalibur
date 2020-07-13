@@ -74,10 +74,18 @@ int main()
 {
 	auto all = new memory::pool_allocator<float>();
 	profiler* pro = profiler::get();
-	excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Research\\Excalibur\\models\\unicorn.phai",
-		"D:\\Research\\Excalibur\\models\\unicorn.racy");
+	excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Excalibur\\models\\unicorn.phai",
+		"D:\\Excalibur\\models\\unicorn.racy");
+	/*excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Excalibur\\models\\unicorn_int8.phai",
+	"D:\\Excalibur\\models\\unicorn_int8.racy", -1);*/
+
+
+	/*excalibur::pipeline<float> p = excalibur::pipeline<float>("D:\\Excalibur\\models\\mobile_unicorn.phai",
+		"D:\\Excalibur\\models\\mobile_unicorn.racy", -1);*/
+
+
 	p.enable_profiler();
-	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\yswvisible.jpg");
+	cv::Mat img = cv::imread("D:\\Excalibur\\imgs\\yswinfread.jpg");
 	//cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
 	std::shared_ptr<memory::tensor<float>> temp;
 	//cv::resize(img, img, cv::Size(320, 320));
@@ -85,7 +93,7 @@ int main()
 	temp->set_allocator(all);
 	auto res_vec = p.forward_cpu(temp);
 	auto res = p.get_featmap("conv5_dw");
-	for (size_t i = 0; i < 10; i++)
+	for (size_t i = 0; i < 20; i++)
 	{
 		p.forward_cpu(temp);
 	}
@@ -101,7 +109,8 @@ int main()
 	}
 	std::cout << std::endl;
 	pro->turn_off();
-	pro->dump_profile("D:\\unicorn.json");
+	pro->dump_profile("D:\\1.json");
 	//pro->turn_off();
+	system("pause");
 	return 0;
 }
