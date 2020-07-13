@@ -2,6 +2,7 @@
 #include "../../include/Excalibur/operation_reflector.hpp"
 #include "../../include/Excalibur/math_functions.hpp"
 #include "../../include/Excalibur/im2col.hpp"
+#include <random>
 
 namespace glasssix
 {
@@ -37,6 +38,38 @@ namespace glasssix
 				NOT_IMPLEMENTED;
 				return 0;
 			}
+		}
+
+		template<typename Dtype>
+		int operation_deconvolution<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			std::uniform_int_distribution<int> u(-128, 127);
+			int mem = 0;
+			if (!params_.int8_quantization_)
+			{
+				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < weight_data_size_; i++)
+				{
+					weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+				}
+				mem += weight_data_size_ * sizeof(float);
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < output_channel_; i++)
+					{
+						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += output_channel_ * sizeof(float);
+				}
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
+			return mem;
 		}
 
 		template<typename Dtype>

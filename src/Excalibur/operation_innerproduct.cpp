@@ -2,6 +2,7 @@
 #include "../../include/Excalibur/operation_reflector.hpp"
 #include "../../include/Excalibur/math_functions.hpp"
 #include "../../include/Excalibur/im2col.hpp"
+#include <random>
 
 namespace glasssix
 {
@@ -90,7 +91,7 @@ namespace glasssix
 				fread(weights_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
 				featmap_scaletable_i8_.resize(1);
 				fread(featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
-				mem += 1 * sizeof(signed char);
+				mem += 2 * sizeof(signed char);
 				return mem;
 			}
 			else
@@ -98,6 +99,59 @@ namespace glasssix
 				NOT_IMPLEMENTED;
 				return 0;
 			}
+		}
+
+		template<typename Dtype>
+		int operation_innerproduct<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			std::uniform_int_distribution<int> u(-128, 127);
+			int mem = 0;
+			if (!params_.int8_quantization_)
+			{
+				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < weight_data_size_; i++)
+				{
+					weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+				}
+				mem += weight_data_size_ * sizeof(float);
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < num_output_; i++)
+					{
+						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += num_output_ * sizeof(float);
+				}
+			}
+			else
+			{
+				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
+				weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < align_data_size; i++)
+				{
+					weights_i8_[0]->mutable_cpu_data()[i] = u(e);
+				}
+				mem += align_data_size;
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, params_.device_, memory::NCHW, nullptr)));
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < num_output_; i++)
+					{
+						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += num_output_ * sizeof(float);
+				}
+				weights_scaletable_i8_.resize(1);
+				weights_scaletable_i8_[0] = n(e);
+				featmap_scaletable_i8_.resize(1);
+				featmap_scaletable_i8_[0] = n(e);
+				mem += (1 + 1) * sizeof(float);
+			}
+			return mem;
 		}
 
 		template<typename Dtype>

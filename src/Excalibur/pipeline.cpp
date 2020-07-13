@@ -21,9 +21,14 @@ namespace glasssix
 			{
 				LOG(FATAL) << "Incorrect param file.";
 			}
-			if (lines[0] != "glsv1" && lines[0] != "7767517")
+			std::string param_version = split_string(lines[0], " ")[0];
+			if (param_version != "glsv1" && param_version != "7767517")
 			{
 				LOG(FATAL) << "Incorrect param file version.";
+			}
+			if (split_string(lines[0], " ").size() > 1)
+			{
+				name_ = split_string(lines[0], " ")[1];
 			}
 			for (size_t i = 2; i < lines.size(); i++)
 			{
@@ -80,15 +85,12 @@ namespace glasssix
 				op_params_.push_back(op_param);
 			}
 
-			//
-			//allocator_ = new memory::pool_allocator<Dtype>();
-
 			for (size_t i = 0; i < op_params_.size(); i++)
 			{
 				operations_.push_back(operation_reflector<Dtype>::instance().create_object(op_params_[i]));
 			}
 
-			//
+			// load data
 			init_weights(model_file);
 			
 			//build dag
@@ -156,6 +158,154 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
+		pipeline<Dtype>::pipeline(std::string param_file, int device)
+		{
+			auto lines = read_param_file(param_file);
+			if (lines.size() <= 0)
+			{
+				LOG(FATAL) << "Incorrect param file.";
+			}
+			std::string param_version = split_string(lines[0], " ")[0];
+			if (param_version != "glsv1" && param_version != "7767517")
+			{
+				LOG(FATAL) << "Incorrect param file version.";
+			}
+			if (split_string(lines[0], " ").size() > 1)
+			{
+				name_ = split_string(lines[0], " ")[1];
+			}
+			for (size_t i = 2; i < lines.size(); i++)
+			{
+				if (lines[i].size() <= 0)
+				{
+					continue;
+				}
+				auto sarray = split_string(lines[i], " ");
+				std::vector<std::string> useful_array;
+				for (size_t j = 0; j < sarray.size(); j++)
+				{
+					if (sarray[j] != std::string(""))
+					{
+						useful_array.push_back(sarray[j]);
+					}
+				}
+				pipe_param_str_.push_back(useful_array);
+			}
+
+			for (size_t i = 0; i < pipe_param_str_.size(); i++)
+			{
+				operation_param op_param;
+				op_param.type_ = pipe_param_str_[i][0];
+				op_param.name_ = pipe_param_str_[i][1];
+				op_param.device_ = device_;
+				op_param.input_count_ = atoi(pipe_param_str_[i][2].c_str());
+				op_param.output_count_ = atoi(pipe_param_str_[i][3].c_str());
+				if (op_param.output_count_ <= 0)
+				{
+					op_param.output_featmaps_ = std::vector<std::string>();
+				}
+				for (size_t j = 0; j < op_param.output_count_; j++)
+				{
+					op_param.output_featmaps_.push_back(pipe_param_str_[i][4 + op_param.input_count_ + j]);
+				}
+				int specific_start_id = 4 + op_param.input_count_ + op_param.output_count_;
+				for (size_t j = specific_start_id; j < pipe_param_str_[i].size(); j++)
+				{
+					op_param.specific_params_ += (pipe_param_str_[i][j] + " ");
+				}
+				if (op_param.input_count_ <= 0)
+				{
+					// a kind of input method, attach 1 input featmap at top
+					op_param.input_count_ = 1;
+					op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input" };
+				}
+				else
+				{
+					for (size_t j = 0; j < op_param.input_count_; j++)
+					{
+						op_param.input_featmaps_.push_back(pipe_param_str_[i][4 + j]);
+					}
+				}
+				op_params_.push_back(op_param);
+			}
+
+			for (size_t i = 0; i < op_params_.size(); i++)
+			{
+				operations_.push_back(operation_reflector<Dtype>::instance().create_object(op_params_[i]));
+			}
+
+			// load data
+			init_weights();
+
+			//build dag
+			op_nodes_.resize(operations_.size());
+			for (size_t i = 0; i < operations_.size(); i++)
+			{
+				op_nodes_[i] = node<std::string>(operations_[i]->param().name_);
+				operation_names_index_[operations_[i]->param().name_] = i;
+			}
+
+			for (size_t i = 0; i < op_params_.size(); i++)
+			{
+				for (size_t j = 0; j < op_params_[i].input_count_; j++)
+				{
+					if (featmap_names_index_.find(op_params_[i].input_featmaps_[j]) == featmap_names_index_.end())
+					{
+						featmap_names_index_[op_params_[i].input_featmaps_[j]] = featmap_count_;
+						featmap_count_++;
+					}
+					int id = find_parent_op_index(op_params_[i].input_featmaps_[j]);
+					if (id < 0)
+					{
+						input_featmap_names_.push_back(op_params_[i].input_featmaps_[j]);
+					}
+				}
+				for (size_t j = 0; j < op_params_[i].output_count_; j++)
+				{
+					if (featmap_names_index_.find(op_params_[i].output_featmaps_[j]) == featmap_names_index_.end())
+					{
+						featmap_names_index_[op_params_[i].output_featmaps_[j]] = featmap_count_;
+						featmap_count_++;
+					}
+					int id = find_child_op_index(op_params_[i].output_featmaps_[j]);
+					if (id >= 0)
+					{
+						op_nodes_[i].add_child(op_nodes_[id]);
+					}
+					else
+					{
+						output_featmap_names_.push_back(op_params_[i].output_featmaps_[j]);
+					}
+				}
+			}
+			featmaps_.resize(featmap_count_);
+
+			CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
+			for (size_t i = 0; i < input_featmap_names_.size(); i++)
+			{
+				/*auto id = find_child_op_index(input_featmap_names_[i]);
+				auto op_node_vec = bfs_ops_.traverse_undirected(op_nodes_[id]);*/
+				// TODO: Add DAG expand support!!!!
+				for (size_t j = 0; j < op_nodes_.size(); j++)
+				{
+					auto res = operation_names_index_.find(op_nodes_[j].value());
+					if (res == operation_names_index_.end())
+					{
+						LOG(FATAL) << "Un-inited operation.";
+					}
+					ops_execution_order_.push_back(res->second);
+					ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
+				}
+			}
+		}
+
+		template<typename Dtype>
+		pipeline<Dtype>::pipeline(std::vector<std::string> hardcode_params, std::string model_file, int device)
+		{
+
+		}
+
+		template<typename Dtype>
 		void pipeline<Dtype>::init_weights(std::string model_file)
 		{
 			FILE* fp = fopen(model_file.c_str(), "rb");
@@ -175,6 +325,20 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
+		void pipeline<Dtype>::init_weights()
+		{
+			LOG(INFO) << "[Pipeline weights memory cost list]=====================";
+			LOG(WARNING) << "THIS PIPELINE IS LOADED WITH DUMMY DATA.";
+			for (size_t i = 0; i < operations_.size(); i++)
+			{
+				int mem = operations_[i]->init_weights();
+				weights_mem_cost_ += mem;
+				//LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
+			}
+			LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
+		}
+
+		template<typename Dtype>
 		std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
 			pipeline<Dtype>::forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
 		{
@@ -183,10 +347,6 @@ namespace glasssix
 			{
 				p->turn_on();
 				p->scope_start(name_.c_str());
-			}
-			else
-			{
-				p->turn_off();
 			}
 			featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
 			for (size_t i = 0; i < ops_execution_order_.size(); i++)

@@ -112,14 +112,15 @@ namespace glasssix
 
 			virtual ~operation() {}
 
-#ifdef HARDCODE
-			virtual void init_weights() {}
-#else
+			virtual int init_weights() 
+			{
+				return 0;
+			}
+
 			virtual int init_weights(FILE *fp) 
 			{
 				return 0;
 			}
-#endif //!HARDCODE
 
 			// inference on cpu
 			void forward_cpu(const std::vector<std::shared_ptr<memory::tensor<Dtype>>>& bottoms,

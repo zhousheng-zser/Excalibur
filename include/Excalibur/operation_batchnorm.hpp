@@ -18,11 +18,9 @@ namespace glasssix
 
 			virtual ~operation_batchnorm() {}
 
-#ifdef HARDCODE
-			virtual void init_weights() {}
-#else
+			virtual int init_weights() { return 0; };
+
 			virtual int init_weights(FILE *fp);
-#endif //!HARDCODE
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,

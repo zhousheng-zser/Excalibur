@@ -5,6 +5,7 @@
 #include "../../include/Excalibur/operation_make_border.hpp"
 #include "../../include/Excalibur/operation_cut_border.hpp"
 #include "../../include/Primitives/simd_types.hpp"
+#include <random>
 
 namespace glasssix
 {
@@ -68,6 +69,74 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+			}
+			return mem;
+		}
+
+		template<typename Dtype>
+		int operation_convolution<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			std::uniform_int_distribution<int> u(-128, 127);
+			int mem = 0;
+			if (!params_.int8_quantization_)
+			{
+				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < weight_data_size_; i++)
+				{
+					weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+				}
+				mem += weight_data_size_ * sizeof(float);
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < output_channel_; i++)
+					{
+						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += output_channel_ * sizeof(float);
+				}
+				if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 1 && stride_w_ == 1) && output_channel_ < 128)
+				{
+					conv3x3s1_winograd23_tr_kernel();
+				}
+				else
+				{
+					forward_im2col_tr_kernel();
+				}
+			}
+			else
+			{
+				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
+				weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < align_data_size; i++)
+				{
+					weights_i8_[0]->mutable_cpu_data()[i] = u(e);
+				}
+				mem += align_data_size;
+				if (bias_term_)
+				{
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, params_.device_, memory::NCHW, nullptr)));
+					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < output_channel_; i++)
+					{
+						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += output_channel_ * sizeof(float);
+				}
+				weights_scaletable_i8_.resize(group_);
+				for (size_t i = 0; i < group_; i++)
+				{
+					weights_scaletable_i8_[i] = n(e);
+				}
+				featmap_scaletable_i8_.resize(1);
+				featmap_scaletable_i8_[0] = n(e);
+				mem += (group_ + 1) * sizeof(float);
+				if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 1 && stride_w_ == 1) && output_channel_ < 128)
+				{
+					conv3x3s1_winograd23_tr_kernel_int8();
+				}
 			}
 			return mem;
 		}
