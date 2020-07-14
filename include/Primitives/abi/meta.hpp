@@ -8,6 +8,7 @@
 #include <utility>
 #include <optional>
 #include <algorithm>
+#include <functional>
 #include <type_traits>
 #include <string_view>
 
@@ -653,6 +654,20 @@ namespace glasssix::exposing::meta
 		UnsignedNumber addition = (subtraction / divisor + (subtraction % divisor != 0 ? 1 : 0)) * divisor;
 
 		return (subtraction + addition) % divisor;
+	}
+
+	/// <summary>
+	/// Makes a wrapper of a callable object that returns another type.
+	/// </summary>
+	/// <typeparam name="T">The return type</typeparam>
+	/// <typeparam name="Callable">The callable type</typeparam>
+	/// <param name="callable">The callable object</param>
+	/// <param name="default_value">The default return value</param>
+	/// <returns>The wrapper</returns>
+	template<typename T, typename Callable>
+	constexpr auto replace_return(Callable&& callable, T&& default_value = {}) noexcept
+	{
+		return [=](auto&&... args) -> std::decay_t<T> { return (callable(std::forward<decltype(args)>(args)...), default_value); };
 	}
 
 	/// <summary>

@@ -3,6 +3,8 @@
 #include "Primitives/memory.hpp"
 #include "Primitives/tensor.hpp"
 
+#include <limits>
+
 using glasssix::memory::aligned_heap_free;
 
 namespace glasssix
@@ -519,6 +521,12 @@ namespace glasssix
 					tensor_operation_cpu::rotate_with_points_cpu(ROI, rotated_ROI, center, -1 * arctan);
 
 					double distance = sqrt((center_eye.x - center_mouth.x) * (center_eye.x - center_mouth.x) + (center_eye.y - center_mouth.y) * (center_eye.y - center_mouth.y));
+
+					if (distance < std::numeric_limits<double>::epsilon())
+					{
+						LOG(FATAL) << "Illegal distance.";
+					}
+
 					double cos = (center_mouth.y - center_eye.y) / distance;
 					double sin = (center_mouth.x - center_eye.x) / distance;
 					point<float> new_center_eye = point<float>(center_eye.x + (float)(sin * distance / 2), (float)(center_eye.y - (1 - cos) * distance / 2));
