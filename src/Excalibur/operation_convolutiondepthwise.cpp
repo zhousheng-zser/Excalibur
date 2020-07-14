@@ -16,13 +16,6 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		int operation_convolutiondepthwise<Dtype>::init_weights(FILE* fp)
-		{
-			int mem = operation_convolution::init_weights(fp);
-			return mem;
-		}
-
-		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
@@ -407,7 +400,7 @@ namespace glasssix
 				const float* k1 = weights_data0 + 3;
 				const float* k2 = weights_data0 + 6;
 
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 				__m128 k0_data = _mm_loadu_ps(k0);
 				__m128 k1_data = _mm_loadu_ps(k1);
 				__m128 k2_data = _mm_loadu_ps(k2);
@@ -514,16 +507,12 @@ namespace glasssix
 		void operation_convolutiondepthwise<Dtype>::forward_k3s2_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
-			profiler* p = profiler::get();
-			p->scope_start("make_border");
 			std::shared_ptr<memory::tensor<float>> bottom_bordered;
 			make_border<float>(bottom, bottom_bordered, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
 			if (bottom_bordered->order() != memory::NCHW)
 			{
 				bottom_bordered->convert_order();
 			}
-			p->scope_end();
-			p->scope_start("reset");
 			top.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			float* top_data = top->mutable_cpu_data();
@@ -537,8 +526,6 @@ namespace glasssix
 				bias_data = weights_f32_[1]->cpu_data();
 			}
 			const int tailstep = bottom_bordered->width() - 2 * output_dim_w_ + bottom_bordered->width();
-			p->scope_end();
-			p->scope_start("exec");
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
@@ -562,7 +549,7 @@ namespace glasssix
 				const float* k0 = kernel0;
 				const float* k1 = kernel0 + 3;
 				const float* k2 = kernel0 + 6;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 				__m128 k0_data = _mm_loadu_ps(k0);
 				__m128 k1_data = _mm_loadu_ps(k1);
 				__m128 k2_data = _mm_loadu_ps(k2);
@@ -626,8 +613,6 @@ namespace glasssix
 				}
 #endif
 			}
-
-			/*p->scope_end();*/
 		}
 		INSTANCE_CLASS(operation_convolutiondepthwise);
 		REGISTE(operation_convolutiondepthwise);

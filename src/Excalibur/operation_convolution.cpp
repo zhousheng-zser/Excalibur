@@ -412,7 +412,7 @@ namespace glasssix
 								const float* r3 = r2 + w;
 								for (int i = 0; i < block_row; i++)
 								{
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 									__m128 _d0, _d1, _d2, _d3;
 									__m128 _w0, _w1, _w2, _w3;
 
@@ -1021,7 +1021,7 @@ namespace glasssix
 
 						for (int q = 0; q < inch * kernel_size; q++)
 						{
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							_mm256_storeu_ps(tmpptr, _mm256_loadu_ps(img0));
 #else
 							tmpptr[0] = img0[0];
@@ -1083,7 +1083,7 @@ namespace glasssix
 						{
 							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
 							const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m256 _sum0 = _mm256_broadcast_ss(biasptr);
 							__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
 							__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
@@ -1359,7 +1359,7 @@ namespace glasssix
 						{
 							const float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
 							const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m256 _sum0_7 = _mm256_loadu_ps(biasptr);
 							__m256 _sum0 = _mm256_set1_ps(0.0);
 							__m256 _sum1 = _mm256_set1_ps(0.0);
@@ -1481,7 +1481,7 @@ namespace glasssix
 						{
 							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
 							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m256 _sum0 = _mm256_broadcast_ss(biasptr);
 							__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
 							__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
@@ -1661,7 +1661,7 @@ namespace glasssix
 						{
 							float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
 							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m128 _sum0_3 = _mm_loadu_ps(biasptr);
 							__m128 _sum0 = _mm_set1_ps(0.0);
 							__m128 _sum1 = _mm_set1_ps(0.0);
@@ -1755,7 +1755,7 @@ namespace glasssix
 						{
 							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
 							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m256 _sum0 = _mm256_broadcast_ss(&bias0);
 
 							int k = 0;
@@ -1839,7 +1839,7 @@ namespace glasssix
 							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
 
 							int k = 0;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
 							__m128 _sum0 = _mm_set1_ps(0.f);
 
 							for (; k + 3 < L; k += 4)
