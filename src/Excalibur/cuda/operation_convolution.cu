@@ -1,6 +1,7 @@
 #include "../../include/Excalibur/operation_convolution.hpp"
 #include "../../include/Excalibur/math_functions.hpp"
 #include "../../include/Excalibur/operation_reflector.hpp"
+#include "../../include/Excalibur/im2col.hpp"
 
 namespace glasssix
 {
@@ -89,19 +90,78 @@ namespace glasssix
 		void operation_convolution<Dtype>::forward_gpu_sbias(cublasHandle_t &cublas_handle,
 			float* output, const float* bias, memory::orderType order)
 		{
-
+			if (order == memory::NCHW)
+			{
+				math_functions::gpu_sgemm(cublas_handle, CblasNoTrans, CblasNoTrans, output_channel_,
+					output_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->gpu_data(), 1.0f, output);
+			}
+			else if (order == memory::NHWC)
+			{
+				math_functions::gpu_sgemm(cublas_handle, CblasNoTrans, CblasNoTrans, output_spatial_dim_,
+					output_channel_, 1, 1.0f, bias_multiplier_->gpu_data(), bias, 1.0f, output);
+			}
+			else
+			{
+				NOT_IMPLEMENTED;
+			}
 		}
 
 		template<typename Dtype>
 		void operation_convolution<Dtype>::forward_gpu_f32(
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t &cublas_handle,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
 			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
-			
+			CHECK_EQ(bottoms.size(), 1);
+			CHECK_EQ(tops.size(), 1);
+			memory::orderType order = bottoms[0]->order();
+			num_ = bottoms[0]->num();
+			const float* bottom_data = bottoms[0]->gpu_data();
+			const float* weights_data = weights_f32_[0]->gpu_data();
+			const float* bias_data = nullptr;
+			input_channel_ = bottoms[0]->channels();
+			input_dim_h_ = bottoms[0]->height();
+			input_dim_w_ = bottoms[0]->width();
+			output_dim_h_ = (input_dim_h_ + pad_bottom_ + pad_top_ - kernel_size_h_) / stride_h_ + 1;
+			output_dim_w_ = (input_dim_w_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_ + 1;
+			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
+			kernel_dim_ = input_channel_ * kernel_size_h_ * kernel_size_w_;
+			col_offset_ = kernel_dim_ * output_spatial_dim_;
+			output_offset_ = output_channel_ * output_spatial_dim_ / group_;
+			if (order == memory::NCHW)
+			{
+				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_}, params_.device_, order, bottoms[0]->allocator()));
+			}
+			else if (order == memory::NHWC)
+			{
+				tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_channel_}, params_.device_, order, bottoms[0]->allocator()));
+			}
+			else
+			{
+				LOG(FATAL) << "Un-supported data arrange.";
+			}
+			float* top_data = tops[0]->mutable_gpu_data();
+			int top_dim_ = tops[0]->count(1, 4);
+			col_buffer_.reset(new memory::tensor<float>(std::vector<int>{kernel_dim_ / group_, output_dim_h_, output_dim_w_}, params_.device_, memory::NCHW, bottoms[0]->allocator()));
+			col_buffer_data = col_buffer_->mutable_gpu_data();
+			if (bias_term_)
+			{
+				bias_multiplier_.reset(new memory::tensor<float>(std::vector<int>{output_dim_w_*output_dim_h_}, params_.device_, memory::NCHW, bottoms[0]->allocator()));
+				bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
+				math_functions::cpu_set(output_spatial_dim_, 1.0f, bias_multiplier_data);
+				bias_data = weights_f32_[1]->gpu_data();
+			}
+			for (int n = 0; n < num_; n++)
+			{
+				forward_gpu_sgemm(cublas_handle, bottom_data + n * bottom_dim_, weights_data, top_data + n * top_dim_, order);
+				if (bias_term_)
+				{
+					forward_gpu_sbias(cublas_handle, top_data + n * top_dim_, bias_data, order);
+				}
+			}
 		}
 
 #ifdef USE_CUDNN

@@ -8,7 +8,7 @@
 #include <vector>
 #include <unordered_map>
 #include "operation.hpp"
-#include "../../include/Excalibur/dag.hpp"
+#include "dag.hpp"
 
 namespace glasssix
 {
@@ -20,7 +20,13 @@ namespace glasssix
 		public:
 			explicit pipeline()
 			{
-
+#ifdef USE_CUDA
+				CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+#ifdef USE_CUDNN
+				CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+#endif
+				CUDA_CHECK(cudaSetDevice(device_));
+#endif
 			}
 
 			explicit pipeline(std::string param_file, std::string model_file, int device = -1);
@@ -32,11 +38,44 @@ namespace glasssix
 
 			~pipeline() 
 			{
-
+#ifdef USE_CUDA
+				if (cublas_handle_)
+				{
+					CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+					cublas_handle_ = nullptr;
+				}
+#ifdef USE_CUDNN
+				if (cudnn_handle_)
+				{
+					CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+					cudnn_handle_ = nullptr;
+				}
+#endif
+#endif
 			};
 
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
+				forward(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
+			{
+				if (device_ >= 0)
+				{
+#ifdef USE_CUDA
+					forward_gpu(input_tensor);
+#else
+					NO_GPU;
+#endif
+				}
+				else
+				{
+					forward_cpu(input_tensor);
+				}
+			}
+
+			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
 				forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
+
+			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
+				forward_gpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
 
 			std::shared_ptr<memory::tensor<Dtype>> get_featmap(std::string featmap_name);
 
@@ -98,10 +137,16 @@ namespace glasssix
 
 			//
 			bool profile_ = false;
-			/*std::map<std::string, int> weights_mem_cost_;
-			std::map<std::string, int> featmap_mem_cost_;*/
 			int weights_mem_cost_ = 0;
 			int featmap_mem_cost_ = 0;
+
+#ifdef USE_CUDA
+			cublasHandle_t cublas_handle_ = nullptr;
+#ifdef USE_CUDNN
+			cudnnHandle_t cudnn_handle_ = nullptr;
+#endif 
+#endif
+
 			DISABLE_COPY_AND_ASSIGN(pipeline);
 		};
 	}

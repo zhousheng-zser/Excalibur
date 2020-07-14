@@ -1,6 +1,6 @@
 #include "../../include/Excalibur/operation_reflector.hpp"
 #include "../../include/Excalibur/operation_convolutiondepthwise.hpp"
-#include "./operation_make_border.hpp"
+#include "../../include/Excalibur/operation_make_border.hpp"
 #include <algorithm>
 #include "../../include/Primitives/profiler.hpp"
 using namespace std;

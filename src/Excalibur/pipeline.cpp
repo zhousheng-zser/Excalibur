@@ -16,6 +16,13 @@ namespace glasssix
 		template<typename Dtype>
 		pipeline<Dtype>::pipeline(std::string param_file, std::string model_file, int device) : device_(device)
 		{
+#ifdef USE_CUDA
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+#ifdef USE_CUDNN
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+#endif
+			CUDA_CHECK(cudaSetDevice(device_));
+#endif
 			auto lines = read_param_file(param_file);
 			if (lines.size() <= 0)
 			{
@@ -160,6 +167,13 @@ namespace glasssix
 		template<typename Dtype>
 		pipeline<Dtype>::pipeline(std::string param_file, int device)
 		{
+#ifdef USE_CUDA
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+#ifdef USE_CUDNN
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+#endif
+			CUDA_CHECK(cudaSetDevice(device_));
+#endif
 			auto lines = read_param_file(param_file);
 			if (lines.size() <= 0)
 			{
@@ -302,7 +316,13 @@ namespace glasssix
 		template<typename Dtype>
 		pipeline<Dtype>::pipeline(std::vector<std::string> hardcode_params, std::string model_file, int device)
 		{
-
+#ifdef USE_CUDA
+			CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+#ifdef USE_CUDNN
+			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+#endif
+			CUDA_CHECK(cudaSetDevice(device_));
+#endif
 		}
 
 		template<typename Dtype>
@@ -363,6 +383,57 @@ namespace glasssix
 					output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
 				}
 				operations_[ops_execution_order_[i]]->forward_cpu(input, output);
+				for (size_t j = 0; j < output.size(); j++)
+				{
+					featmaps_[ops_io_featmap_[i].second[j]] = output[j];
+				}
+				p->scope_end();
+			}
+			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;
+			for (size_t i = 0; i < output_featmap_names_.size(); i++)
+			{
+				results[output_featmap_names_[i]] = featmaps_[featmap_names_index_[output_featmap_names_[i]]];
+			}
+			if (profile_)
+			{
+				p->scope_end();
+				p->turn_off();
+			}
+			return results;
+		}
+
+		template<typename Dtype>
+		std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
+			pipeline<Dtype>::forward_gpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
+		{
+			profiler *p = profiler::get();
+			if (profile_)
+			{
+				p->turn_on();
+				p->scope_start(name_.c_str());
+			}
+			featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
+			for (size_t i = 0; i < ops_execution_order_.size(); i++)
+			{
+				p->scope_start(operations_[ops_execution_order_[i]]->param().name_.c_str());
+				std::vector<std::shared_ptr<memory::tensor<Dtype>>> input(ops_io_featmap_[i].first.size());
+				for (size_t j = 0; j < input.size(); j++)
+				{
+					input[j] = featmaps_[ops_io_featmap_[i].first[j]];
+				}
+				std::vector<std::shared_ptr<memory::tensor<Dtype>>> output(ops_io_featmap_[i].second.size());
+				for (size_t j = 0; j < output.size(); j++)
+				{
+					output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
+				}
+				operations_[ops_execution_order_[i]]->forward_gpu(
+#ifdef USE_CUDA
+					cublas_handle_,
+#ifdef USE_CUDNN
+					cudnn_handle_,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+					input, output);
 				for (size_t j = 0; j < output.size(); j++)
 				{
 					featmaps_[ops_io_featmap_[i].second[j]] = output[j];
