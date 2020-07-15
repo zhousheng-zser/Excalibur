@@ -3,16 +3,19 @@
 #include "guid.hpp"
 #include "meta.hpp"
 #include "dllexport.hpp"
+#include "hash_utils.hpp"
 #include "g6_attributes.hpp"
 #include "platform_encoding.hpp"
 #include "fundamental_semantics.hpp"
 #include "pure_c_handle_utils.h"
-#include "hash_utils.hpp"
+#include "fmt/format.h"
 
+#include <string>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
 #include <iterator>
+#include <ostream>
 #include <algorithm>
 #include <functional>
 #include <type_traits>
@@ -20,7 +23,12 @@
 
 namespace glasssix::exposing
 {
+	struct abi_result;
 	class param_string;
+
+	template<typename Callable>
+	abi_result abi_safe_call(Callable&& handler) noexcept;
+	void check_abi_result(abi_result result);
 }
 
 namespace glasssix::exposing::allocations
@@ -368,7 +376,19 @@ namespace glasssix::exposing
 	{
 		return param_string{ allocations::create_param_string_from_narrow(narrow_str.data(), narrow_str.size()) };
 	}
-	
+
+	/// <summary>
+	/// Converts a number to a string.
+	/// </summary>
+	/// <typeparam name="Number">The numeric type</typeparam>
+	/// <param name="number">The number</param>
+	/// <returns>The string</returns>
+	template<typename Number, typename = std::enable_if_t<std::is_arithmetic_v<Number>>>
+	param_string to_param_string(Number number)
+	{
+		return to_param_string(std::to_string(number));
+	}
+
 	/// <summary>
 	/// Converts a GUID to a string.
 	/// </summary>
@@ -380,6 +400,32 @@ namespace glasssix::exposing
 		auto chars = to_char_array(id, hyphenated);
 
 		return to_param_string(std::string_view{ chars.data(), chars.size() });
+	}
+
+	/// <summary>
+	/// Formats one or more arguments to a string.
+	/// </summary>
+	/// <typeparam name="...Args">The argument types</typeparam>
+	/// <param name="format_str">The format string</param>
+	/// <param name="...args">The arguments</param>
+	/// <returns>The result</returns>
+	template<typename... Args>
+	param_string format(utf8_string_view format_str, Args&&... args)
+	{
+		param_string result{ nullptr };
+
+		return (check_abi_result(abi_safe_call([&] { result = param_string{ fmt::format(format_str, std::forward<Args>(args)...) }; })), result);
+	}
+
+	/// <summary>
+	/// Overloads the << operator of a std::ostream.
+	/// </summary>
+	/// <param name="left">The left</param>
+	/// <param name="right">The right</param>
+	/// <returns>The self reference</returns>
+	inline std::ostream& operator<<(std::ostream& left, const param_string& right)
+	{
+		return (left << to_narrow_string(right));
 	}
 
 	/// <summary>
@@ -444,6 +490,21 @@ namespace glasssix::exposing
 	{
 		return T{ take_over_abi_from_void_ptr{ allocations::create_param_string_ref(static_cast<allocations::param_string_handle>(abi)) } };
 	}
+}
+
+namespace glasssix::exposing::impl
+{
+	template<typename T, typename = void>
+	struct has_to_param_string : std::false_type {};
+
+	template<typename T>
+	struct has_to_param_string<T, std::enable_if_t<std::conjunction_v<std::is_same<decltype(to_param_string(std::declval<T>())), param_string>, std::negation<std::is_same<T, param_string>>>>> : std::true_type {};
+
+	/// <summary>
+	/// Checks whether there is a overloaded to_param_string function for a type.
+	/// </summary>
+	template<typename T>
+	inline constexpr bool has_to_param_string_v = has_to_param_string<T>::value;
 }
 
 namespace std

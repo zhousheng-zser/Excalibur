@@ -1,24 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\Primitives\cpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\gpu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\memory.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\simd_types.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\Primitives\tensor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp">
       <Filter>abi</Filter>
     </ClCompile>
@@ -31,83 +13,20 @@
     <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp">
       <Filter>abi</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\memory.cpp" />
+    <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
+    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp" />
+    <ClCompile Include="..\..\src\Primitives\tensor.cpp" />
+    <ClCompile Include="..\..\src\Primitives\fmt\format.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\fmt\os.cc">
+      <Filter>fmt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Primitives\array_buffer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\basic_math.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\blas.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\compiler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\cpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\dllexport.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\environment.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\gpu.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\iterators.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\logger.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\memory.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\profiler.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\simd_types.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\singleton.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\tensor.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\fmt\format.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
       <Filter>abi</Filter>
     </ClInclude>
@@ -159,9 +78,6 @@
     <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\filesystem.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp">
       <Filter>abi</Filter>
     </ClInclude>
@@ -171,16 +87,77 @@
     <ClInclude Include="..\..\include\Primitives\abi\param_span.hpp">
       <Filter>abi</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
+    <ClInclude Include="..\..\include\Primitives\blas.hpp" />
+    <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\environment.hpp" />
+    <ClInclude Include="..\..\include\Primitives\filesystem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp" />
+    <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\iterators.hpp" />
+    <ClInclude Include="..\..\include\Primitives\logger.hpp" />
+    <ClInclude Include="..\..\include\Primitives\memory.hpp" />
+    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
+    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
+    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
+    <ClInclude Include="..\..\include\Primitives\fmt\format.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\chrono.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\color.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\compile.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\core.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\format-inl.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\locale.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\os.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\ostream.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\posix.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\printf.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\ranges.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\time.h">
+      <Filter>fmt</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{542ef3b7-403d-47b0-9d22-a0fc7d2439b0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{dc17a2b0-e71e-4d46-9917-f9848323078a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="abi">
       <UniqueIdentifier>{4d0eddc1-28a6-44f4-9a07-b0395324d146}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="fmt">
+      <UniqueIdentifier>{028a8a9d-f8ce-407e-8df0-ff2974b9bf50}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

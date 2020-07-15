@@ -100,19 +100,16 @@ namespace glasssix::exposing::impl
 	inline constexpr bool is_well_defined_interface_v = is_well_defined_interface<T>::value;
 
 	template<typename T, typename = void>
-	struct abi_in;
+	struct abi_in
+	{
+		using type = abi_t<T>;
+	};
 
 	/// <summary>
 	/// An input argument of an ABI function.
 	/// </summary>
 	template<typename T>
 	using abi_in_t = typename abi_in<T>::type;
-
-	template<typename T>
-	struct abi_in<T, std::enable_if_t<std::disjunction_v<is_primitive<T>, std::is_enum<T>, std::is_same<T, param_string>>>>
-	{
-		using type = abi_t<T>;
-	};
 
 	template<typename T>
 	struct abi_in<T, std::enable_if_t<is_well_defined_interface_v<T>>>

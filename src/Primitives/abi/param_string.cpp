@@ -201,10 +201,12 @@ namespace glasssix::exposing::allocations
 			return 0;
 		}
 
-		std::uint32_t count = --pure_c::from_handle<param_string_header>(str)->ref_count;
+		auto header = pure_c::from_handle<param_string_header>(str);
+		std::uint32_t count = --header->ref_count;
 
 		if (count == 0)
 		{
+			header->~param_string_header();
 			memory::heap_free(str);
 		}
 

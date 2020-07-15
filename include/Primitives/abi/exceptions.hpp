@@ -3,6 +3,7 @@
 #include "dllexport.hpp"
 #include "param_string.hpp"
 #include "g6_attributes.hpp"
+#include "fmt/format.h"
 
 #include <cstdint>
 #include <stdexcept>
@@ -14,7 +15,7 @@ namespace glasssix::exposing::allocations
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_current_exception_what() noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL clear_current_exception_what() noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what(void* what_abi) noexcept;
-	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what = nullptr) noexcept;
+	extern "C" EXPORT_EXCALIBUR_PRIMITIVES std::int32_t G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what = nullptr) noexcept;
 	extern "C" EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, void* optional_inner_what_abi = nullptr) noexcept;
 }
 
@@ -278,19 +279,23 @@ namespace glasssix::exposing
 		}
 		catch (const std::bad_alloc& ex)
 		{
-			return (allocations::set_current_exception_what_from_abi_result(error_bad_alloc, ex.what()), error_bad_alloc);
+			return allocations::set_current_exception_what_from_abi_result(error_bad_alloc, ex.what());
 		}
 		catch (const std::out_of_range& ex)
 		{
-			return (allocations::set_current_exception_what_from_abi_result(error_out_of_bounds, ex.what()), error_out_of_bounds);
+			return allocations::set_current_exception_what_from_abi_result(error_out_of_bounds, ex.what());
 		}
 		catch (const std::invalid_argument& ex)
 		{
-			return (allocations::set_current_exception_what_from_abi_result(error_invalid_argument, ex.what()), error_invalid_argument);
+			return allocations::set_current_exception_what_from_abi_result(error_invalid_argument, ex.what());
+		}
+		catch (const fmt::format_error& ex)
+		{
+			return allocations::set_current_exception_what_from_abi_result(error_invalid_argument, ex.what());
 		}
 		catch (const std::exception& ex)
 		{
-			return (allocations::set_current_exception_what_from_abi_result(error_failure, ex.what()), error_failure);
+			return allocations::set_current_exception_what_from_abi_result(error_failure, ex.what());
 		}
 		catch (const abi_error& ex)
 		{

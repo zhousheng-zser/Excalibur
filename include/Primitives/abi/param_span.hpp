@@ -2,6 +2,8 @@
 
 #include "base.hpp"
 #include "base_abi.hpp"
+#include "exceptions.hpp"
+#include "param_string.hpp"
 #include "fundamental_semantics.hpp"
 
 #include <cstdint>
@@ -148,6 +150,16 @@ namespace glasssix::exposing
 		{
 			return rend();
 		}
+
+		param_span<T> sub_span(std::size_t index, std::size_t size)
+		{
+			if (index >= size_ || index + size > size_)
+			{
+				throw abi_out_of_bounds{ format("Index: {}, Size: {}", index, size) };
+			}
+
+			return param_span<T>{ data_ + index, size };
+		}
 	private:
 		T* data_;
 		std::size_t size_;
@@ -166,10 +178,10 @@ namespace glasssix::exposing::impl
 	};
 
 	template<typename T, typename = void>
-	struct is_param_span : std::false_type{};
+	struct is_param_span : std::false_type {};
 
 	template<template<typename, typename = void> typename ParamSpan, typename T>
-	struct is_param_span<ParamSpan<T>> : std::is_same<ParamSpan<T>, param_span<T>>{};
+	struct is_param_span<ParamSpan<T>> : std::is_same<ParamSpan<T>, param_span<T>> {};
 
 	/// <summary>
 	/// Checks whether a type is a span.

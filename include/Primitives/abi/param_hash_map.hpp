@@ -4,6 +4,7 @@
 #include "base_abi.hpp"
 #include "implements.hpp"
 #include "exceptions.hpp"
+#include "param_string.hpp"
 #include "iterable_object.hpp"
 
 #include <cstddef>
@@ -105,7 +106,7 @@ namespace glasssix::exposing::impl
 		{
 			Value tmp{ null_value_v<Value> };
 			abi_result result_code;
-			
+
 			return (result_code = abi_safe_call([&] { *result = this->self().try_get_value(create_from_abi<Key>(key), tmp); }), *value = detach_abi(tmp), result_code);
 		}
 
@@ -312,8 +313,19 @@ namespace glasssix::exposing::impl
 		Value get_value(const Key& key) const
 		{
 			auto iter = buffer_.find(key);
-
-			return iter != buffer_.end() ? iter->second : throw abi_key_not_found{};
+			
+			if constexpr (impl::has_to_param_string_v<Key>)
+			{
+				return iter != buffer_.end() ? iter->second : throw abi_key_not_found{ format(u8"Key = {}", to_param_string(key)) };
+			}
+			else if constexpr (std::is_same_v<Key, param_string>)
+			{
+				return iter != buffer_.end() ? iter->second : throw abi_key_not_found{ format(u8"Key = {}", key) };
+			}
+			else
+			{
+				return iter != buffer_.end() ? iter->second : throw abi_key_not_found{};
+			}
 		}
 
 		bool try_get_value(const Key& key, Value& value) const

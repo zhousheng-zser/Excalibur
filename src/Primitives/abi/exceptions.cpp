@@ -1,5 +1,4 @@
 #include "abi/exceptions.hpp"
-#include "fmt/format.h"
 #include "pure_c_handle_utils.h"
 
 namespace glasssix::exposing::allocations
@@ -55,17 +54,24 @@ namespace glasssix::exposing::allocations
 		}
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES std::int32_t G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what) noexcept
 	{
-		set_current_exception_what(create_error_message_from_abi_result(code, get_abi(to_param_string(optional_inner_narrow_what))));
+		return (set_current_exception_what(create_error_message_from_abi_result(code, get_abi(to_param_string(optional_inner_narrow_what)))), code);
 	}
 
 	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, void* optional_inner_what_abi) noexcept
 	{
-		auto what = optional_inner_what_abi ?
-			fmt::format("[Exception Code: {}][Message: {}][Details: {}]", code, get_predefined_error_message(code), to_narrow_string(create_from_abi<param_string>(optional_inner_what_abi))) :
-			fmt::format("[Exception Code: {}][Message: {}]", code, get_predefined_error_message(code));
+		try
+		{
+			auto what = optional_inner_what_abi ?
+				format(u8"[Exception Code: {}][Message: {}][Details: {}]", code, get_predefined_error_message(code), create_from_abi<param_string>(optional_inner_what_abi)) :
+				format(u8"[Exception Code: {}][Message: {}]", code, get_predefined_error_message(code));
 
-		return detach_abi(to_param_string(what));
+			return detach_abi(what);
+		}
+		catch (const abi_error&)
+		{
+			std::terminate();
+		}
 	}
 }
