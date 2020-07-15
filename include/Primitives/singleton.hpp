@@ -22,9 +22,9 @@ namespace glasssix
 		{
 			static std::once_flag flag;
 			static std::aligned_storage_t<sizeof(Object), alignof(Object)> buffer;
-			static Object* result = nullptr;
+			static std::shared_ptr<Object> result;
 
-			std::call_once(flag, [&] { result = ::new (&buffer) Object{ std::forward<Args>(args)... }; });
+			std::call_once(flag, [&] { result.reset(::new (&buffer) Object{ std::forward<Args>(args)... }, [](Object* inner) { inner->~Object(); }); });
 			
 			return *result;
 		}

@@ -89,7 +89,7 @@ namespace glasssix::exposing::impl
 
 		virtual std::int32_t G6_ABI_CALL contains(abi_in_t<T> item, abi_out_t<bool> result) noexcept override
 		{
-			return abi_safe_call([&] { this->self().contains(create_from_abi<T>(item)); });
+			return abi_safe_call([&] { *result = this->self().contains(create_from_abi<T>(item)); });
 		}
 
 		virtual std::int32_t G6_ABI_CALL clear() noexcept override
