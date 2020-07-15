@@ -22,7 +22,11 @@ namespace glasssix
 		{
 			coeffs_ = std::vector<float>(bottom.size(), 1);
 			for (int i = 1; i < bottom.size(); ++i) {
-				CHECK(bottom[i]->data_shape() == bottom[0]->data_shape());
+				//CHECK(bottom[i]->data_shape() == bottom[0]->data_shape());
+				auto left = bottom[i]->data_shape();
+				auto right = bottom[0]->data_shape();
+
+				CHECK(left.size() == right.size() || std::equal(left.begin(), left.end(), right.begin()));
 			}
 			top.reset(new tensor<float>(bottom[0]->data_shape(), device_, bottom[0]->order()));
 			//
