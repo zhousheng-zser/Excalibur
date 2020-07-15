@@ -505,7 +505,7 @@ namespace glasssix
 		std::shared_ptr<glasssix::memory::tensor<float>> temp;
 		mat2tensor_cpu(img, temp, glasssix::memory::NCHW, false);
 		temp->set_allocator(allocator);
-		auto blob_data = pipe->forward_cpu(temp);
+		auto blob_data = pipe->forward(temp);
 		t1 = (double)cv::getTickCount() - t1;
 		std::cout << "infer compute time :" << t1 * 1000.0 / cv::getTickFrequency() << " ms \n";
 		//LOG(INFO) << "Done net_->Forward()";

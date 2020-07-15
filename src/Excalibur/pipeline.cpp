@@ -436,6 +436,10 @@ namespace glasssix
 					input, output);
 				for (size_t j = 0; j < output.size(); j++)
 				{
+					if (output[j] == nullptr)
+					{
+						std::cout << "!!!!";
+					}
 					featmaps_[ops_io_featmap_[i].second[j]] = output[j];
 				}
 				p->scope_end();

@@ -60,14 +60,14 @@ namespace glasssix
 				if (device_ >= 0)
 				{
 #ifdef USE_CUDA
-					forward_gpu(input_tensor);
+					return forward_gpu(input_tensor);
 #else
 					NO_GPU;
 #endif
 				}
 				else
 				{
-					forward_cpu(input_tensor);
+					return forward_cpu(input_tensor);
 				}
 			}
 

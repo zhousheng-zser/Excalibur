@@ -8,7 +8,7 @@ using namespace glasssix;
 int main()
 {
 	cv::Mat img = cv::imread("C:\\Users\\Glasssix-Admin\\Desktop\\480p2.jpg");
-	retina_face *rf = new retina_face("D:\\Research\\Excalibur\\models\\retina.phai", "D:\\Research\\Excalibur\\models\\retina.racy");
+	retina_face *rf = new retina_face("D:\\Research\\Excalibur\\models\\retina.phai", "D:\\Research\\Excalibur\\models\\retina.racy", 0.4, 0);
 	cv::Mat small_img;
 	cv::resize(img, small_img, cv::Size(img.cols / 2, img.rows / 2));
 	auto face_info = rf->detect(small_img, 0.3);
