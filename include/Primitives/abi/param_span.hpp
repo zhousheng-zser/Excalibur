@@ -13,15 +13,12 @@
 
 namespace glasssix::exposing
 {
-	template<typename T, typename = void>
-	class param_span;
-
 	/// <summary>
 	/// Contains a span of elements.
 	/// </summary>
 	/// <typeparam name="T">The element type</typeparam>
 	template<typename T>
-	class param_span<T, std::enable_if_t<impl::has_abi_type_v<T>>>
+	class param_span
 	{
 	public:
 		using value_type = T;
@@ -58,7 +55,7 @@ namespace glasssix::exposing
 			*this = *abi.to<param_span*>();
 		}
 
-		param_span(const param_span& other) noexcept : data_{ other.data }, size_{ other.size_ }
+		param_span(const param_span& other) noexcept : data_{ other.data() }, size_{ other.size_ }
 		{
 		}
 
@@ -180,7 +177,7 @@ namespace glasssix::exposing::impl
 	template<typename T, typename = void>
 	struct is_param_span : std::false_type {};
 
-	template<template<typename, typename = void> typename ParamSpan, typename T>
+	template<template<typename> typename ParamSpan, typename T>
 	struct is_param_span<ParamSpan<T>> : std::is_same<ParamSpan<T>, param_span<T>> {};
 
 	/// <summary>
