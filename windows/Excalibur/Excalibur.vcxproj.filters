@@ -226,5 +226,8 @@
     <CudaCompile Include="..\..\src\Excalibur\cuda\operation_convolutiondepthwise.cu">
       <Filter>Source Files\ops\cu</Filter>
     </CudaCompile>
+    <CudaCompile Include="..\..\src\Excalibur\cuda\operation_relu.cu">
+      <Filter>Source Files\ops\cu</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>
