@@ -19,7 +19,7 @@ namespace glasssix
 
 			void set_weights(float *weights)
 			{
-				weights_->set_cpu_data(weights);
+				weights_->copy_from(weights, weights_->count() * sizeof(float));
 				weights_data = weights_->cpu_data();
 				const float *p = weights_data;
 
