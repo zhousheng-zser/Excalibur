@@ -2844,6 +2844,10 @@ namespace glasssix
 		}
 
 
+#ifndef USE_CUDA
+		STUB_GPU(operation_convolution);
+#endif
+
 		INSTANCE_CLASS(operation_convolution);
 		REGISTE(operation_convolution);
 	}

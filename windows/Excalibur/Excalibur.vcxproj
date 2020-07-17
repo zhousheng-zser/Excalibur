@@ -170,6 +170,7 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="..\..\src\Excalibur\cuda\operation_convolution.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\cuda\operation_convolutiondepthwise.cu" />
     <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />
     <CudaCompile Include="..\..\src\Excalibur\math_functions.cu" />
   </ItemGroup>

@@ -31,14 +31,6 @@ namespace glasssix
 			CHECK_EQ(input_channel_, output_channel_);
 			output_dim_h_ = (input_dim_h_ + pad_bottom_ + pad_top_ - kernel_size_h_) / stride_h_ + 1;
 			output_dim_w_ = (input_dim_w_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_ + 1;
-			tops[0].reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_}, params_.device_, order, nullptr));
-
-			/*if (pad_left_ != 0) {
-				make_border<float>(bottoms[0], border_bottom_, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
-			}
-			else {
-				border_bottom_ = bottoms[0];
-			}*/
 
 			if (int8_scale_term_ == 1) {
 				dequantize_int8(weights_i8_[0], weights_f32_[0], weights_scaletable_i8_);
@@ -74,7 +66,7 @@ namespace glasssix
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-						for (int i = 0; i < tops[0]->count(); i++)
+						for (int i = 0; i < tops[0]->count(1, 4); i++)
 						{
 							const int pw = i % output_dim_w_;
 							const int ph = (i / output_dim_w_) % output_dim_h_;
@@ -250,20 +242,6 @@ namespace glasssix
 			}
 			return 0;
 		}
-
-//		template<typename Dtype>
-//		void operation_convolutiondepthwise<Dtype>::forward_gpu_f32(
-//#ifdef USE_CUDA
-//			cublasHandle_t& cublas_handle_,
-//#ifdef USE_CUDNN
-//			cudnnHandle_t cudnn_handle,
-//#endif //!USE_CUDNN
-//#endif //!USE_CUDA
-//			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-//			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
-//		{
-//			NOT_IMPLEMENTED;
-//		}
 
 		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_winograd_f32(std::shared_ptr <memory::tensor<float>>& bottom,
@@ -615,6 +593,11 @@ namespace glasssix
 #endif
 			}
 		}
+
+#ifndef USE_CUDA
+		STUB_GPU(operation_convolutiondepthwise);
+#endif
+
 		INSTANCE_CLASS(operation_convolutiondepthwise);
 		REGISTE(operation_convolutiondepthwise);
 	}

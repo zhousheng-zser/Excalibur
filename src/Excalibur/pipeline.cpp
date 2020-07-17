@@ -21,7 +21,10 @@ namespace glasssix
 #ifdef USE_CUDNN
 			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 #endif
-			CUDA_CHECK(cudaSetDevice(device_));
+			if (device_ >= 0)
+			{
+				CUDA_CHECK(cudaSetDevice(device_));
+			}
 #endif
 			auto lines = read_param_file(param_file);
 			if (lines.size() <= 0)
@@ -172,7 +175,10 @@ namespace glasssix
 #ifdef USE_CUDNN
 			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 #endif
-			CUDA_CHECK(cudaSetDevice(device_));
+			if (device_ >= 0)
+			{
+				CUDA_CHECK(cudaSetDevice(device_));
+			}
 #endif
 			auto lines = read_param_file(param_file);
 			if (lines.size() <= 0)
@@ -321,7 +327,10 @@ namespace glasssix
 #ifdef USE_CUDNN
 			CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
 #endif
-			CUDA_CHECK(cudaSetDevice(device_));
+			if (device_ >= 0)
+			{
+				CUDA_CHECK(cudaSetDevice(device_));
+			}
 #endif
 		}
 
