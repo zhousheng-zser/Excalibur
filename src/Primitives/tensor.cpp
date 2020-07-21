@@ -26,6 +26,7 @@ namespace glasssix
 			data_ = nullptr;
 			order_ = order;
 			allocator_ = allocator;
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
 
