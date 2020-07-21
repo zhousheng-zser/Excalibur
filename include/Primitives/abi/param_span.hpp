@@ -31,8 +31,8 @@ namespace glasssix::exposing::impl
 	template<typename T, typename = void>
 	struct is_param_span : std::false_type {};
 
-	template<template<typename> typename ParamSpan, typename T>
-	struct is_param_span<ParamSpan<T>> : std::is_same<ParamSpan<T>, param_span<T>> {};
+	template<typename T>
+	struct is_param_span<param_span<T>> : std::true_type {};
 
 	/// <summary>
 	/// Checks whether a type is a span.
