@@ -53,6 +53,10 @@ namespace glasssix
 			{
 				std::for_each(cache_.begin(), cache_.end(), [](const std::shared_ptr<database_cache> item) { item->mark_for_deletion(); });
 				cache_.clear();
+
+				// Removes all remaining contents.
+				utils::safe_remove_directories(cache_directory_);
+				utils::safe_remove_directories(database_directory_);
 			}
 
 			void load_databases()
@@ -196,6 +200,9 @@ namespace glasssix
 						return item;
 					}
 				}
+
+				utils::safe_create_directories(cache_directory_);
+				utils::safe_create_directories(database_directory_);
 
 				// Generates a new empty database.
 				auto uuid = boost::uuids::to_string(boost::uuids::random_generator{}());
