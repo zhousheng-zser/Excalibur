@@ -1,7 +1,6 @@
 #pragma once
 #ifndef _JULIUS_DSDOT_HPP_
 #define _JULIUS_DSDOT_HPP_
-#include "simd_helper.hpp"
 
 namespace glasssix
 {

@@ -1,4 +1,5 @@
 #include "julius_asum.hpp"
+#include "Primitives/simd_types.hpp"
 #include <cmath>
 
 namespace glasssix

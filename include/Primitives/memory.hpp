@@ -2,9 +2,13 @@
 
 #include "dllexport.hpp"
 
+#include <utility>
 #include <cstdint>
 #include <cstddef>
 #include <type_traits>
+
+// For pointer alignment
+const std::size_t MALLOC_ALIGN = 32;
 
 namespace glasssix
 {
@@ -23,20 +27,20 @@ namespace glasssix
 		/// Throwing exceptions across DLL boundaries is very dangerous for possible different C++ standard libraries.
 		/// Thus, we simply terminate the process if any fatal error occurs.
 		/// </remarks>
-		[[noreturn]] EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate();
+		[[noreturn]] EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate() noexcept;
 
 		/// <summary>
 		/// Allocates a piece of memory on the heap.
 		/// </summary>
 		/// <param name="size">The size in bytes</param>
 		/// <returns>The memory pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size);
+		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size) noexcept;
 
 		/// <summary>
 		/// Frees a piece of memory on the heap.
 		/// </summary>
 		/// <param name="memory">The memory pointer</param>
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory);
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory) noexcept;
 
 		/// <summary>
 		/// Frees a piece of memory on the heap.
@@ -44,7 +48,21 @@ namespace glasssix
 		/// <param name="memory">The memory pointer</param>
 		/// <param name="size">The size in bytes</param>
 		/// <returns>The memory pointer</returns>
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size);
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size) noexcept;
+
+		/// <summary>
+		/// Allocates a piece of memory with aligned size.
+		/// </summary>
+		/// <param name="size">The size in bytes</param>
+		/// <param name="alignment">Pointer alignment size</param>
+		/// <returns>The aligned-pointer</returns>
+		EXPORT_EXCALIBUR_PRIMITIVES void* aligned_heap_alloc(std::size_t size, std::size_t alignment = MALLOC_ALIGN);
+
+		/// <summary>
+			/// Deallocates a piece of aligned memory.
+			/// </summary>
+			/// <param name="memblock">The aligned-pointer</param>
+		EXPORT_EXCALIBUR_PRIMITIVES void aligned_heap_free(void *memblock);
 
 		/// <summary>
 		/// Allocates a piece of memory which contains elements of the specified type on the heap.
@@ -66,7 +84,7 @@ namespace glasssix
 		/// <param name="...args">The arguments</param>
 		/// <returns>The memory pointer at the first object</returns>
 		template<typename Object, typename... Args>
-		auto heap_alloc_objects(std::size_t size, Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		auto heap_alloc_objects(std::size_t size, Args&&... args) -> std::enable_if_t<std::is_constructible<Object, Args...>::value, Object*>
 		{
 			auto result = static_cast<Object*>(heap_alloc(sizeof(Object) * size));
 			auto end_ptr = result + size;
@@ -87,7 +105,7 @@ namespace glasssix
 		/// <param name="...args">The arguments</param>
 		/// <returns>The object pointer</returns>
 		template<typename Object, typename... Args>
-		auto heap_alloc_object(Args&&... args) -> std::enable_if_t<std::is_constructible_v<Object, Args...>, Object*>
+		auto heap_alloc_object(Args&&... args) -> std::enable_if_t<std::is_constructible<Object, Args...>::value, Object*>
 		{
 			auto result = static_cast<Object*>(heap_alloc(sizeof(Object)));
 

@@ -1,4 +1,5 @@
 #include "julius_gemv.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {
@@ -118,7 +119,7 @@ namespace glasssix
 							re[ii] = mm_fmadd_ps(mA, mx, re[ii]);
 						}
 					}
-					q_type q[simd_registers];
+					float q[simd_registers];
 					for (int ii = 0; ii < simd_registers; ii++)
 					{
 						y[(i + ii) * incy] = alpha * _mm256_sumall_ps(re[ii]) + beta * y[(i + ii) * incy];

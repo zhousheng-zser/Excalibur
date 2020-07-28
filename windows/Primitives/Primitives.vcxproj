@@ -1,14 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -22,45 +14,27 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{8DA2420A-7980-4FEB-B6B0-A58430C950FF}</ProjectGuid>
     <RootNamespace>Primitives</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.props" />
   </ImportGroup>
   <ImportGroup Label="Shared">
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -71,65 +45,32 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <TargetName>lib$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)..\include\$(ProjectName);$(IncludePath)</IncludePath>
+    <IncludePath>$(CUDA_PATH)\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+    <TargetName>lib$(ProjectName)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;FMT_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <SubSystem>Console</SubSystem>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
+      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -138,29 +79,105 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;FMT_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>
+      </SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Primitives\abi_and_consume.hpp" />
-    <ClInclude Include="..\..\include\Primitives\allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\component_loader.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\guid.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_span.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
+    <ClInclude Include="..\..\include\Primitives\blas.hpp" />
+    <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\filesystem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\fmt\chrono.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\color.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\compile.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\core.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\format-inl.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\format.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\locale.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\os.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\ostream.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\posix.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\printf.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\ranges.h" />
+    <ClInclude Include="..\..\include\Primitives\fmt\time.h" />
+    <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\environment.hpp" />
+    <ClInclude Include="..\..\include\Primitives\hash_utils.hpp" />
+    <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\iterators.hpp" />
+    <ClInclude Include="..\..\include\Primitives\logger.hpp" />
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
     <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
     <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
+    <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
+    <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
+    <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp" />
+    <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\fmt\format.cc" />
+    <ClCompile Include="..\..\src\Primitives\fmt\os.cc" />
+    <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
+    <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
+    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp" />
+    <ClCompile Include="..\..\src\Primitives\tensor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="..\..\include\Primitives\abi\sha3.hpp">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\..\include\Primitives\abi\g6_abi_types.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 10.1.targets" />
   </ImportGroup>
 </Project>

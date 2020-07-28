@@ -1,4 +1,5 @@
 #include "julius_axpby.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {

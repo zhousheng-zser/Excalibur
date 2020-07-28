@@ -1,0 +1,131 @@
+glsv1 Rrtina_Face_Net
+129 148
+Input            data             0 1 data 0=320 1=240 2=3 3=0,0,0 4=1
+Convolution      mobilenet0_conv0_fwd 1 1 data mobilenet0_conv0_fwd 0=8 1=3 2=1 3=2 4=1 5=1 6=216
+ReLU             mobilenet0_relu0_fwd 1 1 mobilenet0_conv0_fwd mobilenet0_relu0_fwd
+ConvolutionDepthwise mobilenet0_conv1_fwd 1 1 mobilenet0_relu0_fwd mobilenet0_conv1_fwd 0=8 1=3 2=1 3=1 4=1 5=1 6=72 7=8
+ReLU             mobilenet0_relu1_fwd 1 1 mobilenet0_conv1_fwd mobilenet0_relu1_fwd
+Convolution      mobilenet0_conv2_fwd 1 1 mobilenet0_relu1_fwd mobilenet0_conv2_fwd 0=16 1=1 2=1 3=1 4=0 5=1 6=128
+ReLU             mobilenet0_relu2_fwd 1 1 mobilenet0_conv2_fwd mobilenet0_relu2_fwd
+ConvolutionDepthwise mobilenet0_conv3_fwd 1 1 mobilenet0_relu2_fwd mobilenet0_conv3_fwd 0=16 1=3 2=1 3=2 4=1 5=1 6=144 7=16
+ReLU             mobilenet0_relu3_fwd 1 1 mobilenet0_conv3_fwd mobilenet0_relu3_fwd
+Convolution      mobilenet0_conv4_fwd 1 1 mobilenet0_relu3_fwd mobilenet0_conv4_fwd 0=32 1=1 2=1 3=1 4=0 5=1 6=512
+ReLU             mobilenet0_relu4_fwd 1 1 mobilenet0_conv4_fwd mobilenet0_relu4_fwd
+ConvolutionDepthwise mobilenet0_conv5_fwd 1 1 mobilenet0_relu4_fwd mobilenet0_conv5_fwd 0=32 1=3 2=1 3=1 4=1 5=1 6=288 7=32
+ReLU             mobilenet0_relu5_fwd 1 1 mobilenet0_conv5_fwd mobilenet0_relu5_fwd
+Convolution      mobilenet0_conv6_fwd 1 1 mobilenet0_relu5_fwd mobilenet0_conv6_fwd 0=32 1=1 2=1 3=1 4=0 5=1 6=1024
+ReLU             mobilenet0_relu6_fwd 1 1 mobilenet0_conv6_fwd mobilenet0_relu6_fwd
+ConvolutionDepthwise mobilenet0_conv7_fwd 1 1 mobilenet0_relu6_fwd mobilenet0_conv7_fwd 0=32 1=3 2=1 3=2 4=1 5=1 6=288 7=32
+ReLU             mobilenet0_relu7_fwd 1 1 mobilenet0_conv7_fwd mobilenet0_relu7_fwd
+Convolution      mobilenet0_conv8_fwd 1 1 mobilenet0_relu7_fwd mobilenet0_conv8_fwd 0=64 1=1 2=1 3=1 4=0 5=1 6=2048
+ReLU             mobilenet0_relu8_fwd 1 1 mobilenet0_conv8_fwd mobilenet0_relu8_fwd
+ConvolutionDepthwise mobilenet0_conv9_fwd 1 1 mobilenet0_relu8_fwd mobilenet0_conv9_fwd 0=64 1=3 2=1 3=1 4=1 5=1 6=576 7=64
+ReLU             mobilenet0_relu9_fwd 1 1 mobilenet0_conv9_fwd mobilenet0_relu9_fwd
+Convolution      mobilenet0_conv10_fwd 1 1 mobilenet0_relu9_fwd mobilenet0_conv10_fwd 0=64 1=1 2=1 3=1 4=0 5=1 6=4096
+ReLU             mobilenet0_relu10_fwd 1 1 mobilenet0_conv10_fwd mobilenet0_relu10_fwd
+Split            mobilenet0_relu10_fwd_mobilenet0_relu10_fwd_0_split 1 2 mobilenet0_relu10_fwd mobilenet0_relu10_fwd_mobilenet0_relu10_fwd_0_split_0 mobilenet0_relu10_fwd_mobilenet0_relu10_fwd_0_split_1
+ConvolutionDepthwise mobilenet0_conv11_fwd 1 1 mobilenet0_relu10_fwd_mobilenet0_relu10_fwd_0_split_0 mobilenet0_conv11_fwd 0=64 1=3 2=1 3=2 4=1 5=1 6=576 7=64
+ReLU             mobilenet0_relu11_fwd 1 1 mobilenet0_conv11_fwd mobilenet0_relu11_fwd
+Convolution      mobilenet0_conv12_fwd 1 1 mobilenet0_relu11_fwd mobilenet0_conv12_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=8192
+ReLU             mobilenet0_relu12_fwd 1 1 mobilenet0_conv12_fwd mobilenet0_relu12_fwd
+ConvolutionDepthwise mobilenet0_conv13_fwd 1 1 mobilenet0_relu12_fwd mobilenet0_conv13_fwd 0=128 1=3 2=1 3=1 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu13_fwd 1 1 mobilenet0_conv13_fwd mobilenet0_relu13_fwd
+Convolution      mobilenet0_conv14_fwd 1 1 mobilenet0_relu13_fwd mobilenet0_conv14_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             mobilenet0_relu14_fwd 1 1 mobilenet0_conv14_fwd mobilenet0_relu14_fwd
+ConvolutionDepthwise mobilenet0_conv15_fwd 1 1 mobilenet0_relu14_fwd mobilenet0_conv15_fwd 0=128 1=3 2=1 3=1 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu15_fwd 1 1 mobilenet0_conv15_fwd mobilenet0_relu15_fwd
+Convolution      mobilenet0_conv16_fwd 1 1 mobilenet0_relu15_fwd mobilenet0_conv16_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             mobilenet0_relu16_fwd 1 1 mobilenet0_conv16_fwd mobilenet0_relu16_fwd
+ConvolutionDepthwise mobilenet0_conv17_fwd 1 1 mobilenet0_relu16_fwd mobilenet0_conv17_fwd 0=128 1=3 2=1 3=1 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu17_fwd 1 1 mobilenet0_conv17_fwd mobilenet0_relu17_fwd
+Convolution      mobilenet0_conv18_fwd 1 1 mobilenet0_relu17_fwd mobilenet0_conv18_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             mobilenet0_relu18_fwd 1 1 mobilenet0_conv18_fwd mobilenet0_relu18_fwd
+ConvolutionDepthwise mobilenet0_conv19_fwd 1 1 mobilenet0_relu18_fwd mobilenet0_conv19_fwd 0=128 1=3 2=1 3=1 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu19_fwd 1 1 mobilenet0_conv19_fwd mobilenet0_relu19_fwd
+Convolution      mobilenet0_conv20_fwd 1 1 mobilenet0_relu19_fwd mobilenet0_conv20_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             mobilenet0_relu20_fwd 1 1 mobilenet0_conv20_fwd mobilenet0_relu20_fwd
+ConvolutionDepthwise mobilenet0_conv21_fwd 1 1 mobilenet0_relu20_fwd mobilenet0_conv21_fwd 0=128 1=3 2=1 3=1 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu21_fwd 1 1 mobilenet0_conv21_fwd mobilenet0_relu21_fwd
+Convolution      mobilenet0_conv22_fwd 1 1 mobilenet0_relu21_fwd mobilenet0_conv22_fwd 0=128 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             mobilenet0_relu22_fwd 1 1 mobilenet0_conv22_fwd mobilenet0_relu22_fwd
+Split            mobilenet0_relu22_fwd_mobilenet0_relu22_fwd_0_split 1 2 mobilenet0_relu22_fwd mobilenet0_relu22_fwd_mobilenet0_relu22_fwd_0_split_0 mobilenet0_relu22_fwd_mobilenet0_relu22_fwd_0_split_1
+ConvolutionDepthwise mobilenet0_conv23_fwd 1 1 mobilenet0_relu22_fwd_mobilenet0_relu22_fwd_0_split_0 mobilenet0_conv23_fwd 0=128 1=3 2=1 3=2 4=1 5=1 6=1152 7=128
+ReLU             mobilenet0_relu23_fwd 1 1 mobilenet0_conv23_fwd mobilenet0_relu23_fwd
+Convolution      mobilenet0_conv24_fwd 1 1 mobilenet0_relu23_fwd mobilenet0_conv24_fwd 0=256 1=1 2=1 3=1 4=0 5=1 6=32768
+ReLU             mobilenet0_relu24_fwd 1 1 mobilenet0_conv24_fwd mobilenet0_relu24_fwd
+ConvolutionDepthwise mobilenet0_conv25_fwd 1 1 mobilenet0_relu24_fwd mobilenet0_conv25_fwd 0=256 1=3 2=1 3=1 4=1 5=1 6=2304 7=256
+ReLU             mobilenet0_relu25_fwd 1 1 mobilenet0_conv25_fwd mobilenet0_relu25_fwd
+Convolution      mobilenet0_conv26_fwd 1 1 mobilenet0_relu25_fwd mobilenet0_conv26_fwd 0=256 1=1 2=1 3=1 4=0 5=1 6=65536
+ReLU             mobilenet0_relu26_fwd 1 1 mobilenet0_conv26_fwd mobilenet0_relu26_fwd
+Convolution      rf_c3_lateral    1 1 mobilenet0_relu26_fwd rf_c3_lateral 0=64 1=1 2=1 3=1 4=0 5=1 6=16384
+ReLU             rf_c3_lateral_relu 1 1 rf_c3_lateral rf_c3_lateral_relu
+Split            rf_c3_lateral_relu_rf_c3_lateral_relu_0_split 1 3 rf_c3_lateral_relu rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_0 rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_1 rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_2
+Convolution      rf_c3_det_conv1  1 1 rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_0 rf_c3_det_conv1 0=32 1=3 2=1 3=1 4=1 5=1 6=18432
+Convolution      rf_c3_det_context_conv1 1 1 rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_1 rf_c3_det_context_conv1 0=16 1=3 2=1 3=1 4=1 5=1 6=9216
+ReLU             rf_c3_det_context_conv1_relu 1 1 rf_c3_det_context_conv1 rf_c3_det_context_conv1_relu
+Split            rf_c3_det_context_conv1_relu_rf_c3_det_context_conv1_relu_0_split 1 2 rf_c3_det_context_conv1_relu rf_c3_det_context_conv1_relu_rf_c3_det_context_conv1_relu_0_split_0 rf_c3_det_context_conv1_relu_rf_c3_det_context_conv1_relu_0_split_1
+Convolution      rf_c3_det_context_conv2 1 1 rf_c3_det_context_conv1_relu_rf_c3_det_context_conv1_relu_0_split_0 rf_c3_det_context_conv2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Convolution      rf_c3_det_context_conv3_1 1 1 rf_c3_det_context_conv1_relu_rf_c3_det_context_conv1_relu_0_split_1 rf_c3_det_context_conv3_1 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+ReLU             rf_c3_det_context_conv3_1_relu 1 1 rf_c3_det_context_conv3_1 rf_c3_det_context_conv3_1_relu
+Convolution      rf_c3_det_context_conv3_2 1 1 rf_c3_det_context_conv3_1_relu rf_c3_det_context_conv3_2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Concat           rf_c3_det_concat 3 1 rf_c3_det_conv1 rf_c3_det_context_conv2 rf_c3_det_context_conv3_2 rf_c3_det_concat 0=-1
+ReLU             rf_c3_det_concat_relu 1 1 rf_c3_det_concat rf_c3_det_concat_relu
+Split            rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split 1 3 rf_c3_det_concat_relu rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_0 rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_1 rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_2
+Convolution      face_rpn_cls_score_stride32 1 1 rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_0 face_rpn_cls_score_stride32 0=4 1=1 2=1 3=1 4=0 5=1 6=256
+Reshape          face_rpn_cls_score_reshape_stride32 1 1 face_rpn_cls_score_stride32 face_rpn_cls_score_reshape_stride32 0=0 1=-1 2=2 3=0
+Softmax          face_rpn_cls_prob_stride32 1 1 face_rpn_cls_score_reshape_stride32 face_rpn_cls_prob_stride32 0=0 1=1
+Reshape          face_rpn_cls_prob_reshape_stride32 1 1 face_rpn_cls_prob_stride32 face_rpn_cls_prob_reshape_stride32 0=0 1=-1 2=4 3=0
+Convolution      face_rpn_bbox_pred_stride32 1 1 rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_1 face_rpn_bbox_pred_stride32 0=8 1=1 2=1 3=1 4=0 5=1 6=512
+Convolution      face_rpn_landmark_pred_stride32 1 1 rf_c3_det_concat_relu_rf_c3_det_concat_relu_0_split_2 face_rpn_landmark_pred_stride32 0=20 1=1 2=1 3=1 4=0 5=1 6=1280
+Convolution      rf_c2_lateral    1 1 mobilenet0_relu22_fwd_mobilenet0_relu22_fwd_0_split_1 rf_c2_lateral 0=64 1=1 2=1 3=1 4=0 5=1 6=8192
+ReLU             rf_c2_lateral_relu 1 1 rf_c2_lateral rf_c2_lateral_relu
+Split            rf_c2_lateral_relu_rf_c2_lateral_relu_0_split 1 2 rf_c2_lateral_relu rf_c2_lateral_relu_rf_c2_lateral_relu_0_split_0 rf_c2_lateral_relu_rf_c2_lateral_relu_0_split_1
+DeconvolutionDepthWise rf_c3_upsampling 1 1 rf_c3_lateral_relu_rf_c3_lateral_relu_0_split_2 rf_c3_upsampling 0=64 1=4 2=1 3=2 4=1 5=0 6=1024 7=64
+Crop             crop0            2 1 rf_c3_upsampling rf_c2_lateral_relu_rf_c2_lateral_relu_0_split_0 crop0 0=0 1=0
+Eltwise          _plus0           2 1 rf_c2_lateral_relu_rf_c2_lateral_relu_0_split_1 crop0 _plus0 0=1 -23301=0
+Convolution      rf_c2_aggr       1 1 _plus0 rf_c2_aggr 0=64 1=3 2=1 3=1 4=1 5=1 6=36864
+ReLU             rf_c2_aggr_relu  1 1 rf_c2_aggr rf_c2_aggr_relu
+Split            rf_c2_aggr_relu_rf_c2_aggr_relu_0_split 1 3 rf_c2_aggr_relu rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_0 rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_1 rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_2
+Convolution      rf_c2_det_conv1  1 1 rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_0 rf_c2_det_conv1 0=32 1=3 2=1 3=1 4=1 5=1 6=18432
+Convolution      rf_c2_det_context_conv1 1 1 rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_1 rf_c2_det_context_conv1 0=16 1=3 2=1 3=1 4=1 5=1 6=9216
+ReLU             rf_c2_det_context_conv1_relu 1 1 rf_c2_det_context_conv1 rf_c2_det_context_conv1_relu
+Split            rf_c2_det_context_conv1_relu_rf_c2_det_context_conv1_relu_0_split 1 2 rf_c2_det_context_conv1_relu rf_c2_det_context_conv1_relu_rf_c2_det_context_conv1_relu_0_split_0 rf_c2_det_context_conv1_relu_rf_c2_det_context_conv1_relu_0_split_1
+Convolution      rf_c2_det_context_conv2 1 1 rf_c2_det_context_conv1_relu_rf_c2_det_context_conv1_relu_0_split_0 rf_c2_det_context_conv2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Convolution      rf_c2_det_context_conv3_1 1 1 rf_c2_det_context_conv1_relu_rf_c2_det_context_conv1_relu_0_split_1 rf_c2_det_context_conv3_1 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+ReLU             rf_c2_det_context_conv3_1_relu 1 1 rf_c2_det_context_conv3_1 rf_c2_det_context_conv3_1_relu
+Convolution      rf_c2_det_context_conv3_2 1 1 rf_c2_det_context_conv3_1_relu rf_c2_det_context_conv3_2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Concat           rf_c2_det_concat 3 1 rf_c2_det_conv1 rf_c2_det_context_conv2 rf_c2_det_context_conv3_2 rf_c2_det_concat 0=-1
+ReLU             rf_c2_det_concat_relu 1 1 rf_c2_det_concat rf_c2_det_concat_relu
+Split            rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split 1 3 rf_c2_det_concat_relu rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_0 rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_1 rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_2
+Convolution      face_rpn_cls_score_stride16 1 1 rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_0 face_rpn_cls_score_stride16 0=4 1=1 2=1 3=1 4=0 5=1 6=256
+Reshape          face_rpn_cls_score_reshape_stride16 1 1 face_rpn_cls_score_stride16 face_rpn_cls_score_reshape_stride16 0=0 1=-1 2=2 3=0
+Softmax          face_rpn_cls_prob_stride16 1 1 face_rpn_cls_score_reshape_stride16 face_rpn_cls_prob_stride16 0=0 1=1
+Reshape          face_rpn_cls_prob_reshape_stride16 1 1 face_rpn_cls_prob_stride16 face_rpn_cls_prob_reshape_stride16 0=0 1=-1 2=4 3=0
+Convolution      face_rpn_bbox_pred_stride16 1 1 rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_1 face_rpn_bbox_pred_stride16 0=8 1=1 2=1 3=1 4=0 5=1 6=512
+Convolution      face_rpn_landmark_pred_stride16 1 1 rf_c2_det_concat_relu_rf_c2_det_concat_relu_0_split_2 face_rpn_landmark_pred_stride16 0=20 1=1 2=1 3=1 4=0 5=1 6=1280
+Convolution      rf_c1_red_conv   1 1 mobilenet0_relu10_fwd_mobilenet0_relu10_fwd_0_split_1 rf_c1_red_conv 0=64 1=1 2=1 3=1 4=0 5=1 6=4096
+ReLU             rf_c1_red_conv_relu 1 1 rf_c1_red_conv rf_c1_red_conv_relu
+Split            rf_c1_red_conv_relu_rf_c1_red_conv_relu_0_split 1 2 rf_c1_red_conv_relu rf_c1_red_conv_relu_rf_c1_red_conv_relu_0_split_0 rf_c1_red_conv_relu_rf_c1_red_conv_relu_0_split_1
+DeconvolutionDepthWise rf_c2_upsampling 1 1 rf_c2_aggr_relu_rf_c2_aggr_relu_0_split_2 rf_c2_upsampling 0=64 1=4 2=1 3=2 4=1 5=0 6=1024 7=64
+Crop             crop1            2 1 rf_c2_upsampling rf_c1_red_conv_relu_rf_c1_red_conv_relu_0_split_0 crop1 0=0 1=0
+Eltwise          _plus1           2 1 rf_c1_red_conv_relu_rf_c1_red_conv_relu_0_split_1 crop1 _plus1 0=1 -23301=0
+Convolution      rf_c1_aggr       1 1 _plus1 rf_c1_aggr 0=64 1=3 2=1 3=1 4=1 5=1 6=36864
+ReLU             rf_c1_aggr_relu  1 1 rf_c1_aggr rf_c1_aggr_relu
+Split            rf_c1_aggr_relu_rf_c1_aggr_relu_0_split 1 2 rf_c1_aggr_relu rf_c1_aggr_relu_rf_c1_aggr_relu_0_split_0 rf_c1_aggr_relu_rf_c1_aggr_relu_0_split_1
+Convolution      rf_c1_det_conv1  1 1 rf_c1_aggr_relu_rf_c1_aggr_relu_0_split_0 rf_c1_det_conv1 0=32 1=3 2=1 3=1 4=1 5=1 6=18432
+Convolution      rf_c1_det_context_conv1 1 1 rf_c1_aggr_relu_rf_c1_aggr_relu_0_split_1 rf_c1_det_context_conv1 0=16 1=3 2=1 3=1 4=1 5=1 6=9216
+ReLU             rf_c1_det_context_conv1_relu 1 1 rf_c1_det_context_conv1 rf_c1_det_context_conv1_relu
+Split            rf_c1_det_context_conv1_relu_rf_c1_det_context_conv1_relu_0_split 1 2 rf_c1_det_context_conv1_relu rf_c1_det_context_conv1_relu_rf_c1_det_context_conv1_relu_0_split_0 rf_c1_det_context_conv1_relu_rf_c1_det_context_conv1_relu_0_split_1
+Convolution      rf_c1_det_context_conv2 1 1 rf_c1_det_context_conv1_relu_rf_c1_det_context_conv1_relu_0_split_0 rf_c1_det_context_conv2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Convolution      rf_c1_det_context_conv3_1 1 1 rf_c1_det_context_conv1_relu_rf_c1_det_context_conv1_relu_0_split_1 rf_c1_det_context_conv3_1 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+ReLU             rf_c1_det_context_conv3_1_relu 1 1 rf_c1_det_context_conv3_1 rf_c1_det_context_conv3_1_relu
+Convolution      rf_c1_det_context_conv3_2 1 1 rf_c1_det_context_conv3_1_relu rf_c1_det_context_conv3_2 0=16 1=3 2=1 3=1 4=1 5=1 6=2304
+Concat           rf_c1_det_concat 3 1 rf_c1_det_conv1 rf_c1_det_context_conv2 rf_c1_det_context_conv3_2 rf_c1_det_concat 0=-1
+ReLU             rf_c1_det_concat_relu 1 1 rf_c1_det_concat rf_c1_det_concat_relu
+Split            rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split 1 3 rf_c1_det_concat_relu rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_0 rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_1 rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_2
+Convolution      face_rpn_cls_score_stride8 1 1 rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_0 face_rpn_cls_score_stride8 0=4 1=1 2=1 3=1 4=0 5=1 6=256
+Reshape          face_rpn_cls_score_reshape_stride8 1 1 face_rpn_cls_score_stride8 face_rpn_cls_score_reshape_stride8 0=0 1=-1 2=2 3=0
+Softmax          face_rpn_cls_prob_stride8 1 1 face_rpn_cls_score_reshape_stride8 face_rpn_cls_prob_stride8 0=0 1=1
+Reshape          face_rpn_cls_prob_reshape_stride8 1 1 face_rpn_cls_prob_stride8 face_rpn_cls_prob_reshape_stride8 0=0 1=-1 2=4 3=0
+Convolution      face_rpn_bbox_pred_stride8 1 1 rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_1 face_rpn_bbox_pred_stride8 0=8 1=1 2=1 3=1 4=0 5=1 6=512
+Convolution      face_rpn_landmark_pred_stride8 1 1 rf_c1_det_concat_relu_rf_c1_det_concat_relu_0_split_2 face_rpn_landmark_pred_stride8 0=20 1=1 2=1 3=1 4=0 5=1 6=1280
