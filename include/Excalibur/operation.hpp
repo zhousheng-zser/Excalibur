@@ -175,7 +175,7 @@ namespace glasssix
 				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 			{
-				forward_cpu_f32(bottoms, tops);
+				NOT_IMPLEMENTED;
 			};
 
 			virtual void forward_cpu_d64(const std::vector<std::shared_ptr<memory::tensor<double>>>& bottoms,
@@ -194,7 +194,7 @@ namespace glasssix
 				const std::vector<std::shared_ptr<memory::tensor<double>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<double>>>& tops)
 			{
-				forward_cpu_d64(bottoms, tops);
+				NOT_IMPLEMENTED;
 			};
 
 			virtual void forward_cpu_f16(const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,

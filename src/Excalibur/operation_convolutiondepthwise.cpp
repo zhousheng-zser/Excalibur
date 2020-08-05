@@ -1,6 +1,7 @@
 #include "../../include/Excalibur/operation_reflector.hpp"
 #include "../../include/Excalibur/operation_convolutiondepthwise.hpp"
-#include "../../include/Excalibur/operation_make_border.hpp"
+#include "./operation_make_border.hpp"
+#include <algorithm>
 #include "../../include/Primitives/profiler.hpp"
 using namespace std;
 
@@ -291,8 +292,8 @@ namespace glasssix
 					break;
 				}
 			}
-		}
 
+		}
 
 		template<typename Dtype>
 		int operation_convolutiondepthwise<Dtype>::dequantize_int8(const std::shared_ptr<memory::tensor<signed char>>& src,
@@ -331,101 +332,7 @@ namespace glasssix
 			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
-			CHECK_EQ(bottoms.size(), 1);
-			CHECK_EQ(tops.size(), 1);
-			CHECK_EQ(output_channel_, group_);
-			memory::orderType order = bottoms[0]->order();
-			num_ = bottoms[0]->num();
-			input_dim_h_ = bottoms[0]->height();
-			input_dim_w_ = bottoms[0]->width();
-			input_channel_ = bottoms[0]->channels();
-			CHECK_EQ(input_channel_, output_channel_);
-			output_dim_h_ = (input_dim_h_ + pad_bottom_ + pad_top_ - kernel_size_h_) / stride_h_ + 1;
-			output_dim_w_ = (input_dim_w_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_ + 1;
-			tops[0].reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_}, params_.device_, order, nullptr));
-
-
-			if (int8_scale_term_ == 1) {
-				dequantize_int8(weights_i8_[0], weights_f32_[0], weights_scaletable_i8_);
-			}
-
-			if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 1 && stride_w_ == 1))
-			{
-				forward_k3s1_f32(bottoms[0], tops[0]);
-			}
-			else if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 2 && stride_w_ == 2))
-			{
-				forward_k3s2_f32(bottoms[0], tops[0]);
-			}
-			else
-			{
-				const float* bottom_data = bottoms[0]->cpu_data();
-				const float* weights_data = weights_f32_[0]->cpu_data();
-				const float* bias_data = nullptr;
-				float* top_data = nullptr;
-				if (bias_term_)
-				{
-					bias_data = weights_f32_[1]->cpu_data();
-				}
-				switch (bottoms[0]->order())
-				{
-				case memory::NCHW:
-					tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_},
-						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-					top_data = tops[0]->mutable_cpu_data();
-					for (size_t n = 0; n < num_; n++)
-					{
-
-#ifdef _OPENMP 
-#pragma omp parallel for num_threads(2) 
-#endif
-						for (int i = 0; i < tops[0]->count(); i++)
-						{
-							const int pw = i % output_dim_w_;
-							const int ph = (i / output_dim_w_) % output_dim_h_;
-							const int c = (i / output_dim_w_ / output_dim_h_) % output_channel_;
-							const int n_step = i / output_dim_w_ / output_dim_h_ / output_channel_;
-							int hstart = ph * stride_h_ - pad_top_;
-							int wstart = pw * stride_w_ - pad_left_;
-							int hend = std::min(hstart + kernel_size_h_, input_dim_h_ + pad_bottom_);
-							int wend = std::min(wstart + kernel_size_w_, input_dim_w_ + pad_right_);
-							hstart = std::max(hstart, 0);
-							wstart = std::max(wstart, 0);
-							hend = std::min(hend, input_dim_h_);
-							wend = std::min(wend, input_dim_w_);
-							float aveval = 0;
-							const float* bottom_slice =
-								bottom_data + n * bottoms[0]->count(1, 4) + (n_step * output_channel_ + c) * input_dim_h_ * input_dim_w_;
-							const float* weight_slice =
-								weights_data + c * kernel_size_h_ * kernel_size_w_;
-							int khstart = hend < kernel_size_h_ ? kernel_size_h_ - hend : 0;
-							int kwstart = wend < kernel_size_w_ ? kernel_size_w_ - wend : 0;
-							for (int h = hstart; h < hend; ++h)
-							{
-								for (int w = wstart; w < wend; ++w)
-								{
-									aveval += bottom_slice[h * input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * kernel_size_w_ + (kwstart + w - wstart)];
-								}
-							}
-							if (bias_term_)
-							{
-								aveval += bias_data[c];
-							}
-							top_data[n * bottoms[0]->count(1, 4) + i] = aveval;
-						}
-					}
-
-					break;
-				case memory::NHWC:
-					tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_channel_},
-						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-					NOT_IMPLEMENTED;
-					break;
-				default:
-					NOT_IMPLEMENTED;
-					break;
-				}
-			}
+			NOT_IMPLEMENTED;
 		}
 
 		template<typename Dtype>

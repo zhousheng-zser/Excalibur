@@ -67,3 +67,4 @@
 *.vs
 *.CopyComplete
 *.bin
+build/

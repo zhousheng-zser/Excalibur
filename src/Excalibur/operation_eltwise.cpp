@@ -64,7 +64,7 @@ namespace glasssix
 				}
 				break;
 			case MAX:
-				//math_functions::cpu_set(count, static_cast<float>(-FLT_MAX), top_data);
+				math_functions::cpu_set(count, static_cast<float>(-FLT_MAX), top_data);
 				bottom_data_a = bottoms[0]->cpu_data();
 				bottom_data_b = bottoms[1]->cpu_data();
 				for (int idx = 0; idx < count; ++idx) 
@@ -90,14 +90,23 @@ namespace glasssix
 				break;
 			default:
 				LOG(FATAL) << "Unknown elementwise operation.";
-				break;
 			}
 		}
 
 
-#ifndef USE_CUDA
-		STUB_GPU(operation_eltwise);
-#endif
+		template<typename Dtype>
+		void operation_eltwise<Dtype>::forward_gpu_f32(
+#ifdef USE_CUDA
+			cublasHandle_t &cublas_handle_,
+#ifdef USE_CUDNN
+			cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
+		{
+			NOT_IMPLEMENTED;
+		}
 
 		INSTANCE_CLASS(operation_eltwise);
 		REGISTE(operation_eltwise);

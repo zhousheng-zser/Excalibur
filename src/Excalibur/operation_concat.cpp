@@ -157,7 +157,7 @@ namespace glasssix
 		template<typename Dtype>
 		void operation_concat<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA
-			cublasHandle_t& cublas_handle_,
+			cublasHandle_t &cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
