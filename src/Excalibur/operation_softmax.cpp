@@ -49,12 +49,12 @@ namespace glasssix
 				if (bottoms[i]->data_shape().size() <= 2)
 				{
 					step = 1;
-					scale_.reset(new memory::tensor<float>(std::vector<int>{num, 1}, -1, memory::NCHW, nullptr));
+					this->scale_.reset(new memory::tensor<float>(std::vector<int>{num, 1}, -1, memory::NCHW, nullptr));
 				}
 				else
 				{
 					step = height * width;
-					scale_.reset(new memory::tensor<float>(std::vector<int>{num, 1, height, width}, -1, memory::NCHW, nullptr));
+					this->scale_.reset(new memory::tensor<float>(std::vector<int>{num, 1, height, width}, -1, memory::NCHW, nullptr));
 				}
 
 				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));

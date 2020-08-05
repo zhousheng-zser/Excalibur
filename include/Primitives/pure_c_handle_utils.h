@@ -1,13 +1,15 @@
 #pragma once
 
 #ifdef __cplusplus
+
 #include <utility>
+#include <type_traits>
 
 extern "C"
 {
 #endif
 
-#define DEFINE_PURE_C_HANDLE(name) typedef struct tag_##name##_handle {} *name##_handle
+#define DEFINE_PURE_C_HANDLE(name) typedef /*struct tag_##name##_handle { void* opaque; }*/void* name##_handle
 
 #ifdef __cplusplus
 }
@@ -19,15 +21,15 @@ namespace glasssix
 	namespace pure_c
 	{
 		template<typename Handle, typename T>
-		constexpr auto to_handle(T* obj)
+		constexpr Handle to_handle(T* obj)
 		{
-			return reinterpret_cast<Handle>(obj);
+			return Handle{ obj };
 		}
 
 		template<typename T, typename Handle>
-		constexpr auto from_handle(Handle&& handle)
+		constexpr auto from_handle(Handle handle)
 		{
-			return reinterpret_cast<T*>(std::forward<Handle>(handle));
+			return static_cast<T*>(handle);
 		}
 	}
 }

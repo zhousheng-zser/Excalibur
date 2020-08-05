@@ -9,7 +9,7 @@ namespace glasssix
 		template<typename Dtype>
 		operation_sigmoid<Dtype>::operation_sigmoid(const operation_param& param) : operation<Dtype>(param)
 		{
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>

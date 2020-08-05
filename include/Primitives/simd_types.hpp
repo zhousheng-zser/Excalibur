@@ -6,6 +6,10 @@
 #include "logger.hpp"
 #include "dllexport.hpp"
 
+#ifdef __GNUC__
+#define __forceinline inline __attribute__((always_inline))
+#endif
+
 namespace glasssix
 {
 #define NATIVE_CODE_WARNING LOG(WARNING) << \
@@ -170,6 +174,35 @@ __forceinline int _mm256_sumall_epi32(const __m256i re)
 	return temp_sum[0] + temp_sum[1] + temp_sum[2] + temp_sum[3] + temp_sum[4] + temp_sum[5] + temp_sum[6] + temp_sum[7];
 }
 
+__forceinline float _mm256_sum_ps(const __m256 re)
+{
+	float temp_sum[8];
+	_mm256_storeu_ps(temp_sum, re);
+	return temp_sum[0] + temp_sum[1] + temp_sum[2] + temp_sum[3] + temp_sum[4] + temp_sum[5] + temp_sum[6] + temp_sum[7];
+}
+
+__forceinline __m256i _mm256_add_epi16_epi32(const __m128i a, const __m128i b, __m256i c)
+{
+	const __m128i a_int16 = _mm_cvtepi8_epi16(a);
+	const __m128i b_int16 = _mm_cvtepi8_epi16(b);
+	const __m128i product_int16 = _mm_mullo_epi16(a_int16, b_int16);
+	short product_int16_array[8];
+	_mm_store_si128((__m128i*)product_int16_array, product_int16);
+	const __m128i product_h = _mm_load_si128((__m128i*)product_int16_array);
+	const __m256i product_h_int32 = _mm256_cvtepi16_epi32(product_h);
+	return _mm256_add_epi32(product_h_int32, c);
+}
+
+__forceinline __m256i _mm256__epi32(const __m128i a, const __m128i b, __m256i c)
+{
+	const __m256i producta_int32 = _mm256_cvtepi16_epi32(a);
+	const __m256i productb_int32 = _mm256_cvtepi16_epi32(b);
+	__m256i product_h = _mm256_mullo_epi32(producta_int32, productb_int32);
+	return _mm256_add_epi32(product_h, c);
+}
+
+
+
 union union_type_s_mm128
 {
 	double d[2];
@@ -281,11 +314,13 @@ __forceinline float _mm512_sumall_ps(__m512 r)
 
 	EXPORT_EXCALIBUR_PRIMITIVES void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group);
 
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 	// convert float32 to float16 with SIMD
 	EXPORT_EXCALIBUR_PRIMITIVES void float2half(const float* floats, unsigned short* halfs, int length);
 
 	// convert float16 to float32 with SIMD
 	EXPORT_EXCALIBUR_PRIMITIVES void half2float(const unsigned short* halfs, float* floats, int length);
+#endif
 
 	EXPORT_EXCALIBUR_PRIMITIVES float mul_add_3x3_native(const float *r0, const float *r1, const float *r2, const float *k0, const float *k1, const float *k2, float bias);
 

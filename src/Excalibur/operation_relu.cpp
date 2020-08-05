@@ -24,7 +24,7 @@ namespace glasssix
 					LOG(FATAL) << "Un-supported ReLU Attribution " << split_string(attrs[i], "=")[0];
 				}
 			}
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>
@@ -84,7 +84,7 @@ namespace glasssix
 		template<typename Dtype>
 		void operation_relu<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN

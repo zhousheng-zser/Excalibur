@@ -11,6 +11,7 @@
 #include <fstream>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include "logger.hpp"
 
@@ -62,17 +63,17 @@ namespace glasssix
 		void scope_start(const char *name)
 		{
 			if (state_ == not_running) return;
-			scope_ptr scope(new scope);
+			scope_ptr new_scope = std::make_shared<scope>();
 			if (!scope_stack_.empty())
 			{
-				scope->name = scope_stack_.back()->name + ":" + name;
+				new_scope->name = scope_stack_.back()->name + ":" + name;
 			}
 			else
 			{
-				scope->name = name;
+				new_scope->name = name;
 			}
-			scope->start_microsec = now() - init_;
-			scope_stack_.push_back(scope);
+			new_scope->start_microsec = now() - init_;
+			scope_stack_.push_back(new_scope);
 		}
 		/*!
 		 * \brief end a scope
@@ -91,7 +92,7 @@ namespace glasssix
 		 * \brief dump profile data
 		 * \param fn file name
 		 */
-		void dump_profile(const char *fn) const
+		void DumpProfile(const char *fn) const
 		{
 			CHECK(scope_stack_.empty());
 			CHECK_EQ(state_, not_running);
@@ -125,19 +126,13 @@ namespace glasssix
 		/*! \brief turn on profiler */
 		void turn_on()
 		{
-			if (state_ == running)
-			{
-				LOG(WARNING) << "Profile is already running.";
-			}
+			CHECK_EQ(state_, not_running) << "Profile is already running.";
 			state_ = running;
 		}
 		/*! \brief turn off profiler */
 		void turn_off()
 		{
-			if (state_ == not_running)
-			{
-				LOG(WARNING) << "Profile is not running.";
-			}
+			CHECK_EQ(state_, running) << "Profile is not running.";
 			CHECK(scope_stack_.empty()) << "Profile scope stack is not empty, with size = "
 				<< scope_stack_.size();
 			state_ = not_running;

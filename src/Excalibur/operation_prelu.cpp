@@ -30,14 +30,14 @@ namespace glasssix
 					LOG(FATAL) << "Un-supported PReLU Attribution " << split_string(attrs[i], "=")[0];
 				}
 			}
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>
-		int operation_prelu<Dtype>::init_weights(FILE *fp)
+		int operation_prelu<Dtype>::init_weights(FILE* fp)
 		{
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[0]->mutable_cpu_data(), 1, num_slope_ * sizeof(float), fp);
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[0]->mutable_cpu_data(), 1, num_slope_ * sizeof(float), fp);
 			return num_slope_ * sizeof(float);
 		}
 
@@ -46,10 +46,10 @@ namespace glasssix
 		{
 			std::default_random_engine e;
 			std::normal_distribution<float> n(0, 0.3);
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, params_.device_, memory::NCHW, nullptr)));
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_slope_, this->params_.device_, memory::NCHW, nullptr)));
 			for (size_t i = 0; i < num_slope_; i++)
 			{
-				weights_f32_[0]->mutable_cpu_data()[i] = abs(n(e));
+				this->weights_f32_[0]->mutable_cpu_data()[i] = abs(n(e));
 			}
 			return num_slope_ * sizeof(float);
 		}
@@ -64,7 +64,7 @@ namespace glasssix
 				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));
 				float* top_data = tops[i]->mutable_cpu_data();
 				const float* bottom_data = bottoms[i]->cpu_data();
-				const float* slope_data = weights_f32_[0]->cpu_data();
+				const float* slope_data = this->weights_f32_[0]->cpu_data();
 				if (bottoms[i]->order() == memory::NCHW)
 				{
 					for (size_t n = 0; n < bottoms[i]->num(); n++)
@@ -74,9 +74,9 @@ namespace glasssix
 						{
 							int step = bottoms[i]->count(2, 4);
 							int offset = n * ch * step + c * step;
-							int slope_id = share_channel_ ? c : 0;
+							int slope_id = share_channel_ ? 0 : c;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_SSE4_2_VERSION) //SSE
-							int simd_times = (count - count % 4) / 4;
+							int simd_times = (step - step % 4) / 4;
 							__m128 slope_vec = _mm_broadcast_ss(slope_data + slope_id);
 							__m128 zero_vec = _mm_setzero_ps();
 #ifdef _OPENMP
@@ -84,9 +84,9 @@ namespace glasssix
 #endif
 							for (int j = 0; j < simd_times; j++)
 							{
-								__m256 d = _mm_load_ps(bottom_data + 4 * j);
+								__m128 d = _mm_load_ps(bottom_data + offset + 4 * j);
 								d = _mm_add_ps(_mm_max_ps(zero_vec, d), _mm_mul_ps(slope_vec, _mm_min_ps(zero_vec, d)));
-								_mm_store_ps(top_data + 4 * j, d);
+								_mm_store_ps(top_data+ offset + 4 * j, d);
 							}
 							for (int j = 4 * simd_times; j < step; j++)
 							{
@@ -102,9 +102,9 @@ namespace glasssix
 #endif
 							for (int j = 0; j < simd_times; j++)
 							{
-								__m256 d = _mm256_load_ps(bottom_data + 8 * j);
+								__m256 d = _mm256_load_ps(bottom_data + offset + 8 * j);
 								d = _mm256_add_ps(_mm256_max_ps(zero_vec, d), _mm256_mul_ps(slope_vec, _mm256_min_ps(zero_vec, d)));
-								_mm256_store_ps(top_data + 8 * j, d);
+								_mm256_store_ps(top_data + offset + 8 * j, d);
 							}
 							for (int j = 8 * simd_times; j < step; j++)
 							{
@@ -142,7 +142,7 @@ namespace glasssix
 		template<typename Dtype>
 		void operation_prelu<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN

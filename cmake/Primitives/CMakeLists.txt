@@ -1,8 +1,15 @@
-cmake_minimum_required(VERSION 3.14.3)
+include_directories(../../include/Primitives)
 
-file(GLOB PRIMITIVES_SOURCE_FILES
-	${GLASSSIX_EXCALIBUR_SOURCE}/Primitives/*.cpp
-	${GLASSSIX_EXCALIBUR_SOURCE}/Primitives/*.cxx)
+set(CMAKE_CXX_STANDARD 17)
 
-add_library(${PRIMITIVES_TARGET_NAME} SHARED ${PRIMITIVES_SOURCE_FILES})
-target_include_directories(${PRIMITIVES_TARGET_NAME} PRIVATE ${GLASSSIX_EXCALIBUR_INCLUDE}/Primitives)
+file(GLOB PRIMITIVES_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/*.cpp 
+					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/abi/*.cpp 
+					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/fmt/*.cc)
+
+add_library(Primitives SHARED ${PRIMITIVES_SOURCE_FILES})
+
+if(USE_CUDA)
+	target_link_libraries(Primitives ${CUDA_LIBRARIES} dl)
+else()
+	target_link_libraries(Primitives dl)
+endif()

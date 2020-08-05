@@ -3,6 +3,7 @@
 #include "./operation_make_border.hpp"
 #include <algorithm>
 #include "../../include/Primitives/profiler.hpp"
+using namespace std;
 
 namespace glasssix
 {
@@ -14,42 +15,12 @@ namespace glasssix
 
 		}
 
-		//template<typename Dtype>
-		//int operation_convolutiondepthwise<Dtype>::init_weights(FILE *fp)
-		//{
-		//	int mem = operation_convolution::init_weights(fp);
-		//	if (/*kernel_size_h_ == 3 && kernel_size_w_ == 3*/false)
-		//	{
-		//		//F(2,3), calculate U= GgG^T
-		//		//float G[] = { 1.f, 0.f, 0.f, 0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, 0.f, 0.f, 1.f };
-		//		U_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
-		//		V_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, 4, 4}, -1, memory::NCHW, nullptr));
-		//		float* U_data = U_->mutable_cpu_data();
-		//		const float* weights_data = weights_f32_[0]->cpu_data();
-		//		for (size_t g = 0; g < output_channel_; g++)
-		//		{
-		//			const float* w = weights_data + 9 * g;
-		//			float* u = U_data + 16 * g;
-		//			u[0] = w[0];
-		//			u[1] = (w[0] + w[1] + w[2]) / 2;
-		//			u[2] = (w[0] - w[1] + w[2]) / 2;
-		//			u[3] = w[2];
-		//			u[4] = (w[0] + w[3] + w[6]) / 2;
-		//			u[5] = (w[0] + w[1] + w[2] + w[3] + w[4] + w[5] + w[6] + w[7] + w[8]) / 4;
-		//			u[6] = (w[0] - w[1] + w[2] + w[3] - w[4] + w[5] + w[6] - w[7] + w[8]) / 4;
-		//			u[7] = (w[2] + w[5] + w[8]) / 2;
-		//			u[8] = (w[0] - w[3] + w[6]) / 2;
-		//			u[9] = (w[0] + w[1] + w[2] - w[3] - w[4] - w[5] + w[6] + w[7] + w[8]) / 4;
-		//			u[10] = (w[0] - w[1] + w[2] - w[3] + w[4] - w[5] + w[6] - w[7] + w[8]) / 4;
-		//			u[11] = (w[2] - w[5] + w[8]) / 2;
-		//			u[12] = w[6];
-		//			u[13] = (w[6] + w[7] + w[8]) / 2;
-		//			u[14] = (w[6] - w[7] + w[8]) / 2;
-		//			u[15] = w[8];
-		//		}
-		//	}
-		//	return mem;
-		//}
+		template<typename Dtype>
+		int operation_convolutiondepthwise<Dtype>::init_weights(FILE* fp)
+		{
+			int mem = operation_convolution<Dtype>::init_weights(fp);
+			return mem;
+		}
 
 		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
@@ -57,82 +28,159 @@ namespace glasssix
 		{
 			CHECK_EQ(bottoms.size(), 1);
 			CHECK_EQ(tops.size(), 1);
-			CHECK_EQ(output_channel_, group_);
-			num_ = bottoms[0]->num();
-			input_dim_h_ = bottoms[0]->height();
-			input_dim_w_ = bottoms[0]->width();
-			input_channel_ = bottoms[0]->channels();
-			CHECK_EQ(input_channel_, output_channel_);
-			output_dim_h_ = (input_dim_h_ + pad_bottom_ + pad_top_ - kernel_size_h_) / stride_h_ + 1;
-			output_dim_w_ = (input_dim_w_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_ + 1;
-			if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 1 && stride_w_ == 1))
+			CHECK_EQ(this->output_channel_, this->group_);
+			this->num_ = bottoms[0]->num();
+			this->input_dim_h_ = bottoms[0]->height();
+			this->input_dim_w_ = bottoms[0]->width();
+			this->input_channel_ = bottoms[0]->channels();
+
+			CHECK_EQ(this->input_channel_, this->output_channel_);
+			this->output_dim_h_ = (this->input_dim_h_ + this->pad_bottom_ + this->pad_top_ - this->kernel_size_h_) / this->stride_h_ + 1;
+			this->output_dim_w_ = (this->input_dim_w_ + this->pad_left_ + this->pad_right_ - this->kernel_size_w_) / this->stride_w_ + 1;
+
+			tops[0].reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
+
+			if (this->int8_scale_term_ == 1) {
+				dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
+			}
+			const float* weights_data = this->weights_f32_[0]->cpu_data();
+
+			if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1))
 			{
 				forward_k3s1_f32(bottoms[0], tops[0]);
 			}
-			else if ((kernel_size_h_ == 3 && kernel_size_w_ == 3) && (stride_h_ == 2 && stride_w_ == 2))
+			else if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 2 && this->stride_w_ == 2))
 			{
 				forward_k3s2_f32(bottoms[0], tops[0]);
+			}
+			else if (this->input_dim_h_ == 4 && this->output_dim_h_ == 1)
+			{
+			
+				const float* bottom_data = bottoms[0]->cpu_data();
+				const float* weights_data = this->weights_f32_[0]->cpu_data();
+				const float* bias_data = nullptr;
+				float* top_data = nullptr;
+				if (this->bias_term_)
+				{
+					bias_data = this->weights_f32_[1]->cpu_data();
+				}
+				tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
+					bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+				top_data = tops[0]->mutable_cpu_data();
+				for (int i = 0; i < tops[0]->count(); i++)
+				{
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+					float zero_val = 0.f;
+					__m256 _sum1 = _mm256_broadcast_ss(&zero_val); 
+					__m256 _r1 = _mm256_loadu_ps(bottom_data);
+					__m256 _k1 = _mm256_loadu_ps(weights_data);
+					_sum1 = _mm256_fmadd_ps(_r1, _k1, _sum1);
+
+					__m256 _r2 = _mm256_loadu_ps(bottom_data + 8);
+					__m256 _k2 = _mm256_loadu_ps(weights_data + 8);
+					_sum1 = _mm256_fmadd_ps(_r2, _k2, _sum1);
+					*top_data = _mm256_sum_ps(_sum1);
+					*top_data += *bias_data;
+					bias_data += 1;
+					top_data += 1;
+					bottom_data += 16;
+					weights_data += 16;
+#endif
+#if __ARM_NEON
+					float32x4_t _sum1 = vdupq_n_f32(0);
+					float32x4_t _sum2 = vdupq_n_f32(0);
+
+					float32x4_t _r1 = vld1q_f32(bottom_data);
+					float32x4_t _r2 = vld1q_f32(bottom_data+4);
+					float32x4_t _k1 = vld1q_f32(weights_data);
+					float32x4_t _k2 = vld1q_f32(weights_data + 4);
+
+					
+
+					_sum1 = vmlaq_f32(_sum1, _r1, _k1);
+					_sum2 = vmlaq_f32(_sum2, _r2, _k2);
+
+					float32x4_t _r3 = vld1q_f32(bottom_data + 8);
+					float32x4_t _r4 = vld1q_f32(bottom_data + 12);
+					float32x4_t _k3 = vld1q_f32(weights_data + 8);
+					float32x4_t _k4 = vld1q_f32(weights_data + 12);
+
+					_sum1 = vmlaq_f32(_sum1, _r3, _k3);
+					_sum2 = vmlaq_f32(_sum2, _r4, _k4);
+
+					_sum1 = vaddq_f32(_sum1, _sum2);
+
+					*top_data = vget_lane_f32(_sum1, 0)+ vget_lane_f32(_sum1, 1)+ vget_lane_f32(_sum1, 2)+ vget_lane_f32(_sum1, 3);
+					*top_data += *bias_data;
+					bias_data += 1;
+					top_data += 1;
+					bottom_data += 16;
+					weights_data += 16;
+#endif
+				}
+			
 			}
 			else
 			{
 				const float* bottom_data = bottoms[0]->cpu_data();
-				const float* weights_data = weights_f32_[0]->cpu_data();
+				const float* weights_data = this->weights_f32_[0]->cpu_data();
 				const float* bias_data = nullptr;
 				float* top_data = nullptr;
-				if (bias_term_)
+				if (this->bias_term_)
 				{
-					bias_data = weights_f32_[1]->cpu_data();
+					bias_data = this->weights_f32_[1]->cpu_data();
 				}
 				switch (bottoms[0]->order())
 				{
 				case memory::NCHW:
-					tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_},
+					tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 					top_data = tops[0]->mutable_cpu_data();
-					for (size_t n = 0; n < num_; n++)
+					for (size_t n = 0; n < this->num_; n++)
 					{
-//#ifdef _OPENMP
-//#pragma omp parallel for
-//#endif
+
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
+#endif
 						for (int i = 0; i < tops[0]->count(); i++)
 						{
-							const int pw = i % output_dim_w_;
-							const int ph = (i / output_dim_w_) % output_dim_h_;
-							const int c = (i / output_dim_w_ / output_dim_h_) % output_channel_;
-							const int n_step = i / output_dim_w_ / output_dim_h_ / output_channel_;
-							int hstart = ph * stride_h_ - pad_top_;
-							int wstart = pw * stride_w_ - pad_left_;
-							int hend = std::min(hstart + kernel_size_h_, input_dim_h_ + pad_bottom_);
-							int wend = std::min(wstart + kernel_size_w_, input_dim_w_ + pad_right_);
+							const int pw = i % this->output_dim_w_;
+							const int ph = (i / this->output_dim_w_) % this->output_dim_h_;
+							const int c = (i / this->output_dim_w_ / this->output_dim_h_) % this->output_channel_;
+							const int n_step = i / this->output_dim_w_ / this->output_dim_h_ / this->output_channel_;
+							int hstart = ph * this->stride_h_ - this->pad_top_;
+							int wstart = pw * this->stride_w_ - this->pad_left_;
+							int hend = std::min(hstart + this->kernel_size_h_, this->input_dim_h_ + this->pad_bottom_);
+							int wend = std::min(wstart + this->kernel_size_w_, this->input_dim_w_ + this->pad_right_);
 							hstart = std::max(hstart, 0);
 							wstart = std::max(wstart, 0);
-							hend = std::min(hend, input_dim_h_);
-							wend = std::min(wend, input_dim_w_);
+							hend = std::min(hend, this->input_dim_h_);
+							wend = std::min(wend, this->input_dim_w_);
 							float aveval = 0;
 							const float* bottom_slice =
-								bottom_data + n * bottoms[0]->count(1, 4) + (n_step * output_channel_ + c) * input_dim_h_ * input_dim_w_;
+								bottom_data + n * bottoms[0]->count(1, 4) + (n_step * this->output_channel_ + c) * this->input_dim_h_ * this->input_dim_w_;
 							const float* weight_slice =
-								weights_data + c * kernel_size_h_ * kernel_size_w_;
-							int khstart = hend < kernel_size_h_ ? kernel_size_h_ - hend : 0;
-							int kwstart = wend < kernel_size_w_ ? kernel_size_w_ - wend : 0;
-							for (int h = hstart; h < hend; ++h) 
+								weights_data + c * this->kernel_size_h_ * this->kernel_size_w_;
+							int khstart = hend < this->kernel_size_h_ ? this->kernel_size_h_ - hend : 0;
+							int kwstart = wend < this->kernel_size_w_ ? this->kernel_size_w_ - wend : 0;
+							for (int h = hstart; h < hend; ++h)
 							{
-								for (int w = wstart; w < wend; ++w) 
+								for (int w = wstart; w < wend; ++w)
 								{
-									aveval += bottom_slice[h * input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * kernel_size_w_ + (kwstart + w - wstart)];
+									aveval += bottom_slice[h * this->input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * this->kernel_size_w_ + (kwstart + w - wstart)];
 								}
 							}
-							if (bias_term_) 
+							if (this->bias_term_)
 							{
 								aveval += bias_data[c];
 							}
 							top_data[n * bottoms[0]->count(1, 4) + i] = aveval;
 						}
 					}
-					
+
 					break;
 				case memory::NHWC:
-					tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_dim_h_, output_dim_w_, output_channel_},
+					tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_dim_h_, this->output_dim_w_, this->output_channel_},
 						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 					NOT_IMPLEMENTED;
 					break;
@@ -145,9 +193,138 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
+		void operation_convolutiondepthwise<Dtype>::forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
+		{
+			CHECK_EQ(bottoms.size(), 1);
+			CHECK_EQ(tops.size(), 1);
+			CHECK_EQ(this->output_channel_, this->group_);
+			this->num_ = bottoms[0]->num();
+			this->input_dim_h_ = bottoms[0]->height();
+			this->input_dim_w_ = bottoms[0]->width();
+			this->input_channel_ = bottoms[0]->channels();
+
+			CHECK_EQ(this->input_channel_, this->output_channel_);
+			this->output_dim_h_ = (this->input_dim_h_ + this->pad_bottom_ + this->pad_top_ - this->kernel_size_h_) / this->stride_h_ + 1;
+			this->output_dim_w_ = (this->input_dim_w_ + this->pad_left_ + this->pad_right_ - this->kernel_size_w_) / this->stride_w_ + 1;
+
+			tops[0].reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
+
+			if (this->int8_scale_term_ == 1) {
+				dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
+			}
+			const float* weights_data = this->weights_f32_[0]->cpu_data();
+
+			if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1))
+			{
+				forward_k3s1_f32(bottoms[0], tops[0]);
+			}
+			else if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 2 && this->stride_w_ == 2))
+			{
+				forward_k3s2_f32(bottoms[0], tops[0]);
+			}
+			else
+			{
+				const float* bottom_data = bottoms[0]->cpu_data();
+				const float* weights_data = this->weights_f32_[0]->cpu_data();
+				const float* bias_data = nullptr;
+				float* top_data = nullptr;
+				if (this->bias_term_)
+				{
+					bias_data = this->weights_f32_[1]->cpu_data();
+				}
+				switch (bottoms[0]->order())
+				{
+				case memory::NCHW:
+					tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
+						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+					top_data = tops[0]->mutable_cpu_data();
+					for (size_t n = 0; n < this->num_; n++)
+					{
+
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
+#endif
+						for (int i = 0; i < tops[0]->count(); i++)
+						{
+							const int pw = i % this->output_dim_w_;
+							const int ph = (i / this->output_dim_w_) % this->output_dim_h_;
+							const int c = (i / this->output_dim_w_ / this->output_dim_h_) % this->output_channel_;
+							const int n_step = i / this->output_dim_w_ / this->output_dim_h_ / this->output_channel_;
+							int hstart = ph * this->stride_h_ - this->pad_top_;
+							int wstart = pw * this->stride_w_ - this->pad_left_;
+							int hend = std::min(hstart + this->kernel_size_h_, this->input_dim_h_ + this->pad_bottom_);
+							int wend = std::min(wstart + this->kernel_size_w_, this->input_dim_w_ + this->pad_right_);
+							hstart = std::max(hstart, 0);
+							wstart = std::max(wstart, 0);
+							hend = std::min(hend, this->input_dim_h_);
+							wend = std::min(wend, this->input_dim_w_);
+							float aveval = 0;
+							const float* bottom_slice =
+								bottom_data + n * bottoms[0]->count(1, 4) + (n_step * this->output_channel_ + c) * this->input_dim_h_ * this->input_dim_w_;
+							const float* weight_slice =
+								weights_data + c * this->kernel_size_h_ * this->kernel_size_w_;
+							int khstart = hend < this->kernel_size_h_ ? this->kernel_size_h_ - hend : 0;
+							int kwstart = wend < this->kernel_size_w_ ? this->kernel_size_w_ - wend : 0;
+							for (int h = hstart; h < hend; ++h)
+							{
+								for (int w = wstart; w < wend; ++w)
+								{
+									aveval += bottom_slice[h * this->input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * this->kernel_size_w_ + (kwstart + w - wstart)];
+								}
+							}
+							if (this->bias_term_)
+							{
+								aveval += bias_data[c];
+							}
+							top_data[n * bottoms[0]->count(1, 4) + i] = aveval;
+						}
+					}
+
+					break;
+				case memory::NHWC:
+					tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_dim_h_, this->output_dim_w_, this->output_channel_},
+						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+					NOT_IMPLEMENTED;
+					break;
+				default:
+					NOT_IMPLEMENTED;
+					break;
+				}
+			}
+
+		}
+
+		template<typename Dtype>
+		int operation_convolutiondepthwise<Dtype>::dequantize_int8(const std::shared_ptr<memory::tensor<signed char>>& src,
+			std::shared_ptr<memory::tensor<float>>& dst, std::vector<float> scale)
+		{
+			size_t align_data_size = (this->weight_data_size_ + 4 - 1) & -4;
+			int w = src->width();
+			int size = align_data_size / this->group_;
+			dst.reset(new memory::tensor<float>(align_data_size, this->params_.device_, src->order(), nullptr));
+			const signed char* bottom = src->cpu_data();
+			float* bottom_int8 = dst->mutable_cpu_data();
+
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
+#endif
+			for (int q = 0; q < this->group_; q++)
+			{
+				const signed char* ptr = bottom + q * size;
+				float* outptr = bottom_int8 + q * size;
+				for (int i = 0; i < size; i++)
+				{
+					outptr[i] = ptr[i] / scale[q];
+				}
+			}
+			return 0;
+		}
+
+		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -159,41 +336,41 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		void operation_convolutiondepthwise<Dtype>::forward_winograd_f32(std::shared_ptr <memory::tensor<float>>& bottom, 
+		void operation_convolutiondepthwise<Dtype>::forward_winograd_f32(std::shared_ptr <memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
 			if (bottom->order() != memory::NCHW)
 			{
 				bottom->convert_order();
 			}
-			top.reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_},
+			top.reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			std::shared_ptr<memory::tensor<float>> border_bottom;
-			int wino_pad_h = (input_dim_h_ + pad_bottom_ + pad_top_) % 2;
-			int wino_pad_w = (input_dim_w_ + pad_left_ + pad_right_) % 2;
-			make_border<float>(bottom, border_bottom, pad_top_, pad_bottom_ + wino_pad_h, pad_left_, pad_right_ + wino_pad_w, border_constant, pad_value_);
+			int wino_pad_h = (this->input_dim_h_ + this->pad_bottom_ + this->pad_top_) % 2;
+			int wino_pad_w = (this->input_dim_w_ + this->pad_left_ + this->pad_right_) % 2;
+			make_border<float>(bottom, border_bottom, this->pad_top_, this->pad_bottom_ + wino_pad_h, this->pad_left_, this->pad_right_ + wino_pad_w, border_constant, this->pad_value_);
 			const int tile_height = (border_bottom->height() - 4) / 2 + 1;
 			const int tile_width = (border_bottom->width() - 4) / 2 + 1;
 			const int b_width = border_bottom->width();
 			std::shared_ptr<memory::tensor<float>> border_top;
-			border_top.reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, tile_height * 2, tile_width * 2},
+			border_top.reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, tile_height * 2, tile_width * 2},
 				top->device(), memory::NCHW, top->allocator()));
 			const int t_width = border_top->width();
 			const float* bottom_data = border_bottom->cpu_data();
-			//const float* weights_data = weights_f32_[0]->cpu_data();
+			//const float* weights_data = this->weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
-			if (bias_term_)
+			if (this->bias_term_)
 			{
-				bias_data = weights_f32_[1]->cpu_data();
+				bias_data = this->weights_f32_[1]->cpu_data();
 			}
 			const float* U = U_->cpu_data();
 			float* V = V_->mutable_cpu_data();
-			for (size_t n = 0; n < num_; n++)
+			for (size_t n = 0; n < this->num_; n++)
 			{
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-				for (int g = 0; g < group_; g++)
+				for (int g = 0; g < this->group_; g++)
 				{
 					const float* bottom_data_slice = bottom_data + g * border_bottom->count(2, 4);
 					float* top_data_slice = border_top->mutable_cpu_data() + g * border_top->count(2, 4);
@@ -229,24 +406,28 @@ namespace glasssix
 							//calculate M = U.*V
 							for (size_t i = 0; i < 16 / mm_align_size; i++)
 							{
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
 								__m256 vx = _mm256_load_ps(v + i * mm_align_size);
 								__m256 ux = _mm256_load_ps(u + i * mm_align_size);
 								vx = _mm256_mul_ps(vx, ux);
 								_mm256_store_ps(v + i * mm_align_size, vx);
+#else
+								NOT_IMPLEMENTED;
+#endif
 							}
 							//calculate A^TMA
-							top_data_slice[(tile_h * 2) * t_width + tile_w * 2] = v[0] + v[1] + v[2] + v[4] + v[5] + v[6] + v[8] + v[9] + v[10] + bias_term_ ? bias_data[g] : 0.0f;
-							top_data_slice[(tile_h * 2) * t_width + tile_w * 2 + 1] = v[1] - v[2] + v[3] + v[5] - v[6] + v[7] + v[9] - v[10] + v[11] + bias_term_ ? bias_data[g] : 0.0f;
-							top_data_slice[(tile_h * 2 + 1) * t_width + tile_w * 2] = v[4] + v[5] + v[6] - v[8] - v[9] - v[10] + v[12] + v[13] + v[14] + bias_term_ ? bias_data[g] : 0.0f;
-							top_data_slice[(tile_h * 2 + 1) * t_width + tile_w * 2 + 1] = v[5] - v[6] + v[7] - v[9] + v[10] - v[11] + v[13] - v[14] + v[15] + bias_term_ ? bias_data[g] : 0.0f;
+							top_data_slice[(tile_h * 2) * t_width + tile_w * 2] = v[0] + v[1] + v[2] + v[4] + v[5] + v[6] + v[8] + v[9] + v[10] + this->bias_term_ ? bias_data[g] : 0.0f;
+							top_data_slice[(tile_h * 2) * t_width + tile_w * 2 + 1] = v[1] - v[2] + v[3] + v[5] - v[6] + v[7] + v[9] - v[10] + v[11] + this->bias_term_ ? bias_data[g] : 0.0f;
+							top_data_slice[(tile_h * 2 + 1) * t_width + tile_w * 2] = v[4] + v[5] + v[6] - v[8] - v[9] - v[10] + v[12] + v[13] + v[14] + this->bias_term_ ? bias_data[g] : 0.0f;
+							top_data_slice[(tile_h * 2 + 1) * t_width + tile_w * 2 + 1] = v[5] - v[6] + v[7] - v[9] + v[10] - v[11] + v[13] - v[14] + v[15] + this->bias_term_ ? bias_data[g] : 0.0f;
 						}
 					}
 				}
 			}
 			//cut pad border
-			for (size_t h = 0; h < output_dim_h_; h++)
+			for (size_t h = 0; h < this->output_dim_h_; h++)
 			{
-				memcpy(top->mutable_cpu_data() + h * output_dim_w_, border_top->cpu_data() + h * (output_dim_w_ + wino_pad_w), output_dim_w_ * sizeof(float));
+				memcpy(top->mutable_cpu_data() + h * this->output_dim_w_, border_top->cpu_data() + h * (this->output_dim_w_ + wino_pad_w), this->output_dim_w_ * sizeof(float));
 			}
 		}
 
@@ -255,73 +436,115 @@ namespace glasssix
 		void operation_convolutiondepthwise<Dtype>::forward_k3s1_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
-			/*profiler *p = profiler::get();
-			p->scope_start("make_border");*/
 			std::shared_ptr<memory::tensor<float>> bottom_bordered;
-			// time cost 2ms in make_border!
-			make_border<float>(bottom, bottom_bordered, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
+			make_border<float>(bottom, bottom_bordered, this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_, border_constant, this->pad_value_);
+			int inw = bottom_bordered->width();
 			if (bottom_bordered->order() != memory::NCHW)
 			{
 				bottom_bordered->convert_order();
 			}
-			/*p->scope_end();
-			p->scope_start("reset");*/
-			top.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_},
+			top.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			float* top_data = top->mutable_cpu_data();
 			const int top_cstep = top->count(2, 4);
 			const int bottom_cstep = bottom_bordered->count(2, 4);
 			auto bottom_data = bottom_bordered->cpu_data();
-			const int real_width = bottom_bordered->width();
-			const float* weights_data = weights_f32_[0]->cpu_data();
+			const float* weights_data = this->weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
-			if (bias_term_)
+			if (this->bias_term_)
 			{
-				bias_data = weights_f32_[1]->cpu_data();
+				bias_data = this->weights_f32_[1]->cpu_data();
 			}
-			/*p->scope_end();
-			p->scope_start("exec");*/
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(2)
+
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
 #endif
-			for (int g = 0; g < group_; g++)
+			for (int g = 0; g < this->group_; g++)
 			{
-				float *out = top_data + g * top_cstep;
-				const float bias_data0 = bias_term_ ? bias_data[g] : 0.f;
+				float* out = top_data + g * top_cstep;
+				const float bias_data0 = this->bias_term_ ? bias_data[g] : 0.f;
 				const float* weights_data0 = weights_data + g * 9;
 				float* outptr = out;
-				float* outptr2 = outptr + output_dim_w_;
-
+				float* outptr2 = outptr + this->output_dim_w_;
 				const float* img0 = bottom_data + g * bottom_cstep;
 
 				const float* r0 = img0;
-				const float* r1 = img0 + real_width;
-				const float* r2 = img0 + real_width * 2;
-				const float* r3 = img0 + real_width * 3;
+				const float* r1 = img0 + inw;
+				const float* r2 = img0 + inw * 2;
+				const float* r3 = img0 + inw * 3;
 
 				const float* k0 = weights_data0;
 				const float* k1 = weights_data0 + 3;
 				const float* k2 = weights_data0 + 6;
-#if SIMD_TYPE >= SIMDTYPE_SSE
+
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
 				__m128 k0_data = _mm_loadu_ps(k0);
 				__m128 k1_data = _mm_loadu_ps(k1);
 				__m128 k2_data = _mm_loadu_ps(k2);
+#endif
 				int i = 0;
-
-				for (; i + 1 < output_dim_h_; i += 2)
+				for (; i + 1 < this->output_dim_h_; i += 2)
 				{
-
-					int remain = output_dim_w_;
-
+					int remain = this->output_dim_w_;
 					for (; remain > 0; remain--)
 					{
+						float sum_sum = bias_data0;
+						float sum_sum2 = bias_data0;
+
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+						__m128 sum = _mm_setzero_ps();
+						__m128 sum2 = _mm_setzero_ps();
 						__m128 r0_data = _mm_loadu_ps(r0);
 						__m128 r1_data = _mm_loadu_ps(r1);
 						__m128 r2_data = _mm_loadu_ps(r2);
 						__m128 r3_data = _mm_loadu_ps(r3);
 
-						*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias_data0);
-						*outptr2 = mul_add_3x3_simd(r1_data, r2_data, r3_data, k0_data, k1_data, k2_data, bias_data0);
+						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+						//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+
+						float temp[4];
+						_mm_storeu_ps(temp, sum);
+						for (int i = 0; i < 3; i++)
+						{
+							sum_sum += temp[i];
+						}
+
+						sum2 = _mm_fmadd_ps(r1_data, k0_data, sum2);
+						sum2 = _mm_fmadd_ps(r2_data, k1_data, sum2);
+						sum2 = _mm_fmadd_ps(r3_data, k2_data, sum2);
+
+						float temp2[4];
+						_mm_storeu_ps(temp2, sum2);
+						for (int i = 0; i < 3; i++)
+						{
+							sum_sum2 += temp2[i];
+						}
+#else
+						sum_sum += r0[0] * k0[0];
+						sum_sum += r0[1] * k0[1];
+						sum_sum += r0[2] * k0[2];
+						sum_sum += r1[0] * k1[0];
+						sum_sum += r1[1] * k1[1];
+						sum_sum += r1[2] * k1[2];
+						sum_sum += r2[0] * k2[0];
+						sum_sum += r2[1] * k2[1];
+						sum_sum += r2[2] * k2[2];
+
+						sum_sum2 += r1[0] * k0[0];
+						sum_sum2 += r1[1] * k0[1];
+						sum_sum2 += r1[2] * k0[2];
+						sum_sum2 += r2[0] * k1[0];
+						sum_sum2 += r2[1] * k1[1];
+						sum_sum2 += r2[2] * k1[2];
+						sum_sum2 += r3[0] * k2[0];
+						sum_sum2 += r3[1] * k2[1];
+						sum_sum2 += r3[2] * k2[2];
+#endif
+
+						*outptr += sum_sum;
+						*outptr2 += sum_sum2;
 
 						r0++;
 						r1++;
@@ -331,74 +554,52 @@ namespace glasssix
 						outptr2++;
 					}
 
-					r0 += 2 + real_width;
-					r1 += 2 + real_width;
-					r2 += 2 + real_width;
-					r3 += 2 + real_width;
+					r0 += 2 + inw;
+					r1 += 2 + inw;
+					r2 += 2 + inw;
+					r3 += 2 + inw;
 
-					outptr += output_dim_w_;
-					outptr2 += output_dim_w_;
+					outptr += this->output_dim_w_;
+					outptr2 += this->output_dim_w_;
 				}
 
-				for (; i < output_dim_h_; i++)
+				for (; i < this->output_dim_h_; i++)
 				{
-					int remain = output_dim_w_;
+					int remain = this->output_dim_w_;
 
 					for (; remain > 0; remain--)
 					{
+						float sum_sum = bias_data0;
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+						__m128 sum = _mm_setzero_ps();
+
 						__m128 r0_data = _mm_loadu_ps(r0);
 						__m128 r1_data = _mm_loadu_ps(r1);
 						__m128 r2_data = _mm_loadu_ps(r2);
+						__m128 r3_data = _mm_loadu_ps(r3);
 
-						*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias_data0);
-						r0++;
-						r1++;
-						r2++;
-						outptr++;
-					}
+						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
 
-					r0 += 2;
-					r1 += 2;
-					r2 += 2;
-				}
+						float temp[4];
+						_mm_storeu_ps(temp, sum);
+						for (int i = 0; i < 3; i++)
+						{
+							sum_sum += temp[i];
+						}
 #else
-				int i = 0;
-
-				for (; i + 1 < output_dim_h_; i += 2)
-				{
-
-					int remain = output_dim_w_;
-
-					for (; remain > 0; remain--)
-					{
-						*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias_data0);
-						*outptr2 = mul_add_3x3_native(r1, r2, r3, k0, k1, k2, bias_data0);
-
-						r0++;
-						r1++;
-						r2++;
-						r3++;
-						outptr++;
-						outptr2++;
-					}
-
-					r0 += 2 + input_dim_w_;
-					r1 += 2 + input_dim_w_;
-					r2 += 2 + input_dim_w_;
-					r3 += 2 + input_dim_w_;
-
-					outptr += output_dim_w_;
-					outptr2 += output_dim_w_;
-				}
-
-				for (; i < output_dim_h_; i++)
-				{
-					int remain = output_dim_w_;
-
-					for (; remain > 0; remain--)
-					{
-						*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias_data0);
-
+						sum_sum += r0[0] * k0[0];
+						sum_sum += r0[1] * k0[1];
+						sum_sum += r0[2] * k0[2];
+						sum_sum += r1[0] * k1[0];
+						sum_sum += r1[1] * k1[1];
+						sum_sum += r1[2] * k1[2];
+						sum_sum += r2[0] * k2[0];
+						sum_sum += r2[1] * k2[1];
+						sum_sum += r2[2] * k2[2];
+#endif
+						*outptr += sum_sum;
 						r0++;
 						r1++;
 						r2++;
@@ -409,49 +610,47 @@ namespace glasssix
 					r1 += 2;
 					r2 += 2;
 				}
-#endif
 			}
-
-			//p->scope_end();
 		}
 
 		template<typename Dtype>
 		void operation_convolutiondepthwise<Dtype>::forward_k3s2_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 			std::shared_ptr < memory::tensor<float>>& top)
 		{
-			profiler *p = profiler::get();
+			profiler* p = profiler::get();
 			p->scope_start("make_border");
 			std::shared_ptr<memory::tensor<float>> bottom_bordered;
-			make_border<float>(bottom, bottom_bordered, pad_top_, pad_bottom_, pad_left_, pad_right_, border_constant, pad_value_);
+			make_border<float>(bottom, bottom_bordered, this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_, border_constant, this->pad_value_);
 			if (bottom_bordered->order() != memory::NCHW)
 			{
 				bottom_bordered->convert_order();
 			}
 			p->scope_end();
 			p->scope_start("reset");
-			top.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_, output_dim_h_, output_dim_w_},
+			top.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
 			float* top_data = top->mutable_cpu_data();
 			const int top_cstep = top->count(2, 4);
 			const int bottom_cstep = bottom_bordered->count(2, 4);
 			auto bottom_data = bottom_bordered->cpu_data();
-			const float* weights_data = weights_f32_[0]->cpu_data();
+			const float* weights_data = this->weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
-			if (bias_term_)
+			if (this->bias_term_)
 			{
-				bias_data = weights_f32_[1]->cpu_data();
+				bias_data = this->weights_f32_[1]->cpu_data();
 			}
-			const int tailstep = bottom_bordered->width() - 2 * output_dim_w_ + bottom_bordered->width();
+			const int tailstep = bottom_bordered->width() - 2 * this->output_dim_w_ + bottom_bordered->width();
 			p->scope_end();
 			p->scope_start("exec");
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(2)
-#endif
-			for (int g = 0; g < group_; g++)
-			{
-				float *out = top_data + g * top_cstep;
 
-				const float bias0 = bias_term_ ? bias_data[g] : 0.f;
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
+#endif
+			for (int g = 0; g < this->group_; g++)
+			{
+				float* out = top_data + g * top_cstep;
+
+				const float bias0 = this->bias_term_ ? bias_data[g] : 0.f;
 
 				const float* kernel0 = weights_data + g * 9;
 
@@ -466,26 +665,37 @@ namespace glasssix
 				const float* k0 = kernel0;
 				const float* k1 = kernel0 + 3;
 				const float* k2 = kernel0 + 6;
-
-#if SIMD_TYPE >= SIMDTYPE_SSE
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
 				__m128 k0_data = _mm_loadu_ps(k0);
 				__m128 k1_data = _mm_loadu_ps(k1);
 				__m128 k2_data = _mm_loadu_ps(k2);
 
 				int i = 0;
 
-				for (; i < output_dim_h_; i++)
+				for (; i < this->output_dim_h_; i++)
 				{
-					int remain = output_dim_w_;
+					int remain = this->output_dim_w_;
 
 					for (; remain > 0; remain--)
 					{
+						float sum_sum = bias0;
+						__m128 sum = _mm_setzero_ps();
 						__m128 r0_data = _mm_loadu_ps(r0);
 						__m128 r1_data = _mm_loadu_ps(r1);
 						__m128 r2_data = _mm_loadu_ps(r2);
 
-						*outptr = mul_add_3x3_simd(r0_data, r1_data, r2_data, k0_data, k1_data, k2_data, bias0);
+						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+						//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
 
+						float temp[4];
+						_mm_storeu_ps(temp, sum);
+						for (int i = 0; i < 3; i++)
+						{
+							sum_sum += temp[i];
+						}
+						*outptr += sum_sum;
 						r0 += 2;
 						r1 += 2;
 						r2 += 2;
@@ -496,13 +706,12 @@ namespace glasssix
 					r1 += tailstep;
 					r2 += tailstep;
 				}
-
 #else
 				int i = 0;
 
-				for (; i < outh; i++)
+				for (; i < this->output_dim_h_; i++)
 				{
-					int remain = outw;
+					int remain = this->output_dim_w_;
 
 					for (; remain > 0; remain--)
 					{
@@ -519,12 +728,10 @@ namespace glasssix
 					r2 += tailstep;
 				}
 #endif
-
 			}
 
 			p->scope_end();
 		}
-
 		INSTANCE_CLASS(operation_convolutiondepthwise);
 		REGISTE(operation_convolutiondepthwise);
 	}

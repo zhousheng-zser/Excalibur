@@ -12,8 +12,17 @@ namespace glasssix
 		public:
 			operation_convolutiondepthwise(const operation_param& param);
 
+#ifdef HARDCODE
+			virtual void init_weights() {}
+#else
+			virtual int init_weights(FILE *fp);
+#endif //!HARDCODE
+
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
+			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 			virtual void forward_gpu_f32(
@@ -29,10 +38,9 @@ namespace glasssix
 		private:
 			std::shared_ptr<memory::tensor<float>> U_;
 			std::shared_ptr<memory::tensor<float>> V_;
-			std::shared_ptr<memory::tensor<float>> kernel_tm;
-	
-			void forward_cpu_int8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+			std::shared_ptr<memory::tensor<float>> kernel_tm_;
+			std::shared_ptr<memory::tensor<float>> border_bottom_;
+
 
 			void forward_winograd_f32(std::shared_ptr < memory::tensor<float>>& bottom,
 				std::shared_ptr < memory::tensor<float>>& top);

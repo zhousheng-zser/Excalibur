@@ -14,11 +14,11 @@ namespace glasssix
 		public:
 			explicit operation_batchnorm(const operation_param& param);
 
-			virtual const char* type() const { return params_.type_.c_str(); }
+			virtual const char* type() const { return this->params_.type_.c_str(); }
 
 			virtual ~operation_batchnorm() {}
 
-			virtual int init_weights() { return 0; };
+			virtual int init_weights() {return 0;}
 
 			virtual int init_weights(FILE *fp);
 

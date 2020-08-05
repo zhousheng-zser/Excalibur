@@ -53,7 +53,7 @@ namespace glasssix
 				operation_param op_param;
 				op_param.type_ = pipe_param_str_[i][0];
 				op_param.name_ = pipe_param_str_[i][1];
-				op_param.device_ = device_;
+				op_param.device_ = this->device_;
 				op_param.input_count_ = atoi(pipe_param_str_[i][2].c_str());
 				op_param.output_count_ = atoi(pipe_param_str_[i][3].c_str());
 				if (op_param.output_count_ <= 0)
@@ -73,7 +73,7 @@ namespace glasssix
 				{
 					// a kind of input method, attach 1 input featmap at top
 					op_param.input_count_ = 1;
-					op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input"};
+					op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input" };
 				}
 				else
 				{
@@ -92,7 +92,7 @@ namespace glasssix
 
 			// load data
 			init_weights(model_file);
-			
+
 			//build dag
 			op_nodes_.resize(operations_.size());
 			for (size_t i = 0; i < operations_.size(); i++)
@@ -342,7 +342,7 @@ namespace glasssix
 		std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
 			pipeline<Dtype>::forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
 		{
-			profiler *p = profiler::get();
+			profiler* p = profiler::get();
 			if (profile_)
 			{
 				p->turn_on();

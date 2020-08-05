@@ -1,5 +1,6 @@
 #include "../../include/Excalibur/operation_pooling.hpp"
 #include "../../include/Excalibur/operation_reflector.hpp"
+#include <cfloat>
 
 namespace glasssix
 {

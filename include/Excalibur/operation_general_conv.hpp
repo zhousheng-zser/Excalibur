@@ -14,7 +14,7 @@ namespace glasssix
 		public:
 			explicit operation_general_conv(const operation_param& param);
 
-			virtual const char* type() const { return params_.type_.c_str(); }
+			virtual const char* type() const { return this->params_.type_.c_str(); }
 
 			virtual ~operation_general_conv() {}
 

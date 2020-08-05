@@ -52,7 +52,7 @@ namespace glasssix
 				else if (split_string(attrs[i], "=")[0] == "8")
 				{
 					int8_scale_term_ = (bool)atoi(split_string(attrs[i], "=")[1].c_str());
-					params_.set_int8_quantization(int8_scale_term_);
+					this->params_.set_int8_quantization(int8_scale_term_);
 				}
 				else if (split_string(attrs[i], "=")[0] == "9")
 				{

@@ -16,9 +16,6 @@
     <Filter Include="Header Files\utils">
       <UniqueIdentifier>{7d008de5-d425-4b1d-8c3f-c75382ed2b51}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\arm">
-      <UniqueIdentifier>{877363b3-2532-4782-8fb0-28cace06e72a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\ops">
       <UniqueIdentifier>{1fa4a458-eb1b-4297-ac0e-e4130f57dc91}</UniqueIdentifier>
     </Filter>
@@ -36,6 +33,9 @@
     </Filter>
     <Filter Include="Source Files\utils\cu">
       <UniqueIdentifier>{4e4e4f56-19a8-4c94-a7d6-89856e5440c2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ops\arm">
+      <UniqueIdentifier>{877363b3-2532-4782-8fb0-28cace06e72a}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -135,6 +135,33 @@
     <ClInclude Include="..\..\include\Excalibur\operation_cut_border.hpp">
       <Filter>Header Files\ops</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_convolution_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_convolutiondepthwise_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_deconvolutiondepthwise_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_eltwise_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_innerproduct_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_sigmoid_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_softmax_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_pooling_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_prelu_arm.hpp">
+      <Filter>Header Files\ops\arm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Excalibur\pipeline.cpp">
@@ -211,6 +238,33 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\operation_permute.cpp">
       <Filter>Source Files\ops</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_convolution_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_convolutiondepthwise_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_deconvolutiondepthwise_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_eltwise_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_innerproduct_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_sigmoid_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_softmax_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_pooling_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_prelu_arm.cpp">
+      <Filter>Source Files\ops\arm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

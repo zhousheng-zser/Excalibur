@@ -13,13 +13,13 @@ namespace glasssix
 		public:
 			explicit operation_innerproduct(const operation_param& param);
 
-			virtual const char* type() const { return params_.type_.c_str(); }
+			virtual const char* type() const { return this->params_.type_.c_str(); }
 
 			virtual ~operation_innerproduct() {}
 
 			virtual int init_weights();
 
-			virtual int init_weights(FILE *fp);
+			virtual int init_weights(FILE* fp);
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
@@ -27,7 +27,7 @@ namespace glasssix
 
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN

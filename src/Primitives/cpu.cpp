@@ -6,11 +6,17 @@
 #include "unistd.h"
 #endif
 
+#ifdef _MSC_VER
 #include <intrin.h>
+#elif defined(x86)
+#ifdef __GNUC__
+#include <x86intrin.h>
+#endif
+#endif
 #include <vector>
 #include <array>
 #include <bitset>
-
+#include <cstring>
 namespace glasssix
 {
 #ifdef x86

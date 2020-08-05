@@ -54,7 +54,7 @@ namespace glasssix
 			const float* bottom_data_b = nullptr;
 			const int count = tops[0]->count();
 			float* top_data = tops[0]->mutable_cpu_data();
-			switch (type_)
+			switch (this->type_)
 			{
 			case SUM:
 				math_functions::cpu_set(count, 0.0f, top_data);

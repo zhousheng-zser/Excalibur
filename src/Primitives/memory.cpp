@@ -7,14 +7,14 @@ namespace glasssix
 {
 	namespace memory
 	{
-		EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate()
+		EXPORT_EXCALIBUR_PRIMITIVES void glasssix_terminate() noexcept
 		{
 			std::terminate();
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size)
+		EXPORT_EXCALIBUR_PRIMITIVES void* heap_alloc(std::size_t size) noexcept
 		{
-			auto buffer = ::new (std::nothrow) byte_type[size];
+			auto buffer = ::operator new(size);
 
 			// Allocation failure is a fatal error.
 			// As is the principle, we just terminate the process.
@@ -26,19 +26,19 @@ namespace glasssix
 			return buffer;
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory)
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory) noexcept
 		{
-			if (memory != nullptr)
+			if (memory)
 			{
-				::operator delete[](memory);
+				::operator delete(memory);
 			}
 		}
 
-		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size)
+		EXPORT_EXCALIBUR_PRIMITIVES void heap_free(void* memory, std::size_t size) noexcept
 		{
 			if (memory != nullptr)
 			{
-				::operator delete[](memory, size);
+				::operator delete(memory, size);
 			}
 		}
 

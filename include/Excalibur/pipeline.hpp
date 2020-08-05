@@ -30,7 +30,7 @@ namespace glasssix
 			explicit pipeline(std::vector<std::string> hardcode_params, std::string model_file, int device = -1);
 
 
-			~pipeline() 
+			~pipeline()
 			{
 
 			};

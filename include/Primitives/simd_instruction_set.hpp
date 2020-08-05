@@ -247,7 +247,7 @@
 #define SIMD_ARM8_64_NEON_VERSION SIMD_VERSION_NUMBER(8, 1, 0)
 
   // TODO __ARM_FEATURE_FMA
-#if !defined(SIMD_ARM_INSTR_SET) && (defined(__ARM_NEON))
+#if defined(SIMD_ARM_INSTR_SET) && (defined(__ARM_NEON))
 #if __ARM_ARCH >= 8
 #if defined(__aarch64__)
 #define SIMD_ARM_INSTR_SET SIMD_ARM8_64_NEON_VERSION

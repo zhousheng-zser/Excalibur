@@ -26,6 +26,7 @@ namespace glasssix
 			data_ = nullptr;
 			order_ = order;
 			allocator_ = allocator;
+			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
 
@@ -314,6 +315,12 @@ namespace glasssix
 		}
 
 		template <typename Dtype>
+		void tensor<Dtype>::convert_order()
+		{
+			NOT_IMPLEMENTED;
+		}
+
+		template <typename Dtype>
 		void tensor<Dtype>::copy_from(const void* data, size_t size)
 		{
 			// USE GPU
@@ -335,7 +342,7 @@ namespace glasssix
 		tensor<Dtype> tensor<Dtype>::channel(int c)
 		{
 			CHECK_GE(c, 0);
-			if (order_ = NCHW)
+			if (order_ == NCHW)
 			{
 				CHECK_LE(c, shape_[1]);
 				return tensor<Dtype>(shape_[2], shape_[3], (Dtype*)data_->cpu_data() + c * step_, device_, NCHW, allocator_);
@@ -364,78 +371,10 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		void tensor<Dtype>::convert_order()
-		{
-			CHECK(data_);
-			int num = this->num();
-			int height = this->height();
-			int width = this->width();
-			int channel = this->channels();
-			int offset = height * width;
-			Dtype* cdata = this->mutable_cpu_data();
-			Dtype* temp_data = new Dtype[this->count()];
-			switch (order_)
-			{
-			case glasssix::memory::NCHW:
-				for (int n = 0; n < num; n++)
-				{
-					int n_offset = n * channel * offset;
-
-					for (int ch = 0; ch < channel; ++ch)
-					{
-						int channel_offset = ch * offset;
-
-						for (int row = 0; row < height; ++row)
-						{
-							int row_offset = row * width;
-
-							for (int col = 0; col < width; ++col)
-							{
-								temp_data[n_offset + (row_offset + col) * channel + ch] = cdata[n_offset + channel_offset + row_offset + col];
-							}
-						}
-					}
-				}
-				memcpy(cdata, temp_data, this->count());
-				order_ = NHWC;
-				this->shape_ = std::vector<int>{ num, height, width, channel };
-				break;
-			case glasssix::memory::NHWC:
-				for (int n = 0; n < num; n++)
-				{
-					int n_offset = n * channel * offset;
-
-					for (int ch = 0; ch < channel; ++ch)
-					{
-						int channel_offset = ch * offset;
-
-						for (int row = 0; row < height; ++row)
-						{
-							int row_offset = row * width;
-
-							for (int col = 0; col < width; ++col)
-							{
-								temp_data[n_offset + channel_offset + row_offset + col] = cdata[n_offset + (row_offset + col) * channel + ch];
-							}
-						}
-					}
-				}
-				memcpy(cdata, temp_data, this->count());
-				order_ = NCHW;
-				this->shape_ = std::vector<int>{ num, channel, height, width };
-				break;
-			default:
-				NOT_IMPLEMENTED;
-				break;
-			}
-			delete temp_data;
-		}
-
-		template<typename Dtype>
 		Dtype* tensor<Dtype>::row(int y)
 		{
 			CHECK_GE(y, 0);
-			if (order_ = NCHW)
+			if (order_ == NCHW)
 			{
 				CHECK_LE(y, shape_[2]);
 				return data_->mutable_cpu_data() + y * shape_[3];
@@ -500,7 +439,7 @@ namespace glasssix
 		template class tensor<char>;
 		template class tensor<signed char>;
 		template class tensor<short>;
-		template class tensor<unsigned int>;
 		template class tensor<unsigned short>;
+		template class tensor<unsigned int>;
 	}
 }

@@ -3,50 +3,13 @@
 #define _TENSOR_HPP_
 #include "syncedmem.hpp"
 #include <vector>
+#include <memory>
 
 namespace glasssix
 {
 	namespace memory
 	{
 		enum orderType { NCHW, NHWC };
-
-		enum Pixel_Type
-		{
-			T_CONVERT_SHIFT = 16,
-			T_FORMAT_MASK = 0x0000ffff,
-			T_CONVERT_MASK = 0xffff0000,
-
-			T_RGB = 1,
-			T_BGR = 2,
-			T_GRAY = 3,
-			T_RGBA = 4,
-			T_BGRA = 5,
-
-			T_RGB2BGR = T_RGB | (T_BGR << T_CONVERT_SHIFT),
-			T_RGB2GRAY = T_RGB | (T_GRAY << T_CONVERT_SHIFT),
-			T_RGB2RGBA = T_RGB | (T_RGBA << T_CONVERT_SHIFT),
-			T_RGB2BGRA = T_RGB | (T_BGRA << T_CONVERT_SHIFT),
-
-			T_BGR2RGB = T_BGR | (T_RGB << T_CONVERT_SHIFT),
-			T_BGR2GRAY = T_BGR | (T_GRAY << T_CONVERT_SHIFT),
-			T_BGR2RGBA = T_BGR | (T_RGBA << T_CONVERT_SHIFT),
-			T_BGR2BGRA = T_BGR | (T_BGRA << T_CONVERT_SHIFT),
-
-			T_GRAY2RGB = T_GRAY | (T_RGB << T_CONVERT_SHIFT),
-			T_GRAY2BGR = T_GRAY | (T_BGR << T_CONVERT_SHIFT),
-			T_GRAY2RGBA = T_GRAY | (T_RGBA << T_CONVERT_SHIFT),
-			T_GRAY2BGRA = T_GRAY | (T_BGRA << T_CONVERT_SHIFT),
-
-			T_RGBA2RGB = T_RGBA | (T_RGB << T_CONVERT_SHIFT),
-			T_RGBA2BGR = T_RGBA | (T_BGR << T_CONVERT_SHIFT),
-			T_RGBA2GRAY = T_RGBA | (T_GRAY << T_CONVERT_SHIFT),
-			T_RGBA2BGRA = T_RGBA | (T_BGRA << T_CONVERT_SHIFT),
-
-			T_BGRA2RGB = T_BGRA | (T_RGB << T_CONVERT_SHIFT),
-			T_BGRA2BGR = T_BGRA | (T_BGR << T_CONVERT_SHIFT),
-			T_BGRA2GRAY = T_BGRA | (T_GRAY << T_CONVERT_SHIFT),
-			T_BGRA2RGBA = T_BGRA | (T_RGBA << T_CONVERT_SHIFT),
-		};
 
 		/// <summary>
 		/// A non-generic abstaction of glasssix::memory::tensor.
@@ -183,7 +146,7 @@ namespace glasssix
 				return device_ >= 0 ? gpu_data_any() : cpu_data_any();
 			}
 
-			virtual void copy_from(const void* data, size_t size);
+			virtual void copy_from(const void* data, size_t size) override;
 
 			virtual int num() const override
 			{
@@ -246,7 +209,7 @@ namespace glasssix
 			{
 				return shape_;
 			}
-
+			
 			void reshape(std::vector<int> data_shape)
 			{
 				shape_ = data_shape;
