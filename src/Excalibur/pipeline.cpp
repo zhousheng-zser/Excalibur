@@ -75,58 +75,58 @@ namespace glasssix
 					pipe_param_str_.push_back(useful_array);
 				}
 
-			for (size_t i = 0; i < pipe_param_str_.size(); i++)
-			{
-				operation_param op_param;
-				op_param.type_ = pipe_param_str_[i][0];
-				op_param.name_ = pipe_param_str_[i][1];
-				op_param.device_ = this->device_;
-				op_param.input_count_ = atoi(pipe_param_str_[i][2].c_str());
-				op_param.output_count_ = atoi(pipe_param_str_[i][3].c_str());
-				if (op_param.output_count_ <= 0)
+				for (size_t i = 0; i < pipe_param_str_.size(); i++)
 				{
-					op_param.output_featmaps_ = std::vector<std::string>();
-				}
-				for (size_t j = 0; j < op_param.output_count_; j++)
-				{
-					op_param.output_featmaps_.push_back(pipe_param_str_[i][4 + op_param.input_count_ + j]);
-				}
-				int specific_start_id = 4 + op_param.input_count_ + op_param.output_count_;
-				for (size_t j = specific_start_id; j < pipe_param_str_[i].size(); j++)
-				{
-					op_param.specific_params_ += (pipe_param_str_[i][j] + " ");
-				}
-				if (op_param.input_count_ <= 0)
-				{
-					// a kind of input method, attach 1 input featmap at top
-					op_param.input_count_ = 1;
-					op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input" };
-				}
-				else
-				{
-					for (size_t j = 0; j < op_param.input_count_; j++)
+					operation_param op_param;
+					op_param.type_ = pipe_param_str_[i][0];
+					op_param.name_ = pipe_param_str_[i][1];
+					op_param.device_ = device_;
+					op_param.input_count_ = atoi(pipe_param_str_[i][2].c_str());
+					op_param.output_count_ = atoi(pipe_param_str_[i][3].c_str());
+					if (op_param.output_count_ <= 0)
 					{
-						op_param.input_featmaps_.push_back(pipe_param_str_[i][4 + j]);
+						op_param.output_featmaps_ = std::vector<std::string>();
 					}
+					for (size_t j = 0; j < op_param.output_count_; j++)
+					{
+						op_param.output_featmaps_.push_back(pipe_param_str_[i][4 + op_param.input_count_ + j]);
+					}
+					int specific_start_id = 4 + op_param.input_count_ + op_param.output_count_;
+					for (size_t j = specific_start_id; j < pipe_param_str_[i].size(); j++)
+					{
+						op_param.specific_params_ += (pipe_param_str_[i][j] + " ");
+					}
+					if (op_param.input_count_ <= 0)
+					{
+						// a kind of input method, attach 1 input featmap at top
+						op_param.input_count_ = 1;
+						op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input" };
+					}
+					else
+					{
+						for (size_t j = 0; j < op_param.input_count_; j++)
+						{
+							op_param.input_featmaps_.push_back(pipe_param_str_[i][4 + j]);
+						}
+					}
+					op_params_.push_back(op_param);
 				}
-				op_params_.push_back(op_param);
-			}
 
 				for (size_t i = 0; i < op_params_.size(); i++)
 				{
 					operations_.push_back(operation_reflector<Dtype>::instance().create_object(op_params_[i]));
 				}
 
-			// load data
-			init_weights(model_file);
+				// load data
+				init_weights(model_file);
 
-			//build dag
-			op_nodes_.resize(operations_.size());
-			for (size_t i = 0; i < operations_.size(); i++)
-			{
-				op_nodes_[i] = node<std::string>(operations_[i]->param().name_);
-				operation_names_index_[operations_[i]->param().name_] = i;
-			}
+				//build dag
+				op_nodes_.resize(operations_.size());
+				for (size_t i = 0; i < operations_.size(); i++)
+				{
+					op_nodes_[i] = node<std::string>(operations_[i]->param().name_);
+					operation_names_index_[operations_[i]->param().name_] = i;
+				}
 
 				for (size_t i = 0; i < op_params_.size(); i++)
 				{
@@ -424,49 +424,58 @@ namespace glasssix
 				return results;
 			}
 
-		template<typename Dtype>
-		std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
-			pipeline<Dtype>::forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
-		{
-			profiler* p = profiler::get();
-			if (profile_)
+			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_gpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
 			{
-				p->turn_on();
-				p->scope_start(name_.c_str());
-			}
-			featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
-			for (size_t i = 0; i < ops_execution_order_.size(); i++)
-			{
-				p->scope_start(operations_[ops_execution_order_[i]]->param().name_.c_str());
-				std::vector<std::shared_ptr<memory::tensor<Dtype>>> input(ops_io_featmap_[i].first.size());
-				for (size_t j = 0; j < input.size(); j++)
+				profiler* p = profiler::get();
+				if (profile_)
 				{
-					input[j] = featmaps_[ops_io_featmap_[i].first[j]];
+					p->turn_on();
+					p->scope_start(name_.c_str());
 				}
-				std::vector<std::shared_ptr<memory::tensor<Dtype>>> output(ops_io_featmap_[i].second.size());
-				for (size_t j = 0; j < output.size(); j++)
+				featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
+				for (size_t i = 0; i < ops_execution_order_.size(); i++)
 				{
-					output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
+					p->scope_start(operations_[ops_execution_order_[i]]->param().name_.c_str());
+					std::vector<std::shared_ptr<memory::tensor<Dtype>>> input(ops_io_featmap_[i].first.size());
+					for (size_t j = 0; j < input.size(); j++)
+					{
+						input[j] = featmaps_[ops_io_featmap_[i].first[j]];
+					}
+					std::vector<std::shared_ptr<memory::tensor<Dtype>>> output(ops_io_featmap_[i].second.size());
+					for (size_t j = 0; j < output.size(); j++)
+					{
+						output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
+					}
+					operations_[ops_execution_order_[i]]->forward_gpu(
+#ifdef USE_CUDA
+						cublas_handle_,
+#ifdef USE_CUDNN
+						cudnn_handle_,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+						input, output);
+					for (size_t j = 0; j < output.size(); j++)
+					{
+						if (output[j] == nullptr)
+						{
+							std::cout << "!!!!";
+						}
+						featmaps_[ops_io_featmap_[i].second[j]] = output[j];
+					}
+					p->scope_end();
 				}
-				operations_[ops_execution_order_[i]]->forward_cpu(input, output);
-				for (size_t j = 0; j < output.size(); j++)
+				std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;
+				for (size_t i = 0; i < output_featmap_names_.size(); i++)
 				{
-					featmaps_[ops_io_featmap_[i].second[j]] = output[j];
+					results[output_featmap_names_[i]] = featmaps_[featmap_names_index_[output_featmap_names_[i]]];
 				}
-				p->scope_end();
+				if (profile_)
+				{
+					p->scope_end();
+					p->turn_off();
+				}
+				return results;
 			}
-			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;
-			for (size_t i = 0; i < output_featmap_names_.size(); i++)
-			{
-				results[output_featmap_names_[i]] = featmaps_[featmap_names_index_[output_featmap_names_[i]]];
-			}
-			if (profile_)
-			{
-				p->scope_end();
-				p->turn_off();
-			}
-			return results;
-		}
 
 			std::shared_ptr<memory::tensor<Dtype>> get_featmap(std::string featmap_name)
 			{
@@ -535,7 +544,7 @@ namespace glasssix
 				{
 					for (size_t j = 0; j < op_params_[i].input_count_; j++)
 					{
-						if (outfeatmap == op_params_[i].input_featmaps_[j])
+						if (outputfeatmap == op_params_[i].input_featmaps_[j])
 						{
 							return i;
 						}

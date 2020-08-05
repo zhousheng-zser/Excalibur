@@ -24,15 +24,6 @@ namespace glasssix
 			explicit pipeline(std::vector<std::string> hardcode_params, std::string model_file, int device = -1);
 			~pipeline();
 
-
-			~pipeline()
-			{
-
-			};
-
-			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>
-				forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
-
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_gpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
