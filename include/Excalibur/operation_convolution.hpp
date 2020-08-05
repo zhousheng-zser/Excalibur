@@ -13,7 +13,7 @@ namespace glasssix
 		{
 		public:
 			operation_convolution(const operation_param& param);
-
+			virtual ~operation_convolution() {}
 			virtual int init_weights();
 
 			virtual int init_weights(FILE *fp);
@@ -52,6 +52,8 @@ namespace glasssix
 
 			void conv3x3s1_winograd23_int8(const std::shared_ptr<memory::tensor<signed char> >& bottom_blob, 
 				std::shared_ptr<memory::tensor<int> >& top_blob);
+
+			void forward_im2col_int8_tr_kernel();
 
 			void conv_im2col_sgemm_int8_dequant_sse(const std::shared_ptr<memory::tensor<signed char> >& bottom_blob, 
 				std::shared_ptr<memory::tensor<float> >& top_blob, float scale_dequant);
@@ -97,15 +99,16 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<int>> top_int32_;            
 			std::shared_ptr<memory::tensor<signed char>> bottom_int8_;
 			std::shared_ptr<memory::tensor<signed char>> bottom_int8_bordered_;
-			std::shared_ptr<memory::tensor<short>> kernel_tm_int8_;
+			std::vector<std::shared_ptr<memory::tensor<signed char>>> kernel_tm_int8_sgemm_;
+			std::vector<std::shared_ptr<memory::tensor<short>>> kernel_tm_int8_;
 			std::shared_ptr<memory::tensor<signed char>> weights1x1_int8_;
 			std::shared_ptr<memory::tensor<signed char>> col_buffer_int8_;
 			std::shared_ptr<memory::tensor<short> > bottom_blob_int8_tm_;
-			std::shared_ptr<memory::tensor<signed char>> kernel_tm_int8_sgemm_;
-			std::shared_ptr<memory::tensor<signed char>> bottom_im2row_;
+			std::shared_ptr<memory::tensor<signed char>> bottom_im2col_int8_;
 			std::shared_ptr<memory::tensor<signed char>> bottom_tm_int8_;
-
+			std::shared_ptr<memory::tensor<signed char>> bottom_im2row_;
 			
+
 
 			float* col_buffer_data;
 			float* bias_multiplier_data;

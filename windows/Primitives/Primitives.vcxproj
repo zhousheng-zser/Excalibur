@@ -14,7 +14,7 @@
     <VCProjectVersion>16.0</VCProjectVersion>
     <ProjectGuid>{8DA2420A-7980-4FEB-B6B0-A58430C950FF}</ProjectGuid>
     <RootNamespace>Primitives</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -64,13 +64,15 @@
       <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;FMT_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);$(SolutionDir)..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
-      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>$(CUDA_PATH_V10_1)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -82,8 +84,10 @@
       <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;USE_CUDA;FMT_EXPORT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\include\$(ProjectName);$(SolutionDir)..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -91,16 +95,32 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(CUDA_PATH)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(CUDA_PATH_V10_1)\lib\x64\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp" />
+    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp" />
+    <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\fmt\format.cc" />
+    <ClCompile Include="..\..\src\Primitives\fmt\os.cc" />
+    <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\memory.cpp" />
+    <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
+    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp" />
+    <ClCompile Include="..\..\src\Primitives\tensor.cpp" />
+  </ItemGroup>
+  <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp" />
-    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\basic_types.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\component_loader.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp" />
@@ -108,17 +128,21 @@
     <ClInclude Include="..\..\include\Primitives\abi\implements.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\meta.hpp" />
-    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_span.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp" />
+    <ClInclude Include="..\..\include\Primitives\abi\sha3.hpp" />
     <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp" />
+    <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
+    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\basic_math.hpp" />
     <ClInclude Include="..\..\include\Primitives\blas.hpp" />
     <ClInclude Include="..\..\include\Primitives\compiler.hpp" />
     <ClInclude Include="..\..\include\Primitives\cpu.hpp" />
+    <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
+    <ClInclude Include="..\..\include\Primitives\environment.hpp" />
     <ClInclude Include="..\..\include\Primitives\filesystem.hpp" />
     <ClInclude Include="..\..\include\Primitives\fmt\chrono.h" />
     <ClInclude Include="..\..\include\Primitives\fmt\color.h" />
@@ -133,40 +157,28 @@
     <ClInclude Include="..\..\include\Primitives\fmt\printf.h" />
     <ClInclude Include="..\..\include\Primitives\fmt\ranges.h" />
     <ClInclude Include="..\..\include\Primitives\fmt\time.h" />
+    <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp" />
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_fwd.hpp" />
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_impl.hpp" />
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std.hpp" />
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std_fwd.hpp" />
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std_impl.hpp" />
     <ClInclude Include="..\..\include\Primitives\gpu.hpp" />
-    <ClInclude Include="..\..\include\Primitives\environment.hpp" />
     <ClInclude Include="..\..\include\Primitives\hash_utils.hpp" />
     <ClInclude Include="..\..\include\Primitives\heap_allocator.hpp" />
-    <ClInclude Include="..\..\include\Primitives\basic_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\iterators.hpp" />
     <ClInclude Include="..\..\include\Primitives\logger.hpp" />
     <ClInclude Include="..\..\include\Primitives\memory.hpp" />
-    <ClInclude Include="..\..\include\Primitives\array_buffer.hpp" />
-    <ClInclude Include="..\..\include\Primitives\dllexport.hpp" />
     <ClInclude Include="..\..\include\Primitives\mutex_wrapper.hpp" />
     <ClInclude Include="..\..\include\Primitives\pool_allocator.hpp" />
     <ClInclude Include="..\..\include\Primitives\profiler.hpp" />
+    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
     <ClInclude Include="..\..\include\Primitives\scope_guard.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp" />
     <ClInclude Include="..\..\include\Primitives\simd_types.hpp" />
     <ClInclude Include="..\..\include\Primitives\singleton.hpp" />
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
-    <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp" />
-    <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp" />
-    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp" />
-    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp" />
-    <ClCompile Include="..\..\src\Primitives\cpu.cpp" />
-    <ClCompile Include="..\..\src\Primitives\fmt\format.cc" />
-    <ClCompile Include="..\..\src\Primitives\fmt\os.cc" />
-    <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
-    <ClCompile Include="..\..\src\Primitives\memory.cpp" />
-    <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />
-    <ClCompile Include="..\..\src\Primitives\syncedmem.cpp" />
-    <ClCompile Include="..\..\src\Primitives\tensor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="..\..\include\Primitives\abi\sha3.hpp">

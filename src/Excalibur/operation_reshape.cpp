@@ -36,7 +36,7 @@ namespace glasssix
 					LOG(FATAL) << "Un-supported Reshape Attribution " << split_string(attrs[i], "=")[0];
 				}
 			}
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>

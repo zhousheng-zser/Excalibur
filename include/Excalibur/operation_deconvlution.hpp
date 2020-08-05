@@ -16,7 +16,7 @@ namespace glasssix
 
 			virtual int init_weights();
 
-			virtual int init_weights(FILE *fp);
+			virtual int init_weights(FILE* fp);
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,

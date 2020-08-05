@@ -1,8 +1,31 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp">
-      <Filter>abi</Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{542ef3b7-403d-47b0-9d22-a0fc7d2439b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{dc17a2b0-e71e-4d46-9917-f9848323078a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\abi">
+      <UniqueIdentifier>{1e5f6c08-9701-4e7e-bf3b-d9a9cde09288}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\fmt">
+      <UniqueIdentifier>{056ae0b4-ac3f-40f7-9856-2d86318bc143}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\abi">
+      <UniqueIdentifier>{730a4368-870e-4bac-808e-bf8ec546c6b7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\fmt">
+      <UniqueIdentifier>{1b6553af-72c9-4258-be3c-f4ce8c9934c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\ghc">
+      <UniqueIdentifier>{0f41705b-7c96-40ac-9653-092aaeb71eb9}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\Primitives\cpu.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp">
       <Filter>abi</Filter>
@@ -25,10 +48,148 @@
     <ClCompile Include="..\..\src\Primitives\fmt\os.cc">
       <Filter>fmt</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp">
+      <Filter>Source Files\abi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\exceptions.cpp">
+      <Filter>Source Files\abi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\param_string.cpp">
+      <Filter>Source Files\abi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\abi\platform_encoding.cpp">
+      <Filter>Source Files\abi</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\fmt\format.cc">
+      <Filter>Source Files\fmt</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\fmt\os.cc">
+      <Filter>Source Files\fmt</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\Primitives\abi\abi_standard_export.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
-      <Filter>abi</Filter>
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\basic_types.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\box_value.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\class_factory.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\component_loader.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\consumer.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\exceptions.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\fundamental_semantics.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\guid.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\implements.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\iterable_object.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\meta.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_hash_map.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_span.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_string.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\sha3.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\abi\sha3_details.hpp">
+      <Filter>Header Files\abi</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\chrono.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\color.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\compile.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\core.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\format.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\format-inl.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\locale.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\os.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\ostream.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\posix.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\printf.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\ranges.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\fmt\time.h">
+      <Filter>Header Files\fmt</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\filesystem.hpp">
+      <Filter>Header Files\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_fwd.hpp">
+      <Filter>Header Files\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_impl.hpp">
+      <Filter>Header Files\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std.hpp">
+      <Filter>Header Files\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std_fwd.hpp">
+      <Filter>Header Files\ghc</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\ghc\fs_std_impl.hpp">
+      <Filter>Header Files\ghc</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\base_abi.hpp">
       <Filter>abi</Filter>
@@ -54,8 +215,11 @@
     <ClInclude Include="..\..\include\Primitives\abi\param_vector.hpp">
       <Filter>abi</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\abi\platform_encoding.hpp">
-      <Filter>abi</Filter>
+    <ClInclude Include="..\..\include\Primitives\filesystem.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\gpu.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\abi\g6_attributes.hpp">
       <Filter>abi</Filter>
@@ -133,8 +297,11 @@
     <ClInclude Include="..\..\include\Primitives\fmt\locale.h">
       <Filter>fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\fmt\os.h">
-      <Filter>fmt</Filter>
+    <ClInclude Include="..\..\include\Primitives\scope_guard.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\simd_instruction_set.hpp">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\fmt\ostream.h">
       <Filter>fmt</Filter>
@@ -148,26 +315,5 @@
     <ClInclude Include="..\..\include\Primitives\fmt\ranges.h">
       <Filter>fmt</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\Primitives\fmt\time.h">
-      <Filter>fmt</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Filter Include="abi">
-      <UniqueIdentifier>{4d0eddc1-28a6-44f4-9a07-b0395324d146}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="fmt">
-      <UniqueIdentifier>{028a8a9d-f8ce-407e-8df0-ff2974b9bf50}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="..\..\include\Primitives\abi\sha3.hpp">
-      <Filter>abi</Filter>
-    </Page>
-  </ItemGroup>
-  <ItemGroup>
-    <Natvis Include="..\..\include\Primitives\abi\g6_abi_types.natvis">
-      <Filter>abi</Filter>
-    </Natvis>
   </ItemGroup>
 </Project>

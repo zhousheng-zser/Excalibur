@@ -112,12 +112,12 @@ namespace glasssix
 
 			virtual ~operation() {}
 
-			virtual int init_weights() 
+			virtual int init_weights()
 			{
 				return 0;
 			}
 
-			virtual int init_weights(FILE *fp) 
+			virtual int init_weights(FILE *fp)
 			{
 				return 0;
 			}
@@ -129,7 +129,7 @@ namespace glasssix
 			// inference on gpu
 			void forward_gpu(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -145,7 +145,7 @@ namespace glasssix
 
 			const operation_param& param() const { return params_; }
 
-			virtual const char* type() const 
+			virtual const char* type() const
 			{
 				return "Unknown Type";
 			};
@@ -160,14 +160,14 @@ namespace glasssix
 			std::vector<float> featmap_scaletable_i8_;
 
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-				std::vector<std::shared_ptr<memory::tensor<float>>>& tops) 
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 			{
 				NOT_IMPLEMENTED;
 			};
 
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -186,7 +186,7 @@ namespace glasssix
 
 			virtual void forward_gpu_d64(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -197,7 +197,7 @@ namespace glasssix
 				forward_cpu_d64(bottoms, tops);
 			};
 
-			virtual void forward_cpu_f16(const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms, 
+			virtual void forward_cpu_f16(const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops)
 			{
 				LOG(WARNING) << "Degenerate to float32 type to forward, the preformace will cause slight performance degradation.";
@@ -236,7 +236,11 @@ namespace glasssix
 						bottoms_temp[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), nullptr));
 						auto bottoms_temp_data = bottoms_temp[i]->mutable_cpu_data();
 						auto bottoms_data = bottoms[i]->cpu_data();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 						half2float(bottoms_data, bottoms_temp_data, bottoms[i]->count());
+#else
+						NOT_IMPLEMENTED << " function 'half2float' ";
+#endif
 					}
 					forward_cpu_f32(bottoms_temp, tops_temp);
 					for (size_t i = 0; i < bottoms_temp.size(); i++)
@@ -244,7 +248,11 @@ namespace glasssix
 						tops[i].reset(new memory::tensor<unsigned short>(tops_temp[i]->data_shape(), tops_temp[i]->device(), tops_temp[i]->order(), nullptr));
 						auto tops_data = tops[i]->mutable_cpu_data();
 						auto top_temps_data = tops_temp[i]->cpu_data();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 						float2half(top_temps_data, tops_data, tops[i]->count());
+#else
+						NOT_IMPLEMENTED << " function 'float2half' ";
+#endif
 					}
 				}
 				else
@@ -255,7 +263,7 @@ namespace glasssix
 
 			virtual void forward_gpu_f16(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -306,7 +314,11 @@ namespace glasssix
 						bottoms_temp[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), nullptr));
 						auto bottoms_temp_data = bottoms_temp[i]->mutable_cpu_data();
 						auto bottoms_data = bottoms[i]->cpu_data();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 						half2float(bottoms_data, bottoms_temp_data, bottoms[i]->count());
+#else
+						NOT_IMPLEMENTED << " function 'half2float' ";
+#endif
 					}
 					forward_gpu_f32(
 #ifdef USE_CUDA
@@ -321,7 +333,11 @@ namespace glasssix
 						tops[i].reset(new memory::tensor<unsigned short>(tops_temp[i]->data_shape(), tops_temp[i]->device(), tops_temp[i]->order(), nullptr));
 						auto tops_data = tops[i]->mutable_cpu_data();
 						auto top_temps_data = tops_temp[i]->cpu_data();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
 						float2half(top_temps_data, tops_data, tops[i]->count());
+#else
+						NOT_IMPLEMENTED << " function 'float2half' ";
+#endif
 					}
 				}
 				else
@@ -330,7 +346,7 @@ namespace glasssix
 				}
 			}
 
-			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms, 
+			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 			{
 				NOT_IMPLEMENTED << " This function should be overrided in derived class";
@@ -338,7 +354,7 @@ namespace glasssix
 
 			virtual void forward_gpu_i8(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN

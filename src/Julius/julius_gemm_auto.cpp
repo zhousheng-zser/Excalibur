@@ -1,5 +1,5 @@
 #include "../../include/Julius/julius_gemm_align.hpp"
-#include <malloc.h>
+#include "Primitives/memory.hpp"
 
 namespace glasssix
 {
@@ -19,7 +19,7 @@ namespace glasssix
 		M = old_N; \
 		N = old_M; \
 		ldc = N; \
-		C = malloc(M*N * sizeof(float), 32); \
+		C = (float *)memory::aligned_heap_alloc(M*N * sizeof(float), 32); \
 	}
 
 #define SWAP_C \

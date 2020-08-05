@@ -439,6 +439,7 @@ namespace glasssix
 		template class tensor<char>;
 		template class tensor<signed char>;
 		template class tensor<short>;
+		template class tensor<unsigned short>;
 		template class tensor<unsigned int>;
 	}
 }

@@ -13,13 +13,15 @@ namespace glasssix
 		public:
 			explicit operation_scale(const operation_param& param);
 
-			virtual const char* type() const { return params_.type_.c_str(); }
+			virtual const char* type() const { return this->params_.type_.c_str(); }
 
 			virtual ~operation_scale() {}
 
-			virtual int init_weights() { return 0; };
-
+#ifdef HARDCODE
+			virtual void init_weights() {}
+#else
 			virtual int init_weights(FILE *fp);
+#endif //!HARDCODE
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,

@@ -15,21 +15,21 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		int operation_deconvolution<Dtype>::init_weights(FILE *fp)
+		int operation_deconvolution<Dtype>::init_weights(FILE* fp)
 		{
 			int quantize_tag;
 			fread(&quantize_tag, 1, sizeof(int), fp);
 			int mem = 0;
 			if (quantize_tag == 0)
 			{
-				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
-				fread(weights_f32_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(float), fp);
-				mem += weight_data_size_ * sizeof(float);
-				if (bias_term_)
+				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+				fread(this->weights_f32_[0]->mutable_cpu_data(), 1, this->weight_data_size_ * sizeof(float), fp);
+				mem += this->weight_data_size_ * sizeof(float);
+				if (this->bias_term_)
 				{
-					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
-					fread(weights_f32_[1]->mutable_cpu_data(), 1, output_channel_ * sizeof(float), fp);
-					mem += output_channel_ * sizeof(float);
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr)));
+					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
+					mem += this->output_channel_ * sizeof(float);
 				}
 				return mem;
 			}
@@ -47,22 +47,22 @@ namespace glasssix
 			std::normal_distribution<float> n(0, 0.3);
 			std::uniform_int_distribution<int> u(-128, 127);
 			int mem = 0;
-			if (!params_.int8_quantization_)
+			if (!this->params_.int8_quantization_)
 			{
-				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, params_.device_, memory::NCHW, nullptr)));
-				for (size_t i = 0; i < weight_data_size_; i++)
+				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < this->weight_data_size_; i++)
 				{
-					weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+					this->weights_f32_[0]->mutable_cpu_data()[i] = n(e);
 				}
-				mem += weight_data_size_ * sizeof(float);
-				if (bias_term_)
+				mem += this->weight_data_size_ * sizeof(float);
+				if (this->bias_term_)
 				{
-					weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(output_channel_, params_.device_, memory::NCHW, nullptr)));
-					for (size_t i = 0; i < output_channel_; i++)
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < this->output_channel_; i++)
 					{
-						weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+						this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
 					}
-					mem += output_channel_ * sizeof(float);
+					mem += this->output_channel_ * sizeof(float);
 				}
 			}
 			else
@@ -78,47 +78,47 @@ namespace glasssix
 		{
 			CHECK_EQ(bottoms.size(), 1);
 			CHECK_EQ(tops.size(), 1);
-			num_ = bottoms[0]->data_shape()[0];
-			bottom_dim_ = bottoms[0]->count(1, 4);
+			this->num_ = bottoms[0]->data_shape()[0];
+			this->bottom_dim_ = bottoms[0]->count(1, 4);
 			const float* bottom_data = bottoms[0]->cpu_data();
-			const float* weights = weights_f32_[0]->cpu_data();
+			const float* weights = this->weights_f32_[0]->cpu_data();
 			const float* bias = nullptr;
 			if (bottoms[0]->order() != memory::NCHW)
 			{
 				bottoms[0]->convert_order();
 			}
-			input_channel_ = bottoms[0]->data_shape()[1];
-			input_dim_h_ = bottoms[0]->data_shape()[2];
-			input_dim_w_ = bottoms[0]->data_shape()[3];
-			input_spatial_dim_ = input_dim_h_ * input_dim_w_;
-			if (output_dim_h_ == 0)
+			this->input_channel_ = bottoms[0]->data_shape()[1];
+			this->input_dim_h_ = bottoms[0]->data_shape()[2];
+			this->input_dim_w_ = bottoms[0]->data_shape()[3];
+			this->input_spatial_dim_ = this->input_dim_h_ * this->input_dim_w_;
+			if (this->output_dim_h_ == 0)
 			{
-				output_dim_h_ = (input_dim_h_ - 1) * stride_h_ + kernel_size_h_ - (pad_top_ + pad_bottom_);
+				this->output_dim_h_ = (this->input_dim_h_ - 1) * this->stride_h_ + this->kernel_size_h_ - (this->pad_top_ + this->pad_bottom_);
 			}
-			if (output_dim_w_ == 0)
+			if (this->output_dim_w_ == 0)
 			{
-				output_dim_w_ = (input_dim_w_ - 1) * stride_w_ + kernel_size_w_ - (pad_left_ + pad_right_);
+				this->output_dim_w_ = (this->input_dim_w_ - 1) * this->stride_w_ + this->kernel_size_w_ - (this->pad_left_ + this->pad_right_);
 			}
-			output_spatial_dim_ = output_dim_w_ * output_dim_h_;
-			tops[0].reset(new memory::tensor<float>(std::vector<int>{num_, output_channel_, output_dim_h_, output_dim_w_},
+			this->output_spatial_dim_ = this->output_dim_w_ * this->output_dim_h_;
+			tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 			float* top_data = tops[0]->mutable_cpu_data();
-			top_dim_ = tops[0]->count(1, 4);
-			col_buffer_.reset(new memory::tensor<float>(std::vector<int>{1, output_channel_ * kernel_size_h_ * kernel_size_w_, input_dim_h_, input_dim_w_},
+			this->top_dim_ = tops[0]->count(1, 4);
+			col_buffer_.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_* this->kernel_size_h_* this->kernel_size_w_, this->input_dim_h_, this->input_dim_w_},
 				-1, memory::NCHW, nullptr));
-			col_offset_ = input_spatial_dim_ * kernel_size_h_ * kernel_size_w_;
-			output_offset_ = output_channel_ * output_spatial_dim_ / group_;
-			if (bias_term_)
+			this->col_offset_ = this->input_spatial_dim_ * this->kernel_size_h_ * this->kernel_size_w_;
+			this->output_offset_ = this->output_channel_ * this->output_spatial_dim_ / this->group_;
+			if (this->bias_term_)
 			{
-				math_functions::cpu_set(output_dim_w_*output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
-				bias = weights_f32_[1]->cpu_data();
+				math_functions::cpu_set(this->output_dim_w_ * this->output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+				bias = this->weights_f32_[1]->cpu_data();
 			}
-			for (int n = 0; n < num_; n++)
+			for (int n = 0; n < this->num_; n++)
 			{
-				forward_sgemm(bottom_data + n * bottom_dim_, weights, top_data + n * top_dim_, bottoms[0]->order());
-				if (bias_term_)
+				forward_sgemm(bottom_data + n * this->bottom_dim_, weights, top_data + n * this->top_dim_, bottoms[0]->order());
+				if (this->bias_term_)
 				{
-					forward_sbias(top_data + n * top_dim_, bias, bottoms[0]->order());
+					forward_sbias(top_data + n * this->top_dim_, bias, bottoms[0]->order());
 				}
 			}
 		}
@@ -144,38 +144,38 @@ namespace glasssix
 			col_buffer_data = col_buffer_->mutable_cpu_data();
 			if (order == memory::NCHW)
 			{
-				for (int g = 0; g < group_; g++)
+				for (int g = 0; g < this->group_; g++)
 				{
-					math_functions::cpu_sgemm(CblasTrans, CblasNoTrans, output_channel_ * kernel_size_h_ * kernel_size_w_ / group_,
-						input_spatial_dim_, input_channel_ / group_, 1.0f,
-						weights + kernel_size_h_ * kernel_size_w_ * g, 
-						input + g * input_channel_ * input_spatial_dim_ / group_, 
-						0.0f, col_buffer_data + col_offset_ * g);
+					math_functions::cpu_sgemm(CblasTrans, CblasNoTrans, this->output_channel_ * this->kernel_size_h_ * this->kernel_size_w_ / this->group_,
+						this->input_spatial_dim_, this->input_channel_ / this->group_, 1.0f,
+						weights + this->kernel_size_h_ * this->kernel_size_w_ * g,
+						input + g * this->input_channel_ * this->input_spatial_dim_ / this->group_,
+						0.0f, col_buffer_data + this->col_offset_ * g);
 				}
-				col2im_cpu(col_buffer_data, input_channel_, output_dim_h_, output_dim_w_, kernel_size_h_,
-					kernel_size_w_, pad_left_, pad_top_, stride_h_, stride_w_, dilation_h_, dilation_w_, output);
+				col2im_cpu(col_buffer_data, this->input_channel_, this->output_dim_h_, this->output_dim_w_, this->kernel_size_h_,
+					this->kernel_size_w_, this->pad_left_, this->pad_top_, this->stride_h_, this->stride_w_, this->dilation_h_, this->dilation_w_, output);
 			}
 			else if (order == memory::NHWC)
 			{
 				NOT_IMPLEMENTED;
-				//if (group_ == 1)
+				//if (this->group_ == 1)
 				//{
-				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_,
-				//		input_Channel_, 1.0f,
+				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, this->input_spatial_dim_, this->output_channel_ * kernel_length_,
+				//		this->input_channel_, 1.0f,
 				//		input, weights, 0.0f, col_buff);
 				//}
-				//else if (group_ > 1)
+				//else if (this->group_ > 1)
 				//{
-				//	float* temp = (float*)malloc(input_spatial_dim_ * kernel_length_ * sizeof(float));
-				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, input_spatial_dim_, output_Channel_ * kernel_length_ / group_,
-				//		input_Channel_, 1.0f,
+				//	float* temp = (float*)malloc(this->input_spatial_dim_ * kernel_length_ * sizeof(float));
+				//	math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, this->input_spatial_dim_, this->output_channel_ * kernel_length_ / this->group_,
+				//		this->input_channel_, 1.0f,
 				//		input, weights, 0.0f, temp);
 
-				//	for (int i = 0; i < input_spatial_dim_; i++)
+				//	for (int i = 0; i < this->input_spatial_dim_; i++)
 				//	{
-				//		for (int j = 0; j < output_Channel_; j++)
+				//		for (int j = 0; j < this->output_channel_; j++)
 				//		{
-				//			memcpy(col_buff + i * output_Channel_ * kernel_length_ + j * kernel_length_, 
+				//			memcpy(col_buff + i * this->output_channel_ * kernel_length_ + j * kernel_length_, 
 				//				temp + i * kernel_length_, kernel_length_ * sizeof(float));
 				//		}
 				//	}
@@ -200,14 +200,14 @@ namespace glasssix
 		{
 			if (order == memory::NCHW)
 			{
-				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_channel_,
-					output_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
+				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, this->output_channel_,
+					this->output_spatial_dim_, 1, 1.0f, bias, bias_multiplier_->cpu_data(),
 					1.0f, output);
 			}
 			else if (order == memory::NHWC)
 			{
-				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, output_spatial_dim_,
-					output_channel_, 1, 1.0f, bias_multiplier_->cpu_data(), bias,
+				math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, this->output_spatial_dim_,
+					this->output_channel_, 1, 1.0f, bias_multiplier_->cpu_data(), bias,
 					1.0f, output);
 			}
 			else

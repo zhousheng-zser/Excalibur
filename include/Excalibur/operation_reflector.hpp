@@ -27,8 +27,18 @@ namespace glasssix
 				{
 					std::string type = param.type_;
 					std::transform(type.begin(), type.end(), type.begin(), ::tolower);
+#ifdef __ARM_ARCH
+					if (x.first == std::string("operation_") + type)
+					{
+						if (object_map_.find(x.first + "_arm") == object_map_.end())
+							return x.second(param);
+						else
+							return object_map_.find(x.first + "_arm")->second(param);
+					}
+#else
 					if (x.first == std::string("operation_") + type)
 						return x.second(param);
+#endif
 				}
 				LOG(FATAL) << "Un-suppoted operation type: " << param.type_ << ". ";
 				return nullptr;

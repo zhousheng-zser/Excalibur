@@ -28,21 +28,21 @@ namespace glasssix
 					LOG(FATAL) << "Un-supported Scale Attribution " << split_string(attrs[i], "=")[0];
 				}
 			}
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>
 		int operation_scale<Dtype>::init_weights(FILE *fp)
 		{
 			int mem = 0;
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(scale_data_size_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[0]->mutable_cpu_data(), 1, scale_data_size_ * sizeof(float), fp);
-			mem += scale_data_size_;
-			if (bias_term_)
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->scale_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[0]->mutable_cpu_data(), 1, this->scale_data_size_ * sizeof(float), fp);
+			mem += this->scale_data_size_;
+			if (this->bias_term_)
 			{
-				weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(scale_data_size_, params_.device_, memory::NCHW, nullptr)));
-				fread(weights_f32_[1]->mutable_cpu_data(), 1, scale_data_size_ * sizeof(float), fp);
-				mem += scale_data_size_;
+				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->scale_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+				fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->scale_data_size_ * sizeof(float), fp);
+				mem += this->scale_data_size_;
 			}
 			return mem * sizeof(float);
 		}
@@ -54,15 +54,15 @@ namespace glasssix
 			CHECK_EQ(bottoms.size(), tops.size());
 			for (size_t i = 0; i < bottoms.size(); i++)
 			{
-				CHECK_EQ(bottoms[i]->channels(), scale_data_size_);
+				CHECK_EQ(bottoms[i]->channels(), this->scale_data_size_);
 				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));
 				float* top_data = tops[i]->mutable_cpu_data();
 				const float* bottom_data = bottoms[i]->cpu_data();
-				const float* scale_data = weights_f32_[0]->cpu_data();
+				const float* scale_data = this->weights_f32_[0]->cpu_data();
 				const float* bias_data = nullptr;
-				if (bias_term_)
+				if (this->bias_term_)
 				{
-					bias_data = weights_f32_[1]->cpu_data();
+					bias_data = this->weights_f32_[1]->cpu_data();
 				}
 				if (bottoms[i]->order() == memory::NCHW)
 				{

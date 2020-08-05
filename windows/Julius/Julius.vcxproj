@@ -90,7 +90,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PreprocessorDefinitions>_OPENMP;_CRT_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OpenMPSupport>true</OpenMPSupport>
+      <OpenMPSupport>false</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -107,7 +107,7 @@
       <ConformanceMode>false</ConformanceMode>
       <PreprocessorDefinitions>_OPENMP;_CRT_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <OpenMPSupport>true</OpenMPSupport>
+      <OpenMPSupport>false</OpenMPSupport>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)../include;$(SolutionDir)../include/$(ProjectName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>

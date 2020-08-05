@@ -21,7 +21,7 @@ namespace glasssix
 		template <>
 		void operation<float>::forward_gpu(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -63,7 +63,7 @@ namespace glasssix
 		template <>
 		void operation<unsigned short>::forward_gpu(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -73,12 +73,12 @@ namespace glasssix
 		{
 			forward_gpu_f16(
 #ifdef USE_CUDA
-					cublas_handle_,
+				cublas_handle_,
 #ifdef USE_CUDNN
-					cudnn_handle,
+				cudnn_handle,
 #endif //!USE_CUDNN
 #endif //!USE_CUDA
-					bottoms, tops);
+				bottoms, tops);
 		}
 
 		template <>
@@ -91,7 +91,7 @@ namespace glasssix
 		template <>
 		void operation<double>::forward_gpu(
 #ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
+			cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 			cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN

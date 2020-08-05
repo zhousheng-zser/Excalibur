@@ -24,34 +24,34 @@ namespace glasssix
 					LOG(FATAL) << "Un-supported Batchnorm Attribution " << split_string(attrs[i], "=")[0];
 				}
 			}
-			params_.inplace_ = true;
+			this->params_.inplace_ = true;
 		}
 
 		template<typename Dtype>
-		int operation_batchnorm<Dtype>::init_weights(FILE *fp)
+		int operation_batchnorm<Dtype>::init_weights(FILE* fp)
 		{
 			// slope
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[0]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
-			auto slope_data = weights_f32_[0]->cpu_data();
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[0]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
+			auto slope_data = this->weights_f32_[0]->cpu_data();
 			// mean
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[1]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
-			auto mean_data = weights_f32_[1]->cpu_data();
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[1]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
+			auto mean_data = this->weights_f32_[1]->cpu_data();
 			// var
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[2]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
-			auto var_data = weights_f32_[2]->cpu_data();
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[2]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
+			auto var_data = this->weights_f32_[2]->cpu_data();
 			// bias
-			weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr)));
-			fread(weights_f32_[3]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
-			auto bias_data = weights_f32_[3]->cpu_data();
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			fread(this->weights_f32_[3]->mutable_cpu_data(), 1, channels_ * sizeof(float), fp);
+			auto bias_data = this->weights_f32_[3]->cpu_data();
 
 			//a = bias - slope * mean / sqrt(var)
-			a_.reset(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr));
+			a_.reset(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr));
 			auto a_data = a_->mutable_cpu_data();
 			//b = slope / sqrt(var)
-			b_.reset(new memory::tensor<float>(channels_, params_.device_, memory::NCHW, nullptr));
+			b_.reset(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr));
 			auto b_data = b_->mutable_cpu_data();
 
 			for (size_t i = 0; i < channels_; i++)
@@ -102,19 +102,19 @@ namespace glasssix
 		}
 
 
-//		template<typename Dtype>
-//		void operation_batchnorm<Dtype>::forward_gpu_f32(
-//#ifdef USE_CUDA
-//			cublasHandle_t &cublas_handle_,
-//#ifdef USE_CUDNN
-//			cudnnHandle_t cudnn_handle,
-//#endif //!USE_CUDNN
-//#endif //!USE_CUDA
-//			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-//			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
-//		{
-//			NOT_IMPLEMENTED;
-//		}
+		template<typename Dtype>
+		void operation_batchnorm<Dtype>::forward_gpu_f32(
+#ifdef USE_CUDA
+			cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+			cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
+		{
+			NOT_IMPLEMENTED;
+		}
 
 		INSTANCE_CLASS(operation_batchnorm);
 		REGISTE(operation_batchnorm);
