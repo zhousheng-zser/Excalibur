@@ -67,12 +67,4 @@
 *.vs
 *.CopyComplete
 *.bin
-windows/
-examples/
-include/Excalibur/prune.hpp
-src/PersonalReality/main.cpp
-src/Reconstruct/deconv_net.cpp
-src/Reconstruct/main.cpp
-include/Reconstruct/deconv_net.hpp
-include/Apollo/
-src/Apollo/
+build/

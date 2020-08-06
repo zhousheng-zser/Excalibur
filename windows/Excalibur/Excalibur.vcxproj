@@ -1,30 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="CplusC|Win32">
-      <Configuration>CplusC</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="CplusC|x64">
-      <Configuration>CplusC</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="CplusG|Win32">
-      <Configuration>CplusG</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="CplusG|x64">
-      <Configuration>CplusG</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|Win32">
-      <Configuration>Debug</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|Win32">
-      <Configuration>Release</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
@@ -33,114 +9,25 @@
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="SharpC|Win32">
-      <Configuration>SharpC</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="SharpC|x64">
-      <Configuration>SharpC</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="SharpG|Win32">
-      <Configuration>SharpG</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="SharpG|x64">
-      <Configuration>SharpG</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{546E42E9-516A-4D09-BBE0-D3D567AC1328}</ProjectGuid>
     <RootNamespace>Excalibur</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|Win32'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
     <UseIntelMKL>No</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v142</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
-    <UseIntelMKL>No</UseIntelMKL>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
-    <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
     <UseIntelMKL>No</UseIntelMKL>
@@ -151,164 +38,42 @@
   </ImportGroup>
   <ImportGroup Label="Shared">
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
-    <TargetName>$(ProjectName)d</TargetName>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <TargetName>lib$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
+    <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
+    <TargetName>lib$(ProjectName)</TargetName>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'">
-    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'">
-    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'">
-    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|x64'">
-    <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(CUDA_PATH)\include;$(SolutionDir)..\include\$(ProjectName);$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(SolutionDir)..\include\Infrastructure;$(IncludePath)</IncludePath>
-  </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;USE_CUDA;USE_CUDNN;INT8_DATA;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)../include/$(ProjectName);$(SolutionDir)../include;$(SolutionDir)../include/Infrasructure</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
+    <CudaCompile />
     <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|Win32'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(CUDA_PATH_V10_1)\lib\x64\*.lib;$(SolutionDir)..\Build\x64\$(Configuration)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -318,220 +83,113 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>false</ConformanceMode>
+      <PreprocessorDefinitions>EXPORT_EXCALIBUR_PRIMITIVES;_CRT_SECURE_NO_WARNINGS;USE_CUDA;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
       <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SharpC|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='SharpG|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CplusC|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp14</LanguageStandard>
-    </ClCompile>
-    <Link>
-      <EnableCOMDATFolding>true</EnableCOMDATFolding>
-      <OptimizeReferences>true</OptimizeReferences>
-    </Link>
-  </ItemDefinitionGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='CplusG|x64'">
-    <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>MaxSpeed</Optimization>
-      <FunctionLevelLinking>true</FunctionLevelLinking>
-      <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <ConformanceMode>true</ConformanceMode>
-      <PreprocessorDefinitions>USE_CUDA;USE_CUDNN;$(PROCESSOR_ARCHITECTURE);%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
-      <OpenMPSupport>false</OpenMPSupport>
-      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>%(AdditionalIncludeDirectories);$(CudaToolkitIncludeDir);$(SolutionDir)../include/$(ProjectName);$(SolutionDir)../include;$(SolutionDir)../include/Infrasructure</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>$(CUDA_PATH_V10_1)\lib\x64\*.lib;$(SolutionDir)..\Build\x64\$(Configuration)\*.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <CudaCompile />
   </ItemDefinitionGroup>
   <ItemGroup>
     <ProjectReference Include="..\Julius\Julius.vcxproj">
       <Project>{e28b3350-1f2d-473d-83b7-1bde8e56cd6e}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\Primitives\Primitives.vcxproj">
+      <Project>{8da2420a-7980-4feb-b6b0-a58430c950ff}</Project>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\include\Excalibur\arm\batchnorm_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\conv_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\conv_arm_func.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\deconv_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\eltwise_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\inner_product_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\neon_mathfun.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\pooling_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\pooling_arm_func.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\prelu_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\scale_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\sigmoid_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\arm\softmax_arm.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\axpy.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\base_conv.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\bn.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\concat.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\convdw_3x3s1_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\convdw_3x3s2_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\conv_1x1s1_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\conv_cudnn_gpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\conv_native_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\conv_native_gpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\conv_winograd_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\cudnn.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\deconv.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\depthwise_conv_kernel.cuh" />
-    <ClInclude Include="..\..\include\Excalibur\eltwise.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\flip.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\ftensor.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_convolutiondepthwise_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_convolution_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_deconvolutiondepthwise_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_eltwise_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_innerproduct_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_pooling_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_prelu_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_sigmoid_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\arm\operation_softmax_arm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\dag.hpp" />
     <ClInclude Include="..\..\include\Excalibur\im2col.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\inner_product.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\io.hpp" />
     <ClInclude Include="..\..\include\Excalibur\math_functions.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\mirrormax.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\mkldnn_alternate.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\mkl_alternate.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\normalize.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\pca.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\pooling.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\prelu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\prune.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\reshape.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\scale.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\sigmoid.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\slice.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\softmax.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\support_layers.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\tensor_operation_cpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\tensor_operation_gpu.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\upsample.hpp" />
-    <ClInclude Include="..\..\include\Excalibur\utensor.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_batchnorm.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_concat.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_convolution.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_convolutiondepthwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_crop.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_cut_border.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_deconvlution.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_deconvolutiondepthwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_detectionoutput.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_eltwise.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_flatten.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_innerproduct.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_input.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_make_border.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_normalize.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_permute.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_pooling.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_prelu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_priorbox.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_reflector.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_general_conv.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_relu.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_reshape.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_scale.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_sigmoid.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_softmax.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\operation_split.hpp" />
+    <ClInclude Include="..\..\include\Excalibur\pipeline.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\src\Excalibur\arm\batchnorm_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\conv_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\eltwise_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\inner_product_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\pooling_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\prelu_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\scale_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\sigmoid_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\arm\softmax_arm.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\axpy.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\bn.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\concat.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\convdw_3x3s1_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\convdw_3x3s2_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\conv_1x1s1_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\conv_native_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\conv_winograd_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\cudnn.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\deconv.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\eltwise.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\flip.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_convolutiondepthwise_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_convolution_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_deconvolutiondepthwise_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_eltwise_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_innerproduct_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_pooling_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_prelu_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_sigmoid_arm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\arm\operation_softmax_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\im2col.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\inner_product.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\io.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\main.cpp" />
     <ClCompile Include="..\..\src\Excalibur\math_functions.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\mirrormax.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\normalize.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\pca.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\pooling.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\prelu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\reshape.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\scale.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\sigmoid.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\slice.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\softmax.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\tensor_operation_cpu.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\upsample.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_batchnorm.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_concat.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_convolution.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_convolutiondepthwise.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_crop.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_deconvolution.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_deconvolutiondepthwise.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_eltwise.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_general_conv.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_innerproduct.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_input.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_permute.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_pooling.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_prelu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_relu.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_reshape.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_scale.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_sigmoid.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_softmax.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\operation_split.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\pipeline.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="..\..\src\Excalibur\axpy.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\bn.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\concat.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\conv_cudnn_gpu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\conv_native_gpu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\deconv.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\eltwise.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\flip.cu" />
+    <CudaCompile Include="..\..\src\Excalibur\cuda\operation_convolution.cu" />
     <CudaCompile Include="..\..\src\Excalibur\im2col.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\inner_product.cu" />
     <CudaCompile Include="..\..\src\Excalibur\math_functions.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\mirrormax.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\normalize.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\pca.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\pooling.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\prelu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\scale.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\sigmoid.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\slice.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\softmax.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\tensor_operation_gpu.cu" />
-    <CudaCompile Include="..\..\src\Excalibur\upsample.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

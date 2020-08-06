@@ -7,6 +7,8 @@
 #include "julius_gemv.hpp"
 #include "julius_gemm.hpp"
 #include "julius.hpp"
+#include "Primitives/logger.hpp"
+#include "Primitives/simd_types.hpp"
 
 namespace glasssix
 {
@@ -346,8 +348,8 @@ namespace glasssix
 
 
 		void cblas_hgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
-			const int M, const int N, const int K, const unsigned short alpha, const unsigned short* A, const int lda, const unsigned short* B, const int ldb,
-			const unsigned short beta, unsigned short* C, const int ldc)
+			const int M, const int N, const int K, const float alpha, const unsigned short* A, const int lda, const unsigned short* B, const int ldb,
+			const float beta, unsigned short* C, const int ldc)
 		{
 			float* f_A = nullptr;
 			float* f_B = nullptr;
@@ -355,12 +357,12 @@ namespace glasssix
 			if (TransA == CBLAS_TRANSPOSE::CblasNoTrans)
 			{
 				f_A = new float[M * lda];
-				half2float(A, f_A, M * lda);
+				//half2float(A, f_A, M * lda);
 			}
 			else if(TransA == CBLAS_TRANSPOSE::CblasTrans)
 			{
 				f_A = new float[K * lda];
-				half2float(A, f_A, K * lda);
+				//half2float(A, f_A, K * lda);
 			}
 			else
 			{
@@ -369,21 +371,19 @@ namespace glasssix
 			if (TransB == CBLAS_TRANSPOSE::CblasNoTrans)
 			{
 				f_B = new float[K * ldb];
-				half2float(B, f_B, K * ldb);
+				//half2float(B, f_B, K * ldb);
 			}
 			else if (TransB == CBLAS_TRANSPOSE::CblasTrans)
 			{
 				f_B = new float[N * ldb];
-				half2float(B, f_B, N * ldb);
+				//half2float(B, f_B, N * ldb);
 			}
 			else
 			{
 				NOT_IMPLEMENTED;
 			}
-			float f_alpha = float16_to_float32(alpha);
-			float f_beta = float16_to_float32(beta);
-			cblas_sgemm(Order, TransA, TransB, M, N, K, f_alpha, f_A, lda, f_B, ldb, f_beta, f_C, ldc);
-			float2half(f_C, C, M * ldc);
+			cblas_sgemm(Order, TransA, TransB, M, N, K, alpha, f_A, lda, f_B, ldb, beta, f_C, ldc);
+			//float2half(f_C, C, M * ldc);
 			delete[] f_A;
 			delete[] f_B;
 			delete[] f_C;

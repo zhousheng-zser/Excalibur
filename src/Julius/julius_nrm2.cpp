@@ -1,5 +1,7 @@
 #include "julius_nrm2.hpp"
+#include "Primitives/simd_types.hpp"
 #include <cmath>
+
 namespace glasssix
 {
 	namespace excalibur

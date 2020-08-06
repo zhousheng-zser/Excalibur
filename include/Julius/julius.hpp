@@ -106,8 +106,8 @@ namespace glasssix
 		//with general matrices. The operation is defined as
 		// C := static_cast<signed short>(alpha*op(static_cast<float>(A))*op(static_cast<float>(B)) + beta*C)
 		void cblas_hgemm(const enum CBLAS_LAYOUT Order, const enum CBLAS_TRANSPOSE TransA, const enum CBLAS_TRANSPOSE TransB,
-			const int M, const int N, const int K, const unsigned short alpha, const unsigned short* A, const int lda, const unsigned short* B, const int ldb,
-			const unsigned short beta, unsigned short* C, const int ldc);
+			const int M, const int N, const int K, const float alpha, const unsigned short* A, const int lda, const unsigned short* B, const int ldb,
+			const float beta, unsigned short* C, const int ldc);
 	}
 }
 #endif // !_JULIUS_HPP_

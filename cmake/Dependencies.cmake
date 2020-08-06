@@ -1,7 +1,3 @@
-#if(DEFINED x86)
-#	add_definitions(-Dx86)
-#endif()
-
 set(BLAS "None" CACHE STRING "Selected BLAS library")
 set_property(CACHE BLAS PROPERTY STRINGS "None;MKL;Open")
 
@@ -19,10 +15,6 @@ elseif(BLAS STREQUAL "Open" OR BLAS STREQUAL "open")
 else()
 	include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../include/Julius)
 	list(APPEND Excalibur_LINKER_LIBS Julius)
-endif()
-
-if(COSINE_DISTANCE)
-	add_definitions(-DCOSINE_DISTANCE)
 endif()
 
 if(USE_CUDA)
