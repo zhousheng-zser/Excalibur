@@ -24,7 +24,7 @@ namespace glasssix
 		}
 
 
-		void math_functions::cpu_fgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB,
+		/*void math_functions::cpu_fgemm(const CBLAS_TRANSPOSE TransA, const CBLAS_TRANSPOSE TransB,
 			const int M, const int N, const int K, const float alpha, const signed char* A, const signed char* B, const float beta, int* C)
 		{
 			int lda = (TransA == CblasNoTrans) ? K : M;
@@ -34,9 +34,9 @@ namespace glasssix
 			cblas_fgemm(CblasRowMajor, TransA, TransB, M, N, K, alpha, A, lda, B,
 				ldb, beta, C, N);
 #else
-			LOG(ERROR) << "fgemm only support julius!!!";
+#error "fgemm only support julius!!!";
 #endif
-	    }
+	    }*/
 
 
 		void math_functions::cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
@@ -102,6 +102,73 @@ namespace glasssix
 			vsAbs(N, a, y);
 		}
 
+		template <>
+		void math_functions::cpu_add<float>(const int N, const float* a, const float* b, float* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] + b[i];
+			}
+		}
+		template <>
+		void math_functions::cpu_add<double>(const int N, const double* a, const double* b, double* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] + b[i];
+			}
+		}
+
+		template <>
+		void math_functions::cpu_sub<float>(const int N, const float* a, const float* b, float* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] - b[i];
+			}
+		}
+		template <>
+		void math_functions::cpu_sub<double>(const int N, const double* a, const double* b, double* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] - b[i];
+			}
+		}
+
+		template <>
+		void math_functions::cpu_mul<float>(const int N, const float* a, const float* b, float* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] * b[i];
+			}
+		}
+		template <>
+		void math_functions::cpu_mul<double>(const int N, const double* a, const double* b, double* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] * b[i];
+			}
+		}
+
+		template <>
+		void math_functions::cpu_div<float>(const int N, const float* a, const float* b, float* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] / b[i];
+			}
+		}
+		template <>
+		void math_functions::cpu_div<double>(const int N, const double* a, const double* b, double* y)
+		{
+			for (size_t i = 0; i < N; i++)
+			{
+				y[i] = a[i] / b[i];
+			}
+		}
 	}
 }
 

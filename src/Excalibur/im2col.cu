@@ -114,6 +114,16 @@ namespace glasssix
 			const int pad_h, const int pad_w, const int stride_h, const int stride_w,
 			const int dilation_h, const int dilation_w, signed char* data_col, orderType order, int num);
 
+		template void im2col_gpu<double>(const double* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w, double* data_col, orderType order, int num);
+
+		template void im2col_gpu<unsigned short>(const unsigned short* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w, const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w, unsigned short* data_col, orderType order, int num);
+
 		template <typename Dtype, int num_axes>
 		__global__ void im2col_nd_gpu_kernel(const int n, const Dtype* data_im,
 			const int* im_shape, const int* col_shape,

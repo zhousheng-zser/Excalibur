@@ -19,6 +19,94 @@ namespace glasssix
 				}
 			}
 
+#ifdef __ARM_NEON
+			inline void cblas_sgemv_AnoTrans_neon(const int M, const int N, const float alpha, const float  *A, const int lda,
+				const float  *x, const int incx, const float beta, float  *y, const int incy)
+			{
+				const int simd_registers = 16;
+				const int restM = M % simd_registers;
+				const int partM = M - restM;
+				const int restN = N % mm_align_size;
+				const int partN = N - restN;
+				for (int i = 0; i < partM; i = i + simd_registers)
+				{
+					float32x4_t re[simd_registers] = { vdupq_n_f32(0.0f) };
+					for (int j = 0; j < partN / mm_align_size; j++)
+					{
+						const int offset = j * mm_align_size;
+						float32x4_t mx;
+						if (incx == 1)
+						{
+							mx = vld1q_f32(x + offset);
+						}
+						else
+						{
+							mx = (float32x4_t) { x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx] };
+						}
+						for (int ii = 0; ii < simd_registers; ii++)
+						{
+							float32x4_t mA = vld1q_f32(A + (i + ii) * lda + offset);
+#ifdef __aarch64__
+							re[ii] = vfmaq_f32(re[ii], mA, mx);
+#else
+							re[ii] = vmlaq_f32(re[ii], mA, mx);
+#endif
+						}
+					}
+					for (int ii = 0; ii < simd_registers; ii++)
+					{
+#ifdef __aarch64__
+						y[(i + ii) * incy] = alpha * vaddvq_f32(re[ii]) + beta * y[(i + ii) * incy];
+#else
+						float32x2_t _ss = vadd_f32(vget_low_f32(re[ii]), vget_high_f32(re[ii]));
+						y[(i + ii) * incy] = alpha * vget_lane_f32(vpadd_f32(_ss, _ss), 0) + beta * y[(i + ii) * incy];
+#endif
+						const int A_offset = (i + ii) * lda;
+						const int y_offset = (i + ii) * incy;
+						for (int j = partN; j < N; j++)
+						{
+							y[y_offset] += alpha * A[A_offset + j] * x[j * incx];
+						}
+					}
+				}
+				for (int i = partM; i < M; i++)
+				{
+					float32x4_t re = vdupq_n_f32(0.0f);
+					for (int j = 0; j < partN / mm_align_size; j++)
+					{
+						const int offset = j * mm_align_size;
+						float32x4_t mx;
+						if (incx == 1)
+						{
+							mx = vld1q_f32(x + offset);
+						}
+						else
+						{
+							mx = (float32x4_t) { x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx] };
+						}
+						float32x4_t mA = vld1q_f32(A + i * lda + offset);
+#ifdef __aarch64__
+						re = vfmaq_f32(re, mA, mx);
+#else
+						re = vmlaq_f32(re, mA, mx);
+#endif
+					}
+					const int A_offset = i * lda;
+					const int y_offset = i * incy;
+#ifdef __aarch64__
+					y[y_offset] = alpha * vaddvq_f32(re) + beta * y[y_offset];
+#else
+					float32x2_t _ss = vadd_f32(vget_low_f32(re), vget_high_f32(re));
+					y[y_offset] = alpha * vget_lane_f32(vpadd_f32(_ss, _ss), 0) + beta * y[y_offset];
+#endif
+					for (int j = partN; j < N; j++)
+					{
+						y[y_offset] += alpha * A[A_offset + j] * x[j * incx];
+					}
+				}
+			}
+#endif
+
 #if SIMD_TYPE == SIMDTYPE_SSE
 			inline void cblas_sgemv_AnoTrans_sse(const int M, const int N, const float alpha, const float  *A, const int lda,
 				const float  *x, const int incx, const float beta, float  *y, const int incy)
@@ -172,7 +260,9 @@ namespace glasssix
 				cblas_sgemv_AnoTrans_avx(M, N, alpha, A, lda, x, incx, beta, y, incy);	
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 				cblas_sgemv_AnoTrans_sse(M, N, alpha, A, lda, x, incx, beta, y, incy);
-#else 
+#elif defined(__ARM_NEON)
+				cblas_sgemv_AnoTrans_neon(M, N, alpha, A, lda, x, incx, beta, y, incy);
+#else
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #endif 
@@ -207,6 +297,11 @@ namespace glasssix
 				float* packedA = new float[M * N];
 				packTransedA(M, N, A, lda, packedA);
 				cblas_sgemv_AnoTrans_sse(N, M, alpha, packedA, M, x, incx, beta, y, incy);
+				delete[] packedA;
+#elif defined(__ARM_NEON)
+				float* packedA = new float[M * N];
+				packTransedA(M, N, A, lda, packedA);
+				cblas_sgemv_AnoTrans_neon(N, M, alpha, packedA, M, x, incx, beta, y, incy);
 				delete[] packedA;
 #else 
 #define UNHANDLED

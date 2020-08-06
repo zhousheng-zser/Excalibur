@@ -19,10 +19,10 @@ namespace glasssix
 				const float alpha, const float* A, const float* B, const float beta,
 				float* C);
 
-			static void cpu_fgemm(const CBLAS_TRANSPOSE TransA,
+			/*static void cpu_fgemm(const CBLAS_TRANSPOSE TransA,
 				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 				const float alpha, const signed char* A, const signed char* B, const float beta,
-				int* C);
+				int* C);*/
 
 			static void cpu_sgemv(const CBLAS_TRANSPOSE TransA, const int M,
 				const int N, const float alpha, const float* A, const float* x,
@@ -59,6 +59,18 @@ namespace glasssix
 			static void cpu_sqr(const int N, const float* a, float* y);
 
 			static void cpu_abs(const int N, const float* a, float* y);
+
+			template <typename Dtype>
+			static void cpu_add(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_sub(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_mul(const int N, const Dtype* a, const Dtype* b, Dtype* y);
+
+			template <typename Dtype>
+			static void cpu_div(const int N, const Dtype* a, const Dtype* b, Dtype* y);
 
 			//solve equation by Gauss Elimination Method(global principal component sort), only support: (M, N) * (N, 1) = (M, 1)
 			static std::vector<float> gauss_all(std::vector<std::vector<float> > A, std::vector<float> B)
@@ -265,6 +277,4 @@ namespace glasssix
 		};
 	}
 }
-
-
 #endif // _MATH_FUNCTIONS_HPP_

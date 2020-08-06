@@ -17,12 +17,13 @@ namespace glasssix
 			return static_cast<unsigned>(a) < static_cast<unsigned>(b);
 		}
 
-		void im2col_cpu(const float* data_im, const int channels,
+		template<typename Dtype>
+		void im2col_cpu(const Dtype* data_im, const int channels,
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w,
 			const int stride_h, const int stride_w,
 			const int dilation_h, const int dilation_w,
-			float* data_col, orderType order, int num) {
+			Dtype* data_col, orderType order, int num) {
 			const int output_h = (height + 2 * pad_h -
 				(dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
 			const int output_w = (width + 2 * pad_w -
@@ -101,7 +102,36 @@ namespace glasssix
 			}
 		}
 
-		void im2col_cpu(const signed char* data_im, const int channels,
+		// Explicit instantiation
+		template void im2col_cpu<float>(const float* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			float* data_col, orderType order, int num);
+
+		template void im2col_cpu<double>(const double* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			double* data_col, orderType order, int num);
+
+		template void im2col_cpu<unsigned short>(const unsigned short* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			unsigned short* data_col, orderType order, int num);
+
+		template void im2col_cpu<signed char>(const signed char* data_im, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			signed char* data_col, orderType order, int num);
+
+		/*void im2col_cpu(const signed char* data_im, const int channels,
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w,
 			const int stride_h, const int stride_w,
@@ -183,13 +213,13 @@ namespace glasssix
 			{
 				NOT_IMPLEMENTED;
 			}
-		}
+		}*/
 
-		
-		inline void im2col_nd_core_cpu(const float* data_input, const bool im2col,
+		template<typename Dtype>
+		inline void im2col_nd_core_cpu(const Dtype* data_input, const bool im2col,
 			const int num_spatial_axes, const int* im_shape, const int* col_shape,
 			const int* kernel_shape, const int* pad, const int* stride,
-			const int* dilation, float* data_output) {
+			const int* dilation, Dtype* data_output) {
 			if (!im2col) {
 				int im_size = im_shape[0];
 				for (int i = 0; i < num_spatial_axes; ++i) {
@@ -259,40 +289,50 @@ namespace glasssix
 			}  // for (int c = 0; c < channels_col; ++c) {
 		}
 
-		void im2col_nd_cpu(const float* data_im, const int num_spatial_axes,
+		template<typename Dtype>
+		void im2col_nd_cpu(const Dtype* data_im, const int num_spatial_axes,
 			const int* im_shape, const int* col_shape,
 			const int* kernel_shape, const int* pad, const int* stride,
-			const int* dilation, float* data_col) {
+			const int* dilation, Dtype* data_col) {
 			const bool kIm2Col = true;
 			im2col_nd_core_cpu(data_im, kIm2Col, num_spatial_axes, im_shape, col_shape,
 				kernel_shape, pad, stride, dilation, data_col);
 		}
 
-		void col2im_cpu(const float* data_col, const int channels,
+		template<typename Dtype>
+		void col2im_cpu(const Dtype* data_col, const int channels,
 			const int height, const int width, const int kernel_h, const int kernel_w,
 			const int pad_h, const int pad_w,
 			const int stride_h, const int stride_w,
 			const int dilation_h, const int dilation_w,
-			float* data_im) {
-			//caffe_set(height * width * channels, float(0), data_im);
-			memset(data_im, 0, sizeof(float)*height * width * channels);
+			Dtype* data_im) 
+		{
+			memset(data_im, 0, sizeof(Dtype)*height * width * channels);
 			const int output_h = (height + 2 * pad_h -
 				(dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
 			const int output_w = (width + 2 * pad_w -
 				(dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
 			const int channel_size = height * width;
-			for (int channel = channels; channel--; data_im += channel_size) {
-				for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) {
-					for (int kernel_col = 0; kernel_col < kernel_w; kernel_col++) {
+			for (int channel = channels; channel--; data_im += channel_size) 
+			{
+				for (int kernel_row = 0; kernel_row < kernel_h; kernel_row++) 
+				{
+					for (int kernel_col = 0; kernel_col < kernel_w; kernel_col++) 
+					{
 						int input_row = -pad_h + kernel_row * dilation_h;
-						for (int output_rows = output_h; output_rows; output_rows--) {
-							if (!is_a_ge_zero_and_a_lt_b(input_row, height)) {
+						for (int output_rows = output_h; output_rows; output_rows--) 
+						{
+							if (!is_a_ge_zero_and_a_lt_b(input_row, height)) 
+							{
 								data_col += output_w;
 							}
-							else {
+							else 
+							{
 								int input_col = -pad_w + kernel_col * dilation_w;
-								for (int output_col = output_w; output_col; output_col--) {
-									if (is_a_ge_zero_and_a_lt_b(input_col, width)) {
+								for (int output_col = output_w; output_col; output_col--) 
+								{
+									if (is_a_ge_zero_and_a_lt_b(input_col, width)) 
+									{
 										data_im[input_row * width + input_col] += *data_col;
 									}
 									data_col++;
@@ -306,10 +346,40 @@ namespace glasssix
 			}
 		}
 
-		void col2im_nd_cpu(const float* data_col, const int num_spatial_axes,
+		// Explicit instantiation
+		template void col2im_cpu<float>(const float* data_col, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			float* data_im);
+
+		template void col2im_cpu<double>(const double* data_col, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			double* data_im);
+
+		template void col2im_cpu<unsigned short>(const unsigned short* data_col, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			unsigned short* data_im);
+
+		template void col2im_cpu<signed char>(const signed char* data_col, const int channels,
+			const int height, const int width, const int kernel_h, const int kernel_w,
+			const int pad_h, const int pad_w,
+			const int stride_h, const int stride_w,
+			const int dilation_h, const int dilation_w,
+			signed char* data_im);
+
+		template<typename Dtype>
+		void col2im_nd_cpu(const Dtype* data_col, const int num_spatial_axes,
 			const int* im_shape, const int* col_shape,
 			const int* kernel_shape, const int* pad, const int* stride,
-			const int* dilation, float* data_im) {
+			const int* dilation, Dtype* data_im) {
 			const bool kIm2Col = false;
 			im2col_nd_core_cpu(data_col, kIm2Col, num_spatial_axes, im_shape, col_shape,
 				kernel_shape, pad, stride, dilation, data_im);

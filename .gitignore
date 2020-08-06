@@ -67,16 +67,4 @@
 *.vs
 *.CopyComplete
 *.bin
-examples/
-src/PersonalReality/main.cpp
-/jni/Build/Android-ARM64-Debug
-include/Apollo/
-src/Apollo/
-windows/Apollo/
-/csharp/Irisvian/obj
-/cmake/out/build/x64-Debug
-/Excalibur__bug_fix.rar
-/jni/jni/Irisvika/out/build/x64-Debug
-/cmake/out/build/x64-Debug
-/csharp/Irisvian/obj
-/jni/jni/Irisvika/out/build/x64-Debug
+build/

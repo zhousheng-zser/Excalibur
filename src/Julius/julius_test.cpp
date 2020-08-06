@@ -46,7 +46,7 @@ double _test_gemm(int M, int N, int K, int iters, float thresh, bool show)
 	float* C1 = (float*)malloc(M * N * sizeof(float));
 	float* C2 = (float*)malloc(M * N * sizeof(float));
 	float* q = (float*)malloc(32);
-	const CBLAS_TRANSPOSE TransA = CblasTrans;
+	const CBLAS_TRANSPOSE TransA = CblasNoTrans;
 	const CBLAS_TRANSPOSE TransB = CblasNoTrans;
 	int lda = (TransA == CblasNoTrans) ? K : M;
 	int ldb = (TransB == CblasNoTrans) ? N : K;
@@ -112,12 +112,19 @@ double _test_gemm(int M, int N, int K, int iters, float thresh, bool show)
 
 int main()
 {
-	for (int i = 1; i < 1000; i++)
+	/*for (int i = 1; i < 1000; i++)
 	{
 		int M = rand() % 1000 + 1;
 		int N = rand() % 1000 + 1;
 		int K = rand() % 1000 + 1;
 		_test_gemm(i, i, i, 1, 1e-4, true);
-	}
+	}*/
+	_test_gemm(10, 580136, 27, 1, 1e-4, true);
+	_test_gemm(10, 580136, 1, 1, 1e-4, true);
+	_test_gemm(16, 143704, 90, 1, 1e-4, true);
+	_test_gemm(16, 143704, 1, 1, 1e-4, true);
+	_test_gemm(32, 142128, 144, 1, 1e-4, true);
+	_test_gemm(32, 142128, 1, 1, 1e-4, true);
+	_test_gemm(2, 142128, 1, 1, 1e-4, true);
 	return 0;
 }
