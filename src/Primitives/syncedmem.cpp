@@ -285,5 +285,6 @@ namespace glasssix
 		template class syncedmem<signed char>;
 		template class syncedmem<short>;
 		template class syncedmem<unsigned int>;
+		template class syncedmem<unsigned short>;
 	}
 }
