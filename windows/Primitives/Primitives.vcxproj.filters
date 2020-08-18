@@ -25,6 +25,7 @@
     <ClCompile Include="..\..\src\Primitives\fmt\os.cc">
       <Filter>fmt</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\Primitives\os_context.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
@@ -151,6 +152,7 @@
     <ClInclude Include="..\..\include\Primitives\fmt\time.h">
       <Filter>fmt</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\Primitives\os_context.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="abi">
