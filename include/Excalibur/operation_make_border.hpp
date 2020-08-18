@@ -1,8 +1,8 @@
 #pragma once
 #ifndef _OPERATION_MAKE_BORDER_HPP_
 #define _OPERATION_MAKE_BORDER_HPP_
-#include "operation.hpp"
-
+#include <memory>
+#include <Primitives/tensor.hpp>
 namespace glasssix
 {
 	namespace excalibur

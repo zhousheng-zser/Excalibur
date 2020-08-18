@@ -1,7 +1,8 @@
 #pragma once
 #ifndef _OPERATION_CUT_BORDER_HPP_
 #define _OPERATION_CUT_BORDER_HPP_
-#include "operation.hpp"
+#include <memory>
+#include <Primitives/logger.hpp>
 
 namespace glasssix
 {
