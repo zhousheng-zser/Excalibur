@@ -1,6 +1,8 @@
 #include "tensor.hpp"
 #include "simd_instruction_set.hpp"
 
+#include <cstring>
+
 namespace glasssix
 {
 	namespace memory
@@ -270,7 +272,7 @@ namespace glasssix
 			}
 			else
 			{
-				memcpy(t.mutable_cpu_data(), this->cpu_data(), sizeof(Dtype) * count_);
+				std::memcpy(t.mutable_cpu_data(), this->cpu_data(), sizeof(Dtype) * count_);
 			}
 			return t;
 		}
@@ -327,14 +329,14 @@ namespace glasssix
 			if (device_ >= 0)
 			{
 #ifdef USE_CUDA
-				cudaMemcpy(gpu_data_any(), data, size, cudaMemcpyDefault);
+				cudaMemcpy(mutable_gpu_data(), data, size, cudaMemcpyDefault);
 #else
 				NO_GPU;
 #endif
 			}
 			else
 			{
-				memcpy(cpu_data_any(), data, size);
+				std::memcpy(mutable_cpu_data(), data, size);
 			}
 		}
 

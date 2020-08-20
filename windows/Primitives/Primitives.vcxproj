@@ -154,6 +154,11 @@
     <ClInclude Include="..\..\include\Primitives\syncedmem.hpp" />
     <ClInclude Include="..\..\include\Primitives\tensor.hpp" />
     <ClInclude Include="..\..\include\Primitives\pure_c_handle_utils.h" />
+    <ClInclude Include="..\..\include\Primitives\tensor_conversions.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_converter.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_helper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_layout.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_or_shared.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\Primitives\abi\component_loader.cpp" />
@@ -164,6 +169,7 @@
     <ClCompile Include="..\..\src\Primitives\fmt\format.cc" />
     <ClCompile Include="..\..\src\Primitives\fmt\os.cc" />
     <ClCompile Include="..\..\src\Primitives\gpu.cpp" />
+    <ClCompile Include="..\..\src\Primitives\logger.cpp" />
     <ClCompile Include="..\..\src\Primitives\memory.cpp" />
     <ClCompile Include="..\..\src\Primitives\os_context.cpp" />
     <ClCompile Include="..\..\src\Primitives\simd_types.cpp" />

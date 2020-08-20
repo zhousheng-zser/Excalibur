@@ -26,6 +26,7 @@
       <Filter>fmt</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\Primitives\os_context.cpp" />
+    <ClCompile Include="..\..\src\Primitives\logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
@@ -153,6 +154,11 @@
       <Filter>fmt</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\Primitives\os_context.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_conversions.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_converter.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_helper.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_layout.hpp" />
+    <ClInclude Include="..\..\include\Primitives\tensor_or_shared.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="abi">
