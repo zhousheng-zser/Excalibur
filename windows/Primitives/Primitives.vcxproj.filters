@@ -27,6 +27,7 @@
     </ClCompile>
     <ClCompile Include="..\..\src\Primitives\os_context.cpp" />
     <ClCompile Include="..\..\src\Primitives\logger.cpp" />
+    <ClCompile Include="..\..\src\Primitives\pool_allocator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\Primitives\abi\base.hpp">
