@@ -161,7 +161,10 @@
     <ClCompile Include="..\..\src\Excalibur\arm\operation_sigmoid_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\arm\operation_softmax_arm.cpp" />
     <ClCompile Include="..\..\src\Excalibur\im2col.cpp" />
-    <ClCompile Include="..\..\src\Excalibur\main.cpp" />
+    <ClCompile Include="..\..\src\Excalibur\main.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\src\Excalibur\math_functions.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation.cpp" />
     <ClCompile Include="..\..\src\Excalibur\operation_batchnorm.cpp" />
