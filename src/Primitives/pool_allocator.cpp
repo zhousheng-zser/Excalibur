@@ -6,23 +6,23 @@ namespace glasssix::memory
 {
 	namespace
 	{
-		template<typename Object>
-		pool_allocator<Object> allocator;
+		template<typename UnderlyingType>
+		pool_allocator<UnderlyingType> allocator;
 	}
 
-	template<typename Object>
-	pool_allocator<Object>& pool_allocator_default::get()
+	template<typename UnderlyingType>
+	pool_allocator<UnderlyingType>& pool_allocator_default<UnderlyingType>::get()
 	{
-		return allocator<Object>;
+		return allocator<UnderlyingType>;
 	}
 
-	template pool_allocator<char>& pool_allocator_default::get<char>();
-	template pool_allocator<float>& pool_allocator_default::get<float>();
-	template pool_allocator<double>& pool_allocator_default::get<double>();
-	template pool_allocator<std::uint8_t>& pool_allocator_default::get<std::uint8_t>();
-	template pool_allocator<std::uint16_t>& pool_allocator_default::get<std::uint16_t>();
-	template pool_allocator<std::uint32_t>& pool_allocator_default::get<std::uint32_t>();
-	template pool_allocator<std::int8_t>& pool_allocator_default::get<std::int8_t>();
-	template pool_allocator<std::int16_t>& pool_allocator_default::get<std::int16_t>();
-	template pool_allocator<std::int32_t>& pool_allocator_default::get<std::int32_t>();
+	template struct pool_allocator_default<char>;
+	template struct pool_allocator_default<float>;
+	template struct pool_allocator_default<double>;
+	template struct pool_allocator_default<std::uint8_t>;
+	template struct pool_allocator_default<std::uint16_t>;
+	template struct pool_allocator_default<std::uint32_t>;
+	template struct pool_allocator_default<std::int8_t>;
+	template struct pool_allocator_default<std::int16_t>;
+	template struct pool_allocator_default<std::int32_t>;
 }
