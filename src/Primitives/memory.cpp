@@ -62,7 +62,7 @@ namespace glasssix
 			auto udata = heap_alloc_elements<byte_type>(size + sizeof(void*) + alignment);
 			if (!udata)
 				return nullptr;
-			unsigned char** adata = alignPtr((unsigned char**)udata + 1, alignment);
+			unsigned char** adata = alignPtr((unsigned char**)udata + 1, static_cast<int>(alignment));
 			adata[-1] = (unsigned char*)udata;
 			return adata;
 		}
