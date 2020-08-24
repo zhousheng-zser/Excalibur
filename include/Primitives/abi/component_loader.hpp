@@ -171,23 +171,23 @@ namespace glasssix::exposing::impl
 				return (check_abi_result(this->self_abi().add_module_with_factory(get_abi(path), put_abi(result))), result);
 			}
 
-			std::int32_t add_modules(const param_span<param_string>& paths) const
+			std::uint64_t add_modules(const param_span<param_string>& paths) const
 			{
-				std::int32_t result{};
+				std::uint64_t result{};
 
 				return (check_abi_result(this->self_abi().add_modules(get_abi(paths), put_abi(result))), result);
 			}
 
-			std::int32_t add_modules(const param_vector<param_string>& paths) const
+			std::uint64_t add_modules(const param_vector<param_string>& paths) const
 			{
-				std::int32_t result{};
+				std::uint64_t result{};
 
 				return (check_abi_result(this->self_abi().add_modules(get_abi(paths), put_abi(result))), result);
 			}
 
-			std::int32_t add_modules_in_directory(const param_string& directory, bool recursive = false) const
+			std::uint64_t add_modules_in_directory(const param_string& directory, bool recursive = false) const
 			{
-				std::int32_t result{};
+				std::uint64_t result{};
 
 				return (check_abi_result(this->self_abi().add_modules_in_directory(get_abi(directory), get_abi(recursive), put_abi(result))), result);
 			}
@@ -279,7 +279,7 @@ namespace glasssix::exposing
 	/// Gets the component loader singleton.
 	/// </summary>
 	/// <returns>The singleton</returns>
-	component_loader get_component_loader()
+	inline component_loader get_component_loader()
 	{
 		return component_loader{ take_over_abi_from_void_ptr{ component_loader_add_ref_get_singleton_abi() } };
 	}
