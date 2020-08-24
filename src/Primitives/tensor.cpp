@@ -319,7 +319,47 @@ namespace glasssix
 		template <typename Dtype>
 		void tensor<Dtype>::convert_order()
 		{
-			NOT_IMPLEMENTED;
+			if (device_ > 0)
+				NOT_IMPLEMENTED;
+			else
+			{
+				if (order_ == NHWC)
+				{
+					int src_num = num();
+					int src_height = height();
+					int src_width = width();
+					int src_channels = channels();
+					int offset = src_height * src_width;
+
+					memory::tensor<Dtype> dst_temp(std::vector<int>{src_num, src_channels, src_height, src_width}, device_, memory::NCHW, allocator_);
+					Dtype* dst_data = dst_temp.mutable_cpu_data();
+					const Dtype* src_data = cpu_data();
+
+					for (int n = 0; n < src_num; n++)
+					{
+						int n_offset = n * src_channels * offset;
+
+						for (int ch = 0; ch < src_channels; ++ch)
+						{
+							int channel_offset = ch * offset;
+
+							for (int row = 0; row < src_height; ++row)
+							{
+								int row_offset = row * src_width;
+
+								for (int col = 0; col < src_width; ++col)
+								{
+									dst_data[n_offset + channel_offset + row_offset + col] = src_data[n_offset + (row_offset + col) * src_channels + ch];
+								}
+							}
+						}
+					}
+
+					*this = dst_temp;
+				}
+				else
+					NOT_IMPLEMENTED;
+			}
 		}
 
 		template <typename Dtype>
