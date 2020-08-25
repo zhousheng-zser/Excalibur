@@ -1,6 +1,5 @@
 #include "abi/component_loader.hpp"
 #include "abi/platform_encoding.hpp"
-#include "singleton.hpp"
 #include "filesystem.hpp"
 
 #include <list>
@@ -82,11 +81,9 @@ namespace glasssix::exposing::impl
 	/// <summary>
 	/// A manager for in-process components (that is a component from within a DLL).
 	/// </summary>
-	class component_loader_impl final : public singleton<component_loader_impl>, public implements<component_loader_impl, component_loader>
+	class component_loader_impl final : public implements<component_loader_impl, component_loader>
 	{
 	public:
-		friend singleton<component_loader>;
-
 		/// <summary>
 		/// Adds a module.
 		/// </summary>
@@ -402,7 +399,7 @@ namespace glasssix::exposing
 {
 	EXPORT_EXCALIBUR_PRIMITIVES void* component_loader_add_ref_get_singleton_abi()
 	{
-		static component_loader singleton{ take_over_abi_from_void_ptr{ impl::to_abi<component_loader>(impl::component_loader_impl::instance()) } };
+		static component_loader singleton{ make_as_first<impl::component_loader_impl>() };
 		auto abi = get_abi(singleton);
 
 		return (static_cast<impl::abi_unknown_object*>(abi)->add_ref(), abi);
