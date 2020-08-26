@@ -15,6 +15,7 @@
     <ProjectGuid>{546E42E9-516A-4D09-BBE0-D3D567AC1328}</ProjectGuid>
     <RootNamespace>Excalibur</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>excalibur</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -49,7 +50,7 @@
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>..\..\Build\Int\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath>$(CUDA_PATH)\include;$(VC_IncludePath);$(MKLIncludeDir);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
-    <TargetName>lib$(ProjectName)d</TargetName>
+    <TargetName>lib$(ProjectName)</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(SolutionDir)..\Build\$(Platform)\$(Configuration)\</OutDir>
