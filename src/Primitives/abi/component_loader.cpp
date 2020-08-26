@@ -214,7 +214,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The class factory</returns>
 		class_factory lookup_factory(const param_string& library_name)
 		{
-			std::scoped_lock lock{ lock_ };
+			std::scoped_lock lock{ mutex_ };
 			auto iter = name_factory_map_.find(library_name);
 
 			return iter != name_factory_map_.end() ? iter->second : nullptr;
@@ -228,7 +228,7 @@ namespace glasssix::exposing::impl
 		{
 			auto result = make_param_vector<param_string>();
 			{
-				std::scoped_lock lock{ lock_ };
+				std::scoped_lock lock{ mutex_ };
 
 				for (const auto& [key, value] : name_factory_map_)
 				{
@@ -247,7 +247,7 @@ namespace glasssix::exposing::impl
 		{
 			auto result = make_param_hash_map<param_string, class_factory>();
 			{
-				std::scoped_lock lock{ lock_ };
+				std::scoped_lock lock{ mutex_ };
 
 				for (const auto& [key, value] : name_factory_map_)
 				{
@@ -265,7 +265,7 @@ namespace glasssix::exposing::impl
 		/// <returns>True if it exists; otherwise false</returns>
 		bool contains_qualified_name(const param_string& qualified_name)
 		{
-			std::scoped_lock lock{ lock_ };
+			std::scoped_lock lock{ mutex_ };
 
 			return qualified_name_activator_map_.find(qualified_name) != qualified_name_activator_map_.end();
 		}
@@ -277,7 +277,7 @@ namespace glasssix::exposing::impl
 		/// <returns>True if it exists; otherwise false</returns>
 		bool contains_interface_id(const guid& interface_id)
 		{
-			std::scoped_lock lock{ lock_ };
+			std::scoped_lock lock{ mutex_ };
 
 			return interface_id_activator_map_.find(interface_id) != interface_id_activator_map_.end();
 		}
@@ -291,13 +291,13 @@ namespace glasssix::exposing::impl
 		{
 			auto handler = [&]
 			{
-				std::scoped_lock lock{ lock_ };
+				std::scoped_lock lock{ mutex_ };
 				auto iter = qualified_name_activator_map_.find(qualified_name);
 
 				return iter != qualified_name_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_key_not_found{ qualified_name };
+			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by qualified name: ", to_param_string(qualified_name)) };
 		}
 
 		/// <summary>
@@ -309,13 +309,13 @@ namespace glasssix::exposing::impl
 		{
 			auto handler = [&]
 			{
-				std::scoped_lock lock{ lock_ };
+				std::scoped_lock lock{ mutex_ };
 				auto iter = interface_id_activator_map_.find(interface_id);
 
 				return iter != interface_id_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_key_not_found{ to_param_string(interface_id) };
+			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by interface ID: ", to_param_string(interface_id)) };
 		}
 	private:
 		template<template<typename> typename Container>
@@ -356,7 +356,7 @@ namespace glasssix::exposing::impl
 		class_factory try_get_existing_factory(utf8_string_view path)
 		{
 			std::error_code code;
-			std::scoped_lock lock{ lock_ };
+			std::scoped_lock lock{ mutex_ };
 
 			if (auto iter_pair = std::find_if(modules_.begin(), modules_.end(), [&](const std::pair<fs::path, dll::dll_handle_ptr>& inner) { return fs::equivalent(inner.first, to_narrow_string(path), code); }); iter_pair != modules_.end())
 			{
@@ -377,7 +377,7 @@ namespace glasssix::exposing::impl
 			auto library_name = factory.library_name();
 			auto interface_ids = factory.interface_ids();
 			{
-				std::scoped_lock lock{ lock_ };
+				std::scoped_lock lock{ mutex_ };
 
 				modules_.emplace_back(to_narrow_string(path), handle);
 				name_factory_map_.insert_or_assign(library_name, factory);
@@ -386,7 +386,7 @@ namespace glasssix::exposing::impl
 			}
 		}
 
-		std::mutex lock_;
+		std::mutex mutex_;
 		std::list<std::pair<fs::path, dll::dll_handle_ptr>> modules_;
 		std::unordered_map<param_string, class_factory> name_factory_map_;
 		std::unordered_map<dll::dll_handle_ptr, class_factory> handle_factory_map_;
