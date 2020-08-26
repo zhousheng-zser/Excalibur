@@ -23,6 +23,7 @@
     <ProjectGuid>{AE3B9104-F61D-47E3-9ACB-CBC122D25A91}</ProjectGuid>
     <RootNamespace>SpeedBenchmark</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>speed_benchmark</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

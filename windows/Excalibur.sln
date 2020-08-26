@@ -3,18 +3,18 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30320.27
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Excalibur", "Excalibur\Excalibur.vcxproj", "{546E42E9-516A-4D09-BBE0-D3D567AC1328}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Excalibur", "Excalibur\excalibur.vcxproj", "{546E42E9-516A-4D09-BBE0-D3D567AC1328}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Julius", "Julius\Julius.vcxproj", "{E28B3350-1F2D-473D-83B7-1BDE8E56CD6E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Julius", "Julius\julius.vcxproj", "{E28B3350-1F2D-473D-83B7-1BDE8E56CD6E}"
 	ProjectSection(ProjectDependencies) = postProject
 		{8DA2420A-7980-4FEB-B6B0-A58430C950FF} = {8DA2420A-7980-4FEB-B6B0-A58430C950FF}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Primitives", "Primitives\Primitives.vcxproj", "{8DA2420A-7980-4FEB-B6B0-A58430C950FF}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Primitives", "Primitives\primitives.vcxproj", "{8DA2420A-7980-4FEB-B6B0-A58430C950FF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppExample", "..\examples\CppExample\CppExample.vcxproj", "{6FCF7CB3-7523-442B-BA36-E65EF38A5598}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CppExample", "..\examples\CppExample\cpp_example.vcxproj", "{6FCF7CB3-7523-442B-BA36-E65EF38A5598}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpeedBenchmark", "SpeedBenchmark\SpeedBenchmark.vcxproj", "{AE3B9104-F61D-47E3-9ACB-CBC122D25A91}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SpeedBenchmark", "SpeedBenchmark\speed_benchmark.vcxproj", "{AE3B9104-F61D-47E3-9ACB-CBC122D25A91}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
