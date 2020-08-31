@@ -230,9 +230,9 @@ namespace glasssix::exposing::impl
 			{
 				std::scoped_lock lock{ mutex_ };
 
-				for (const auto& [key, value] : name_factory_map_)
+				for (const auto& item : name_factory_map_)
 				{
-					result.push_back(key);
+					result.push_back(item.first);
 				}
 
 				return result;
@@ -297,7 +297,7 @@ namespace glasssix::exposing::impl
 				return iter != qualified_name_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by qualified name: ", to_param_string(qualified_name)) };
+			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by qualified name: {}.", to_param_string(qualified_name)) };
 		}
 
 		/// <summary>
@@ -315,7 +315,7 @@ namespace glasssix::exposing::impl
 				return iter != interface_id_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by interface ID: ", to_param_string(interface_id)) };
+			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by interface ID: {}.", to_param_string(interface_id)) };
 		}
 	private:
 		template<template<typename> typename Container>
