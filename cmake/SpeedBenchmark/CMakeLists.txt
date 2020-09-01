@@ -1,5 +1,8 @@
+cmake_minimum_required(VERSION 3.14.3)
+set(module_name speed_becnmark)
 include_directories(../../include)
-add_executable(speedbenchmark ../../src/SpeedBenchmark/speedbenchmark.cpp)
 
-target_link_libraries(speedbenchmark Primitives Excalibur)
-add_dependencies(speedbenchmark Primitives Excalibur)
+add_executable(${module_name} ../../src/SpeedBenchmark/speedbenchmark.cpp)
+
+target_link_libraries(${module_name} primitives excalibur)
+add_dependencies(${module_name} primitives excalibur)

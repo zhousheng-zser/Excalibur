@@ -1,4 +1,15 @@
-cmake_minimum_required(VERSION 3.10.2)
+cmake_minimum_required(VERSION 3.14.3)
+
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+		message(FATAL_ERROR "CMAKE_TOOLCHAIN_FILE: please specify android cmkae toolchain file in cmake command line")
+endif()
+message(STATUS "CMAKE_TOOLCHAIN_FILE: ${CMAKE_TOOLCHAIN_FILE}")
+
+if(NOT DEFINED CMAKE_MAKE_PROGRAM)
+	message(FATAL_ERROR "CMAKE_MAKE_PROGRAM: please specify unix make program in cmake command line. ")
+endif()
+message(STATUS "CMAKE_MAKE_PROGRAM: ${CMAKE_MAKE_PROGRAM}")
+
 project(Excalibur C CXX)
 
 option(USE_CUDA "Build Excalibur with CUDA support" OFF)
@@ -8,30 +19,53 @@ option(HAVE_SSE "CPU SSE support" OFF)
 option(HAVE_AVX "CPU AVX support" OFF)
 option(HAVE_AVX2 "CPU AVX2 support" OFF)
 
-if(HAVE_AVX2)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2")
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+	if(NOT DEFINED ANDROID_NDK)
+		message(FATAL_ERROR "ANDROID_NDK: You must specify NDK ROOT.")
+	endif()
+	message(STATUS "ANDROID_NDK: ${ANDROID_NDK}")	
+
+	message(STATUS "ANDROID_ABI: ${ANDROID_ABI}")
+	message(STATUS "ANDROID_PLATFORM: ${ANDROID_PLATFORM}")
+	message(STATUS "ANDROID_TOOLCHAIN: ${ANDROID_TOOLCHAIN}")
+	message(STATUS "ANDROID_STL: ${ANDROID_STL}")
 endif()
-if(HAVE_AVX)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx -mfma")
-endif()
-if(HAVE_SSE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mf16c")
+
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+	if(HAVE_AVX2)
+		add_compile_options(-mavx2)
+	endif()
+	if(HAVE_AVX)
+		add_compile_options(-mavx -mfma)
+	endif()
+	if(HAVE_SSE)
+		add_compile_options(-mmmx -msse -msse2 -msse3 -mssse3 -msse4.1 -msse4.2 -mf16c)
+	endif()
 endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "")
 	set(CMAKE_BUILD_TYPE "Release")
 endif()
-
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 
-include(Dependencies.cmake)
-set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-if(UNIX OR APPLE)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -fpermissive")
+set(CMAKE_CXX_STANDARD 17)
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+	add_compile_options(-frtti -fexceptions)
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+if((CMAKE_CXX_COMPILER_ID STREQUAL "GNU") OR (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
+	add_compile_options(-fPIC -Wall -fpermissive)
+endif()
+
+set(CMAKE_IMPORT_LIBRARY_PREFIX lib)
+set(CMAKE_SHARED_LIBRARY_PREFIX lib)
+set(CMAKE_STATIC_LIBRARY_PREFIX lib)
+
+include(Dependencies.cmake)
+
+set(LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
+set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 add_subdirectory(Primitives)
 add_subdirectory(Julius)
