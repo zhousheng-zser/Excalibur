@@ -110,7 +110,7 @@ namespace glasssix
 
 					_sum1 = vaddq_f32(_sum1, _sum2);
 
-					*top_data = vget_lane_f32(_sum1, 0)+ vget_lane_f32(_sum1, 1)+ vget_lane_f32(_sum1, 2)+ vget_lane_f32(_sum1, 3);
+					*top_data = vgetq_lane_f32(_sum1, 0)+ vgetq_lane_f32(_sum1, 1)+ vgetq_lane_f32(_sum1, 2)+ vgetq_lane_f32(_sum1, 3);
 					*top_data += *bias_data;
 					bias_data += 1;
 					top_data += 1;
