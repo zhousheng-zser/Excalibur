@@ -29,6 +29,10 @@ if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" ST
 	target_link_libraries(${module_name} ${CMAKE_DL_LIBS})
 endif()
 
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	target_link_libraries(${module_name} stdc++fs)
+endif()
+
 if(USE_OPENMP)
 	target_link_libraries(${module_name} OpenMP::OpenMP_CXX)
 endif()
