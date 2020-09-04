@@ -13,17 +13,24 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 if(USE_CUDA)
+	target_include_directories(${module_name} SYSTEM PRIVATE ${CUDA_INCLUDE_DIRS})
 	target_compile_definitions(${module_name} PRIVATE -DUSE_CUDA)
 	target_link_libraries(${module_name} ${CUDA_LIBRARIES})
 endif()
 
 if(USE_CUDNN)
+	target_include_directories(${module_name} PRIVATE ${CUDNN_INCLUDE_DIRS})
+	target_link_directories(${module_name} PRIVATE ${CUDNN_LIBRARY_DIRS})
 	target_compile_definitions(${module_name} PRIVATE -DUSE_CUDNN)
 	target_link_libraries(${module_name} ${CUDNN_LIBRARIES})
 endif()
 
 if(("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU") OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"))
 	target_link_libraries(${module_name} ${CMAKE_DL_LIBS})
+endif()
+
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	target_link_libraries(${module_name} stdc++fs)
 endif()
 
 if(USE_OPENMP)

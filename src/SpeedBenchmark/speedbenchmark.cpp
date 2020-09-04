@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <random>
+#include <cfloat>
 #include "../../include/Excalibur/pipeline.hpp"
 #include "../../include/Primitives/profiler.hpp"
 
@@ -43,7 +44,7 @@ int main()
 
 	for (size_t i = 0; i < pipe_infos.size(); i++)
 	{
-		pipes.push_back(new excalibur::pipeline<float>(std::string("../../models/") + pipe_infos[i].first + ".phai", -1));
+		pipes.push_back(new excalibur::pipeline<float>(std::string("../../../../../models/") + pipe_infos[i].first + ".phai", -1));
 	}
 	std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
 	for (size_t i = 0; i < pipe_infos.size(); i++)
