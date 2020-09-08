@@ -129,8 +129,8 @@ namespace glasssix
 			int bottom_cstep = w * h;
 
 			int kernel_size = this->kernel_size_w_ * this->kernel_size_h_;
-			int outw = (w - 1) * this->stride_w_ + kernel_size;
-			int outh = (h - 1) * this->stride_h_ + kernel_size;
+			int outw = (w - 1) * this->stride_w_ + this->kernel_size_w_;
+			int outh = (h - 1) * this->stride_h_ + this->kernel_size_h_;
 			int top_cstep = outw * outh;
 
 			tops[0].reset(new memory::tensor<float>(std::vector<int> {n, this->output_channel_, outh, outw }, -1, memory::NCHW));
@@ -158,7 +158,7 @@ namespace glasssix
 					float *top_data = tops[0]->mutable_cpu_data() + num_i * this->output_channel_ * top_cstep;
 					const float *bottom_data = bottoms[0]->cpu_data() + num_i * this->input_channel_ * bottom_cstep;
 #ifdef _OPENMP
-#pragma omp parallel for num_threads(2) 
+#pragma omp parallel for
 #endif
 					for (int g = 0; g < this->input_channel_; g++)
 					{
@@ -177,9 +177,9 @@ namespace glasssix
 									sum = bias_data[g];
 								}
 
-								for (int y = 0; y < kernel_size; y++)
+								for (int y = 0; y < this->kernel_size_h_; y++)
 								{
-									int sys = (i + y - (kernel_size - 1));
+									int sys = (i + y - (this->kernel_size_h_ - 1));
 									if (sys < 0 || sys % this->stride_h_ != 0)
 										continue;
 
@@ -189,9 +189,9 @@ namespace glasssix
 
 									const float* sptr = inptr + sy * w;
 
-									for (int x = 0; x < kernel_size; x++)
+									for (int x = 0; x < this->kernel_size_w_; x++)
 									{
-										int sxs = (j + x - (kernel_size - 1));
+										int sxs = (j + x - (this->kernel_size_w_ - 1));
 										if (sxs < 0 || sxs % this->stride_w_ != 0)
 											continue;
 
@@ -220,6 +220,11 @@ namespace glasssix
 			else
 			{
 				NOT_IMPLEMENTED;
+			}
+
+			if (this->pad_bottom_ > 0 || this->pad_left_ > 0 || this->pad_right_ > 0 || this->pad_top_ > 0)
+			{
+				make_border(tops[0], tops[0], this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_);
 			}
 		}
 
