@@ -93,7 +93,7 @@ namespace glasssix::exposing
 			if (std::cmatch matches; std::regex_match(name.data(), name.data() + name.size(), matches, pattern))
 			{
 				return format(
-					u8"{}{}{}",
+					FMT_STRING(u8"{}{}{}"),
 					matches[1].matched ? param_string{} : param_string{ file_name_prefix },
 					matches[2].str(),
 					matches[3].matched ? param_string{} : param_string{ dll_extension });
@@ -385,7 +385,7 @@ namespace glasssix::exposing::impl
 				return iter != qualified_name_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by qualified name: {}.", to_param_string(qualified_name)) };
+			return handler ? handler() : throw abi_no_interface{ format(FMT_STRING(u8"Failed to create an instance by qualified name: {}."), to_param_string(qualified_name)) };
 		}
 
 		/// <summary>
@@ -403,7 +403,7 @@ namespace glasssix::exposing::impl
 				return iter != interface_id_activator_map_.end() ? iter->second : std::function<unknown_object()>{};
 			}();
 
-			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by interface ID: {}.", to_param_string(interface_id)) };
+			return handler ? handler() : throw abi_no_interface{ format(FMT_STRING(u8"Failed to create an instance by interface ID: {}."), to_param_string(interface_id)) };
 		}
 	private:
 		template<template<typename> typename Container, typename Callable>

@@ -64,8 +64,8 @@ namespace glasssix::exposing::allocations
 		try
 		{
 			auto what = optional_inner_what_abi ?
-				format(u8"[Exception Code: {}][Message: {}][Details: {}]", code, get_predefined_error_message(code), create_from_abi<param_string>(optional_inner_what_abi)) :
-				format(u8"[Exception Code: {}][Message: {}]", code, get_predefined_error_message(code));
+				format(FMT_STRING(u8"[Exception Code: {}][Message: {}][Details: {}]"), code, get_predefined_error_message(code), create_from_abi<param_string>(optional_inner_what_abi)) :
+				format(FMT_STRING(u8"[Exception Code: {}][Message: {}]"), code, get_predefined_error_message(code));
 
 			return detach_abi(what);
 		}
