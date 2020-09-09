@@ -1,6 +1,7 @@
 #include "abi/component_loader.hpp"
 #include "abi/platform_encoding.hpp"
 #include "filesystem.hpp"
+#include "fmt/format.h"
 
 #include <list>
 #include <regex>
@@ -88,7 +89,7 @@ namespace glasssix::exposing
 #else
 			static constexpr auto regex_flags = std::regex_constants::ECMAScript;
 #endif
-			thread_local std::basic_regex<utf8_char> pattern{ format(FMT_STRING(u8R"(({})?(.+?)(\.{})?)"), file_name_prefix, dll_extension), regex_flags };
+			thread_local std::basic_regex<utf8_char> pattern{ fmt::format(FMT_STRING(u8R"(({})?(.+?)(\.{})?)"), file_name_prefix, dll_extension), regex_flags };
 
 			if (std::cmatch matches; std::regex_match(name.data(), name.data() + name.size(), matches, pattern))
 			{
