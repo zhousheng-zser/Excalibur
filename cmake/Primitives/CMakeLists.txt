@@ -6,7 +6,11 @@ file(GLOB src ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/*.cpp
 					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/abi/*.cpp 
 					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/fmt/*.cc)
 
-add_library(${module_name} SHARED ${src})
+file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/*.hpp 
+					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/abi/*.hpp 
+					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/fmt/*.h)
+
+add_library(${module_name} SHARED ${src} ${header})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	target_compile_definitions(${module_name} PRIVATE -DFMT_EXPORT -DEXPORT_EXCALIBUR_PRIMITIVES -D_WINDLL)
