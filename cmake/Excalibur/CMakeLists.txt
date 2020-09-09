@@ -7,13 +7,15 @@ else()
 	file(GLOB src ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/arm/*.cpp)
 endif()
 
+	file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Excalibur/*.hpp ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Excalibur/arm/*.hpp)
+
 list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/main.cpp")
 
 if(USE_CUDA)
 	CUDA_ADD_LIBRARY(${module_name} SHARED ${src})
 #	set(CUDA_NVCC_FLAGS -arch=compute_30)
 else()
-	add_library(${module_name} SHARED ${src})
+	add_library(${module_name} SHARED ${src} ${header})
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
