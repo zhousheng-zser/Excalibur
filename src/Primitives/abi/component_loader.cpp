@@ -280,7 +280,7 @@ namespace glasssix::exposing::impl
 		/// </summary>
 		/// <param name="names">The conventional names</param>
 		/// <returns>The class factories of the successfully loaded modules</returns>
-		param_hash_map<param_string, class_factory> add_modules_with_factories_by_name(param_span<param_string> names)
+		param_hash_map<param_string, class_factory> add_modules_by_name_with_factories(param_span<param_string> names)
 		{
 			return add_modules_with_factories_impl(names, std::bind(&component_loader_impl::add_module_by_name_with_factory, this, std::placeholders::_1));
 		}
@@ -290,7 +290,7 @@ namespace glasssix::exposing::impl
 		/// </summary>
 		/// <param name="names">The conventional names</param>
 		/// <returns>The class factories of the successfully loaded modules</returns>
-		param_hash_map<param_string, class_factory> add_modules_with_factories_by_name(const param_vector<param_string>& names)
+		param_hash_map<param_string, class_factory> add_modules_by_name_with_factories(const param_vector<param_string>& names)
 		{
 			return add_modules_with_factories_impl(names, std::bind(&component_loader_impl::add_module_by_name_with_factory, this, std::placeholders::_1));
 		}
