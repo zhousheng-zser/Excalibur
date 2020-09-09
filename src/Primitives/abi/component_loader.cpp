@@ -3,10 +3,12 @@
 #include "filesystem.hpp"
 
 #include <list>
+#include <regex>
 #include <mutex>
-#include <vector>
 #include <memory>
+#include <vector>
 #include <algorithm>
+#include <functional>
 #include <unordered_map>
 
 #ifdef _WIN32
@@ -65,15 +67,41 @@ namespace glasssix::exposing::dll
 	}
 }
 
-namespace
+namespace glasssix::exposing
 {
+	namespace
+	{
 #ifdef _WIN32
-	inline constexpr std::string_view dll_extension{ u8".dll" };
+		constexpr utf8_string_view dll_extension{ u8".dll" };
 #elif defined(__linux__)
-	inline constexpr std::string_view dll_extension{ u8".so" };
+		constexpr utf8_string_view dll_extension{ u8".so" };
 #else
 #error "Unsupported Platform."
 #endif
+
+		param_string force_unix_conventional_library_file_name(utf8_string_view name)
+		{
+			static constexpr utf8_string_view file_name_prefix{ u8"lib" };
+
+#ifdef _WIN32
+			static constexpr auto regex_flags = std::regex_constants::ECMAScript | std::regex_constants::icase;
+#else
+			static constexpr auto regex_flags = std::regex_constants::ECMAScript;
+#endif
+			thread_local std::basic_regex<utf8_char> pattern{ format(FMT_STRING(u8R"(({})?(.+?)(\.{})?)"), file_name_prefix, dll_extension), regex_flags };
+
+			if (std::cmatch matches; std::regex_match(name.data(), name.data() + name.size(), matches, pattern))
+			{
+				return format(
+					u8"{}{}{}",
+					matches[1].matched ? param_string{} : param_string{ file_name_prefix },
+					matches[2].str(),
+					matches[3].matched ? param_string{} : param_string{ dll_extension });
+			}
+
+			return name;
+		}
+	}
 }
 
 namespace glasssix::exposing::impl
@@ -134,7 +162,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The count of successfully loaded modules</returns>
 		std::uint64_t add_modules(param_span<param_string> paths)
 		{
-			return std::count_if(paths.begin(), paths.end(), [&](utf8_string_view path) { return add_module(path); });
+			return std::count_if(paths.begin(), paths.end(), [&](utf8_string_view inner) { return add_module(inner); });
 		}
 
 		/// <summary>
@@ -144,7 +172,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The count of successfully loaded modules</returns>
 		std::uint64_t add_modules(const param_vector<param_string>& paths)
 		{
-			return std::count_if(begin(paths), end(paths), [&](utf8_string_view path) { return add_module(path); });
+			return std::count_if(begin(paths), end(paths), [&](utf8_string_view inner) { return add_module(inner); });
 		}
 
 		/// <summary>
@@ -154,7 +182,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The class factories of the successfully loaded modules</returns>
 		param_hash_map<param_string, class_factory> add_modules_with_factories(param_span<param_string> paths)
 		{
-			return add_modules_with_factories_impl(paths);
+			return add_modules_with_factories_impl(paths, std::bind(&component_loader_impl::add_module_with_factory, this, std::placeholders::_1));
 		}
 
 		/// <summary>
@@ -164,7 +192,7 @@ namespace glasssix::exposing::impl
 		/// <returns>The class factories of the successfully loaded modules</returns>
 		param_hash_map<param_string, class_factory> add_modules_with_factories(const param_vector<param_string>& paths)
 		{
-			return add_modules_with_factories_impl(paths);
+			return add_modules_with_factories_impl(paths, std::bind(&component_loader_impl::add_module_with_factory, this, std::placeholders::_1));
 		}
 
 		/// <summary>
@@ -205,6 +233,66 @@ namespace glasssix::exposing::impl
 			{
 				return for_each_dll_files<false>(directory, handler, make_param_hash_map<param_string, class_factory>());
 			}
+		}
+
+		/// <summary>
+		/// Adds a module by name.
+		/// </summary>
+		/// <param name="path">The conventional library name</param>
+		/// <returns>True if the opeartion succeeds; otherwise false</returns>
+		bool add_module_by_name(const param_string& name)
+		{
+			return add_module(force_unix_conventional_library_file_name(name));
+		}
+
+		/// <summary>
+		/// Adds a module by name and returns the class factory.
+		/// </summary>
+		/// <param name="name">The conventional library name</param>
+		/// <returns>The class factory</returns>
+		class_factory add_module_by_name_with_factory(const param_string& name)
+		{
+			return add_module_with_factory(force_unix_conventional_library_file_name(name));
+		}
+
+		/// <summary>
+		/// Adds a few modules by name.
+		/// </summary>
+		/// <param name="names">The conventional names</param>
+		/// <returns>The count of successfully loaded modules</returns>
+		std::uint64_t add_modules_by_name(param_span<param_string> names)
+		{
+			return std::count_if(names.begin(), names.end(), [&](utf8_string_view inner) { return add_module_by_name(inner); });
+		}
+
+		/// <summary>
+		/// Adds a few modules by name.
+		/// </summary>
+		/// <param name="names">The conventional names</param>
+		/// <returns>The count of successfully loaded modules</returns>
+		std::uint64_t add_modules_by_name(const param_vector<param_string>& names)
+		{
+			return std::count_if(begin(names), end(names), [&](utf8_string_view inner) { return add_module_by_name(inner); });
+		}
+
+		/// <summary>
+		/// Adds a few modules by name and returns the available class factories.
+		/// </summary>
+		/// <param name="names">The conventional names</param>
+		/// <returns>The class factories of the successfully loaded modules</returns>
+		param_hash_map<param_string, class_factory> add_modules_with_factories_by_name(param_span<param_string> names)
+		{
+			return add_modules_with_factories_impl(names, std::bind(&component_loader_impl::add_module_by_name_with_factory, this, std::placeholders::_1));
+		}
+
+		/// <summary>
+		/// Adds a few modules by name and returns the available class factories.
+		/// </summary>
+		/// <param name="names">The conventional names</param>
+		/// <returns>The class factories of the successfully loaded modules</returns>
+		param_hash_map<param_string, class_factory> add_modules_with_factories_by_name(const param_vector<param_string>& names)
+		{
+			return add_modules_with_factories_impl(names, std::bind(&component_loader_impl::add_module_by_name_with_factory, this, std::placeholders::_1));
 		}
 
 		/// <summary>
@@ -318,14 +406,14 @@ namespace glasssix::exposing::impl
 			return handler ? handler() : throw abi_no_interface{ format(u8"Failed to create an instance by interface ID: {}.", to_param_string(interface_id)) };
 		}
 	private:
-		template<template<typename> typename Container>
-		param_hash_map<param_string, class_factory> add_modules_with_factories_impl(const Container<param_string>& paths)
+		template<template<typename> typename Container, typename Callable>
+		param_hash_map<param_string, class_factory> add_modules_with_factories_impl(const Container<param_string>& paths, Callable&& callable)
 		{
 			auto result = make_param_hash_map<param_string, class_factory>();
 
 			for (const auto& item : paths)
 			{
-				if (auto factory = add_module_with_factory(item))
+				if (auto factory = callable(item))
 				{
 					result.add_or_update(factory.library_name(), factory);
 				}
@@ -344,7 +432,7 @@ namespace glasssix::exposing::impl
 
 			for (auto& item : iterator_type{ to_narrow_string(directory), fs::directory_options::skip_permission_denied, code })
 			{
-				if (item.path().has_extension() && item.path().extension() == dll_extension)
+				if (item.path().has_extension() && case_insensitive_path_comare(item.path().extension(), dll_extension))
 				{
 					std::forward<Callable>(handler)(result, item.path());
 				}
