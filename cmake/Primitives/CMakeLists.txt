@@ -36,3 +36,5 @@ endif()
 if(USE_OPENMP)
 	target_link_libraries(${module_name} OpenMP::OpenMP_CXX)
 endif()
+
+target_link_libraries(${module_name} Threads::Threads)

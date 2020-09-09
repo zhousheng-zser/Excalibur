@@ -1,3 +1,5 @@
+find_package(Threads REQUIRED)
+
 if(USE_CUDA)
 	find_package(CUDA REQUIRED)
 endif()

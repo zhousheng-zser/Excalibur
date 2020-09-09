@@ -37,6 +37,6 @@ if(USE_OPENMP)
 	target_link_libraries(${module_name} OpenMP::OpenMP_CXX)
 endif()
 
-target_link_libraries(${module_name} julius primitives)
+target_link_libraries(${module_name} julius primitives Threads::Threads)
 add_dependencies(${module_name} julius primitives)
 
