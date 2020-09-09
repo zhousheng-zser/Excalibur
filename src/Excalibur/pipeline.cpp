@@ -323,9 +323,9 @@ namespace glasssix
 				return results;
 			}
 
-			std::shared_ptr<memory::tensor<Dtype>> get_featmap(std::string featmap_name)
+			std::shared_ptr<memory::tensor<Dtype>> get_featmap(std::string_view featmap_name)
 			{
-				return featmaps_[featmap_names_index_[featmap_name]];
+				return featmaps_[featmap_names_index_[std::string(featmap_name)]];
 			}
 
 			void enable_profiler()
@@ -426,7 +426,7 @@ namespace glasssix
 			std::vector<std::string> read_param_file(std::string_view filepath)
 			{
 				std::vector<std::string> output;
-				std::ifstream in(std::string(filepath));
+				std::ifstream in{ std::string(filepath) };
 				std::string temp;
 				if (!in.is_open())
 				{
