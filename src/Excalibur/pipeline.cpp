@@ -31,7 +31,15 @@ namespace glasssix
 #endif
 			}
 
-			explicit impl(std::string param_file, std::string model_file, int device = -1)
+			explicit impl(std::string_view param_file, std::string_view model_file, int device) : impl{ read_param_file(param_file), model_file, device }
+			{
+			}
+
+			explicit impl(std::string_view param_file, int device) : impl{ read_param_file(param_file), std::string(), device }
+			{
+			}
+
+			explicit impl(const std::vector<std::string>& hardcode_params, std::string_view model_file, int device = -1)
 			{
 #ifdef USE_CUDA
 				CUBLAS_CHECK(cublasCreate(&cublas_handle_));
@@ -43,7 +51,7 @@ namespace glasssix
 					CUDA_CHECK(cudaSetDevice(device_));
 				}
 #endif
-				auto lines = read_param_file(param_file);
+				decltype(auto) lines = hardcode_params;
 				if (lines.size() <= 0)
 				{
 					LOG(FATAL) << "Incorrect param file.";
@@ -118,7 +126,10 @@ namespace glasssix
 				}
 
 				// load data
-				init_weights(model_file);
+				if (!model_file.empty())
+				{
+					init_weights(model_file);
+				}
 
 				//build dag
 				op_nodes_.resize(operations_.size());
@@ -181,171 +192,6 @@ namespace glasssix
 						ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
 					}
 				}
-			}
-
-			explicit impl(std::string param_file, int device = -1)
-			{
-#ifdef USE_CUDA
-				CUBLAS_CHECK(cublasCreate(&cublas_handle_));
-#ifdef USE_CUDNN
-				CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
-#endif
-				if (device_ >= 0)
-				{
-					CUDA_CHECK(cudaSetDevice(device_));
-				}
-#endif
-				auto lines = read_param_file(param_file);
-				if (lines.size() <= 0)
-				{
-					LOG(FATAL) << "Incorrect param file.";
-				}
-				std::string param_version = split_string(lines[0], " ")[0];
-				if (param_version != "glsv1" && param_version != "7767517")
-				{
-					LOG(FATAL) << "Incorrect param file version.";
-				}
-				if (split_string(lines[0], " ").size() > 1)
-				{
-					name_ = split_string(lines[0], " ")[1];
-				}
-				for (size_t i = 2; i < lines.size(); i++)
-				{
-					if (lines[i].size() <= 0)
-					{
-						continue;
-					}
-					auto sarray = split_string(lines[i], " ");
-					std::vector<std::string> useful_array;
-					for (size_t j = 0; j < sarray.size(); j++)
-					{
-						if (sarray[j] != std::string(""))
-						{
-							useful_array.push_back(sarray[j]);
-						}
-					}
-					pipe_param_str_.push_back(useful_array);
-				}
-
-				for (size_t i = 0; i < pipe_param_str_.size(); i++)
-				{
-					operation_param op_param;
-					op_param.type_ = pipe_param_str_[i][0];
-					op_param.name_ = pipe_param_str_[i][1];
-					op_param.device_ = device_;
-					op_param.input_count_ = atoi(pipe_param_str_[i][2].c_str());
-					op_param.output_count_ = atoi(pipe_param_str_[i][3].c_str());
-					if (op_param.output_count_ <= 0)
-					{
-						op_param.output_featmaps_ = std::vector<std::string>();
-					}
-					for (size_t j = 0; j < op_param.output_count_; j++)
-					{
-						op_param.output_featmaps_.push_back(pipe_param_str_[i][4 + op_param.input_count_ + j]);
-					}
-					int specific_start_id = 4 + op_param.input_count_ + op_param.output_count_;
-					for (size_t j = specific_start_id; j < pipe_param_str_[i].size(); j++)
-					{
-						op_param.specific_params_ += (pipe_param_str_[i][j] + " ");
-					}
-					if (op_param.input_count_ <= 0)
-					{
-						// a kind of input method, attach 1 input featmap at top
-						op_param.input_count_ = 1;
-						op_param.input_featmaps_ = std::vector<std::string>{ op_param.name_ + "_input" };
-					}
-					else
-					{
-						for (size_t j = 0; j < op_param.input_count_; j++)
-						{
-							op_param.input_featmaps_.push_back(pipe_param_str_[i][4 + j]);
-						}
-					}
-					op_params_.push_back(op_param);
-				}
-
-				for (size_t i = 0; i < op_params_.size(); i++)
-				{
-					operations_.push_back(operation_reflector<Dtype>::instance().create_object(op_params_[i]));
-				}
-
-				// load data
-				init_weights();
-
-				//build dag
-				op_nodes_.resize(operations_.size());
-				for (size_t i = 0; i < operations_.size(); i++)
-				{
-					op_nodes_[i] = node<std::string>(operations_[i]->param().name_);
-					operation_names_index_[operations_[i]->param().name_] = i;
-				}
-
-				for (size_t i = 0; i < op_params_.size(); i++)
-				{
-					for (size_t j = 0; j < op_params_[i].input_count_; j++)
-					{
-						if (featmap_names_index_.find(op_params_[i].input_featmaps_[j]) == featmap_names_index_.end())
-						{
-							featmap_names_index_[op_params_[i].input_featmaps_[j]] = featmap_count_;
-							featmap_count_++;
-						}
-						int id = find_parent_op_index(op_params_[i].input_featmaps_[j]);
-						if (id < 0)
-						{
-							input_featmap_names_.push_back(op_params_[i].input_featmaps_[j]);
-						}
-					}
-					for (size_t j = 0; j < op_params_[i].output_count_; j++)
-					{
-						if (featmap_names_index_.find(op_params_[i].output_featmaps_[j]) == featmap_names_index_.end())
-						{
-							featmap_names_index_[op_params_[i].output_featmaps_[j]] = featmap_count_;
-							featmap_count_++;
-						}
-						int id = find_child_op_index(op_params_[i].output_featmaps_[j]);
-						if (id >= 0)
-						{
-							op_nodes_[i].add_child(op_nodes_[id]);
-						}
-						else
-						{
-							output_featmap_names_.push_back(op_params_[i].output_featmaps_[j]);
-						}
-					}
-				}
-				featmaps_.resize(featmap_count_);
-
-				CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
-				for (size_t i = 0; i < input_featmap_names_.size(); i++)
-				{
-					/*auto id = find_child_op_index(input_featmap_names_[i]);
-					auto op_node_vec = bfs_ops_.traverse_undirected(op_nodes_[id]);*/
-					// TODO: Add DAG expand support!!!!
-					for (size_t j = 0; j < op_nodes_.size(); j++)
-					{
-						auto res = operation_names_index_.find(op_nodes_[j].value());
-						if (res == operation_names_index_.end())
-						{
-							LOG(FATAL) << "Un-inited operation.";
-						}
-						ops_execution_order_.push_back(res->second);
-						ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
-					}
-				}
-			}
-
-			explicit impl(std::vector<std::string> hardcode_params, std::string model_file, int device = -1)
-			{
-#ifdef USE_CUDA
-				CUBLAS_CHECK(cublasCreate(&cublas_handle_));
-#ifdef USE_CUDNN
-				CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
-#endif
-				if (device_ >= 0)
-				{
-					CUDA_CHECK(cudaSetDevice(device_));
-				}
-#endif
 			}
 
 			~impl()
@@ -492,9 +338,9 @@ namespace glasssix
 				profile_ = false;
 			}
 		private:
-			void init_weights(std::string model_file)
+			void init_weights(std::string_view model_file)
 			{
-				FILE* fp = fopen(model_file.c_str(), "rb");
+				FILE* fp = fopen(model_file.data(), "rb");
 				if (!fp)
 				{
 					LOG(FATAL) << "Cannot open " << model_file;
@@ -577,10 +423,10 @@ namespace glasssix
 				return result;
 			}
 
-			std::vector<std::string> read_param_file(std::string filepath)
+			std::vector<std::string> read_param_file(std::string_view filepath)
 			{
 				std::vector<std::string> output;
-				std::ifstream in(filepath.c_str());
+				std::ifstream in(std::string(filepath));
 				std::string temp;
 				if (!in.is_open())
 				{
@@ -646,17 +492,17 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		pipeline<Dtype>::pipeline(std::string param_file, std::string model_file, int device) : impl_{ new impl{ param_file, model_file, device } }
+		pipeline<Dtype>::pipeline(std::string_view param_file, std::string_view model_file, int device) : impl_{ new impl{ param_file, model_file, device } }
 		{
 		}
 
 		template<typename Dtype>
-		pipeline<Dtype>::pipeline(std::string param_file, int device) : impl_{ new impl{ param_file, device } }
+		pipeline<Dtype>::pipeline(std::string_view param_file, int device) : impl_{ new impl{ param_file, device } }
 		{
 		}
 
 		template<typename Dtype>
-		pipeline<Dtype>::pipeline(std::vector<std::string> hardcode_params, std::string model_file, int device) : impl_{ new impl{ hardcode_params, model_file, device } }
+		pipeline<Dtype>::pipeline(const std::vector<std::string>& hardcode_params, std::string_view model_file, int device) : impl_{ new impl{ hardcode_params, model_file, device } }
 		{
 		}
 
@@ -688,7 +534,7 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		std::shared_ptr<memory::tensor<Dtype>> pipeline<Dtype>::get_featmap(std::string featmap_name)
+		std::shared_ptr<memory::tensor<Dtype>> pipeline<Dtype>::get_featmap(std::string_view featmap_name)
 		{
 			return impl_->get_featmap(featmap_name);
 		}
