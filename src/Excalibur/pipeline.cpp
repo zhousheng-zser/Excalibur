@@ -126,7 +126,11 @@ namespace glasssix
 				}
 
 				// load data
-				if (!model_file.empty())
+				if (model_file.empty())
+				{
+					init_weights();
+				}
+				else
 				{
 					init_weights(model_file);
 				}
