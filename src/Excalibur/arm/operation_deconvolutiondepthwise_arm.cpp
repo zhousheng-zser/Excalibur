@@ -229,6 +229,6 @@ namespace glasssix
 		}
 
 		INSTANCE_CLASS(operation_deconvolutiondepthwise_arm);
-		REGISTE(operation_deconvolutiondepthwise_arm);
+//		REGISTE(operation_deconvolutiondepthwise_arm);
 	}
 }
