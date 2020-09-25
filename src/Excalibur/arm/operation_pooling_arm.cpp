@@ -429,6 +429,6 @@ namespace glasssix
 		}
 
 		INSTANCE_CLASS(operation_pooling_arm);
-		REGISTE(operation_pooling_arm);
+//		REGISTE(operation_pooling_arm);
 	}
 }
