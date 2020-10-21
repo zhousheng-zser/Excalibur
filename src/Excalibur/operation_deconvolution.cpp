@@ -91,14 +91,8 @@ namespace glasssix
 			this->input_dim_h_ = bottoms[0]->data_shape()[2];
 			this->input_dim_w_ = bottoms[0]->data_shape()[3];
 			this->input_spatial_dim_ = this->input_dim_h_ * this->input_dim_w_;
-			if (this->output_dim_h_ == 0)
-			{
-				this->output_dim_h_ = (this->input_dim_h_ - 1) * this->stride_h_ + this->kernel_size_h_ - (this->pad_top_ + this->pad_bottom_);
-			}
-			if (this->output_dim_w_ == 0)
-			{
-				this->output_dim_w_ = (this->input_dim_w_ - 1) * this->stride_w_ + this->kernel_size_w_ - (this->pad_left_ + this->pad_right_);
-			}
+			this->output_dim_h_ = (this->input_dim_h_ - 1) * this->stride_h_ + this->kernel_size_h_ - (this->pad_top_ + this->pad_bottom_);
+			this->output_dim_w_ = (this->input_dim_w_ - 1) * this->stride_w_ + this->kernel_size_w_ - (this->pad_left_ + this->pad_right_);
 			this->output_spatial_dim_ = this->output_dim_w_ * this->output_dim_h_;
 			tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
