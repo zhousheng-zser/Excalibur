@@ -53,72 +53,75 @@ namespace glasssix
 			{
 				forward_k3s2_f32(bottoms[0], tops[0]);
 			}
-			else if (this->input_dim_h_ == 4 && this->output_dim_h_ == 1)
+			else if (this->input_dim_h_ == 4 && this->input_dim_w_ == 4 && this->kernel_size_h_ == 4 && this->kernel_size_w_ == 4)
 			{
-			
 				const float* bottom_data = bottoms[0]->cpu_data();
-				const float* weights_data = this->weights_f32_[0]->cpu_data();
-				const float* bias_data = nullptr;
 				float* top_data = nullptr;
-				if (this->bias_term_)
-				{
-					bias_data = this->weights_f32_[1]->cpu_data();
-				}
+				
 				tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 					bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 				top_data = tops[0]->mutable_cpu_data();
-				for (int i = 0; i < tops[0]->count(); i++)
+				for (int n = 0; n < tops[0]->num(); n++)
 				{
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-					float zero_val = 0.f;
-					__m256 _sum1 = _mm256_broadcast_ss(&zero_val); 
-					__m256 _r1 = _mm256_loadu_ps(bottom_data);
-					__m256 _k1 = _mm256_loadu_ps(weights_data);
-					_sum1 = _mm256_fmadd_ps(_r1, _k1, _sum1);
+					const float* weights_data = this->weights_f32_[0]->cpu_data();
+					const float* bias_data = nullptr;
+					if (this->bias_term_)
+					{
+						bias_data = this->weights_f32_[1]->cpu_data();
+					}
 
-					__m256 _r2 = _mm256_loadu_ps(bottom_data + 8);
-					__m256 _k2 = _mm256_loadu_ps(weights_data + 8);
-					_sum1 = _mm256_fmadd_ps(_r2, _k2, _sum1);
-					*top_data = _mm256_sum_ps(_sum1);
-					*top_data += *bias_data;
-					bias_data += 1;
-					top_data += 1;
-					bottom_data += 16;
-					weights_data += 16;
+					for (int i = 0; i < tops[0]->count(1,4); i++)
+					{
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+						float zero_val = 0.f;
+						__m256 _sum1 = _mm256_broadcast_ss(&zero_val);
+						__m256 _r1 = _mm256_loadu_ps(bottom_data);
+						__m256 _k1 = _mm256_loadu_ps(weights_data);
+						_sum1 = _mm256_fmadd_ps(_r1, _k1, _sum1);
+
+						__m256 _r2 = _mm256_loadu_ps(bottom_data + 8);
+						__m256 _k2 = _mm256_loadu_ps(weights_data + 8);
+						_sum1 = _mm256_fmadd_ps(_r2, _k2, _sum1);
+						*top_data = _mm256_sum_ps(_sum1);
+						*top_data += *bias_data;
+						bias_data += 1;
+						top_data += 1;
+						bottom_data += 16;
+						weights_data += 16;
 #endif
 #if __ARM_NEON
-					float32x4_t _sum1 = vdupq_n_f32(0);
-					float32x4_t _sum2 = vdupq_n_f32(0);
+						float32x4_t _sum1 = vdupq_n_f32(0);
+						float32x4_t _sum2 = vdupq_n_f32(0);
 
-					float32x4_t _r1 = vld1q_f32(bottom_data);
-					float32x4_t _r2 = vld1q_f32(bottom_data+4);
-					float32x4_t _k1 = vld1q_f32(weights_data);
-					float32x4_t _k2 = vld1q_f32(weights_data + 4);
+						float32x4_t _r1 = vld1q_f32(bottom_data);
+						float32x4_t _r2 = vld1q_f32(bottom_data + 4);
+						float32x4_t _k1 = vld1q_f32(weights_data);
+						float32x4_t _k2 = vld1q_f32(weights_data + 4);
 
-					
 
-					_sum1 = vmlaq_f32(_sum1, _r1, _k1);
-					_sum2 = vmlaq_f32(_sum2, _r2, _k2);
 
-					float32x4_t _r3 = vld1q_f32(bottom_data + 8);
-					float32x4_t _r4 = vld1q_f32(bottom_data + 12);
-					float32x4_t _k3 = vld1q_f32(weights_data + 8);
-					float32x4_t _k4 = vld1q_f32(weights_data + 12);
+						_sum1 = vmlaq_f32(_sum1, _r1, _k1);
+						_sum2 = vmlaq_f32(_sum2, _r2, _k2);
 
-					_sum1 = vmlaq_f32(_sum1, _r3, _k3);
-					_sum2 = vmlaq_f32(_sum2, _r4, _k4);
+						float32x4_t _r3 = vld1q_f32(bottom_data + 8);
+						float32x4_t _r4 = vld1q_f32(bottom_data + 12);
+						float32x4_t _k3 = vld1q_f32(weights_data + 8);
+						float32x4_t _k4 = vld1q_f32(weights_data + 12);
 
-					_sum1 = vaddq_f32(_sum1, _sum2);
+						_sum1 = vmlaq_f32(_sum1, _r3, _k3);
+						_sum2 = vmlaq_f32(_sum2, _r4, _k4);
 
-					*top_data = vgetq_lane_f32(_sum1, 0)+ vgetq_lane_f32(_sum1, 1)+ vgetq_lane_f32(_sum1, 2)+ vgetq_lane_f32(_sum1, 3);
-					*top_data += *bias_data;
-					bias_data += 1;
-					top_data += 1;
-					bottom_data += 16;
-					weights_data += 16;
+						_sum1 = vaddq_f32(_sum1, _sum2);
+
+						*top_data = vgetq_lane_f32(_sum1, 0) + vgetq_lane_f32(_sum1, 1) + vgetq_lane_f32(_sum1, 2) + vgetq_lane_f32(_sum1, 3);
+						*top_data += *bias_data;
+						bias_data += 1;
+						top_data += 1;
+						bottom_data += 16;
+						weights_data += 16;
 #endif
+					}
 				}
-			
 			}
 			else
 			{
@@ -142,7 +145,7 @@ namespace glasssix
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-						for (int i = 0; i < tops[0]->count(); i++)
+						for (int i = 0; i < tops[0]->count(1,4); i++)
 						{
 							const int pw = i % this->output_dim_w_;
 							const int ph = (i / this->output_dim_w_) % this->output_dim_h_;
@@ -174,7 +177,7 @@ namespace glasssix
 							{
 								aveval += bias_data[c];
 							}
-							top_data[n * bottoms[0]->count(1, 4) + i] = aveval;
+							top_data[n * tops[0]->count(1, 4) + i] = aveval;
 						}
 					}
 

@@ -349,20 +349,20 @@ namespace glasssix
 				{
 					LOG(FATAL) << "Cannot open " << model_file;
 				}
-				LOG(INFO) << "[Pipeline weights memory cost list]=====================";
+				//LOG(INFO) << "[Pipeline weights memory cost list]=====================";
 				for (size_t i = 0; i < operations_.size(); i++)
 				{
 					int mem = operations_[i]->init_weights(fp);
 					weights_mem_cost_ += mem;
-					LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
+					//LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
 				}
-				LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
+				//LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
 				CHECK_EQ(fclose(fp), 0) << "Cannot close " << model_file;
 			}
 
 			void init_weights()
 			{
-				LOG(INFO) << "[Pipeline weights memory cost list]=====================";
+				//LOG(INFO) << "[Pipeline weights memory cost list]=====================";
 				LOG(WARNING) << "THIS PIPELINE IS LOADED WITH DUMMY DATA.";
 				for (size_t i = 0; i < operations_.size(); i++)
 				{
@@ -370,7 +370,7 @@ namespace glasssix
 					weights_mem_cost_ += mem;
 					//LOG(INFO) << "[Operation]:\t" << operations_[i]->param().name_ << "\t[weights]:\t" << mem << "(B)";
 				}
-				LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
+				//LOG(INFO) << "[Pipeline weights memory cost]: \t" << weights_mem_cost_ * 1.0f / 1024 / 1024 << "(MB)";
 			}
 
 			int find_parent_op_index(std::string inputfeatmap)
