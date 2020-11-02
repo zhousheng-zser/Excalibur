@@ -24,10 +24,11 @@ namespace glasssix
 #define final_sum_q0_4 (q.s[0]+q.s[1]+q.s[2]+q.s[3])
 #define final_sum_q0_2 (q.s[0]+q.s[1])
 #define final_sum_q (q.s[0]+q.s[1]+q.s[2]+q.s[3])
-#if 1//__MFA__
+#ifdef __aarch64__//__MFA__
 #define _mm_fmadd_ps(A, B, C) vfmaq_f32(C, A, B)
 #else
-#define _mm_fmadd_ps(A, B, C) vaddq_f32(vmulq_f32(A, B), C)
+//#define _mm_fmadd_ps(A, B, C) vaddq_f32(vmulq_f32(A, B), C)
+#define _mm_fmadd_ps(A, B, C) vmlaq_f32(C, A, B)
 #endif
 
 #include "../../include/Julius/julius_sgemm_align128_raw.inc"
