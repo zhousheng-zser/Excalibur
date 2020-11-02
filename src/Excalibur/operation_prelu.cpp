@@ -84,9 +84,9 @@ namespace glasssix
 #endif
 							for (int j = 0; j < simd_times; j++)
 							{
-								__m128 d = _mm_load_ps(bottom_data + offset + 4 * j);
+								__m128 d = _mm_loadu_ps(bottom_data + offset + 4 * j);
 								d = _mm_add_ps(_mm_max_ps(zero_vec, d), _mm_mul_ps(slope_vec, _mm_min_ps(zero_vec, d)));
-								_mm_store_ps(top_data+ offset + 4 * j, d);
+								_mm_storeu_ps(top_data+ offset + 4 * j, d);
 							}
 							for (int j = 4 * simd_times; j < step; j++)
 							{
@@ -102,9 +102,9 @@ namespace glasssix
 #endif
 							for (int j = 0; j < simd_times; j++)
 							{
-								__m256 d = _mm256_load_ps(bottom_data + offset + 8 * j);
+								__m256 d = _mm256_loadu_ps(bottom_data + offset + 8 * j);
 								d = _mm256_add_ps(_mm256_max_ps(zero_vec, d), _mm256_mul_ps(slope_vec, _mm256_min_ps(zero_vec, d)));
-								_mm256_store_ps(top_data + offset + 8 * j, d);
+								_mm256_storeu_ps(top_data + offset + 8 * j, d);
 							}
 							for (int j = 8 * simd_times; j < step; j++)
 							{
