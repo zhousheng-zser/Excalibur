@@ -34,35 +34,40 @@ namespace glasssix::exposing
 	/// <summary>
 	/// An basic string that holds a reference to a real param_string.
 	/// </summary>
-	class basic_param_string_impl
+	class basic_param_string
 	{
 	public:
-		basic_param_string_impl(std::nullptr_t) noexcept : handle_{}
+		basic_param_string(std::nullptr_t) noexcept : handle_{}
 		{
 		}
 			 
-		basic_param_string_impl(take_over_abi_from_void_ptr abi) noexcept : handle_{ abi.to<allocations::param_string_handle>() }
+		basic_param_string(take_over_abi_from_void_ptr abi) noexcept : handle_{ abi.to<allocations::param_string_handle>() }
 		{
 		}
 
-		basic_param_string_impl(utf8_string_view str) noexcept : handle_{ allocations::create_param_string(str.data(), str.size()) }
+		basic_param_string(utf8_string_view str) noexcept : handle_{ allocations::create_param_string(str.data(), str.size()) }
 		{
 		}
 
-		basic_param_string_impl(const basic_param_string_impl& other) noexcept : handle_{ allocations::create_param_string_ref(other.handle_) }
+		basic_param_string(const basic_param_string& other) noexcept : handle_{ allocations::create_param_string_ref(other.handle_) }
 		{
 		}
 
-		basic_param_string_impl(basic_param_string_impl&& other) noexcept : handle_{ std::exchange(other.handle_, nullptr) }
+		basic_param_string(basic_param_string&& other) noexcept : handle_{ std::exchange(other.handle_, nullptr) }
 		{
 		}
 
-		basic_param_string_impl& operator=(const basic_param_string_impl& right) noexcept
+		~basic_param_string() noexcept
+		{
+			clear();
+		}
+
+		basic_param_string& operator=(const basic_param_string& right) noexcept
 		{
 			return (clear(), handle_ = allocations::create_param_string_ref(right.handle_), *this);
 		}
 
-		basic_param_string_impl& operator=(basic_param_string_impl&& right) noexcept
+		basic_param_string& operator=(basic_param_string&& right) noexcept
 		{
 			return (clear(), handle_ = std::exchange(right.handle_, nullptr), *this);
 		}
@@ -91,15 +96,8 @@ namespace glasssix::exposing
 			return allocations::create_param_string_ref(handle_);
 		}
 	protected:
-		~basic_param_string_impl() noexcept
-		{
-			clear();
-		}
-	private:
 		allocations::param_string_handle handle_;
 	};
-
-	struct basic_param_string : basic_param_string_impl {};
 
 	/// <summary>
 	/// Converts a string to a platform-dependent narrow string.

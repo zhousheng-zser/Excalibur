@@ -94,7 +94,7 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_error(abi_result result, utf8_string_view inner_what) noexcept : result_{ result }, what_{ take_over_abi_from_void_ptr{ allocations::create_abi_exception_message(result, get_abi(inner_what)) } }
+		abi_error(abi_result result, utf8_string_view inner_what) noexcept : result_{ result }, what_{ take_over_abi_from_void_ptr{ allocations::create_abi_exception_message(result, get_abi(basic_param_string{ inner_what })) } }
 		{
 		}
 
