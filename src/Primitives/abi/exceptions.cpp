@@ -1,5 +1,8 @@
 #include "abi/exceptions.hpp"
+#include "abi/param_string.hpp"
 #include "pure_c_handle_utils.h"
+
+#include <unordered_map>
 
 namespace glasssix::exposing::allocations
 {
@@ -36,17 +39,17 @@ namespace glasssix::exposing::allocations
 		}
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_current_exception_what() noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL get_abi_exception_what() noexcept
 	{
 		return get_abi(current_exception_what);
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL clear_current_exception_what() noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL clear_abi_exception_what() noexcept
 	{
 		current_exception_what.clear();
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_current_exception_what(void* what_abi) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL set_abi_exception_what(void* what_abi) noexcept
 	{
 		if (what_abi)
 		{
@@ -54,12 +57,7 @@ namespace glasssix::exposing::allocations
 		}
 	}
 
-	EXPORT_EXCALIBUR_PRIMITIVES std::int32_t G6_ABI_CALL set_current_exception_what_from_abi_result(std::int32_t code, const char* optional_inner_narrow_what) noexcept
-	{
-		return (set_current_exception_what(create_error_message_from_abi_result(code, get_abi(to_param_string(optional_inner_narrow_what)))), code);
-	}
-
-	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_error_message_from_abi_result(std::int32_t code, void* optional_inner_what_abi) noexcept
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL create_abi_exception_message(std::int32_t code, void* optional_inner_what_abi) noexcept
 	{
 		try
 		{
@@ -73,5 +71,15 @@ namespace glasssix::exposing::allocations
 		{
 			std::terminate();
 		}
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES std::int32_t G6_ABI_CALL set_abi_exception_what_ex(std::int32_t code, void* optional_inner_what_abi) noexcept
+	{
+		return (set_abi_exception_what(create_abi_exception_message(code, optional_inner_what_abi)), code);
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES std::int32_t G6_ABI_CALL set_abi_exception_what_ex_narrow(std::int32_t code, const char* optional_inner_narrow_what) noexcept
+	{
+		return set_abi_exception_what_ex(code, get_abi(to_param_string(optional_inner_narrow_what)));
 	}
 }
