@@ -168,6 +168,15 @@ namespace glasssix
 	struct log
 	{
 		/// <summary>
+		/// Sets the current log level.
+		/// </summary>
+		/// <param name="level">The log level</param>
+		static void set_log_level(log_level level)
+		{
+			get_logger().set_log_level(level);
+		}
+
+		/// <summary>
 		/// Prints debugging information.
 		/// </summary>
 		/// <param name="message">The message</param>
@@ -254,15 +263,6 @@ namespace glasssix
 		static void f(FormatString&& format, Args&&... args)
 		{
 			f(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...));
-		}
-
-		/// <summary>
-		/// Sets the current log level.
-		/// </summary>
-		/// <param name="level">The log level</param>
-		static void set_log_level(log_level level)
-		{
-			get_logger().set_log_level(level);
 		}
 	};
 }
