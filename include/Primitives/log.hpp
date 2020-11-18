@@ -171,7 +171,7 @@ namespace glasssix
 		/// Prints debugging information.
 		/// </summary>
 		/// <param name="message">The message</param>
-		static void d(const exposing::utf8_string_view message)
+		static void d(exposing::utf8_string_view message)
 		{
 			get_logger().debug(message);
 		}
@@ -180,7 +180,7 @@ namespace glasssix
 		/// Prints ordinary information.
 		/// </summary>
 		/// <param name="message">The message</param>
-		static void i(const exposing::utf8_string_view message)
+		static void i(exposing::utf8_string_view message)
 		{
 			get_logger().info(message);
 		}
@@ -189,7 +189,7 @@ namespace glasssix
 		/// Prints a warning.
 		/// </summary>
 		/// <param name="message">The message</param>
-		static void w(const exposing::utf8_string_view message)
+		static void w(exposing::utf8_string_view message)
 		{
 			get_logger().warning(message);
 		}
@@ -198,7 +198,7 @@ namespace glasssix
 		/// Prints an error.
 		/// </summary>
 		/// <param name="message">The message</param>
-		static void e(const exposing::utf8_string_view message)
+		static void e(exposing::utf8_string_view message)
 		{
 			get_logger().error(message);
 		}
@@ -207,7 +207,7 @@ namespace glasssix
 		/// Prints a fatal error.
 		/// </summary>
 		/// <param name="message">The message</param>
-		static void f(const exposing::utf8_string_view message)
+		static void f(exposing::utf8_string_view message)
 		{
 			get_logger().fatal(message);
 		}
