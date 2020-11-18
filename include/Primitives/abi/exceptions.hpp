@@ -7,6 +7,7 @@
 #include "fmt/format.h"
 
 #include <cstdint>
+#include <utility>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -128,7 +129,8 @@ namespace glasssix::exposing
 		{
 		}
 
-		abi_error_impl(utf8_string_view inner_what) noexcept : abi_error{ code, inner_what }
+		template<typename T, typename = std::enable_if_t<std::is_convertible_v<T, utf8_string_view>>>
+		abi_error_impl(T&& inner_what) noexcept : abi_error{ code, std::forward<T>(inner_what) }
 		{
 		}
 

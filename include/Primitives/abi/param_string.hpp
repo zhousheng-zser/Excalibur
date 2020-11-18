@@ -386,6 +386,7 @@ namespace glasssix::exposing
 	/// <summary>
 	/// Formats one or more arguments to a string.
 	/// </summary>
+	/// <typeparam name="String">The string type</typeparam>
 	/// <typeparam name="...Args">The argument types</typeparam>
 	/// <param name="format_str">The format string</param>
 	/// <param name="...args">The arguments</param>
