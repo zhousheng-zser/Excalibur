@@ -1,27 +1,67 @@
 #include "log.hpp"
 #include "fmt/format.h"
 
+#include <ctime>
 #include <array>
 #include <mutex>
 #include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <string>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #define NOGDI
 #include <Windows.h>
+#elif defined(__linux__)
+#include <pthread.h>
+#else
+#error "Unsupported platform."
+#endif
+
+#ifdef _WIN32
+#define localtime_r(a, b) localtime_s(b, a)
 #endif
 
 using namespace glasssix::exposing;
+
+namespace glasssix
+{
+	namespace
+	{
+		std::uint32_t get_current_thread_id() noexcept
+		{
+#ifdef _WIN32
+			return GetCurrentThreadId();
+#else
+			return pthread_self();
+#endif
+		}
+
+		const tm& get_local_time()
+		{
+			thread_local std::tm local_time;
+			auto now = std::chrono::system_clock::now();
+			auto timestamp = std::chrono::system_clock::to_time_t(now);
+
+			return (localtime_r(&timestamp, &local_time), local_time);
+		}
+	}
+}
 
 namespace glasssix::logging
 {
 	namespace
 	{
 		std::mutex mutex;
+		thread_local std::optional<source_location> current_debugging_info;
 
+		/// <summary>
+		/// Available terminal colors.
+		/// </summary>
 		enum class terminal_color : std::size_t
 		{
 			black,
@@ -32,6 +72,19 @@ namespace glasssix::logging
 			yellow,
 			magenta,
 			cyan
+		};
+
+		/// <summary>
+		/// Corrsponding name to each log level.
+		/// </summary>
+		constexpr std::array log_level_names
+		{
+			"NONE",
+			"DEBUG",
+			"INFO",
+			"WARNING",
+			"ERROR",
+			"FATAL"
 		};
 
 		/// <summary>
@@ -46,6 +99,52 @@ namespace glasssix::logging
 			terminal_color::red,
 			terminal_color::magenta
 		};
+
+		/// <summary>
+		/// Formats the log text.
+		/// </summary>
+		/// <param name="level">The log level</param>
+		/// <param name="str">The log message</param>
+		/// <param name="including_debugging_info">Determines whether to output the debugging information</param>
+		/// <returns>The formatted string</returns>
+		std::string format_log_text(log_level level, std::string_view message, bool including_debugging_info)
+		{
+			decltype(auto) time = get_local_time();
+
+			if (including_debugging_info)
+			{
+				if (!current_debugging_info)
+				{
+					current_debugging_info = source_location::current();
+				}
+
+				return fmt::format(FMT_STRING("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5} {}:{}][{}] {}"),
+					1900 + time.tm_year,
+					time.tm_mon + 1,
+					time.tm_mday,
+					time.tm_hour,
+					time.tm_min,
+					time.tm_sec,
+					get_current_thread_id(),
+					current_debugging_info->file,
+					current_debugging_info->line,
+					log_level_names[static_cast<std::size_t>(level)],
+					message
+				);
+			}
+			
+			return fmt::format(FMT_STRING("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5}][{}] {}"),
+				1900 + time.tm_year,
+				time.tm_mon + 1,
+				time.tm_mday,
+				time.tm_hour,
+				time.tm_min,
+				time.tm_sec,
+				get_current_thread_id(),
+				log_level_names[static_cast<std::size_t>(level)],
+				message
+			);
+		}
 
 #ifdef _WIN32
 		/// <summary>
@@ -88,12 +187,12 @@ namespace glasssix::logging
 		class terminal_color_decorator
 		{
 		public:
-			terminal_color_decorator(terminal_color foreground_color, terminal_color background_color)
+			terminal_color_decorator(terminal_color foreground_color, terminal_color background_color) noexcept
 			{
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), to_win32_console_atrribute(foreground_color, background_color) | FOREGROUND_INTENSITY);
 			}
 
-			~terminal_color_decorator()
+			~terminal_color_decorator() noexcept
 			{
 				std::puts(str_.c_str());
 				SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), to_win32_console_atrribute(terminal_color::white, terminal_color::black));
@@ -174,29 +273,30 @@ namespace glasssix::logging
 		{
 		}
 
-		void debug(const param_string& message) const
+		void debug(const param_string& message, bool including_debugging_info) const
 		{
-			print_utf8<log_level::debug>(message);
+			print_utf8<log_level::debug>(message, including_debugging_info);
 		}
 
-		void info(const param_string& message) const
+		void info(const param_string& message, bool including_debugging_info) const
 		{
-			print_utf8<log_level::info>(message);
+			print_utf8<log_level::info>(message, including_debugging_info);
 		}
 
-		void warning(const param_string& message) const
+		void warning(const param_string& message, bool including_debugging_info) const
 		{
-			print_utf8<log_level::warning>(message);
+			print_utf8<log_level::warning>(message, including_debugging_info);
 		}
 
-		void error(const param_string& message) const
+		void error(const param_string& message, bool including_debugging_info) const
 		{
-			print_utf8<log_level::error>(message);
+			print_utf8<log_level::error>(message, including_debugging_info);
 		}
 
-		void fatal(const param_string& message) const
+		void fatal(const param_string& message, bool including_debugging_info) const
 		{
-			print_utf8<log_level::fatal>(message);
+			print_utf8<log_level::fatal>(message, including_debugging_info);
+			std::terminate();
 		}
 
 		void set_log_level(log_level level)
@@ -205,14 +305,14 @@ namespace glasssix::logging
 		}
 	private:
 		template<log_level CurrentLevel>
-		void print_utf8(utf8_string_view str) const
+		void print_utf8(utf8_string_view str, bool including_debugging_info) const
 		{
 			if (auto level = level_.load(std::memory_order_acquire); level != log_level::none && CurrentLevel >= level)
 			{
 				std::scoped_lock lock{ mutex };
 				terminal_color_decorator decorator{ log_level_foreground_colors[static_cast<std::size_t>(CurrentLevel)], terminal_color::black };
 
-				decorator.str().append(to_narrow_string(str));
+				decorator.str().append(format_log_text(CurrentLevel, to_narrow_string(str), including_debugging_info));
 			}
 		}
 
@@ -220,13 +320,26 @@ namespace glasssix::logging
 	};
 }
 
-namespace glasssix
+namespace glasssix::logging
 {
-	EXPORT_EXCALIBUR_PRIMITIVES void* glasssix_add_ref_get_logger_abi()
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL glasssix_add_ref_get_logger_abi()
 	{
 		static auto instance{ make_as_first<logging::log_impl>() };
 		auto abi = get_abi(instance);
 
 		return (static_cast<impl::abi_unknown_object*>(abi)->add_ref(), abi);
+	}
+
+	EXPORT_EXCALIBUR_PRIMITIVES void G6_ABI_CALL glasssix_set_log_debugging_info(const char* file, std::int32_t line)
+	{
+		if (current_debugging_info)
+		{
+			current_debugging_info->file = file;
+			current_debugging_info->line = line;
+		}
+		else
+		{
+			current_debugging_info = source_location{ line, file };
+		}
 	}
 }

@@ -486,7 +486,7 @@ namespace glasssix::exposing::impl
 
 namespace glasssix::exposing
 {
-	EXPORT_EXCALIBUR_PRIMITIVES void* glasssix_add_ref_get_component_loader_abi()
+	EXPORT_EXCALIBUR_PRIMITIVES void* G6_ABI_CALL glasssix_add_ref_get_component_loader_abi()
 	{
 		static auto singleton{ make_as_first<impl::component_loader_impl>() };
 		auto abi = get_abi(singleton);
