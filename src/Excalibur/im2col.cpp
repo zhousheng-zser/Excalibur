@@ -1,4 +1,4 @@
-#include "im2col.hpp"
+#include "../../include/Excalibur/im2col.hpp"
 #include <vector>
 
 using namespace glasssix::memory;

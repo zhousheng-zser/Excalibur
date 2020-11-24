@@ -1,6 +1,6 @@
-#include "../../include/Excalibur/operation_convolution.hpp"
-#include "../../include/Excalibur/math_functions.hpp"
-#include "../../include/Excalibur/operation_reflector.hpp"
+#include "../../../include/Excalibur/operation_convolution.hpp"
+#include "../../../include/Excalibur/math_functions.hpp"
+#include "../../../include/Excalibur/operation_reflector.hpp"
 
 namespace glasssix
 {

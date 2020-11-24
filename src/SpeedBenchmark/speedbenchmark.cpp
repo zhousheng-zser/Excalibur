@@ -30,8 +30,8 @@ int main()
 {
 	std::vector<std::pair<std::string, std::vector<int>>> pipe_infos =
 	{
-		{"longinus", {1, 3, 240, 320}}
-		,{"unicorn", {2, 3, 128, 128}}
+		{"longinus", {1, 3, 480, 640}}
+		,{"unicorn", {1, 3, 128, 128}}
 		//,{"unicorn_int8", {1, 3, 128, 128}}
 		//,{"unicorn_li", {1, 3, 128, 128}}
 		,{"mobile_unicorn", {1, 3, 128, 128}}
