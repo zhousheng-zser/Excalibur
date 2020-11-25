@@ -1,5 +1,5 @@
-#include "../../include/Excalibur/operation_convolutiondepthwise.hpp"
-#include "../../include/Excalibur/operation_reflector.hpp"
+#include "../../../include/Excalibur/operation_convolutiondepthwise.hpp"
+#include "../../../include/Excalibur/operation_reflector.hpp"
 
 namespace glasssix
 {
