@@ -83,6 +83,17 @@ namespace glasssix
 				int channels_ = bottoms[i]->channels();
 				int height_ = bottoms[i]->height();
 				int width_ = bottoms[i]->width();
+				if (this->global_pooling_)
+				{
+					this->kernel_size_w_ = width_;
+					this->kernel_size_h_ = height_;
+					this->pad_top_ = 0;
+					this->pad_bottom_ = 0;
+					this->pad_left_ = 0;
+					this->pad_right_ = 0;
+					this->stride_h_ = 1;
+					this->stride_w_ = 1;
+				}
 				int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
 					height_ + pad_top_ + pad_bottom_ -kernel_size_h_) / stride_h_)) + 1;
 				int pooled_width_ = static_cast<int>(ceil(static_cast<float>(

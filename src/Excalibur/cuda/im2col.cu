@@ -1,5 +1,5 @@
 #ifdef USE_CUDA
-#include "im2col.hpp"
+#include "../../../include/Excalibur/im2col.hpp"
 #include <algorithm>
 
 using namespace glasssix::memory;

@@ -10,6 +10,9 @@ file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/*.hpp
 					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/abi/*.hpp 
 					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/fmt/*.h)
 
+list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/log.cpp")
+list(REMOVE_ITEM header "${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/log.hpp")
+
 add_library(${module_name} SHARED ${src} ${header})
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
