@@ -11,8 +11,6 @@
 #include <exception>
 #include <type_traits>
 
-#define FMT_ARGS(format, ...) glasssix::source_location::current(), FMT_STRING(format), __VA_ARGS__
-
 namespace glasssix
 {
 	/// <summary>
@@ -69,18 +67,23 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
+			virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> message) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL debug(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL warning(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL info(abi_in_t<param_string> level, abi_in_t<bool> including_debugging_info) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL error(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL fatal(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
-			virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> message) noexcept = 0;
 		};
 	};
 
 	template<typename Derived>
 	struct interface_vtable<Derived, logging::log> : interface_vtable_base<Derived, logging::log>
 	{
+		virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> level) noexcept override
+		{
+			return abi_safe_call([&] { this->self().set_log_level(create_from_abi<log_level>(level)); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL debug(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept override
 		{
 			return abi_safe_call([&] { this->self().debug(create_from_abi<param_string>(message), including_debugging_info); });
@@ -105,11 +108,6 @@ namespace glasssix::exposing::impl
 		{
 			return abi_safe_call([&] { this->self().fatal(create_from_abi<param_string>(message), including_debugging_info); });
 		}
-
-		virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> level) noexcept override
-		{
-			return abi_safe_call([&] { this->self().set_log_level(create_from_abi<log_level>(level)); });
-		}
 	};
 
 	template<> struct abi_adapter<logging::log>
@@ -117,6 +115,11 @@ namespace glasssix::exposing::impl
 		template<typename Derived>
 		struct type : enable_self_abi_awareness<Derived, logging::log>
 		{
+			void set_log_level(log_level level) const
+			{
+				check_abi_result(this->self_abi().set_log_level(get_abi(level)));
+			}
+
 			void debug(const param_string& message, bool including_debugging_info) const
 			{
 				check_abi_result(this->self_abi().debug(get_abi(message), get_abi(including_debugging_info)));
@@ -140,11 +143,6 @@ namespace glasssix::exposing::impl
 			void fatal(const param_string& message, bool including_debugging_info) const
 			{
 				check_abi_result(this->self_abi().fatal(get_abi(message), get_abi(including_debugging_info)));
-			}
-
-			void set_log_level(log_level level) const
-			{
-				check_abi_result(this->self_abi().set_log_level(get_abi(level)));
 			}
 		};
 	};
@@ -232,61 +230,6 @@ namespace glasssix::details
 		{
 			invoke_impl(location, [&] { get_logger().fatal(message, IncludingDebuggingInfo); });
 		}
-
-		/// <summary>
-		/// Prints debugging information.
-		/// </summary>
-		/// <param name="format">The format string</param>
-		/// <param name="...args">The arguments</param>
-		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void d(const source_location& location, FormatString&& format, Args&&... args)
-		{
-			d(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
-		}
-
-		/// <summary>
-		/// Prints ordinary information.
-		/// </summary>
-		/// <param name="format">The format string</param>
-		/// <param name="...args">The arguments</param>
-		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void i(const source_location& location, FormatString&& format, Args&&... args)
-		{
-			i(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
-		}
-
-		/// <summary>
-		/// Prints a warning.
-		/// </summary>
-		/// <param name="format">The format string</param>
-		/// <param name="...args">The arguments</param>
-		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void w(const source_location& location, FormatString&& format, Args&&... args)
-		{
-			w(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
-		}
-
-		/// <summary>
-		/// Prints an error.
-		/// </summary>
-		/// <param name="format">The format string</param>
-		/// <param name="...args">The arguments</param>
-		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void e(const source_location& location, FormatString&& format, Args&&... args)
-		{
-			e(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
-		}
-
-		/// <summary>
-		/// Prints a fatal error.
-		/// </summary>
-		/// <param name="format">The format string</param>
-		/// <param name="...args">The arguments</param>
-		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void f(const source_location& location, FormatString&& format, Args&&... args)
-		{
-			f(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
-		}
 	private:
 		template<typename Callable>
 		static void invoke_impl(const source_location& location, Callable&& callable)
@@ -297,6 +240,67 @@ namespace glasssix::details
 			}
 
 			callable();
+		}
+	};
+
+	template<bool IncludingDebuggingInfo>
+	struct logfmt
+	{
+		using log_type = log<IncludingDebuggingInfo>;
+
+		/// <summary>
+		/// Prints debugging information.
+		/// </summary>
+		/// <param name="format">The format string</param>
+		/// <param name="...args">The arguments</param>
+		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
+		static void d(const arg_with_current_location<FormatString>& format, Args&&... args)
+		{
+			log_type::d(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+		}
+
+		/// <summary>
+		/// Prints ordinary information.
+		/// </summary>
+		/// <param name="format">The format string</param>
+		/// <param name="...args">The arguments</param>
+		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
+		static void i(const arg_with_current_location<FormatString>& format, Args&&... args)
+		{
+			log_type::i(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+		}
+
+		/// <summary>
+		/// Prints a warning.
+		/// </summary>
+		/// <param name="format">The format string</param>
+		/// <param name="...args">The arguments</param>
+		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
+		static void w(const arg_with_current_location<FormatString>& format, Args&&... args)
+		{
+			log_type::w(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+		}
+
+		/// <summary>
+		/// Prints an error.
+		/// </summary>
+		/// <param name="format">The format string</param>
+		/// <param name="...args">The arguments</param>
+		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
+		static void e(const arg_with_current_location<FormatString>& format, Args&&... args)
+		{
+			log_type::e(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+		}
+
+		/// <summary>
+		/// Prints a fatal error.
+		/// </summary>
+		/// <param name="format">The format string</param>
+		/// <param name="...args">The arguments</param>
+		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
+		static void f(const arg_with_current_location<FormatString>& format, Args&&... args)
+		{
+			log_type::f(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
 		}
 	};
 }
@@ -312,6 +316,16 @@ namespace glasssix
 	/// A convenient facility for logging with debugging information.
 	/// </summary>
 	struct logd : details::log<true> {};
+
+	/// <summary>
+	/// A convenient facility for formattable logging.
+	/// </summary>
+	struct logfmt : details::logfmt<false> {};
+
+	/// <summary>
+	/// A convenient facility for formattable logging with debugging information.
+	/// </summary>
+	struct logfmtd : details::logfmt<true> {};
 
 	/// <summary>
 	/// Defines an assertion operation.
