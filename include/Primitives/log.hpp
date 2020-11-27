@@ -11,6 +11,8 @@
 #include <exception>
 #include <type_traits>
 
+#define FMT_ARGS(format, ...) glasssix::source_location::current(), FMT_STRING(format), __VA_ARGS__
+
 namespace glasssix
 {
 	/// <summary>
@@ -165,7 +167,7 @@ namespace glasssix::details
 	/// Gets the application-wise logger.
 	/// </summary>
 	/// <returns>The logger</returns>
-	inline logging::log get_logger() noexcept
+	inline logging::log get_logger()
 	{
 		return logging::log{ exposing::take_over_abi_from_void_ptr{ logging::glasssix_add_ref_get_logger_abi() } };
 	}
@@ -254,9 +256,9 @@ namespace glasssix::details
 		/// <param name="format">The format string</param>
 		/// <param name="...args">The arguments</param>
 		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void d(const arg_with_current_location<FormatString>& format, Args&&... args)
+		static void d(const source_location& location, FormatString&& format, Args&&... args)
 		{
-			log_type::d(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+			log_type::d(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
 		}
 
 		/// <summary>
@@ -265,9 +267,9 @@ namespace glasssix::details
 		/// <param name="format">The format string</param>
 		/// <param name="...args">The arguments</param>
 		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void i(const arg_with_current_location<FormatString>& format, Args&&... args)
+		static void i(const source_location& location, FormatString&& format, Args&&... args)
 		{
-			log_type::i(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+			log_type::i(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
 		}
 
 		/// <summary>
@@ -276,9 +278,9 @@ namespace glasssix::details
 		/// <param name="format">The format string</param>
 		/// <param name="...args">The arguments</param>
 		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void w(const arg_with_current_location<FormatString>& format, Args&&... args)
+		static void w(const source_location& location, FormatString&& format, Args&&... args)
 		{
-			log_type::w(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+			log_type::w(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
 		}
 
 		/// <summary>
@@ -287,9 +289,9 @@ namespace glasssix::details
 		/// <param name="format">The format string</param>
 		/// <param name="...args">The arguments</param>
 		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void e(const arg_with_current_location<FormatString>& format, Args&&... args)
+		static void e(const source_location& location, FormatString&& format, Args&&... args)
 		{
-			log_type::e(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+			log_type::e(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
 		}
 
 		/// <summary>
@@ -298,9 +300,9 @@ namespace glasssix::details
 		/// <param name="format">The format string</param>
 		/// <param name="...args">The arguments</param>
 		template<typename FormatString, typename... Args, typename = std::enable_if_t<has_legal_formattable_arguments_v<Args...>>>
-		static void f(const arg_with_current_location<FormatString>& format, Args&&... args)
+		static void f(const source_location& location, FormatString&& format, Args&&... args)
 		{
-			log_type::f(exposing::format(format.arg, std::forward<Args>(args)...), format.location);
+			log_type::f(exposing::format(std::forward<FormatString>(format), std::forward<Args>(args)...), location);
 		}
 	};
 }

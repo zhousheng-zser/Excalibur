@@ -240,7 +240,7 @@ namespace glasssix::logging
 
 			auto converter = [](const auto& colors, terminal_color color) { return static_cast<std::size_t>(color) > colors.size() ? colors.front() : colors[static_cast<std::size_t>(color)]; };
 
-			return fmt::format(FMT_STRING("\033[{};{}m"), converter(foreground_color), converter(background_color));
+			return fmt::format(FMT_STRING("\033[{};{}m"), converter(foreground_colors, foreground_color), converter(background_colors, background_color));
 		}
 
 		class terminal_color_decorator
