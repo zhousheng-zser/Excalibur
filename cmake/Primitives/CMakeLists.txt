@@ -4,11 +4,13 @@ include_directories(../../include/Primitives)
 
 file(GLOB src ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/*.cpp 
 					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/abi/*.cpp 
-					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/fmt/*.cc)
+					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/fmt/*.cc
+					${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/nlohmann/*.cpp)
 
 file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/*.hpp 
 					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/abi/*.hpp 
-					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/fmt/*.h)
+					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/fmt/*.h
+					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/nlohmann/*.hpp)
 
 add_library(${module_name} SHARED ${src} ${header})
 

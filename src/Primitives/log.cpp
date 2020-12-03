@@ -1,5 +1,7 @@
 #include "log.hpp"
 #include "fmt/format.h"
+#include "filesystem.hpp"
+#include "log_config.hpp"
 
 #include <ctime>
 #include <array>
@@ -8,7 +10,9 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
+#include <memory>
 #include <cstdint>
+#include <fstream>
 #include <optional>
 #include <string_view>
 
@@ -41,13 +45,26 @@ namespace glasssix
 #endif
 		}
 
-		const tm& get_local_time()
+		std::time_t get_local_timestamp() noexcept
+		{
+			return std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+		}
+
+		std::uint64_t get_local_days_since_1970() noexcept
+		{
+			return get_local_timestamp() / 86400ULL;
+		}
+
+		const tm& get_local_time(std::time_t timestamp) noexcept
 		{
 			thread_local std::tm local_time;
-			auto now = std::chrono::system_clock::now();
-			auto timestamp = std::chrono::system_clock::to_time_t(now);
 
 			return (localtime_r(&timestamp, &local_time), local_time);
+		}
+
+		const tm& get_local_time() noexcept
+		{
+			return get_local_time(get_local_timestamp());
 		}
 	}
 }
@@ -264,13 +281,60 @@ namespace glasssix::logging
 			std::string str_;
 		};
 #endif
+
+		/// <summary>
+		/// Manages the rotation of log files.
+		/// </summary>
+		class log_rotate
+		{
+		public:
+			log_rotate(std::string_view home_directory, std::string_view application_name) noexcept : home_directory_ { home_directory }, application_name_{ application_name }, days_since_1970_{ get_local_days_since_1970() }
+			{
+			}
+
+			std::ofstream& current()
+			{
+				auto days_since_1970 = get_local_days_since_1970();
+
+				if (days_since_1970_ == days_since_1970)
+				{
+				}
+
+				days_since_1970_ == days_since_1970;
+			}
+		private:
+			void rotate()
+			{
+
+			}
+
+			std::string home_directory_;
+			std::string application_name_;
+			std::uint64_t days_since_1970_;
+			std::shared_ptr<FILE> output_file_;
+		};
 	}
 
 	class log_impl : public implements<log_impl, log>
 	{
 	public:
-		log_impl() noexcept : level_{ log_level::debug }
+		log_impl() noexcept
 		{
+		}
+
+		void init(const param_string& config_path)
+		{
+			std::error_code code;
+			fs::path real_config_path{ to_narrow_string(config_path) };
+			auto config = log_config::load_from_file_or_default(to_narrow_string(config_path));
+
+			if (config.enable_file_output)
+			{
+				if (!fs::exists(real_config_path, code))
+				{
+					fs::create_directories(real_config_path, code);
+				}
+			}
 		}
 
 		void debug(const param_string& message, bool including_debugging_info) const
@@ -301,13 +365,16 @@ namespace glasssix::logging
 
 		void set_log_level(log_level level)
 		{
-			level_.store(level, std::memory_order_release);
+			auto config{ *std::atomic_load_explicit(&config_, std::memory_order_acquire) };
+
+			config.level = level;
+			std::atomic_store_explicit(&config_, std::make_shared<log_config>(std::move(config)), std::memory_order_release);
 		}
 	private:
 		template<log_level CurrentLevel>
 		void print_utf8(utf8_string_view str, bool including_debugging_info) const
 		{
-			if (auto level = level_.load(std::memory_order_acquire); level != log_level::none && CurrentLevel >= level)
+			if (auto level = std::atomic_load_explicit(&config_, std::memory_order_acquire)->level; level != log_level::none && CurrentLevel >= level)
 			{
 				std::scoped_lock lock{ mutex };
 				terminal_color_decorator decorator{ log_level_foreground_colors[static_cast<std::size_t>(CurrentLevel)], terminal_color::black };
@@ -316,7 +383,8 @@ namespace glasssix::logging
 			}
 		}
 
-		std::atomic<log_level> level_;
+		std::ofstream output_stream_;
+		std::shared_ptr<log_config> config_;
 	};
 }
 

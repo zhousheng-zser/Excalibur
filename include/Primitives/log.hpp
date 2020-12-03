@@ -1,6 +1,7 @@
 #pragma once
 
 #include "dllexport.hpp"
+#include "log_level.hpp"
 #include "source_location.hpp"
 
 #include "abi/consumer.hpp"
@@ -12,45 +13,6 @@
 #include <type_traits>
 
 #define FMT_ARGS(format, ...) glasssix::source_location::current(), FMT_STRING(format), __VA_ARGS__
-
-namespace glasssix
-{
-	/// <summary>
-	/// Available log levels.
-	/// </summary>
-	enum class log_level : std::int32_t
-	{
-		/// <summary>
-		/// None will be output.
-		/// </summary>
-		none,
-
-		/// <summary>
-		/// A message that helps debug the program and find bugs exactly.
-		/// </summary>
-		debug,
-
-		/// <summary>
-		/// A message that informs the consumer of some suggestive tips.
-		/// </summary>
-		info,
-
-		/// <summary>
-		/// A warning that is presented to the consumer.
-		/// </summary>
-		warning,
-
-		/// <summary>
-		/// A serious logic error occurs now and must be resolved immediately.
-		/// </summary>
-		error,
-
-		/// <summary>
-		/// A fatal error occurs unexpectedly and the program must be terminated.
-		/// </summary>
-		fatal
-	};
-}
 
 namespace glasssix::logging
 {
@@ -69,6 +31,7 @@ namespace glasssix::exposing::impl
 
 		struct type : abi_unknown_object
 		{
+			virtual std::int32_t G6_ABI_CALL init(abi_in_t<param_string> config_path) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> message) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL debug(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
 			virtual std::int32_t G6_ABI_CALL warning(abi_in_t<param_string> message, abi_in_t<bool> including_debugging_info) noexcept = 0;
@@ -81,6 +44,11 @@ namespace glasssix::exposing::impl
 	template<typename Derived>
 	struct interface_vtable<Derived, logging::log> : interface_vtable_base<Derived, logging::log>
 	{
+		virtual std::int32_t G6_ABI_CALL init(abi_in_t<param_string> config_path) noexcept override
+		{
+			return abi_safe_call([&] { this->self().init(create_from_abi<param_string>(config_path)); });
+		}
+
 		virtual std::int32_t G6_ABI_CALL set_log_level(abi_in_t<log_level> level) noexcept override
 		{
 			return abi_safe_call([&] { this->self().set_log_level(create_from_abi<log_level>(level)); });
@@ -117,6 +85,11 @@ namespace glasssix::exposing::impl
 		template<typename Derived>
 		struct type : enable_self_abi_awareness<Derived, logging::log>
 		{
+			void init(const param_string& config_path) const
+			{
+				check_abi_result(this->self_abi().init(get_abi(config_path)));
+			}
+
 			void set_log_level(log_level level) const
 			{
 				check_abi_result(this->self_abi().set_log_level(get_abi(level)));
