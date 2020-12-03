@@ -19,11 +19,10 @@ namespace glasssix
 				}
 			}
 
-#ifdef __ARM_NEON
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM7_NEON_VERSION)
 			inline void cblas_sgemv_AnoTrans_neon(const int M, const int N, const float alpha, const float  *A, const int lda,
 				const float  *x, const int incx, const float beta, float  *y, const int incy)
 			{
-				const int simd_registers = 16;
 				const int restM = M % simd_registers;
 				const int partM = M - restM;
 				const int restN = N % mm_align_size;
@@ -46,7 +45,7 @@ namespace glasssix
 						for (int ii = 0; ii < simd_registers; ii++)
 						{
 							float32x4_t mA = vld1q_f32(A + (i + ii) * lda + offset);
-#ifdef __aarch64__
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
 							re[ii] = vfmaq_f32(re[ii], mA, mx);
 #else
 							re[ii] = vmlaq_f32(re[ii], mA, mx);
@@ -55,7 +54,7 @@ namespace glasssix
 					}
 					for (int ii = 0; ii < simd_registers; ii++)
 					{
-#ifdef __aarch64__
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
 						y[(i + ii) * incy] = alpha * vaddvq_f32(re[ii]) + beta * y[(i + ii) * incy];
 #else
 						float32x2_t _ss = vadd_f32(vget_low_f32(re[ii]), vget_high_f32(re[ii]));
@@ -85,7 +84,7 @@ namespace glasssix
 							mx = (float32x4_t) { x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx] };
 						}
 						float32x4_t mA = vld1q_f32(A + i * lda + offset);
-#ifdef __aarch64__
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
 						re = vfmaq_f32(re, mA, mx);
 #else
 						re = vmlaq_f32(re, mA, mx);
@@ -93,7 +92,7 @@ namespace glasssix
 					}
 					const int A_offset = i * lda;
 					const int y_offset = i * incy;
-#ifdef __aarch64__
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
 					y[y_offset] = alpha * vaddvq_f32(re) + beta * y[y_offset];
 #else
 					float32x2_t _ss = vadd_f32(vget_low_f32(re), vget_high_f32(re));
@@ -298,14 +297,14 @@ namespace glasssix
 				packTransedA(M, N, A, lda, packedA);
 				cblas_sgemv_AnoTrans_sse(N, M, alpha, packedA, M, x, incx, beta, y, incy);
 				delete[] packedA;
-#elif defined(__ARM_NEON)
+#elif (SIMD_ARM_INSTR_SET >= SIMD_ARM7_NEON_VERSION)
 				float* packedA = new float[M * N];
 				packTransedA(M, N, A, lda, packedA);
 				cblas_sgemv_AnoTrans_neon(N, M, alpha, packedA, M, x, incx, beta, y, incy);
 				delete[] packedA;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
