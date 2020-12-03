@@ -210,7 +210,6 @@ namespace glasssix
 			{
 				forward_im2col(border_bottom_, tops[0]);
 			}
-
 		}
 
 		template<typename Dtype>
@@ -863,6 +862,7 @@ namespace glasssix
 		void operation_convolution<Dtype>::forward_im2col(const std::shared_ptr<memory::tensor<float> >& bottom_blob,
 			std::shared_ptr<memory::tensor<float> >& top_blob)
 		{
+			int num = bottom_blob->num();
 			int w = bottom_blob->width();
 			int h = bottom_blob->height();
 			int inch = bottom_blob->channels() / this->group_;
@@ -875,732 +875,736 @@ namespace glasssix
 			if (this->bias_term_)
 				bias_0 = this->weights_f32_[1]->cpu_data();
 
-			float* top_data_base = top_blob->mutable_cpu_data();
 			int top_cstep = top_blob->width() * top_blob->height();
 			int out_size = top_cstep;
 			int kernel_size = this->kernel_size_w_ * this->kernel_size_h_;
 			int N = outw * outh;                // outsize or out stride
 			int L = kernel_size * inch; // ksize * inch
 
-			const float* bottom_data_base = bottom_blob->cpu_data();
 			int stride = kernel_size * outw * outh;
 
-			for (int g = 0; g < this->group_; g++)
+			for (int n = 0; n < num; n++)
 			{
-				const float* kernel_tm_data = kernel_tm_gemm_[g]->cpu_data();
+				float* top_data_base = top_blob->mutable_cpu_data() + n * top_blob->count(1,4);
+				const float* bottom_data_base = bottom_blob->cpu_data() + n * bottom_blob->count(1, 4);
 
-				int kernel_tm_cstep = kernel_tm_gemm_[g]->width() * kernel_tm_gemm_[g]->height();
-				const float* bottom_data = bottom_data_base + g * bottom_cstep * inch;
-				const float* bias = bias_0 + g * outch;
-				float* top_data = top_data_base + out_size * outch * g;
+				for (int g = 0; g < this->group_; g++)
 				{
-					// im2col
-					bottom_im2col_.reset(new memory::tensor<float>(std::vector<int>{1, 1, kernel_size* inch, out_size}, this->params_.device_, memory::NCHW, bottom_blob->allocator()));
-					float* ret = bottom_im2col_->mutable_cpu_data();
-					const float* bottom_im2col_data = bottom_im2col_->cpu_data();
+					const float* kernel_tm_data = kernel_tm_gemm_[g]->cpu_data();
 
-					// bottom_im2col_ memory packed 8 x 8
-					bottom_tm_.reset(new memory::tensor<float>(std::vector<int>{1, out_size / 8 + out_size % 8, inch, 8 * kernel_size}, this->params_.device_, memory::NCHW, bottom_blob->allocator()));
-					float* bottom_tm_data = bottom_tm_->mutable_cpu_data();
-					int bottom_tm_cstep = bottom_tm_->width() * bottom_tm_->height();
+					int kernel_tm_cstep = kernel_tm_gemm_[g]->width() * kernel_tm_gemm_[g]->height();
+					const float* bottom_data = bottom_data_base + g * bottom_cstep * inch;
+					const float* bias = bias_0 + g * outch;
+					float* top_data = top_data_base + out_size * outch * g;
+					{
+						// im2col
+						bottom_im2col_.reset(new memory::tensor<float>(std::vector<int>{1, 1, kernel_size* inch, out_size}, this->params_.device_, memory::NCHW, bottom_blob->allocator()));
+						float* ret = bottom_im2col_->mutable_cpu_data();
+						const float* bottom_im2col_data = bottom_im2col_->cpu_data();
+
+						// bottom_im2col_ memory packed 8 x 8
+						bottom_tm_.reset(new memory::tensor<float>(std::vector<int>{1, out_size / 8 + out_size % 8, inch, 8 * kernel_size}, this->params_.device_, memory::NCHW, bottom_blob->allocator()));
+						float* bottom_tm_data = bottom_tm_->mutable_cpu_data();
+						int bottom_tm_cstep = bottom_tm_->width() * bottom_tm_->height();
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int p = 0; p < inch; p++)
-					{
-						const float* input = bottom_data + (p)*bottom_cstep;
-						int retID = stride * p;
-						for (int u = 0; u < this->kernel_size_h_; u++)
+						for (int p = 0; p < inch; p++)
 						{
-							for (int v = 0; v < this->kernel_size_w_; v++)
+							const float* input = bottom_data + (p)*bottom_cstep;
+							int retID = stride * p;
+							for (int u = 0; u < this->kernel_size_h_; u++)
 							{
-								for (int i = 0; i < outh; i++)
+								for (int v = 0; v < this->kernel_size_w_; v++)
 								{
-									for (int j = 0; j < outw; j++)
+									for (int i = 0; i < outh; i++)
 									{
-										int row = u + i * this->stride_h_;
-										int col = v + j * this->stride_w_;
-										int index = row * w + col;
-										ret[retID] = input[index];
-										retID++;
+										for (int j = 0; j < outw; j++)
+										{
+											int row = u + i * this->stride_h_;
+											int col = v + j * this->stride_w_;
+											int index = row * w + col;
+											ret[retID] = input[index];
+											retID++;
+										}
 									}
 								}
 							}
 						}
-					}
-					int nn_size = out_size >> 3;
-					int remain_size_start = nn_size << 3;
+						int nn_size = out_size >> 3;
+						int remain_size_start = nn_size << 3;
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int ii = 0; ii < nn_size; ii++)
-					{
-						int i = ii * 8;
-
-						const float* img0 = bottom_im2col_data;
-						img0 += i;
-
-						float* tmpptr = bottom_tm_data + (i / 8) * bottom_tm_cstep;
-
-						for (int q = 0; q < inch * kernel_size; q++)
+						for (int ii = 0; ii < nn_size; ii++)
 						{
+							int i = ii * 8;
+
+							const float* img0 = bottom_im2col_data;
+							img0 += i;
+
+							float* tmpptr = bottom_tm_data + (i / 8) * bottom_tm_cstep;
+
+							for (int q = 0; q < inch * kernel_size; q++)
+							{
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							_mm256_storeu_ps(tmpptr, _mm256_loadu_ps(img0));
+								_mm256_storeu_ps(tmpptr, _mm256_loadu_ps(img0));
 #else
-							tmpptr[0] = img0[0];
-							tmpptr[1] = img0[1];
-							tmpptr[2] = img0[2];
-							tmpptr[3] = img0[3];
-							tmpptr[4] = img0[4];
-							tmpptr[5] = img0[5];
-							tmpptr[6] = img0[6];
-							tmpptr[7] = img0[7];
+								tmpptr[0] = img0[0];
+								tmpptr[1] = img0[1];
+								tmpptr[2] = img0[2];
+								tmpptr[3] = img0[3];
+								tmpptr[4] = img0[4];
+								tmpptr[5] = img0[5];
+								tmpptr[6] = img0[6];
+								tmpptr[7] = img0[7];
 #endif             
-							tmpptr += 8;
-							img0 += out_size;
+								tmpptr += 8;
+								img0 += out_size;
+							}
 						}
-					}
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int i = remain_size_start; i < out_size; i++)
-					{
-						const float* img0 = bottom_im2col_data;
-						img0 += i;
-						float* tmpptr = bottom_tm_data + (i / 8 + i % 8) * bottom_tm_cstep;
-						for (int q = 0; q < inch * kernel_size; q++)
+						for (int i = remain_size_start; i < out_size; i++)
 						{
-							tmpptr[0] = img0[0];
-							tmpptr += 1;
-							img0 += out_size;
+							const float* img0 = bottom_im2col_data;
+							img0 += i;
+							float* tmpptr = bottom_tm_data + (i / 8 + i % 8) * bottom_tm_cstep;
+							for (int q = 0; q < inch * kernel_size; q++)
+							{
+								tmpptr[0] = img0[0];
+								tmpptr += 1;
+								img0 += out_size;
+							}
 						}
-					}
-					int nn_outch = 0;
-					int remain_outch_start = 0;
+						int nn_outch = 0;
+						int remain_outch_start = 0;
 
-					nn_outch = outch >> 3;
-					remain_outch_start = nn_outch << 3;
+						nn_outch = outch >> 3;
+						remain_outch_start = nn_outch << 3;
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int pp = 0; pp < nn_outch; pp++)
-					{
-						int i = pp * 8;
-
-						float* output0 = top_data + (i)*top_cstep;
-						float* output1 = top_data + (i + 1) * top_cstep;
-						float* output2 = top_data + (i + 2) * top_cstep;
-						float* output3 = top_data + (i + 3) * top_cstep;
-						float* output4 = top_data + (i + 4) * top_cstep;
-						float* output5 = top_data + (i + 5) * top_cstep;
-						float* output6 = top_data + (i + 6) * top_cstep;
-						float* output7 = top_data + (i + 7) * top_cstep;
-
-						const float zeros[8] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
-						const float* biasptr = bias ? bias + i : zeros;
-
-						int j = 0;
-						for (; j + 7 < N; j = j + 8)
+						for (int pp = 0; pp < nn_outch; pp++)
 						{
-							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
+							int i = pp * 8;
+
+							float* output0 = top_data + (i)*top_cstep;
+							float* output1 = top_data + (i + 1) * top_cstep;
+							float* output2 = top_data + (i + 2) * top_cstep;
+							float* output3 = top_data + (i + 3) * top_cstep;
+							float* output4 = top_data + (i + 4) * top_cstep;
+							float* output5 = top_data + (i + 5) * top_cstep;
+							float* output6 = top_data + (i + 6) * top_cstep;
+							float* output7 = top_data + (i + 7) * top_cstep;
+
+							const float zeros[8] = { 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+							const float* biasptr = bias ? bias + i : zeros;
+
+							int j = 0;
+							for (; j + 7 < N; j = j + 8)
+							{
+								const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
 
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX 
-							__m256 _sum0 = _mm256_broadcast_ss(biasptr);
-							__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
-							__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
-							__m256 _sum3 = _mm256_broadcast_ss(biasptr + 3);
-							__m256 _sum4 = _mm256_broadcast_ss(biasptr + 4);
-							__m256 _sum5 = _mm256_broadcast_ss(biasptr + 5);
-							__m256 _sum6 = _mm256_broadcast_ss(biasptr + 6);
-							__m256 _sum7 = _mm256_broadcast_ss(biasptr + 7);
+								__m256 _sum0 = _mm256_broadcast_ss(biasptr);
+								__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
+								__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
+								__m256 _sum3 = _mm256_broadcast_ss(biasptr + 3);
+								__m256 _sum4 = _mm256_broadcast_ss(biasptr + 4);
+								__m256 _sum5 = _mm256_broadcast_ss(biasptr + 5);
+								__m256 _sum6 = _mm256_broadcast_ss(biasptr + 6);
+								__m256 _sum7 = _mm256_broadcast_ss(biasptr + 7);
 
-							int k = 0;
-							{
+								int k = 0;
+								{
 #include "operation_cxx/op_im2col_pack8_sse1.cxx"
-							}
-							for (; k < L; k++)
-							{
-								// k0
-								__m256 _va0 = _mm256_broadcast_ss(va);
-								__m256 _va1 = _mm256_broadcast_ss(va + 1);
-								__m256 _va2 = _mm256_broadcast_ss(va + 2);
-								__m256 _va3 = _mm256_broadcast_ss(va + 3);
-								__m256 _va4 = _mm256_broadcast_ss(va + 4);
-								__m256 _va5 = _mm256_broadcast_ss(va + 5);
-								__m256 _va6 = _mm256_broadcast_ss(va + 6);
-								__m256 _va7 = _mm256_broadcast_ss(va + 7);
-								__m256 _vb0 = _mm256_loadu_ps(vb);
-								_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
-								_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
-								_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
-								_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
-								_sum4 = _mm256_fmadd_ps(_vb0, _va4, _sum4);    // sum4 = (a00-a07) * k40
-								_sum5 = _mm256_fmadd_ps(_vb0, _va5, _sum5);    // sum5 = (a00-a07) * k50
-								_sum6 = _mm256_fmadd_ps(_vb0, _va6, _sum6);    // sum6 = (a00-a07) * k60
-								_sum7 = _mm256_fmadd_ps(_vb0, _va7, _sum7);    // sum7 = (a00-a07) * k70
+								}
+								for (; k < L; k++)
+								{
+									// k0
+									__m256 _va0 = _mm256_broadcast_ss(va);
+									__m256 _va1 = _mm256_broadcast_ss(va + 1);
+									__m256 _va2 = _mm256_broadcast_ss(va + 2);
+									__m256 _va3 = _mm256_broadcast_ss(va + 3);
+									__m256 _va4 = _mm256_broadcast_ss(va + 4);
+									__m256 _va5 = _mm256_broadcast_ss(va + 5);
+									__m256 _va6 = _mm256_broadcast_ss(va + 6);
+									__m256 _va7 = _mm256_broadcast_ss(va + 7);
+									__m256 _vb0 = _mm256_loadu_ps(vb);
+									_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
+									_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
+									_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
+									_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
+									_sum4 = _mm256_fmadd_ps(_vb0, _va4, _sum4);    // sum4 = (a00-a07) * k40
+									_sum5 = _mm256_fmadd_ps(_vb0, _va5, _sum5);    // sum5 = (a00-a07) * k50
+									_sum6 = _mm256_fmadd_ps(_vb0, _va6, _sum6);    // sum6 = (a00-a07) * k60
+									_sum7 = _mm256_fmadd_ps(_vb0, _va7, _sum7);    // sum7 = (a00-a07) * k70
 
-								va += 8;
-								vb += 8;
-							}
+									va += 8;
+									vb += 8;
+								}
 
-							_mm256_storeu_ps(output0, _sum0);
-							_mm256_storeu_ps(output1, _sum1);
-							_mm256_storeu_ps(output2, _sum2);
-							_mm256_storeu_ps(output3, _sum3);
-							_mm256_storeu_ps(output4, _sum4);
-							_mm256_storeu_ps(output5, _sum5);
-							_mm256_storeu_ps(output6, _sum6);
-							_mm256_storeu_ps(output7, _sum7);
+								_mm256_storeu_ps(output0, _sum0);
+								_mm256_storeu_ps(output1, _sum1);
+								_mm256_storeu_ps(output2, _sum2);
+								_mm256_storeu_ps(output3, _sum3);
+								_mm256_storeu_ps(output4, _sum4);
+								_mm256_storeu_ps(output5, _sum5);
+								_mm256_storeu_ps(output6, _sum6);
+								_mm256_storeu_ps(output7, _sum7);
 #else                
-							float sum0[8] = { 0 };
-							float sum1[8] = { 0 };
-							float sum2[8] = { 0 };
-							float sum3[8] = { 0 };
-							float sum4[8] = { 0 };
-							float sum5[8] = { 0 };
-							float sum6[8] = { 0 };
-							float sum7[8] = { 0 };
+								float sum0[8] = { 0 };
+								float sum1[8] = { 0 };
+								float sum2[8] = { 0 };
+								float sum3[8] = { 0 };
+								float sum4[8] = { 0 };
+								float sum5[8] = { 0 };
+								float sum6[8] = { 0 };
+								float sum7[8] = { 0 };
 
 #include "operation_cxx/op_im2col_native1.cxx"
 
-							for (int n = 0; n < 8; n++)
-							{
-								output0[n] = sum0[n] + biasptr[0];
-								output1[n] = sum1[n] + biasptr[1];
-								output2[n] = sum2[n] + biasptr[2];
-								output3[n] = sum3[n] + biasptr[3];
-								output4[n] = sum4[n] + biasptr[4];
-								output5[n] = sum5[n] + biasptr[5];
-								output6[n] = sum6[n] + biasptr[6];
-								output7[n] = sum7[n] + biasptr[7];
-							}
+								for (int n = 0; n < 8; n++)
+								{
+									output0[n] = sum0[n] + biasptr[0];
+									output1[n] = sum1[n] + biasptr[1];
+									output2[n] = sum2[n] + biasptr[2];
+									output3[n] = sum3[n] + biasptr[3];
+									output4[n] = sum4[n] + biasptr[4];
+									output5[n] = sum5[n] + biasptr[5];
+									output6[n] = sum6[n] + biasptr[6];
+									output7[n] = sum7[n] + biasptr[7];
+								}
 #endif // __AVX__
-							output0 += 8;
-							output1 += 8;
-							output2 += 8;
-							output3 += 8;
-							output4 += 8;
-							output5 += 8;
-							output6 += 8;
-							output7 += 8;
-						}
+								output0 += 8;
+								output1 += 8;
+								output2 += 8;
+								output3 += 8;
+								output4 += 8;
+								output5 += 8;
+								output6 += 8;
+								output7 += 8;
+							}
 
-						for (; j < N; j++)
-						{
-							const float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
+							for (; j < N; j++)
+							{
+								const float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8) * kernel_tm_cstep;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							__m256 _sum0_7 = _mm256_loadu_ps(biasptr);
-							__m256 _sum0 = _mm256_set1_ps(0.0);
-							__m256 _sum1 = _mm256_set1_ps(0.0);
-							__m256 _sum2 = _mm256_set1_ps(0.0);
-							__m256 _sum3 = _mm256_set1_ps(0.0);
+								__m256 _sum0_7 = _mm256_loadu_ps(biasptr);
+								__m256 _sum0 = _mm256_set1_ps(0.0);
+								__m256 _sum1 = _mm256_set1_ps(0.0);
+								__m256 _sum2 = _mm256_set1_ps(0.0);
+								__m256 _sum3 = _mm256_set1_ps(0.0);
 
-							int k = 0;
-							for (; k + 3 < L; k = k + 4)
-							{
-								__m256 _vb0 = _mm256_broadcast_ss(vb);
-								__m256 _vb1 = _mm256_broadcast_ss(vb + 1);
-								__m256 _vb2 = _mm256_broadcast_ss(vb + 2);
-								__m256 _vb3 = _mm256_broadcast_ss(vb + 3);
-								__m256 _va0 = _mm256_loadu_ps(va);
-								__m256 _va1 = _mm256_loadu_ps(va + 8);
-								__m256 _va2 = _mm256_loadu_ps(va + 16);
-								__m256 _va3 = _mm256_loadu_ps(va + 24);
+								int k = 0;
+								for (; k + 3 < L; k = k + 4)
+								{
+									__m256 _vb0 = _mm256_broadcast_ss(vb);
+									__m256 _vb1 = _mm256_broadcast_ss(vb + 1);
+									__m256 _vb2 = _mm256_broadcast_ss(vb + 2);
+									__m256 _vb3 = _mm256_broadcast_ss(vb + 3);
+									__m256 _va0 = _mm256_loadu_ps(va);
+									__m256 _va1 = _mm256_loadu_ps(va + 8);
+									__m256 _va2 = _mm256_loadu_ps(va + 16);
+									__m256 _va3 = _mm256_loadu_ps(va + 24);
 
-								_sum0 = _mm256_fmadd_ps(_va0, _vb0, _sum0);// sum0 += (k00-k70) * a00
-								_sum1 = _mm256_fmadd_ps(_va1, _vb1, _sum1);// sum1 += (k01-k71) * a10
-								_sum2 = _mm256_fmadd_ps(_va2, _vb2, _sum2);// sum2 += (k02-k72) * a20
-								_sum3 = _mm256_fmadd_ps(_va3, _vb3, _sum3);// sum3 += (k03-k73) * a30
+									_sum0 = _mm256_fmadd_ps(_va0, _vb0, _sum0);// sum0 += (k00-k70) * a00
+									_sum1 = _mm256_fmadd_ps(_va1, _vb1, _sum1);// sum1 += (k01-k71) * a10
+									_sum2 = _mm256_fmadd_ps(_va2, _vb2, _sum2);// sum2 += (k02-k72) * a20
+									_sum3 = _mm256_fmadd_ps(_va3, _vb3, _sum3);// sum3 += (k03-k73) * a30
 
-								va += 32;
-								vb += 4;
-							}
+									va += 32;
+									vb += 4;
+								}
 
-							_sum0 = _mm256_add_ps(_sum0, _sum1);
-							_sum2 = _mm256_add_ps(_sum2, _sum3);
-							_sum0_7 = _mm256_add_ps(_sum0_7, _sum0);
-							_sum0_7 = _mm256_add_ps(_sum0_7, _sum2);
+								_sum0 = _mm256_add_ps(_sum0, _sum1);
+								_sum2 = _mm256_add_ps(_sum2, _sum3);
+								_sum0_7 = _mm256_add_ps(_sum0_7, _sum0);
+								_sum0_7 = _mm256_add_ps(_sum0_7, _sum2);
 
-							for (; k < L; k++)
-							{
-								__m256 _vb0 = _mm256_broadcast_ss(vb);
-								__m256 _va = _mm256_loadu_ps(va);
+								for (; k < L; k++)
+								{
+									__m256 _vb0 = _mm256_broadcast_ss(vb);
+									__m256 _va = _mm256_loadu_ps(va);
 
-								_sum0_7 = _mm256_fmadd_ps(_va, _vb0, _sum0_7);// sum0 += (k00-k70) * a00
+									_sum0_7 = _mm256_fmadd_ps(_va, _vb0, _sum0_7);// sum0 += (k00-k70) * a00
 
-								va += 8;
-								vb += 1;
-							}
+									va += 8;
+									vb += 1;
+								}
 
-							float output_sum0_7[8] = { 0.f };
-							_mm256_storeu_ps(output_sum0_7, _sum0_7);
+								float output_sum0_7[8] = { 0.f };
+								_mm256_storeu_ps(output_sum0_7, _sum0_7);
 
-							output0[0] = output_sum0_7[0];
-							output1[0] = output_sum0_7[1];
-							output2[0] = output_sum0_7[2];
-							output3[0] = output_sum0_7[3];
-							output4[0] = output_sum0_7[4];
-							output5[0] = output_sum0_7[5];
-							output6[0] = output_sum0_7[6];
-							output7[0] = output_sum0_7[7];
+								output0[0] = output_sum0_7[0];
+								output1[0] = output_sum0_7[1];
+								output2[0] = output_sum0_7[2];
+								output3[0] = output_sum0_7[3];
+								output4[0] = output_sum0_7[4];
+								output5[0] = output_sum0_7[5];
+								output6[0] = output_sum0_7[6];
+								output7[0] = output_sum0_7[7];
 #else
-							float sum0 = biasptr[0];
-							float sum1 = biasptr[1];
-							float sum2 = biasptr[2];
-							float sum3 = biasptr[3];
-							float sum4 = biasptr[4];
-							float sum5 = biasptr[5];
-							float sum6 = biasptr[6];
-							float sum7 = biasptr[7];
+								float sum0 = biasptr[0];
+								float sum1 = biasptr[1];
+								float sum2 = biasptr[2];
+								float sum3 = biasptr[3];
+								float sum4 = biasptr[4];
+								float sum5 = biasptr[5];
+								float sum6 = biasptr[6];
+								float sum7 = biasptr[7];
 
-							for (int k = 0; k < L; k++)
-							{
-								sum0 += va[0] * vb[0];
-								sum1 += va[1] * vb[0];
-								sum2 += va[2] * vb[0];
-								sum3 += va[3] * vb[0];
-								sum4 += va[4] * vb[0];
-								sum5 += va[5] * vb[0];
-								sum6 += va[6] * vb[0];
-								sum7 += va[7] * vb[0];
+								for (int k = 0; k < L; k++)
+								{
+									sum0 += va[0] * vb[0];
+									sum1 += va[1] * vb[0];
+									sum2 += va[2] * vb[0];
+									sum3 += va[3] * vb[0];
+									sum4 += va[4] * vb[0];
+									sum5 += va[5] * vb[0];
+									sum6 += va[6] * vb[0];
+									sum7 += va[7] * vb[0];
 
-								va += 8;
-								vb += 1;
-							}
+									va += 8;
+									vb += 1;
+								}
 
-							output0[0] = sum0;
-							output1[0] = sum1;
-							output2[0] = sum2;
-							output3[0] = sum3;
-							output4[0] = sum4;
-							output5[0] = sum5;
-							output6[0] = sum6;
-							output7[0] = sum7;
+								output0[0] = sum0;
+								output1[0] = sum1;
+								output2[0] = sum2;
+								output3[0] = sum3;
+								output4[0] = sum4;
+								output5[0] = sum5;
+								output6[0] = sum6;
+								output7[0] = sum7;
 #endif // __AVX__
 
-							output0++;
-							output1++;
-							output2++;
-							output3++;
-							output4++;
-							output5++;
-							output6++;
-							output7++;
+								output0++;
+								output1++;
+								output2++;
+								output3++;
+								output4++;
+								output5++;
+								output6++;
+								output7++;
+							}
 						}
-					}
-					nn_outch = (outch - remain_outch_start) >> 2;
+						nn_outch = (outch - remain_outch_start) >> 2;
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int pp = 0; pp < nn_outch; pp++)
-					{
-						int i = remain_outch_start + pp * 4;
-
-						float* output0 = top_data + (i)*top_cstep;
-						float* output1 = top_data + (i + 1) * top_cstep;
-						float* output2 = top_data + (i + 2) * top_cstep;
-						float* output3 = top_data + (i + 3) * top_cstep;
-
-						const float zeros[4] = { 0.f, 0.f, 0.f, 0.f };
-						const float* biasptr = bias ? bias + i : zeros;
-
-						int j = 0;
-						for (; j + 7 < N; j = j + 8)
+						for (int pp = 0; pp < nn_outch; pp++)
 						{
-							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
+							int i = remain_outch_start + pp * 4;
+
+							float* output0 = top_data + (i)*top_cstep;
+							float* output1 = top_data + (i + 1) * top_cstep;
+							float* output2 = top_data + (i + 2) * top_cstep;
+							float* output3 = top_data + (i + 3) * top_cstep;
+
+							const float zeros[4] = { 0.f, 0.f, 0.f, 0.f };
+							const float* biasptr = bias ? bias + i : zeros;
+
+							int j = 0;
+							for (; j + 7 < N; j = j + 8)
+							{
+								const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							__m256 _sum0 = _mm256_broadcast_ss(biasptr);
-							__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
-							__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
-							__m256 _sum3 = _mm256_broadcast_ss(biasptr + 3);
+								__m256 _sum0 = _mm256_broadcast_ss(biasptr);
+								__m256 _sum1 = _mm256_broadcast_ss(biasptr + 1);
+								__m256 _sum2 = _mm256_broadcast_ss(biasptr + 2);
+								__m256 _sum3 = _mm256_broadcast_ss(biasptr + 3);
 
-							int k = 0;
-							for (; k + 3 < L; k = k + 4)
-							{
-								// k0
-								__m256 _va0 = _mm256_broadcast_ss(va);
-								__m256 _va1 = _mm256_broadcast_ss(va + 1);
-								__m256 _va2 = _mm256_broadcast_ss(va + 2);
-								__m256 _va3 = _mm256_broadcast_ss(va + 3);
-								__m256 _vb0 = _mm256_loadu_ps(vb);
-								__m256 _vb1 = _mm256_loadu_ps(vb + 8);
-								__m256 _vb2 = _mm256_loadu_ps(vb + 16);
-								__m256 _vb3 = _mm256_loadu_ps(vb + 24);
-								_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
-								_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
-								_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
-								_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
+								int k = 0;
+								for (; k + 3 < L; k = k + 4)
+								{
+									// k0
+									__m256 _va0 = _mm256_broadcast_ss(va);
+									__m256 _va1 = _mm256_broadcast_ss(va + 1);
+									__m256 _va2 = _mm256_broadcast_ss(va + 2);
+									__m256 _va3 = _mm256_broadcast_ss(va + 3);
+									__m256 _vb0 = _mm256_loadu_ps(vb);
+									__m256 _vb1 = _mm256_loadu_ps(vb + 8);
+									__m256 _vb2 = _mm256_loadu_ps(vb + 16);
+									__m256 _vb3 = _mm256_loadu_ps(vb + 24);
+									_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
+									_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
+									_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
+									_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
 
-								va += 4;
+									va += 4;
 
-								// k1
-								_va0 = _mm256_broadcast_ss(va);
-								_va1 = _mm256_broadcast_ss(va + 1);
-								_va2 = _mm256_broadcast_ss(va + 2);
-								_va3 = _mm256_broadcast_ss(va + 3);
-								_sum0 = _mm256_fmadd_ps(_vb1, _va0, _sum0);    // sum0 += (a10-a17) * k01
-								_sum1 = _mm256_fmadd_ps(_vb1, _va1, _sum1);    // sum1 += (a10-a17) * k11
-								_sum2 = _mm256_fmadd_ps(_vb1, _va2, _sum2);    // sum2 += (a10-a17) * k21
-								_sum3 = _mm256_fmadd_ps(_vb1, _va3, _sum3);    // sum3 += (a10-a17) * k31
+									// k1
+									_va0 = _mm256_broadcast_ss(va);
+									_va1 = _mm256_broadcast_ss(va + 1);
+									_va2 = _mm256_broadcast_ss(va + 2);
+									_va3 = _mm256_broadcast_ss(va + 3);
+									_sum0 = _mm256_fmadd_ps(_vb1, _va0, _sum0);    // sum0 += (a10-a17) * k01
+									_sum1 = _mm256_fmadd_ps(_vb1, _va1, _sum1);    // sum1 += (a10-a17) * k11
+									_sum2 = _mm256_fmadd_ps(_vb1, _va2, _sum2);    // sum2 += (a10-a17) * k21
+									_sum3 = _mm256_fmadd_ps(_vb1, _va3, _sum3);    // sum3 += (a10-a17) * k31
 
-								va += 4;
+									va += 4;
 
-								// k2
-								_va0 = _mm256_broadcast_ss(va);
-								_va1 = _mm256_broadcast_ss(va + 1);
-								_va2 = _mm256_broadcast_ss(va + 2);
-								_va3 = _mm256_broadcast_ss(va + 3);
-								_sum0 = _mm256_fmadd_ps(_vb2, _va0, _sum0);    // sum0 += (a20-a27) * k02
-								_sum1 = _mm256_fmadd_ps(_vb2, _va1, _sum1);    // sum1 += (a20-a27) * k12
-								_sum2 = _mm256_fmadd_ps(_vb2, _va2, _sum2);    // sum2 += (a20-a27) * k22
-								_sum3 = _mm256_fmadd_ps(_vb2, _va3, _sum3);    // sum3 += (a20-a27) * k32
+									// k2
+									_va0 = _mm256_broadcast_ss(va);
+									_va1 = _mm256_broadcast_ss(va + 1);
+									_va2 = _mm256_broadcast_ss(va + 2);
+									_va3 = _mm256_broadcast_ss(va + 3);
+									_sum0 = _mm256_fmadd_ps(_vb2, _va0, _sum0);    // sum0 += (a20-a27) * k02
+									_sum1 = _mm256_fmadd_ps(_vb2, _va1, _sum1);    // sum1 += (a20-a27) * k12
+									_sum2 = _mm256_fmadd_ps(_vb2, _va2, _sum2);    // sum2 += (a20-a27) * k22
+									_sum3 = _mm256_fmadd_ps(_vb2, _va3, _sum3);    // sum3 += (a20-a27) * k32
 
-								va += 4;
+									va += 4;
 
-								// k3
-								_va0 = _mm256_broadcast_ss(va);
-								_va1 = _mm256_broadcast_ss(va + 1);
-								_va2 = _mm256_broadcast_ss(va + 2);
-								_va3 = _mm256_broadcast_ss(va + 3);
-								_sum0 = _mm256_fmadd_ps(_vb3, _va0, _sum0);    // sum0 += (a30-a37) * k03
-								_sum1 = _mm256_fmadd_ps(_vb3, _va1, _sum1);    // sum1 += (a30-a37) * k13
-								_sum2 = _mm256_fmadd_ps(_vb3, _va2, _sum2);    // sum2 += (a30-a37) * k23
-								_sum3 = _mm256_fmadd_ps(_vb3, _va3, _sum3);    // sum3 += (a30-a37) * k33                   
+									// k3
+									_va0 = _mm256_broadcast_ss(va);
+									_va1 = _mm256_broadcast_ss(va + 1);
+									_va2 = _mm256_broadcast_ss(va + 2);
+									_va3 = _mm256_broadcast_ss(va + 3);
+									_sum0 = _mm256_fmadd_ps(_vb3, _va0, _sum0);    // sum0 += (a30-a37) * k03
+									_sum1 = _mm256_fmadd_ps(_vb3, _va1, _sum1);    // sum1 += (a30-a37) * k13
+									_sum2 = _mm256_fmadd_ps(_vb3, _va2, _sum2);    // sum2 += (a30-a37) * k23
+									_sum3 = _mm256_fmadd_ps(_vb3, _va3, _sum3);    // sum3 += (a30-a37) * k33                   
 
-								va += 4;
-								vb += 32;
-							}
+									va += 4;
+									vb += 32;
+								}
 
-							for (; k < L; k++)
-							{
-								// k0
-								__m256 _va0 = _mm256_broadcast_ss(va);
-								__m256 _va1 = _mm256_broadcast_ss(va + 1);
-								__m256 _va2 = _mm256_broadcast_ss(va + 2);
-								__m256 _va3 = _mm256_broadcast_ss(va + 3);
-								__m256 _vb0 = _mm256_loadu_ps(vb);
-								_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
-								_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
-								_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
-								_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
+								for (; k < L; k++)
+								{
+									// k0
+									__m256 _va0 = _mm256_broadcast_ss(va);
+									__m256 _va1 = _mm256_broadcast_ss(va + 1);
+									__m256 _va2 = _mm256_broadcast_ss(va + 2);
+									__m256 _va3 = _mm256_broadcast_ss(va + 3);
+									__m256 _vb0 = _mm256_loadu_ps(vb);
+									_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
+									_sum1 = _mm256_fmadd_ps(_vb0, _va1, _sum1);    // sum1 = (a00-a07) * k10
+									_sum2 = _mm256_fmadd_ps(_vb0, _va2, _sum2);    // sum2 = (a00-a07) * k20
+									_sum3 = _mm256_fmadd_ps(_vb0, _va3, _sum3);    // sum3 = (a00-a07) * k30
 
-								va += 4;
-								vb += 8;
-							}
+									va += 4;
+									vb += 8;
+								}
 
-							_mm256_storeu_ps(output0, _sum0);
-							_mm256_storeu_ps(output1, _sum1);
-							_mm256_storeu_ps(output2, _sum2);
-							_mm256_storeu_ps(output3, _sum3);
+								_mm256_storeu_ps(output0, _sum0);
+								_mm256_storeu_ps(output1, _sum1);
+								_mm256_storeu_ps(output2, _sum2);
+								_mm256_storeu_ps(output3, _sum3);
 #else
-							float sum0[8] = { 0 };
-							float sum1[8] = { 0 };
-							float sum2[8] = { 0 };
-							float sum3[8] = { 0 };
+								float sum0[8] = { 0 };
+								float sum1[8] = { 0 };
+								float sum2[8] = { 0 };
+								float sum3[8] = { 0 };
 
-							int k = 0;
-							for (; k + 7 < L; k = k + 8)
-							{
-								for (int n = 0; n < 8; n++)
+								int k = 0;
+								for (; k + 7 < L; k = k + 8)
 								{
-									sum0[n] += va[0] * vb[n];
-									sum1[n] += va[1] * vb[n];
-									sum2[n] += va[2] * vb[n];
-									sum3[n] += va[3] * vb[n];
-									va += 4;
+									for (int n = 0; n < 8; n++)
+									{
+										sum0[n] += va[0] * vb[n];
+										sum1[n] += va[1] * vb[n];
+										sum2[n] += va[2] * vb[n];
+										sum3[n] += va[3] * vb[n];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 8];
-									sum1[n] += va[1] * vb[n + 8];
-									sum2[n] += va[2] * vb[n + 8];
-									sum3[n] += va[3] * vb[n + 8];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 8];
+										sum1[n] += va[1] * vb[n + 8];
+										sum2[n] += va[2] * vb[n + 8];
+										sum3[n] += va[3] * vb[n + 8];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 16];
-									sum1[n] += va[1] * vb[n + 16];
-									sum2[n] += va[2] * vb[n + 16];
-									sum3[n] += va[3] * vb[n + 16];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 16];
+										sum1[n] += va[1] * vb[n + 16];
+										sum2[n] += va[2] * vb[n + 16];
+										sum3[n] += va[3] * vb[n + 16];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 24];
-									sum1[n] += va[1] * vb[n + 24];
-									sum2[n] += va[2] * vb[n + 24];
-									sum3[n] += va[3] * vb[n + 24];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 24];
+										sum1[n] += va[1] * vb[n + 24];
+										sum2[n] += va[2] * vb[n + 24];
+										sum3[n] += va[3] * vb[n + 24];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 32];
-									sum1[n] += va[1] * vb[n + 32];
-									sum2[n] += va[2] * vb[n + 32];
-									sum3[n] += va[3] * vb[n + 32];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 32];
+										sum1[n] += va[1] * vb[n + 32];
+										sum2[n] += va[2] * vb[n + 32];
+										sum3[n] += va[3] * vb[n + 32];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 40];
-									sum1[n] += va[1] * vb[n + 40];
-									sum2[n] += va[2] * vb[n + 40];
-									sum3[n] += va[3] * vb[n + 40];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 40];
+										sum1[n] += va[1] * vb[n + 40];
+										sum2[n] += va[2] * vb[n + 40];
+										sum3[n] += va[3] * vb[n + 40];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 48];
-									sum1[n] += va[1] * vb[n + 48];
-									sum2[n] += va[2] * vb[n + 48];
-									sum3[n] += va[3] * vb[n + 48];
-									va += 4;
+										sum0[n] += va[0] * vb[n + 48];
+										sum1[n] += va[1] * vb[n + 48];
+										sum2[n] += va[2] * vb[n + 48];
+										sum3[n] += va[3] * vb[n + 48];
+										va += 4;
 
-									sum0[n] += va[0] * vb[n + 56];
-									sum1[n] += va[1] * vb[n + 56];
-									sum2[n] += va[2] * vb[n + 56];
-									sum3[n] += va[3] * vb[n + 56];
-									va -= 28;
+										sum0[n] += va[0] * vb[n + 56];
+										sum1[n] += va[1] * vb[n + 56];
+										sum2[n] += va[2] * vb[n + 56];
+										sum3[n] += va[3] * vb[n + 56];
+										va -= 28;
+									}
+
+									va += 32;
+									vb += 64;
 								}
 
-								va += 32;
-								vb += 64;
-							}
-
-							for (; k < L; k++)
-							{
-								for (int n = 0; n < 8; n++)
+								for (; k < L; k++)
 								{
-									sum0[n] += va[0] * vb[n];
-									sum1[n] += va[1] * vb[n];
-									sum2[n] += va[2] * vb[n];
-									sum3[n] += va[3] * vb[n];
+									for (int n = 0; n < 8; n++)
+									{
+										sum0[n] += va[0] * vb[n];
+										sum1[n] += va[1] * vb[n];
+										sum2[n] += va[2] * vb[n];
+										sum3[n] += va[3] * vb[n];
+									}
+
+									va += 4;
+									vb += 8;
 								}
 
-								va += 4;
-								vb += 8;
-							}
-
-							for (int n = 0; n < 8; n++)
-							{
-								output0[n] = sum0[n] + biasptr[0];
-								output1[n] = sum1[n] + biasptr[1];
-								output2[n] = sum2[n] + biasptr[2];
-								output3[n] = sum3[n] + biasptr[3];
-							}
+								for (int n = 0; n < 8; n++)
+								{
+									output0[n] = sum0[n] + biasptr[0];
+									output1[n] = sum1[n] + biasptr[1];
+									output2[n] = sum2[n] + biasptr[2];
+									output3[n] = sum3[n] + biasptr[3];
+								}
 #endif // __AVX__
-							output0 += 8;
-							output1 += 8;
-							output2 += 8;
-							output3 += 8;
-						}
+								output0 += 8;
+								output1 += 8;
+								output2 += 8;
+								output3 += 8;
+							}
 
-						for (; j < N; j++)
-						{
-							float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
+							for (; j < N; j++)
+							{
+								float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4) * kernel_tm_cstep;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							__m128 _sum0_3 = _mm_loadu_ps(biasptr);
-							__m128 _sum0 = _mm_set1_ps(0.0);
-							__m128 _sum1 = _mm_set1_ps(0.0);
-							__m128 _sum2 = _mm_set1_ps(0.0);
-							__m128 _sum3 = _mm_set1_ps(0.0);
+								__m128 _sum0_3 = _mm_loadu_ps(biasptr);
+								__m128 _sum0 = _mm_set1_ps(0.0);
+								__m128 _sum1 = _mm_set1_ps(0.0);
+								__m128 _sum2 = _mm_set1_ps(0.0);
+								__m128 _sum3 = _mm_set1_ps(0.0);
 
-							int k = 0;
-							for (; k + 3 < L; k = k + 4)
-							{
-								__m128 _vb0 = _mm_set1_ps(vb[0]);
-								__m128 _vb1 = _mm_set1_ps(vb[1]);
-								__m128 _vb2 = _mm_set1_ps(vb[2]);
-								__m128 _vb3 = _mm_set1_ps(vb[3]);
-								__m128 _va0 = _mm_loadu_ps(va);
-								__m128 _va1 = _mm_loadu_ps(va + 4);
-								__m128 _va2 = _mm_loadu_ps(va + 8);
-								__m128 _va3 = _mm_loadu_ps(va + 12);
+								int k = 0;
+								for (; k + 3 < L; k = k + 4)
+								{
+									__m128 _vb0 = _mm_set1_ps(vb[0]);
+									__m128 _vb1 = _mm_set1_ps(vb[1]);
+									__m128 _vb2 = _mm_set1_ps(vb[2]);
+									__m128 _vb3 = _mm_set1_ps(vb[3]);
+									__m128 _va0 = _mm_loadu_ps(va);
+									__m128 _va1 = _mm_loadu_ps(va + 4);
+									__m128 _va2 = _mm_loadu_ps(va + 8);
+									__m128 _va3 = _mm_loadu_ps(va + 12);
 
-								_sum0 = _mm_fmadd_ps(_va0, _vb0, _sum0);// sum0 += (k00-k30) * a00
-								_sum1 = _mm_fmadd_ps(_va1, _vb1, _sum1);// sum1 += (k01-k31) * a10
-								_sum2 = _mm_fmadd_ps(_va2, _vb2, _sum2);// sum2 += (k02-k32) * a20
-								_sum3 = _mm_fmadd_ps(_va3, _vb3, _sum3);// sum3 += (k03-k33) * a30
+									_sum0 = _mm_fmadd_ps(_va0, _vb0, _sum0);// sum0 += (k00-k30) * a00
+									_sum1 = _mm_fmadd_ps(_va1, _vb1, _sum1);// sum1 += (k01-k31) * a10
+									_sum2 = _mm_fmadd_ps(_va2, _vb2, _sum2);// sum2 += (k02-k32) * a20
+									_sum3 = _mm_fmadd_ps(_va3, _vb3, _sum3);// sum3 += (k03-k33) * a30
 
-								va += 16;
-								vb += 4;
-							}
+									va += 16;
+									vb += 4;
+								}
 
-							_sum0 = _mm_add_ps(_sum0, _sum1);
-							_sum2 = _mm_add_ps(_sum2, _sum3);
-							_sum0_3 = _mm_add_ps(_sum0_3, _sum0);
-							_sum0_3 = _mm_add_ps(_sum0_3, _sum2);
+								_sum0 = _mm_add_ps(_sum0, _sum1);
+								_sum2 = _mm_add_ps(_sum2, _sum3);
+								_sum0_3 = _mm_add_ps(_sum0_3, _sum0);
+								_sum0_3 = _mm_add_ps(_sum0_3, _sum2);
 
-							for (; k < L; k++)
-							{
-								__m128 _vb0 = _mm_set1_ps(vb[0]);
-								__m128 _va = _mm_loadu_ps(va);
+								for (; k < L; k++)
+								{
+									__m128 _vb0 = _mm_set1_ps(vb[0]);
+									__m128 _va = _mm_loadu_ps(va);
 
-								_sum0_3 = _mm_fmadd_ps(_va, _vb0, _sum0_3);// sum0 += (k00-k30) * a00
+									_sum0_3 = _mm_fmadd_ps(_va, _vb0, _sum0_3);// sum0 += (k00-k30) * a00
 
-								va += 4;
-								vb += 1;
-							}
+									va += 4;
+									vb += 1;
+								}
 
-							float output_sum0_3[4] = { 0.f };
-							_mm_storeu_ps(output_sum0_3, _sum0_3);
-							output0[0] = output_sum0_3[0];
-							output1[0] = output_sum0_3[1];
-							output2[0] = output_sum0_3[2];
-							output3[0] = output_sum0_3[3];
+								float output_sum0_3[4] = { 0.f };
+								_mm_storeu_ps(output_sum0_3, _sum0_3);
+								output0[0] = output_sum0_3[0];
+								output1[0] = output_sum0_3[1];
+								output2[0] = output_sum0_3[2];
+								output3[0] = output_sum0_3[3];
 #else
-							float sum0 = biasptr[0];
-							float sum1 = biasptr[1];
-							float sum2 = biasptr[2];
-							float sum3 = biasptr[3];
+								float sum0 = biasptr[0];
+								float sum1 = biasptr[1];
+								float sum2 = biasptr[2];
+								float sum3 = biasptr[3];
 
-							for (int k = 0; k < L; k++)
-							{
-								sum0 += va[0] * vb[0];
-								sum1 += va[1] * vb[0];
-								sum2 += va[2] * vb[0];
-								sum3 += va[3] * vb[0];
+								for (int k = 0; k < L; k++)
+								{
+									sum0 += va[0] * vb[0];
+									sum1 += va[1] * vb[0];
+									sum2 += va[2] * vb[0];
+									sum3 += va[3] * vb[0];
 
-								va += 4;
-								vb += 1;
-							}
+									va += 4;
+									vb += 1;
+								}
 
-							output0[0] = sum0;
-							output1[0] = sum1;
-							output2[0] = sum2;
-							output3[0] = sum3;
+								output0[0] = sum0;
+								output1[0] = sum1;
+								output2[0] = sum2;
+								output3[0] = sum3;
 #endif
-							output0++;
-							output1++;
-							output2++;
-							output3++;
+								output0++;
+								output1++;
+								output2++;
+								output3++;
+							}
 						}
-					}
 
-					remain_outch_start += nn_outch << 2;
+						remain_outch_start += nn_outch << 2;
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-					for (int i = remain_outch_start; i < outch; i++)
-					{
-						float* output = top_data + (i)*top_cstep;
-
-						const float bias0 = bias ? bias[i] : 0.f;
-						int j = 0;
-						for (; j + 7 < N; j = j + 8)
+						for (int i = remain_outch_start; i < outch; i++)
 						{
-							const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
+							float* output = top_data + (i)*top_cstep;
+
+							const float bias0 = bias ? bias[i] : 0.f;
+							int j = 0;
+							for (; j + 7 < N; j = j + 8)
+							{
+								const float* vb = bottom_tm_data + (j / 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							__m256 _sum0 = _mm256_broadcast_ss(&bias0);
+								__m256 _sum0 = _mm256_broadcast_ss(&bias0);
 
-							int k = 0;
-							for (; k + 3 < L; k = k + 4)
-							{
-								// k0
-								__m256 _va0 = _mm256_broadcast_ss(va);
-								__m256 _va1 = _mm256_broadcast_ss(va + 1);
-								__m256 _va2 = _mm256_broadcast_ss(va + 2);
-								__m256 _va3 = _mm256_broadcast_ss(va + 3);
-								__m256 _vb0 = _mm256_loadu_ps(vb);
-								__m256 _vb1 = _mm256_loadu_ps(vb + 8);
-								__m256 _vb2 = _mm256_loadu_ps(vb + 16);
-								__m256 _vb3 = _mm256_loadu_ps(vb + 24);
-
-								_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00                
-								_sum0 = _mm256_fmadd_ps(_vb1, _va1, _sum0);    // sum0 += (a10-a17) * k01
-								_sum0 = _mm256_fmadd_ps(_vb2, _va2, _sum0);    // sum0 += (a20-a27) * k02
-								_sum0 = _mm256_fmadd_ps(_vb3, _va3, _sum0);    // sum0 += (a30-a37) * k03
-
-								va += 4;
-								vb += 32;
-							}
-
-							for (; k < L; k++)
-							{
-								// k0
-								__m256 _va0 = _mm256_broadcast_ss(va);
-								__m256 _vb0 = _mm256_loadu_ps(vb);
-
-								_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
-
-								va += 1;
-								vb += 8;
-							}
-
-							_mm256_storeu_ps(output, _sum0);
-#else
-							float sum[8] = { 0 };
-
-							int k = 0;
-							for (; k + 7 < L; k = k + 8)
-							{
-								for (int n = 0; n < 8; n++)
+								int k = 0;
+								for (; k + 3 < L; k = k + 4)
 								{
-									sum[n] += va[0] * vb[n];
-									sum[n] += va[1] * vb[n + 8];
-									sum[n] += va[2] * vb[n + 16];
-									sum[n] += va[3] * vb[n + 24];
-									sum[n] += va[4] * vb[n + 32];
-									sum[n] += va[5] * vb[n + 40];
-									sum[n] += va[6] * vb[n + 48];
-									sum[n] += va[7] * vb[n + 56];
+									// k0
+									__m256 _va0 = _mm256_broadcast_ss(va);
+									__m256 _va1 = _mm256_broadcast_ss(va + 1);
+									__m256 _va2 = _mm256_broadcast_ss(va + 2);
+									__m256 _va3 = _mm256_broadcast_ss(va + 3);
+									__m256 _vb0 = _mm256_loadu_ps(vb);
+									__m256 _vb1 = _mm256_loadu_ps(vb + 8);
+									__m256 _vb2 = _mm256_loadu_ps(vb + 16);
+									__m256 _vb3 = _mm256_loadu_ps(vb + 24);
+
+									_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00                
+									_sum0 = _mm256_fmadd_ps(_vb1, _va1, _sum0);    // sum0 += (a10-a17) * k01
+									_sum0 = _mm256_fmadd_ps(_vb2, _va2, _sum0);    // sum0 += (a20-a27) * k02
+									_sum0 = _mm256_fmadd_ps(_vb3, _va3, _sum0);    // sum0 += (a30-a37) * k03
+
+									va += 4;
+									vb += 32;
 								}
 
-								va += 8;
-								vb += 64;
-							}
-
-							for (; k < L; k++)
-							{
-								for (int n = 0; n < 8; n++)
+								for (; k < L; k++)
 								{
-									sum[n] += va[0] * vb[n];
+									// k0
+									__m256 _va0 = _mm256_broadcast_ss(va);
+									__m256 _vb0 = _mm256_loadu_ps(vb);
+
+									_sum0 = _mm256_fmadd_ps(_vb0, _va0, _sum0);    // sum0 = (a00-a07) * k00
+
+									va += 1;
+									vb += 8;
 								}
 
-								va += 1;
-								vb += 8;
-							}
-
-							for (int n = 0; n < 8; n++)
-							{
-								output[n] = sum[n] + bias0;
-							}
-#endif // __AVX__
-							output += 8;
-						}
-						for (; j < N; j++)
-						{
-							const float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
-							const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
-
-							int k = 0;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-							__m128 _sum0 = _mm_set1_ps(0.f);
-
-							for (; k + 3 < L; k += 4)
-							{
-								__m128 _p0 = _mm_loadu_ps(vb);
-								vb += 4;
-								__m128 _k0 = _mm_loadu_ps(va);
-								va += 4;
-
-								_sum0 = _mm_fmadd_ps(_p0, _k0, _sum0);
-							}
-							float output_sum0[4] = { 0.f };
-							_mm_storeu_ps(output_sum0, _sum0);
-
-							float sum0 = bias0 + output_sum0[0] + output_sum0[1] + output_sum0[2] + output_sum0[3];
+								_mm256_storeu_ps(output, _sum0);
 #else
-							float sum0 = bias0;
-#endif // __AVX__
-							for (; k < L; k++)
-							{
-								sum0 += va[0] * vb[0];
-								va += 1;
-								vb += 1;
-							}
-							output[0] = sum0;
+								float sum[8] = { 0 };
 
-							output++;
+								int k = 0;
+								for (; k + 7 < L; k = k + 8)
+								{
+									for (int n = 0; n < 8; n++)
+									{
+										sum[n] += va[0] * vb[n];
+										sum[n] += va[1] * vb[n + 8];
+										sum[n] += va[2] * vb[n + 16];
+										sum[n] += va[3] * vb[n + 24];
+										sum[n] += va[4] * vb[n + 32];
+										sum[n] += va[5] * vb[n + 40];
+										sum[n] += va[6] * vb[n + 48];
+										sum[n] += va[7] * vb[n + 56];
+									}
+
+									va += 8;
+									vb += 64;
+								}
+
+								for (; k < L; k++)
+								{
+									for (int n = 0; n < 8; n++)
+									{
+										sum[n] += va[0] * vb[n];
+									}
+
+									va += 1;
+									vb += 8;
+								}
+
+								for (int n = 0; n < 8; n++)
+								{
+									output[n] = sum[n] + bias0;
+								}
+#endif // __AVX__
+								output += 8;
+							}
+							for (; j < N; j++)
+							{
+								const float* vb = bottom_tm_data + (j / 8 + j % 8) * bottom_tm_cstep;
+								const float* va = kernel_tm_data + (i / 8 + (i % 8) / 4 + i % 4) * kernel_tm_cstep;
+
+								int k = 0;
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+								__m128 _sum0 = _mm_set1_ps(0.f);
+
+								for (; k + 3 < L; k += 4)
+								{
+									__m128 _p0 = _mm_loadu_ps(vb);
+									vb += 4;
+									__m128 _k0 = _mm_loadu_ps(va);
+									va += 4;
+
+									_sum0 = _mm_fmadd_ps(_p0, _k0, _sum0);
+								}
+								float output_sum0[4] = { 0.f };
+								_mm_storeu_ps(output_sum0, _sum0);
+
+								float sum0 = bias0 + output_sum0[0] + output_sum0[1] + output_sum0[2] + output_sum0[3];
+#else
+								float sum0 = bias0;
+#endif // __AVX__
+								for (; k < L; k++)
+								{
+									sum0 += va[0] * vb[0];
+									va += 1;
+									vb += 1;
+								}
+								output[0] = sum0;
+
+								output++;
+							}
 						}
 					}
 				}
