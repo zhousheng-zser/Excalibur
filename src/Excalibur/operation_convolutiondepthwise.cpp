@@ -38,7 +38,7 @@ namespace glasssix
 			this->output_dim_h_ = (this->input_dim_h_ + this->pad_bottom_ + this->pad_top_ - this->kernel_size_h_) / this->stride_h_ + 1;
 			this->output_dim_w_ = (this->input_dim_w_ + this->pad_left_ + this->pad_right_ - this->kernel_size_w_) / this->stride_w_ + 1;
 
-			tops[0].reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
+			tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
 
 			if (this->int8_scale_term_ == 1) {
 				dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
@@ -54,21 +54,20 @@ namespace glasssix
 				forward_k3s2_f32(bottoms[0], tops[0]);
 			}
 			else if (this->input_dim_h_ == 4 && this->input_dim_w_ == 4 && this->kernel_size_h_ == 4 && this->kernel_size_w_ == 4)
-			{
-				const float* bottom_data = bottoms[0]->cpu_data();
-				float* top_data = nullptr;
-				
+			{				
 				tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 					bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-				top_data = tops[0]->mutable_cpu_data();
+
+				const float* weights_data = this->weights_f32_[0]->cpu_data();
+				const float* bias_data = nullptr;
+				if (this->bias_term_)
+				{
+					bias_data = this->weights_f32_[1]->cpu_data();
+				}
 				for (int n = 0; n < tops[0]->num(); n++)
 				{
-					const float* weights_data = this->weights_f32_[0]->cpu_data();
-					const float* bias_data = nullptr;
-					if (this->bias_term_)
-					{
-						bias_data = this->weights_f32_[1]->cpu_data();
-					}
+					const float* bottom_data = bottoms[0]->cpu_data() + n * bottoms[0]->count(1, 4);
+					float* top_data = tops[0]->mutable_cpu_data() + n * tops[0]->count(1,4);
 
 					for (int i = 0; i < tops[0]->count(1,4); i++)
 					{
@@ -446,12 +445,11 @@ namespace glasssix
 			{
 				bottom_bordered->convert_order();
 			}
-			top.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
+			top.reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
-			float* top_data = top->mutable_cpu_data();
+			
 			const int top_cstep = top->count(2, 4);
 			const int bottom_cstep = bottom_bordered->count(2, 4);
-			auto bottom_data = bottom_bordered->cpu_data();
 			const float* weights_data = this->weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
 			if (this->bias_term_)
@@ -459,159 +457,164 @@ namespace glasssix
 				bias_data = this->weights_f32_[1]->cpu_data();
 			}
 
+			for (int n = 0; n < this->num_; n++)
+			{
+				float* top_data = top->mutable_cpu_data() + n * top->count(1,4);
+				auto bottom_data = bottom_bordered->cpu_data() + n * bottom_bordered->count(1,4);
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-			for (int g = 0; g < this->group_; g++)
-			{
-				float* out = top_data + g * top_cstep;
-				const float bias_data0 = this->bias_term_ ? bias_data[g] : 0.f;
-				const float* weights_data0 = weights_data + g * 9;
-				float* outptr = out;
-				float* outptr2 = outptr + this->output_dim_w_;
-				const float* img0 = bottom_data + g * bottom_cstep;
-
-				const float* r0 = img0;
-				const float* r1 = img0 + inw;
-				const float* r2 = img0 + inw * 2;
-				const float* r3 = img0 + inw * 3;
-
-				const float* k0 = weights_data0;
-				const float* k1 = weights_data0 + 3;
-				const float* k2 = weights_data0 + 6;
-
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-				__m128 k0_data = _mm_loadu_ps(k0);
-				__m128 k1_data = _mm_loadu_ps(k1);
-				__m128 k2_data = _mm_loadu_ps(k2);
-#endif
-				int i = 0;
-				for (; i + 1 < this->output_dim_h_; i += 2)
+				for (int g = 0; g < this->group_; g++)
 				{
-					int remain = this->output_dim_w_;
-					for (; remain > 0; remain--)
-					{
-						float sum_sum = bias_data0;
-						float sum_sum2 = bias_data0;
+					float* out = top_data + g * top_cstep;
+					const float bias_data0 = this->bias_term_ ? bias_data[g] : 0.f;
+					const float* weights_data0 = weights_data + g * 9;
+					float* outptr = out;
+					float* outptr2 = outptr + this->output_dim_w_;
+					const float* img0 = bottom_data + g * bottom_cstep;
+
+					const float* r0 = img0;
+					const float* r1 = img0 + inw;
+					const float* r2 = img0 + inw * 2;
+					const float* r3 = img0 + inw * 3;
+
+					const float* k0 = weights_data0;
+					const float* k1 = weights_data0 + 3;
+					const float* k2 = weights_data0 + 6;
 
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-						__m128 sum = _mm_setzero_ps();
-						__m128 sum2 = _mm_setzero_ps();
-						__m128 r0_data = _mm_loadu_ps(r0);
-						__m128 r1_data = _mm_loadu_ps(r1);
-						__m128 r2_data = _mm_loadu_ps(r2);
-						__m128 r3_data = _mm_loadu_ps(r3);
-
-						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
-						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
-						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
-						//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
-
-						float temp[4];
-						_mm_storeu_ps(temp, sum);
-						for (int i = 0; i < 3; i++)
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
+#endif
+					int i = 0;
+					for (; i + 1 < this->output_dim_h_; i += 2)
+					{
+						int remain = this->output_dim_w_;
+						for (; remain > 0; remain--)
 						{
-							sum_sum += temp[i];
-						}
+							float sum_sum = bias_data0;
+							float sum_sum2 = bias_data0;
 
-						sum2 = _mm_fmadd_ps(r1_data, k0_data, sum2);
-						sum2 = _mm_fmadd_ps(r2_data, k1_data, sum2);
-						sum2 = _mm_fmadd_ps(r3_data, k2_data, sum2);
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+							__m128 sum = _mm_setzero_ps();
+							__m128 sum2 = _mm_setzero_ps();
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+							__m128 r3_data = _mm_loadu_ps(r3);
 
-						float temp2[4];
-						_mm_storeu_ps(temp2, sum2);
-						for (int i = 0; i < 3; i++)
-						{
-							sum_sum2 += temp2[i];
-						}
+							sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+							sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+							sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+							//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum);
+							for (int i = 0; i < 3; i++)
+							{
+								sum_sum += temp[i];
+							}
+
+							sum2 = _mm_fmadd_ps(r1_data, k0_data, sum2);
+							sum2 = _mm_fmadd_ps(r2_data, k1_data, sum2);
+							sum2 = _mm_fmadd_ps(r3_data, k2_data, sum2);
+
+							float temp2[4];
+							_mm_storeu_ps(temp2, sum2);
+							for (int i = 0; i < 3; i++)
+							{
+								sum_sum2 += temp2[i];
+							}
 #else
-						sum_sum += r0[0] * k0[0];
-						sum_sum += r0[1] * k0[1];
-						sum_sum += r0[2] * k0[2];
-						sum_sum += r1[0] * k1[0];
-						sum_sum += r1[1] * k1[1];
-						sum_sum += r1[2] * k1[2];
-						sum_sum += r2[0] * k2[0];
-						sum_sum += r2[1] * k2[1];
-						sum_sum += r2[2] * k2[2];
+							sum_sum += r0[0] * k0[0];
+							sum_sum += r0[1] * k0[1];
+							sum_sum += r0[2] * k0[2];
+							sum_sum += r1[0] * k1[0];
+							sum_sum += r1[1] * k1[1];
+							sum_sum += r1[2] * k1[2];
+							sum_sum += r2[0] * k2[0];
+							sum_sum += r2[1] * k2[1];
+							sum_sum += r2[2] * k2[2];
 
-						sum_sum2 += r1[0] * k0[0];
-						sum_sum2 += r1[1] * k0[1];
-						sum_sum2 += r1[2] * k0[2];
-						sum_sum2 += r2[0] * k1[0];
-						sum_sum2 += r2[1] * k1[1];
-						sum_sum2 += r2[2] * k1[2];
-						sum_sum2 += r3[0] * k2[0];
-						sum_sum2 += r3[1] * k2[1];
-						sum_sum2 += r3[2] * k2[2];
+							sum_sum2 += r1[0] * k0[0];
+							sum_sum2 += r1[1] * k0[1];
+							sum_sum2 += r1[2] * k0[2];
+							sum_sum2 += r2[0] * k1[0];
+							sum_sum2 += r2[1] * k1[1];
+							sum_sum2 += r2[2] * k1[2];
+							sum_sum2 += r3[0] * k2[0];
+							sum_sum2 += r3[1] * k2[1];
+							sum_sum2 += r3[2] * k2[2];
 #endif
 
-						*outptr += sum_sum;
-						*outptr2 += sum_sum2;
+							* outptr += sum_sum;
+							*outptr2 += sum_sum2;
 
-						r0++;
-						r1++;
-						r2++;
-						r3++;
-						outptr++;
-						outptr2++;
+							r0++;
+							r1++;
+							r2++;
+							r3++;
+							outptr++;
+							outptr2++;
+						}
+
+						r0 += 2 + inw;
+						r1 += 2 + inw;
+						r2 += 2 + inw;
+						r3 += 2 + inw;
+
+						outptr += this->output_dim_w_;
+						outptr2 += this->output_dim_w_;
 					}
 
-					r0 += 2 + inw;
-					r1 += 2 + inw;
-					r2 += 2 + inw;
-					r3 += 2 + inw;
-
-					outptr += this->output_dim_w_;
-					outptr2 += this->output_dim_w_;
-				}
-
-				for (; i < this->output_dim_h_; i++)
-				{
-					int remain = this->output_dim_w_;
-
-					for (; remain > 0; remain--)
+					for (; i < this->output_dim_h_; i++)
 					{
-						float sum_sum = bias_data0;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-						__m128 sum = _mm_setzero_ps();
+						int remain = this->output_dim_w_;
 
-						__m128 r0_data = _mm_loadu_ps(r0);
-						__m128 r1_data = _mm_loadu_ps(r1);
-						__m128 r2_data = _mm_loadu_ps(r2);
-						__m128 r3_data = _mm_loadu_ps(r3);
-
-						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
-						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
-						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
-
-						float temp[4];
-						_mm_storeu_ps(temp, sum);
-						for (int i = 0; i < 3; i++)
+						for (; remain > 0; remain--)
 						{
-							sum_sum += temp[i];
-						}
-#else
-						sum_sum += r0[0] * k0[0];
-						sum_sum += r0[1] * k0[1];
-						sum_sum += r0[2] * k0[2];
-						sum_sum += r1[0] * k1[0];
-						sum_sum += r1[1] * k1[1];
-						sum_sum += r1[2] * k1[2];
-						sum_sum += r2[0] * k2[0];
-						sum_sum += r2[1] * k2[1];
-						sum_sum += r2[2] * k2[2];
-#endif
-						*outptr += sum_sum;
-						r0++;
-						r1++;
-						r2++;
-						outptr++;
-					}
+							float sum_sum = bias_data0;
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
+							__m128 sum = _mm_setzero_ps();
 
-					r0 += 2;
-					r1 += 2;
-					r2 += 2;
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+							__m128 r3_data = _mm_loadu_ps(r3);
+
+							sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+							sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+							sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum);
+							for (int i = 0; i < 3; i++)
+							{
+								sum_sum += temp[i];
+							}
+#else
+							sum_sum += r0[0] * k0[0];
+							sum_sum += r0[1] * k0[1];
+							sum_sum += r0[2] * k0[2];
+							sum_sum += r1[0] * k1[0];
+							sum_sum += r1[1] * k1[1];
+							sum_sum += r1[2] * k1[2];
+							sum_sum += r2[0] * k2[0];
+							sum_sum += r2[1] * k2[1];
+							sum_sum += r2[2] * k2[2];
+#endif
+							* outptr += sum_sum;
+							r0++;
+							r1++;
+							r2++;
+							outptr++;
+						}
+
+						r0 += 2;
+						r1 += 2;
+						r2 += 2;
+					}
 				}
 			}
 		}
@@ -630,12 +633,10 @@ namespace glasssix
 			}
 			p->scope_end();
 			p->scope_start("reset");
-			top.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
+			top.reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 				bottom->device(), bottom->order(), bottom->allocator()));
-			float* top_data = top->mutable_cpu_data();
 			const int top_cstep = top->count(2, 4);
 			const int bottom_cstep = bottom_bordered->count(2, 4);
-			auto bottom_data = bottom_bordered->cpu_data();
 			const float* weights_data = this->weights_f32_[0]->cpu_data();
 			const float* bias_data = nullptr;
 			if (this->bias_term_)
@@ -646,91 +647,96 @@ namespace glasssix
 			p->scope_end();
 			p->scope_start("exec");
 
+			for (int n = 0; n < this->num_; n++)
+			{
+				float* top_data = top->mutable_cpu_data() + n * top->count(1, 4);
+				auto bottom_data = bottom_bordered->cpu_data() + n * bottom_bordered->count(1, 4);
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-			for (int g = 0; g < this->group_; g++)
-			{
-				float* out = top_data + g * top_cstep;
+				for (int g = 0; g < this->group_; g++)
+				{
+					float* out = top_data + g * top_cstep;
 
-				const float bias0 = this->bias_term_ ? bias_data[g] : 0.f;
+					const float bias0 = this->bias_term_ ? bias_data[g] : 0.f;
 
-				const float* kernel0 = weights_data + g * 9;
+					const float* kernel0 = weights_data + g * 9;
 
-				float* outptr = out;
+					float* outptr = out;
 
-				const float* img0 = bottom_data + g * bottom_cstep;
+					const float* img0 = bottom_data + g * bottom_cstep;
 
-				const float* r0 = img0;
-				const float* r1 = img0 + bottom_bordered->width();
-				const float* r2 = img0 + bottom_bordered->width() * 2;
+					const float* r0 = img0;
+					const float* r1 = img0 + bottom_bordered->width();
+					const float* r2 = img0 + bottom_bordered->width() * 2;
 
-				const float* k0 = kernel0;
-				const float* k1 = kernel0 + 3;
-				const float* k2 = kernel0 + 6;
+					const float* k0 = kernel0;
+					const float* k1 = kernel0 + 3;
+					const float* k2 = kernel0 + 6;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX //AVX
-				__m128 k0_data = _mm_loadu_ps(k0);
-				__m128 k1_data = _mm_loadu_ps(k1);
-				__m128 k2_data = _mm_loadu_ps(k2);
+					__m128 k0_data = _mm_loadu_ps(k0);
+					__m128 k1_data = _mm_loadu_ps(k1);
+					__m128 k2_data = _mm_loadu_ps(k2);
 
-				int i = 0;
+					int i = 0;
 
-				for (; i < this->output_dim_h_; i++)
-				{
-					int remain = this->output_dim_w_;
-
-					for (; remain > 0; remain--)
+					for (; i < this->output_dim_h_; i++)
 					{
-						float sum_sum = bias0;
-						__m128 sum = _mm_setzero_ps();
-						__m128 r0_data = _mm_loadu_ps(r0);
-						__m128 r1_data = _mm_loadu_ps(r1);
-						__m128 r2_data = _mm_loadu_ps(r2);
+						int remain = this->output_dim_w_;
 
-						sum = _mm_fmadd_ps(r0_data, k0_data, sum);
-						sum = _mm_fmadd_ps(r1_data, k1_data, sum);
-						sum = _mm_fmadd_ps(r2_data, k2_data, sum);
-						//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
-
-						float temp[4];
-						_mm_storeu_ps(temp, sum);
-						for (int i = 0; i < 3; i++)
+						for (; remain > 0; remain--)
 						{
-							sum_sum += temp[i];
+							float sum_sum = bias0;
+							__m128 sum = _mm_setzero_ps();
+							__m128 r0_data = _mm_loadu_ps(r0);
+							__m128 r1_data = _mm_loadu_ps(r1);
+							__m128 r2_data = _mm_loadu_ps(r2);
+
+							sum = _mm_fmadd_ps(r0_data, k0_data, sum);
+							sum = _mm_fmadd_ps(r1_data, k1_data, sum);
+							sum = _mm_fmadd_ps(r2_data, k2_data, sum);
+							//sum_sum += sum.m128_f32[0] + sum.m128_f32[1] + sum.m128_f32[2];
+
+							float temp[4];
+							_mm_storeu_ps(temp, sum);
+							for (int i = 0; i < 3; i++)
+							{
+								sum_sum += temp[i];
+							}
+							*outptr += sum_sum;
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+							outptr++;
 						}
-						*outptr += sum_sum;
-						r0 += 2;
-						r1 += 2;
-						r2 += 2;
-						outptr++;
-					}
 
-					r0 += tailstep;
-					r1 += tailstep;
-					r2 += tailstep;
-				}
+						r0 += tailstep;
+						r1 += tailstep;
+						r2 += tailstep;
+					}
 #else
-				int i = 0;
+					int i = 0;
 
-				for (; i < this->output_dim_h_; i++)
-				{
-					int remain = this->output_dim_w_;
-
-					for (; remain > 0; remain--)
+					for (; i < this->output_dim_h_; i++)
 					{
-						*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+						int remain = this->output_dim_w_;
 
-						r0 += 2;
-						r1 += 2;
-						r2 += 2;
-						outptr++;
+						for (; remain > 0; remain--)
+						{
+							*outptr = mul_add_3x3_native(r0, r1, r2, k0, k1, k2, bias0);
+
+							r0 += 2;
+							r1 += 2;
+							r2 += 2;
+							outptr++;
+						}
+
+						r0 += tailstep;
+						r1 += tailstep;
+						r2 += tailstep;
 					}
-
-					r0 += tailstep;
-					r1 += tailstep;
-					r2 += tailstep;
-				}
 #endif
+				}
 			}
 
 			p->scope_end();

@@ -43,7 +43,7 @@ namespace glasssix
 				const float* bottom_data = bottoms[i]->cpu_data();
 				const int count = bottoms[i]->count();
 #ifdef _OPENMP
-#pragma omp parallel for
+#pragma omp parallel for num_threads(2)
 #endif
 				for (int j = 0; j < bottoms[i]->count(); j++)
 				{

@@ -104,7 +104,7 @@ namespace glasssix
 				delete[] packed_copy_C;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -150,7 +150,7 @@ namespace glasssix
 				delete[] packed_copy_C;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -196,7 +196,7 @@ namespace glasssix
 				delete[] packed_copy_C;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -220,7 +220,7 @@ namespace glasssix
 			{
 #if SIMD_TYPE >= SIMDTYPE_AVX512
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 // AVX and SSE code follow the same logic, we merge them together.
 #elif SIMD_TYPE >= SIMDTYPE_SSE
 				const int padK = (K + 7) >> 3 << 3;
@@ -242,7 +242,7 @@ namespace glasssix
 				delete[] packed_copy_C;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -275,7 +275,7 @@ namespace glasssix
 				NATIVE_CODE_WARNING;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -308,7 +308,7 @@ namespace glasssix
 				NATIVE_CODE_WARNING;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -341,7 +341,7 @@ namespace glasssix
 				NATIVE_CODE_WARNING;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
@@ -375,7 +375,7 @@ namespace glasssix
 				NATIVE_CODE_WARNING;
 #else 
 #define UNHANDLED
-				NATIVE_CODE_WARNING;
+				//NATIVE_CODE_WARNING;
 #endif 
 #ifdef UNHANDLED
 				// Fall back to native code
