@@ -1,9 +1,15 @@
 #include "log_config.hpp"
+#include "fmt/format.h"
+#include "abi/meta.hpp"
+#include "floating_point.hpp"
 #include "nlohmann/json_extension.hpp"
 
+#include <tuple>
 #include <regex>
 #include <fstream>
-#include <cstdint>
+#include <cstddef>
+#include <algorithm>
+#include <string_view>
 
 #include <filesystem.hpp>
 
@@ -20,25 +26,153 @@ namespace glasssix::logging
 {
 	namespace
 	{
-		thread_local std::regex disk_size_pattern{ R"((\d+?)\s*?(B|KB|MB|GB|PB|EB)?)", std::regex_constants::icase | std::regex_constants::ECMAScript };
+		using namespace std::literals;
 
+		enum class disk_size_unit : std::uint64_t
+		{
+			byte = 'B',
+			kilobyte = 'K',
+			megabyte = 'M',
+			gigabyte = 'G',
+			terabyte = 'T',
+			petabyte = 'P',
+			exabyte = 'E',
+		};
+
+		constexpr std::array metadata_pairs
+		{
+			std::pair{ static_cast<std::size_t>(disk_size_unit::byte), std::pair{ "B"sv, 1ULL } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::kilobyte), std::pair{ "KB"sv, 1ULL << 10 } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::megabyte), std::pair{ "MB"sv, 1ULL << 20 } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::gigabyte), std::pair{ "GB"sv, 1ULL << 30 } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::terabyte), std::pair{ "TB"sv, 1ULL << 40 } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::petabyte), std::pair{ "PB"sv, 1ULL << 50 } },
+			std::pair{ static_cast<std::size_t>(disk_size_unit::exabyte), std::pair{ "EB"sv, 1ULL << 60 } }
+		};
+
+		constexpr std::array disk_size_names = exposing::meta::apply_index_sequence<metadata_pairs.size()>([](auto... indexes) { return std::array{ metadata_pairs[indexes].second.first... }; });
+
+		/// <summary>
+		/// Represents the names among different disk sizes.
+		/// </summary>
+		constexpr auto disk_size_name_map
+		{
+			[]
+			{
+				constexpr std::size_t size = static_cast<std::size_t>(std::max_element(metadata_pairs.begin(), metadata_pairs.end())->first) + 1;
+				std::array<std::string_view, size> result{};
+
+				for (const auto& item : metadata_pairs)
+				{
+					result[item.first] = item.second.first;
+				}
+
+				return result;
+			}()
+		};
+
+		/// <summary>
+		/// Represents the ratios among different disk sizes.
+		/// </summary>
+		constexpr auto disk_size_ratio_map
+		{
+			[]
+			{
+				constexpr std::size_t size = static_cast<std::size_t>(std::max_element(metadata_pairs.begin(), metadata_pairs.end())->first) + 1;
+				std::array<std::uint64_t, size> result{};
+
+				for (const auto& item : metadata_pairs)
+				{
+					result[item.first] = item.second.second;
+				}
+
+				return result;
+			}()
+		};
+
+		/// <summary>
+		/// Stores a disk size.
+		/// </summary>
 		class disk_size
 		{
 		public:
-			disk_size(std::string_view value)
+			disk_size(std::string_view value) : value_{}, unit_{}
 			{
+				thread_local std::regex disk_size_pattern{ fmt::format(FMT_STRING(R"(([+-]?\d*\.?\d+)\s*({})?)"), fmt::join(disk_size_names, "|")), std::regex_constants::icase | std::regex_constants::ECMAScript };
+				
 				if (std::cmatch matches; std::regex_match(value.data(), value.data() + value.size(), matches, disk_size_pattern))
 				{
-					
+					double size = std::stod(matches[1]);
+
+					unit_ = matches[2].matched ? static_cast<disk_size_unit>(matches.str().front()) : disk_size_unit::byte;
+					value_ = size;
 				}
 			}
 
-			disk_size(std::uint64_t size_in_bytes) noexcept : size_in_bytes_{ size_in_bytes }
+			disk_size(double value, disk_size_unit unit) noexcept : value_{ value }, unit_{ unit }
 			{
+			}
 
+			disk_size_unit unit() const noexcept
+			{
+				return unit_;
+			}
+
+			std::uint64_t ratio() const noexcept
+			{
+				return disk_size_ratio_map[static_cast<std::size_t>(unit_)];
+			}
+
+			std::string string() const
+			{
+				return fmt::format(FMT_STRING("{} {}"), value_, disk_size_name_map[static_cast<std::size_t>(unit_)]);
+			}
+
+			bool operator==(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) == 0;
+			}
+
+			bool operator!=(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) != 0;
+			}
+
+			bool operator<(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) < 0;
+			}
+
+			bool operator>(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) > 0;
+			}
+
+			bool operator>=(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) >= 0;
+			}
+
+			bool operator<=(const disk_size& right) const noexcept
+			{
+				return spaceship_compare(*this, right) <= 0;
 			}
 		private:
-			std::uint64_t size_in_bytes_;
+			static int spaceship_compare(const disk_size& left, const disk_size& right) noexcept
+			{
+				auto&& [real_left, real_right, relative_ratio] = left.ratio() > right.ratio() ? std::forward_as_tuple(left, right, left.ratio() / right.ratio()) : std::forward_as_tuple(right, left, right.ratio() / left.ratio());
+				double right_value_at_same_level = real_right.value_ * relative_ratio;
+
+				if (almost_equals(real_left.value_, right_value_at_same_level))
+				{
+					return 0;
+				}
+
+				return real_left.value_ > right_value_at_same_level ? 1 : -1;
+			}
+
+			double value_;
+			disk_size_unit unit_;
 		};
 
 		/// <summary>
