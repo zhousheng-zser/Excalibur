@@ -34,40 +34,9 @@ Core component of Excalibur. Mainly math, image operation, IO and CNN topology o
 
 A SIMD supported [BLAS](http://www.netlib.org/blas/) library. For more details, please ref [doc](docs/Julius).
 
-### Cassius(Cassiunia, Cassiutia)
+### Primitives
 
-A light weighted CNN implementation(with C++/CLI, JNI wrapper) of Unicorn Net, aim at face feature extraction. For more details, please ref [doc](docs/Cassius).
-
-### Gaius(Gaiunia, Gaiulinya)
-
-An extremely light weighted and fast CNN implementation(with C++/CLI, JNI wrapper) of MobileUnicorn Net, aim at face feature extraction on low-power performance device. For more details, please ref [doc](docs/Cassius).
-
-### Damocles
-
-An Excalibur based [MTCNN](https://arxiv.org/abs/1604.02878) implementation with faster half O-Net.
-
-### Longinus(Longinucia, Longimila)
-
-An extremely fast face detection and alignment library(with C++/CLI, JNI wrapper). The alignment part was implementated in [Damocles](README.md#Damocles) and [Romancia](README.md#Romancia).
-For more details, please ref [doc](docs/Longinus).
-
-### Irisviel(Irisvian, Irisvika)
-
-An Extremely Fast Approximate Nearest Neighbor Search With The Navigating Spreading-out Graph implementation library(with C++/CLI, JNI wrapper) for searching. For more details, please ref [doc](docs/Irisvian).
-
-### PersonalReality
-
-A tool of transfering prototxt and caffemodel into hpp and cpp. The last preparatory step to build a CNN with Excalibur. Planning to support [ONNX](https://github.com/onnx/onnx).
-
-### Romancia
-
-An Excalibur based head-pose estimation, landmark detection CNN.
-
-### License
-
-An authorize module for the whole SDK. Enable macro 'RELEASE_SDK' in the pre-released dynamic libraries, the execution need be authorized manually by our engineer. This module relies on third-part library [OpenSSL](https://www.openssl.org), 
-at the same time, due to the existence of global mutex, this module is only able to compile as dynamic library. Now, only Windows platform is supported.
-
+The foundation of Excalibur. please ref [doc](docs/Primitives).
 
 ## Contributors
 
@@ -78,7 +47,7 @@ at the same time, due to the existence of global mutex, this module is only able
 
 ## Copyright
 
-Copyright © 2014 - 2019 Glasssix. All Rights Reserved. 
+Copyright © 2014 - 2020 Glasssix. All Rights Reserved. 
 
 第六镜科技 版权所有
 

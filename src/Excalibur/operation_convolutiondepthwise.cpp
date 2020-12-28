@@ -58,14 +58,15 @@ namespace glasssix
 				tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 					bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 
-				const float* weights_data = this->weights_f32_[0]->cpu_data();
-				const float* bias_data = nullptr;
-				if (this->bias_term_)
-				{
-					bias_data = this->weights_f32_[1]->cpu_data();
-				}
 				for (int n = 0; n < tops[0]->num(); n++)
 				{
+					const float* weights_data = this->weights_f32_[0]->cpu_data();
+					const float* bias_data = nullptr;
+					if (this->bias_term_)
+					{
+						bias_data = this->weights_f32_[1]->cpu_data();
+					}
+
 					const float* bottom_data = bottoms[0]->cpu_data() + n * bottoms[0]->count(1, 4);
 					float* top_data = tops[0]->mutable_cpu_data() + n * tops[0]->count(1,4);
 
@@ -247,7 +248,7 @@ namespace glasssix
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-						for (int i = 0; i < tops[0]->count(); i++)
+						for (int i = 0; i < tops[0]->count(1,4); i++)
 						{
 							const int pw = i % this->output_dim_w_;
 							const int ph = (i / this->output_dim_w_) % this->output_dim_h_;
@@ -279,7 +280,7 @@ namespace glasssix
 							{
 								aveval += bias_data[c];
 							}
-							top_data[n * bottoms[0]->count(1, 4) + i] = aveval;
+							top_data[n * tops[0]->count(1, 4) + i] = aveval;
 						}
 					}
 
