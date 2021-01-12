@@ -68,3 +68,4 @@
 *.CopyComplete
 *.bin
 build/
+/cmake/ndk_cmake.bat

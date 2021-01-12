@@ -99,7 +99,7 @@ namespace glasssix::logging
 			disk_size(std::string_view value) : value_{}, unit_{}
 			{
 				thread_local std::regex disk_size_pattern{ fmt::format(FMT_STRING(R"(([+-]?\d*\.?\d+)\s*({})?)"), fmt::join(disk_size_names, "|")), std::regex_constants::icase | std::regex_constants::ECMAScript };
-				
+
 				if (std::cmatch matches; std::regex_match(value.data(), value.data() + value.size(), matches, disk_size_pattern))
 				{
 					double size = std::stod(matches[1]);
@@ -185,7 +185,7 @@ namespace glasssix::logging
 			std::uint32_t real_size = 0;
 			std::string buffer(MAX_PATH, '\0');
 
-			while ((real_size = GetModuleFileNameA(nullptr, buffer.data(), static_cast<std::uint32_t>(buffer.size())), GetLastError() == ERROR_INSUFFICIENT_BUFFER))
+			while ((real_size = GetModuleFileNameA(nullptr, buffer.data(), static_cast<std::uint32_t>(buffer.size()))) != 0 && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 			{
 				buffer.resize(buffer.size() * 2);
 			}
@@ -205,19 +205,26 @@ namespace glasssix::logging
 
 	log_config log_config::default_value()
 	{
-		return log_config{ log_level::debug, 1, true, ".", get_current_process_name() };
+		return log_config{ log_level::debug, "200 MB", true, ".", get_current_process_name() };
 	}
 
 	log_config log_config::load_from_file_or_default(std::string_view path)
 	{
-		if (std::ifstream stream{ std::string{ path }, std::ios::in | std::ios::binary }; stream)
+		try
 		{
-			nlohmann::json json;
+			if (std::ifstream stream{ std::string{ path }, std::ios::in | std::ios::binary })
+			{
+				nlohmann::json json;
 
-			return ((stream >> json), json.get<log_config>());
+				return ((stream >> json), json.get<log_config>());
+			}
+
+			return log_config::default_value();
 		}
-
-		return log_config::default_value();
+		catch (const std::exception&)
+		{
+			return log_config::default_value();
+		}
 	}
 
 	void to_json(nlohmann::json& json, const log_config& value)
@@ -225,6 +232,7 @@ namespace glasssix::logging
 		json =
 		{
 			{ "level", value.level },
+			{ "limit", value.limit },
 			{ "enable_file_output", value.enable_file_output },
 			{ "home_directory", value.home_directory },
 			{ "application_name", value.application_name }
