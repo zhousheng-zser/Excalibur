@@ -42,13 +42,51 @@ namespace glasssix
 				float* top_data = tops[i]->mutable_cpu_data();
 				const float* bottom_data = bottoms[i]->cpu_data();
 				const int count = bottoms[i]->count();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_SSE4_2_VERSION) //SSE
+				int simd_times = (count - count % 4) / 4;
+				__m128 zero = _mm_setzero_ps();
+				__m128 v6 = _mm_set1_ps(6.0f);
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(2)
 #endif
-				for (int j = 0; j < bottoms[i]->count(); j++)
+				for (int j = 0; j < simd_times; j++)
+				{
+					__m128 d = _mm_load_ps(bottom_data + 4 * j);
+					d = _mm_max_ps(zero, d);
+					d = _mm_and_ps(_mm_cmple_ps(d, v6), d);
+					_mm_store_ps(top_data + 4 * j, d);
+				}
+				for (int j = 4 * simd_times; j < count; j++)
 				{
 					top_data[j] = (bottom_data[j] >= 0.0f && bottom_data[j] <= 6.0f) ? bottom_data[j] : 0.0f;
 				}
+#elif (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) //AVX
+				int simd_times = (count - count % 8) / 8;
+				__m256 zero = _mm256_setzero_ps();
+				__m256 v6 = _mm256_set1_ps(6.0f);
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+				for (int j = 0; j < simd_times; j++)
+				{
+					__m256 d = _mm256_load_ps(bottom_data + 8 * j);
+					d = _mm256_max_ps(zero, d);
+					d = _mm256_and_ps(_mm256_cmp_ps(d, v6, 2), d);
+					_mm256_store_ps(top_data + 8 * j, d);
+				}
+				for (int j = 8 * simd_times; j < count; j++)
+				{
+					top_data[j] = (bottom_data[j] >= 0.0f && bottom_data[j] <= 6.0f) ? bottom_data[j] : 0.0f;
+				}
+#else
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+				for (int j = 0; j < count; j++)
+				{
+					top_data[j] = (bottom_data[j] >= 0.0f && bottom_data[j] <= 6.0f) ? bottom_data[j] : 0.0f;
+				}
+#endif
 			}
 		}
 

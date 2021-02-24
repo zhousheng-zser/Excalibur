@@ -56,11 +56,11 @@ namespace glasssix
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
 					mem += this->output_channel_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(this->group_);
-				fread(this->weights_scaletable_i8_.data(), 1, this->group_ * sizeof(float), fp);
+				this->weights_scaletable_i8_.resize(this->output_channel_);
+				fread(this->weights_scaletable_i8_.data(), 1, this->output_channel_ * sizeof(float), fp);
 				this->featmap_scaletable_i8_.resize(1);
 				fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
-				mem += (this->group_ + 1) * sizeof(float);
+				mem += (this->output_channel_ + 1) * sizeof(float);
 				if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1) && this->output_channel_ < 128)
 				{
 					conv3x3s1_winograd23_tr_kernel_int8();
@@ -129,14 +129,14 @@ namespace glasssix
 					}
 					mem += this->output_channel_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(this->group_);
-				for (size_t i = 0; i < this->group_; i++)
+				this->weights_scaletable_i8_.resize(this->output_channel_);
+				for (size_t i = 0; i < this->output_channel_; i++)
 				{
 					this->weights_scaletable_i8_[i] = n(e);
 				}
 				this->featmap_scaletable_i8_.resize(1);
 				this->featmap_scaletable_i8_[0] = n(e);
-				mem += (this->group_ + 1) * sizeof(float);
+				mem += (this->output_channel_ + 1) * sizeof(float);
 				if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1) && this->output_channel_ < 128)
 				{
 					conv3x3s1_winograd23_tr_kernel_int8();
@@ -210,6 +210,7 @@ namespace glasssix
 			{
 				forward_im2col(border_bottom_, tops[0]);
 			}
+			this->suffix_activation_cpu_f32(tops);
 		}
 
 		template<typename Dtype>
@@ -256,7 +257,7 @@ namespace glasssix
 				bias_data = this->weights_f32_[1]->cpu_data();
 			}
 			use_winograd3x3_int8 = false;
-			quantize_float32_to_int8(bottoms[0], bottom_int8_, this->featmap_scaletable_i8_[0]);
+			this->quantize_float32_to_int8(bottoms[0], bottom_int8_);
 
 			if (this->pad_left_ != 0 || this->pad_right_ != 0 || this->pad_top_ != 0 || this->pad_bottom_ != 0)
 			{
@@ -272,24 +273,24 @@ namespace glasssix
 				use_winograd3x3_int8 = true;
 				conv3x3s1_winograd23_int8(bottom_int8_bordered_, top_int32_);
 
-				float scale_in;
-				if (this->weights_scaletable_i8_[0] == 0)
-					scale_in = 0;
-				else
-					scale_in = 1.f / (this->featmap_scaletable_i8_[0] * this->weights_scaletable_i8_[0]);
-				dequantize_int32_to_float32(top_int32_, tops[0], scale_in);
+				this->dequantize_int32_to_float32(top_int32_, tops[0]);
 			}
 			else
 			{
-				float dequantize_scales;
-				float scale_in;
-				if (this->weights_scaletable_i8_[0] == 0)
-					scale_in = 0;
-				else
-					scale_in = 1.f / (this->featmap_scaletable_i8_[0] * this->weights_scaletable_i8_[0]);
-				dequantize_scales = scale_in;
+				std::vector<float> dequantize_scales;
+				for (size_t q = 0; q < this->output_channel_; q++)
+				{
+					float scale_in;
+					if (this->weights_scaletable_i8_[q] <= 1e-6)
+						scale_in = 0;
+					else
+						scale_in = 1.f / (this->featmap_scaletable_i8_[0] * this->weights_scaletable_i8_[q]);
+					dequantize_scales.push_back(scale_in);
+				}
+				
 				conv_im2col_sgemm_int8_dequant_sse(bottom_int8_bordered_, tops[0], dequantize_scales);
 			}
+			this->suffix_activation_cpu_f32(tops);
 		}
 
 		template<typename Dtype>
@@ -1698,11 +1699,11 @@ namespace glasssix
 			int bordered_h = bottom_blob_int8_bordered->height();
 			int bordered_w = bottom_blob_int8_bordered->width();
 
-			const float* bias_0 = nullptr;
-			if (this->bias_term_)
-			{
-				bias_0 = this->weights_f32_[1]->cpu_data();
-			}
+			//const float* bias_0 = nullptr;
+			//if (this->bias_term_)
+			//{
+			//	bias_0 = this->weights_f32_[1]->cpu_data();
+			//}
 
 			std::shared_ptr<memory::tensor<int>>  top_blob_int8_bordered;
 			top_blob_int8_bordered.reset(new memory::tensor<int>(std::vector<int>{num, this->output_channel_, outh, outw}));
@@ -1715,7 +1716,7 @@ namespace glasssix
 				{
 					const short* kernel_tm_data = kernel_tm_int8_[g]->cpu_data();
 					const signed char* bottom_blob_bordered_data_n = bottom_data_base + g * inch * bordered_h * bordered_w;
-					const float* bias = bias_0 + g * ou;
+					//const float* bias = bias_0 + g * ou;
 					int* top_blob_bordered_data = top_data_base + g * ou * outh * outw;
 					{
 						int w_tm = outw >> 1 << 2;
@@ -1997,7 +1998,7 @@ namespace glasssix
 						{
 							int* out_tm = top_blob_tm_data + p * 16 * tiles;
 							int* out = top_blob_bordered_data + n * ou * outh * outw + p * outh * outw;
-							const float bias0 = bias ? bias[p] : 0.f;
+							//const float bias0 = bias ? bias[p] : 0.f;
 
 							for (int j = 0; j < block_col; j++)
 							{
@@ -2023,10 +2024,15 @@ namespace glasssix
 										w1[n] = s1[n] - s2[n] + s3[n];
 									}
 									// save to top blob tm
-									outRow0[0] = w0[0] + w0[1] + w0[2] + bias0;
-									outRow0[1] = w1[0] + w1[1] + w1[2] + bias0;
-									outRow1[0] = w0[1] - w0[2] + w0[3] + bias0;
-									outRow1[1] = w1[1] - w1[2] + w1[3] + bias0;
+									//outRow0[0] = w0[0] + w0[1] + w0[2] + bias0;
+									//outRow0[1] = w1[0] + w1[1] + w1[2] + bias0;
+									//outRow1[0] = w0[1] - w0[2] + w0[3] + bias0;
+									//outRow1[1] = w1[1] - w1[2] + w1[3] + bias0;
+
+									outRow0[0] = (w0[0] + w0[1] + w0[2]) >> 2;
+									outRow0[1] = (w1[0] + w1[1] + w1[2]) >> 2;
+									outRow1[0] = (w0[1] - w0[2] + w0[3]) >> 2;
+									outRow1[1] = (w1[1] - w1[2] + w1[3]) >> 2;
 
 									outRow0 += 2;
 									outRow1 += 2;
@@ -2148,7 +2154,7 @@ namespace glasssix
 
 		template <typename Dtype>
 		void operation_convolution<Dtype>::conv_im2col_sgemm_int8_dequant_sse(const std::shared_ptr<memory::tensor<signed char> >& bottom_blob,
-			std::shared_ptr<memory::tensor<float> >& top_blob, float scale_dequant)
+			std::shared_ptr<memory::tensor<float> >& top_blob, std::vector<float>& scale_dequants)
 		{
 			int w = bottom_blob->width();
 			int h = bottom_blob->height();
@@ -2179,6 +2185,7 @@ namespace glasssix
 				int kernel_tm_cstep = kernel_tm_int8_sgemm_[g]->width() * kernel_tm_int8_sgemm_[g]->height();
 				const signed char* bottom_data = bottom_data_base + g * bottom_cstep * inch;
 				const float* bias = bias_0 + g * outch;
+				const float* scale_dequant = scale_dequants.data() + g * outch;
 				float* top_data = top_data_base + out_size * outch * g;
 				{
 					// im2row
@@ -2293,7 +2300,14 @@ namespace glasssix
 							const float bias6 = bias ? bias[i + 6] : 0.f;
 							const float bias7 = bias ? bias[i + 7] : 0.f;
 
-							const float scale_dequant0 = scale_dequant;
+							const float scale_dequant0 = scale_dequant[i + 0];
+							const float scale_dequant1 = scale_dequant[i + 1];
+							const float scale_dequant2 = scale_dequant[i + 2];
+							const float scale_dequant3 = scale_dequant[i + 3];
+							const float scale_dequant4 = scale_dequant[i + 4];
+							const float scale_dequant5 = scale_dequant[i + 5];
+							const float scale_dequant6 = scale_dequant[i + 6];
+							const float scale_dequant7 = scale_dequant[i + 7];
 
 							float* output0 = top_data + (i)*top_cstep;
 							float* output1 = top_data + (i + 1) * top_cstep;
@@ -2331,7 +2345,14 @@ namespace glasssix
 								__m256 _summm6 = _mm256_set1_ps(bias6);
 								__m256 _summm7 = _mm256_set1_ps(bias7);
 
-								__m256 scale = _mm256_set1_ps(scale_dequant0);
+								__m256 scale0 = _mm256_set1_ps(scale_dequant0);
+								__m256 scale1 = _mm256_set1_ps(scale_dequant1);
+								__m256 scale2 = _mm256_set1_ps(scale_dequant2);
+								__m256 scale3 = _mm256_set1_ps(scale_dequant3);
+								__m256 scale4 = _mm256_set1_ps(scale_dequant4);
+								__m256 scale5 = _mm256_set1_ps(scale_dequant5);
+								__m256 scale6 = _mm256_set1_ps(scale_dequant6);
+								__m256 scale7 = _mm256_set1_ps(scale_dequant7);
 
 								int k = 0;
 								{
@@ -2373,14 +2394,14 @@ namespace glasssix
 								__m256 _summ6 = _mm256_cvtepi32_ps(_sum6);
 								__m256 _summ7 = _mm256_cvtepi32_ps(_sum7);
 
-								_summm0 = _mm256_fmadd_ps(_summ0, scale, _summm0);
-								_summm1 = _mm256_fmadd_ps(_summ1, scale, _summm1);
-								_summm2 = _mm256_fmadd_ps(_summ2, scale, _summm2);
-								_summm3 = _mm256_fmadd_ps(_summ3, scale, _summm3);
-								_summm4 = _mm256_fmadd_ps(_summ4, scale, _summm4);
-								_summm5 = _mm256_fmadd_ps(_summ5, scale, _summm5);
-								_summm6 = _mm256_fmadd_ps(_summ6, scale, _summm6);
-								_summm7 = _mm256_fmadd_ps(_summ7, scale, _summm7);
+								_summm0 = _mm256_fmadd_ps(_summ0, scale0, _summm0);
+								_summm1 = _mm256_fmadd_ps(_summ1, scale1, _summm1);
+								_summm2 = _mm256_fmadd_ps(_summ2, scale2, _summm2);
+								_summm3 = _mm256_fmadd_ps(_summ3, scale3, _summm3);
+								_summm4 = _mm256_fmadd_ps(_summ4, scale4, _summm4);
+								_summm5 = _mm256_fmadd_ps(_summ5, scale5, _summm5);
+								_summm6 = _mm256_fmadd_ps(_summ6, scale6, _summm6);
+								_summm7 = _mm256_fmadd_ps(_summ7, scale7, _summm7);
 
 								_mm256_storeu_ps(output0, _summm0);
 								_mm256_storeu_ps(output1, _summm1);
@@ -2407,13 +2428,13 @@ namespace glasssix
 								for (int n = 0; n < 8; n++)
 								{
 									output0[n] = (float)sum0[n] * scale_dequant0 + bias0;
-									output1[n] = (float)sum1[n] * scale_dequant0 + bias1;
-									output2[n] = (float)sum2[n] * scale_dequant0 + bias2;
-									output3[n] = (float)sum3[n] * scale_dequant0 + bias3;
-									output4[n] = (float)sum4[n] * scale_dequant0 + bias4;
-									output5[n] = (float)sum5[n] * scale_dequant0 + bias5;
-									output6[n] = (float)sum6[n] * scale_dequant0 + bias6;
-									output7[n] = (float)sum7[n] * scale_dequant0 + bias7;
+									output1[n] = (float)sum1[n] * scale_dequant1 + bias1;
+									output2[n] = (float)sum2[n] * scale_dequant2 + bias2;
+									output3[n] = (float)sum3[n] * scale_dequant3 + bias3;
+									output4[n] = (float)sum4[n] * scale_dequant4 + bias4;
+									output5[n] = (float)sum5[n] * scale_dequant5 + bias5;
+									output6[n] = (float)sum6[n] * scale_dequant6 + bias6;
+									output7[n] = (float)sum7[n] * scale_dequant7 + bias7;
 
 								}
 
@@ -2461,13 +2482,13 @@ namespace glasssix
 								}
 
 								output0[0] = (float)sum0 * scale_dequant0 + bias0;
-								output1[0] = (float)sum1 * scale_dequant0 + bias1;
-								output2[0] = (float)sum2 * scale_dequant0 + bias2;
-								output3[0] = (float)sum3 * scale_dequant0 + bias3;
-								output4[0] = (float)sum4 * scale_dequant0 + bias4;
-								output5[0] = (float)sum5 * scale_dequant0 + bias5;
-								output6[0] = (float)sum6 * scale_dequant0 + bias6;
-								output7[0] = (float)sum7 * scale_dequant0 + bias7;
+								output1[0] = (float)sum1 * scale_dequant1 + bias1;
+								output2[0] = (float)sum2 * scale_dequant2 + bias2;
+								output3[0] = (float)sum3 * scale_dequant3 + bias3;
+								output4[0] = (float)sum4 * scale_dequant4 + bias4;
+								output5[0] = (float)sum5 * scale_dequant5 + bias5;
+								output6[0] = (float)sum6 * scale_dequant6 + bias6;
+								output7[0] = (float)sum7 * scale_dequant7 + bias7;
 
 
 								output0++;
@@ -2499,7 +2520,10 @@ namespace glasssix
 							const float bias2 = bias ? bias[i + 2] : 0.f;
 							const float bias3 = bias ? bias[i + 3] : 0.f;
 
-							const float scale_dequant0 = scale_dequant;
+							const float scale_dequant0 = scale_dequant[i + 0];
+							const float scale_dequant1 = scale_dequant[i + 1];
+							const float scale_dequant2 = scale_dequant[i + 2];
+							const float scale_dequant3 = scale_dequant[i + 3];
 
 							int j = 0;
 							for (; j + 7 < N; j = j + 8)
@@ -2517,7 +2541,10 @@ namespace glasssix
 								__m256 _summm2 = _mm256_set1_ps(bias2);
 								__m256 _summm3 = _mm256_set1_ps(bias3);
 
-								__m256 scale = _mm256_set1_ps(scale_dequant0);
+								__m256 scale0 = _mm256_set1_ps(scale_dequant0);
+								__m256 scale1 = _mm256_set1_ps(scale_dequant1);
+								__m256 scale2 = _mm256_set1_ps(scale_dequant2);
+								__m256 scale3 = _mm256_set1_ps(scale_dequant3);
 
 								int k = 0;
 								for (; k + 3 < L; k = k + 4)
@@ -2603,10 +2630,10 @@ namespace glasssix
 								__m256 _summ2 = _mm256_cvtepi32_ps(_sum2);
 								__m256 _summ3 = _mm256_cvtepi32_ps(_sum3);
 
-								_summm0 = _mm256_fmadd_ps(_summ0, scale, _summm0);
-								_summm1 = _mm256_fmadd_ps(_summ1, scale, _summm1);
-								_summm2 = _mm256_fmadd_ps(_summ2, scale, _summm2);
-								_summm3 = _mm256_fmadd_ps(_summ3, scale, _summm3);
+								_summm0 = _mm256_fmadd_ps(_summ0, scale0, _summm0);
+								_summm1 = _mm256_fmadd_ps(_summ1, scale1, _summm1);
+								_summm2 = _mm256_fmadd_ps(_summ2, scale2, _summm2);
+								_summm3 = _mm256_fmadd_ps(_summ3, scale3, _summm3);
 
 								_mm256_storeu_ps(output0, _summm0);
 								_mm256_storeu_ps(output1, _summm1);
@@ -2690,9 +2717,9 @@ namespace glasssix
 								for (int n = 0; n < 8; n++)
 								{
 									output0[n] = (float)sum0[n] * scale_dequant0 + bias0;
-									output1[n] = (float)sum1[n] * scale_dequant0 + bias1;
-									output2[n] = (float)sum2[n] * scale_dequant0 + bias2;
-									output3[n] = (float)sum3[n] * scale_dequant0 + bias3;
+									output1[n] = (float)sum1[n] * scale_dequant1 + bias1;
+									output2[n] = (float)sum2[n] * scale_dequant2 + bias2;
+									output3[n] = (float)sum3[n] * scale_dequant3 + bias3;
 								}
 #endif // __AVX__
 								output0 += 8;
@@ -2720,9 +2747,9 @@ namespace glasssix
 									vb += 1;
 								}
 								output0[0] = (float)sum0 * scale_dequant0 + bias0;
-								output1[0] = (float)sum1 * scale_dequant0 + bias1;
-								output2[0] = (float)sum2 * scale_dequant0 + bias2;
-								output3[0] = (float)sum3 * scale_dequant0 + bias3;
+								output1[0] = (float)sum1 * scale_dequant1 + bias1;
+								output2[0] = (float)sum2 * scale_dequant2 + bias2;
+								output3[0] = (float)sum3 * scale_dequant3 + bias3;
 
 								output0++;
 								output1++;
@@ -2738,7 +2765,7 @@ namespace glasssix
 						{
 							float* output = top_data + (i)*top_cstep;
 							const float bias0 = bias ? bias[i] : 0.f;
-							const float scale_dequant0 = scale_dequant;
+							const float scale_dequant0 = scale_dequant[i];
 							int j = 0;
 							for (; j + 7 < N; j = j + 8)
 							{
@@ -2819,7 +2846,7 @@ namespace glasssix
 
 								for (int n = 0; n < 8; n++)
 								{
-									output[n] = sum[n] + bias0;
+									output[n] = sum[n] * scale_dequant0+ bias0;
 								}
 #endif // __AVX__
 								output += 8;
@@ -2845,85 +2872,6 @@ namespace glasssix
 				}
 			}
 		}
-
-
-
-		template<typename Dtype>
-		void operation_convolution<Dtype>::quantize_float32_to_int8(const std::shared_ptr<memory::tensor<float>>& src,
-			std::shared_ptr<memory::tensor<signed char>>& dst, float scale)
-		{
-			int w = src->width();
-			int h = src->height();
-			int channels = src->channels();
-			int size = w * h;
-
-			dst.reset(new memory::tensor<signed char>(channels, h, w, this->params_.device_, src->order(), nullptr));
-			const float* bottom = src->cpu_data();
-			signed char* bottom_int8_ = dst->mutable_cpu_data();
-
-#ifdef _OPENMP 
-#pragma omp parallel for num_threads(2) 
-#endif
-			for (int q = 0; q < channels; q++)
-			{
-				const float* ptr = bottom + q * size;
-				signed char* outptr = bottom_int8_ + q * size;
-				for (int i = 0; i < size; i++)
-				{
-					outptr[i] = float32_to_int8(ptr[i] * scale);
-				}
-			}
-		}
-
-		template<typename Dtype>
-		void operation_convolution<Dtype>::dequantize_int32_to_float32(std::shared_ptr<memory::tensor<int>>& src,
-			std::shared_ptr<memory::tensor<float>>& dst, float scale)
-		{
-
-			int w = src->width();
-			int h = src->height();
-			int channels = src->channels();
-			int size = w * h;
-			const int* top_int32_data = src->cpu_data();
-			float* top_f32_data = dst->mutable_cpu_data();
-			const float* bias_data = this->weights_f32_[1]->cpu_data();
-			scale = scale / 4;
-			if (this->bias_term_)
-			{
-#ifdef _OPENMP 
-#pragma omp parallel for num_threads(2) 
-#endif
-				for (int q = 0; q < channels; q++)
-				{
-					const int* intptr = top_int32_data + q * size;
-					float* ptr = top_f32_data + q * size;
-
-					float bias = this->output_channel_ > 1 ? bias_data[q] : bias_data[0];
-
-					for (int i = 0; i < size; i++)
-					{
-						ptr[i] = intptr[i] * scale + bias;
-					}
-				}
-			}
-			else
-			{
-#ifdef _OPENMP 
-#pragma omp parallel for num_threads(2) 
-#endif
-				for (int q = 0; q < channels; q++)
-				{
-					const int* intptr = top_int32_data + q * size;
-					float* ptr = top_f32_data + q * size;
-
-					for (int i = 0; i < size; i++)
-					{
-						ptr[i] = intptr[i] * scale;
-					}
-				}
-			}
-		}
-
 
 		template<typename Dtype>
 		void operation_convolution<Dtype>::forward_gpu_f32(

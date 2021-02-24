@@ -56,7 +56,7 @@ namespace glasssix
 			void forward_im2col_int8_tr_kernel();
 
 			void conv_im2col_sgemm_int8_dequant_sse(const std::shared_ptr<memory::tensor<signed char> >& bottom_blob, 
-				std::shared_ptr<memory::tensor<float> >& top_blob, float scale_dequant);
+				std::shared_ptr<memory::tensor<float> >& top_blob, std::vector<float>& scale_dequants);
 
 
 			//others
@@ -72,13 +72,6 @@ namespace glasssix
 
 			void forward_cpu_k1s1_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
 				std::shared_ptr < memory::tensor<float>>& top);
-
-			void quantize_float32_to_int8(const std::shared_ptr<memory::tensor<float>>& src,
-				std::shared_ptr<memory::tensor<signed char>>& dst, float scale);
-
-			void dequantize_int32_to_float32(std::shared_ptr<memory::tensor<int>>& src,
-				std::shared_ptr<memory::tensor<float>>& dst, float scale);
-
 
 			//f32 convolution multiplication
 			std::shared_ptr<memory::tensor<float>> weights1x1_;

@@ -18,6 +18,15 @@ namespace glasssix
 
 			virtual ~operation_general_conv() {}
 
+		protected:
+			virtual void quantize_float32_to_int8(const std::shared_ptr<memory::tensor<float>>& src,
+				std::shared_ptr<memory::tensor<signed char>>& dst);
+
+			virtual void dequantize_int32_to_float32(std::shared_ptr<memory::tensor<int>>& src,
+				std::shared_ptr<memory::tensor<float>>& dst);
+
+			virtual void suffix_activation_cpu_f32(std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
 		public:
 			/// parameters
 			int output_channel_ = 0;
