@@ -2,6 +2,7 @@
 #include "../../../include/Excalibur/operation_reflector.hpp"
 #include <random>
 
+#include "arm/gemm_symm_int8.h"
 
 namespace glasssix
 {
@@ -50,6 +51,70 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
+		int operation_innerproduct_arm<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			std::uniform_int_distribution<int> u(-128, 127);
+			int mem = 0;
+			if (!this->params_.int8_quantization_)
+			{
+				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < weight_data_size_; i++)
+				{
+					this->weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+				}
+				mem += weight_data_size_ * sizeof(float);
+				if (this->bias_term_)
+				{
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < num_output_; i++)
+					{
+						this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += num_output_ * sizeof(float);
+				}
+			}
+			else
+			{
+				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
+				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, this->params_.device_, memory::NCHW, nullptr)));
+				for (size_t i = 0; i < align_data_size; i++)
+				{
+					this->weights_i8_[0]->mutable_cpu_data()[i] = u(e);
+				}
+				mem += align_data_size;
+				if (this->bias_term_)
+				{
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
+					for (size_t i = 0; i < num_output_; i++)
+					{
+						this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+					}
+					mem += num_output_ * sizeof(float);
+				}
+				this->weights_scaletable_i8_.resize(1);
+				this->weights_scaletable_i8_[0] = n(e);
+				this->featmap_scaletable_i8_.resize(1);
+				this->featmap_scaletable_i8_[0] = n(e);
+				mem += 2 * sizeof(float);
+
+				if (std::fabs(this->weights_scaletable_i8_[0]) <= 1e-6)
+					scale_in = 0.f;
+				else
+					scale_in = 1.f / (4 * this->weights_scaletable_i8_[0] * this->featmap_scaletable_i8_[0]);
+
+#ifdef __aarch64__
+				weight_i8_reordered_.reset(new memory::tensor<int8_t>(this->weights_i8_[0]->count(), this->params_.device_, memory::NCHW, nullptr));
+				reorder_a(const_cast<int8_t*>(this->weights_i8_[0]->cpu_data()), weight_i8_reordered_->mutable_cpu_data(), num_output_, weight_data_size_ / num_output_, weight_data_size_ / num_output_);
+#endif
+
+			}
+			return mem;
+		}
+
+		template<typename Dtype>
 		int operation_innerproduct_arm<Dtype>::init_weights(FILE *fp)
 		{
 			int quantize_tag;
@@ -60,7 +125,7 @@ namespace glasssix
 				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
 				fread(this->weights_f32_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(float), fp);
 				mem += weight_data_size_ * sizeof(float);
-				if (bias_term_)
+				if (this->bias_term_)
 				{
 					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
@@ -70,27 +135,33 @@ namespace glasssix
 			}
 			else if (quantize_tag == 871224)
 			{
-				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
-				fread(this->weights_i8_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(signed char), fp);
-				mem += weight_data_size_ * sizeof(signed char);
-				// fake float32 data, just for code consistency
-				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
-				if (weight_data_size_ % 4 != 0)
+				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
+				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, this->params_.device_, memory::NCHW, nullptr)));
+				fread(this->weights_i8_[0]->mutable_cpu_data(), 1, align_data_size, fp);
+				mem += align_data_size;
+				if (this->bias_term_)
 				{
-					fread(this->weights_f32_[0]->mutable_cpu_data(), 1, (4 - weight_data_size_ % 4) * sizeof(signed char), fp);
-					mem += 1 * sizeof(signed char);
-				}
-				if (bias_term_)
-				{
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
 					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
-					mem += num_output_ * sizeof(signed char);
+					mem += num_output_ * sizeof(float);
 				}
 				this->weights_scaletable_i8_.resize(1);
 				fread(this->weights_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
 				this->featmap_scaletable_i8_.resize(1);
 				fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
-				mem += 2 * sizeof(signed char);
+				mem += 2 * sizeof(float);
+
+				if (std::fabs(this->weights_scaletable_i8_[0]) <= 1e-6)
+					scale_in = 0.f;
+				else
+					scale_in = 1.f / (4 * this->weights_scaletable_i8_[0] * this->featmap_scaletable_i8_[0]);
+
+#ifdef __aarch64__
+				weight_i8_reordered_.reset(new memory::tensor<int8_t>(this->weights_i8_[0]->count(), this->params_.device_, memory::NCHW, nullptr));
+				reorder_a(const_cast<int8_t*>(this->weights_i8_[0]->cpu_data()), weight_i8_reordered_->mutable_cpu_data(), num_output_, weight_data_size_ / num_output_, weight_data_size_ / num_output_);
+#endif
+
 				return mem;
 			}
 			else
@@ -345,56 +416,103 @@ namespace glasssix
 		}
 
 		template<typename Dtype>
-		int operation_innerproduct_arm<Dtype>::init_weights()
+		void operation_innerproduct_arm<Dtype>::forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms, std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
-			std::default_random_engine e;
-			std::normal_distribution<float> n(0, 0.3);
-			std::uniform_int_distribution<int> u(-128, 127);
-			int mem = 0;
-			if (!this->params_.int8_quantization_)
+			CHECK_EQ(bottoms.size(), 1);
+			CHECK_EQ(tops.size(), 1);
+
+			int num = bottoms[0]->num();
+			int channels = bottoms[0]->channels();
+			int size = bottoms[0]->count(1,4);
+
+			std::shared_ptr<memory::tensor<int8_t>> bottom(new memory::tensor<int8_t>(bottoms[0]->data_shape(), this->params_.device_, bottoms[0]->order()));
+
+			quantize_float32_to_int8(bottoms[0], bottom);
+
+			memory::orderType order = bottom->order();
+			if (order == memory::NHWC)
+				bottom->convert_order();
+
+			std::shared_ptr<memory::tensor<int>> top(new memory::tensor<int>(std::vector<int>{num, num_output_, 1, 1}, this->params_.device_, memory::NCHW));
+#ifdef __aarch64__
+			const int8_t* weight_i8_reordered_data = weight_i8_reordered_->cpu_data();
+
+			for (size_t n = 0; n < num; n++)
 			{
-				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
-				for (size_t i = 0; i < weight_data_size_; i++)
+				const int8_t* bottom_data = bottom->cpu_data() + n * size;
+				int* top_data = top->mutable_cpu_data() + n * num_output_;
+				
+				int8kernel(top_data, bottom_data, weight_i8_reordered_data, 1, size, num_output_, num_output_, 0, 0);
+			}
+#else
+			for (size_t n = 0; n < num; n++)
+			{
+				const int8_t* bottom_data = bottom->cpu_data() + n * size;
+				int* top_data = top->mutable_cpu_data() + n * num_output_;
+#ifdef _OPENMP
+#pragma omp parallel for num_threads(2)
+#endif
+				for (size_t p = 0; p < num_output_; p++)
 				{
-					this->weights_f32_[0]->mutable_cpu_data()[i] = n(e);
-				}
-				mem += weight_data_size_ * sizeof(float);
-				if (bias_term_)
-				{
-					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
-					for (size_t i = 0; i < num_output_; i++)
+					const int8_t* weight_i8_data = this->weights_i8_[0]->cpu_data() + p * size;
+					for (int i = 0; i < size; i++)
 					{
-						this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+						top_data[p] += bottom_data[i] * weight_i8_data[i];
 					}
-					mem += num_output_ * sizeof(float);
 				}
 			}
-			else
+#endif
+			tops[0].reset(new memory::tensor<float>(top->data_shape(), this->params_.device_, top->order()));
+			dequantize_int32_to_float32(top, tops[0]);
+		}
+
+		template<typename Dtype>
+		void operation_innerproduct_arm<Dtype>::quantize_float32_to_int8(const std::shared_ptr<memory::tensor<float>>& src,
+			std::shared_ptr<memory::tensor<signed char>>& dst)
+		{
+			int total_size = src->count();
+
+			dst.reset(new memory::tensor<signed char>(src->data_shape(), this->params_.device_, src->order()));
+			const float* bottom = src->cpu_data();
+			signed char* bottom_int8_ = dst->mutable_cpu_data();
+
+#ifdef _OPENMP 
+#pragma omp parallel for num_threads(2) 
+#endif
+			for (int i = 0; i < total_size; i++)
 			{
-				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
-				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, this->params_.device_, memory::NCHW, nullptr)));
-				for (size_t i = 0; i < align_data_size; i++)
+				bottom_int8_[i] = float32_to_int8(bottom[i] * this->featmap_scaletable_i8_[0]);
+			}
+		}
+
+		template<typename Dtype>
+		void operation_innerproduct_arm<Dtype>::dequantize_int32_to_float32(std::shared_ptr<memory::tensor<int>>& src,
+			std::shared_ptr<memory::tensor<float>>& dst)
+		{
+			int num = src->num();
+			const float* bias_data = nullptr;
+			if(this->bias_term_)
+				bias_data = this->weights_f32_[1]->cpu_data();
+
+			for (size_t n = 0; n < num; n++)
+			{
+				const int* top_int32_data = src->cpu_data() + n * num_output_;
+				float* top_f32_data = dst->mutable_cpu_data() + n * num_output_;
+				if (this->bias_term_)
 				{
-					this->weights_i8_[0]->mutable_cpu_data()[i] = u(e);
-				}
-				mem += align_data_size;
-				if (bias_term_)
-				{
-					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
-					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
 					for (size_t i = 0; i < num_output_; i++)
 					{
-						this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+						top_f32_data[i] = top_int32_data[i] * scale_in + bias_data[i];
 					}
-					mem += num_output_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(1);
-				this->weights_scaletable_i8_[0] = n(e);
-				this->featmap_scaletable_i8_.resize(1);
-				this->featmap_scaletable_i8_[0] = n(e);
-				mem += (1 + 1) * sizeof(float);
+				else
+				{
+					for (size_t i = 0; i < num_output_; i++)
+					{
+						top_f32_data[i] = top_int32_data[i] * scale_in;
+					}
+				}
 			}
-			return mem;
 		}
 
 		INSTANCE_CLASS(operation_innerproduct_arm);

@@ -22,6 +22,9 @@ namespace glasssix
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
+			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
 		private:
 
 			void conv1x1s1_sgemm_transform_kernel_neon();
@@ -45,6 +48,25 @@ namespace glasssix
 			//f32 convolution multiplication
 			std::shared_ptr<memory::tensor<float>> kernel_tm_;
 			std::shared_ptr<memory::tensor<float>> kernel_tm_gemm_;
+
+			//for int8
+			void conv3x3s1_winograd23_transform_kernel_int8_neon();
+			void conv3x3s1_winograd43_transform_kernel_int8_neon();
+			void conv3x3s2_transform_kernel_int8_neon();
+			void conv1x1s1_sgemm_transform_kernel_int8_neon();
+			void conv_im2col_sgemm_transform_kernel_int8_neon();
+			void conv3x3s1_winograd23_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom,
+				std::shared_ptr<memory::tensor<int>>& top);
+			void conv3x3s1_winograd43_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom, 
+				std::shared_ptr<memory::tensor<int>>& top);
+			void conv3x3s2_packed_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom,
+				std::shared_ptr<memory::tensor<int>>& top);
+			void conv1x1s1_sgemm_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom,
+				std::shared_ptr<memory::tensor<int>>& top);
+			void conv_im2col_sgemm_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom, 
+				std::shared_ptr<memory::tensor<int>>& top);
+			std::vector<std::shared_ptr<memory::tensor<short>>> kernel_tm_int8_winograd_;
+			std::shared_ptr<memory::tensor<int8_t>> kernel_tm_int8_;
 		};
 	}
 }

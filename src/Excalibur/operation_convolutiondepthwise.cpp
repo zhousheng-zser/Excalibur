@@ -40,9 +40,6 @@ namespace glasssix
 
 			tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
 
-			if (this->int8_scale_term_ == 1) {
-				dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
-			}
 			const float* weights_data = this->weights_f32_[0]->cpu_data();
 
 			if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1))
@@ -193,6 +190,7 @@ namespace glasssix
 				}
 			}
 
+			this->suffix_activation_cpu_f32(tops);
 		}
 
 		template<typename Dtype>
@@ -215,6 +213,7 @@ namespace glasssix
 
 			if (this->int8_scale_term_ == 1) {
 				dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
+				this->int8_scale_term_ = 0;
 			}
 			const float* weights_data = this->weights_f32_[0]->cpu_data();
 
@@ -296,6 +295,7 @@ namespace glasssix
 				}
 			}
 
+			this->suffix_activation_cpu_f32(tops);
 		}
 
 		template<typename Dtype>
@@ -312,7 +312,7 @@ namespace glasssix
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
 #endif
-			for (int q = 0; q < this->group_; q++)
+			for (int q = 0; q < this->output_channel_; q++)
 			{
 				const signed char* ptr = bottom + q * size;
 				float* outptr = bottom_int8 + q * size;

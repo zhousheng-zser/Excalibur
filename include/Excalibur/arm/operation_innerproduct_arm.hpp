@@ -25,6 +25,15 @@ namespace glasssix
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
+			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
+			virtual void quantize_float32_to_int8(const std::shared_ptr<memory::tensor<float>>& src,
+				std::shared_ptr<memory::tensor<signed char>>& dst);
+
+			virtual void dequantize_int32_to_float32(std::shared_ptr<memory::tensor<int>>& src,
+				std::shared_ptr<memory::tensor<float>>& dst);
+
 		private:
 			int num_output_ = 0;
 			bool bias_term_ = false;
@@ -32,6 +41,12 @@ namespace glasssix
 			bool int8_scale_term_ = false;
 			int activation_type_ = 0;
 			std::string activation_params_;
+
+			//int8
+			float scale_in;
+#ifdef __aarch64__
+			std::shared_ptr<memory::tensor<int8_t>> weight_i8_reordered_;
+#endif
 		};
 	}
 }

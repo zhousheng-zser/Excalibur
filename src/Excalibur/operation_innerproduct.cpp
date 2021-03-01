@@ -71,27 +71,22 @@ namespace glasssix
 			}
 			else if (quantize_tag == 871224)
 			{
-				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
-				fread(this->weights_i8_[0]->mutable_cpu_data(), 1, weight_data_size_ * sizeof(signed char), fp);
-				mem += weight_data_size_ * sizeof(signed char);
-				// fake float32 data, just for code consistency
-				this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
-				if (weight_data_size_ % 4 != 0)
-				{
-					fread(this->weights_f32_[0]->mutable_cpu_data(), 1, (4 - weight_data_size_ % 4) * sizeof(signed char), fp);
-					mem += 1 * sizeof(signed char);
-				}
+				size_t align_data_size = (weight_data_size_ + 4 - 1) & -4;
+				this->weights_i8_.push_back(std::shared_ptr<memory::tensor<signed char>>(new memory::tensor<signed char>(align_data_size, this->params_.device_, memory::NCHW, nullptr)));
+				fread(this->weights_i8_[0]->mutable_cpu_data(), 1, align_data_size, fp);
+				mem += align_data_size;
 				if (this->bias_term_)
 				{
+					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr)));
 					this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(num_output_, this->params_.device_, memory::NCHW, nullptr)));
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
-					mem += num_output_ * sizeof(signed char);
+					mem += num_output_ * sizeof(float);
 				}
 				this->weights_scaletable_i8_.resize(1);
 				fread(this->weights_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
 				this->featmap_scaletable_i8_.resize(1);
 				fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
-				mem += 2 * sizeof(signed char);
+				mem += 2 * sizeof(float);
 				return mem;
 			}
 			else
@@ -149,7 +144,7 @@ namespace glasssix
 				this->weights_scaletable_i8_[0] = n(e);
 				this->featmap_scaletable_i8_.resize(1);
 				this->featmap_scaletable_i8_[0] = n(e);
-				mem += (1 + 1) * sizeof(float);
+				mem += 2 * sizeof(float);
 			}
 			return mem;
 		}
