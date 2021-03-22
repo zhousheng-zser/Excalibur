@@ -26,13 +26,14 @@ namespace glasssix
 			CHECK_EQ(bottoms.size(), tops.size());
 			for (size_t i = 0; i < bottoms.size(); i++)
 			{
-				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));
+				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), this->params_.device_, bottoms[i]->order(), bottoms[i]->allocator()));
 				float* top_data = tops[i]->mutable_gpu_data();
 				const float* bottom_data = bottoms[i]->gpu_data();
 				const int count = bottoms[i]->count();
 				relu_kernel << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
 					count, bottom_data, top_data);
 			}
+			CUDA_POST_KERNEL_CHECK;
 		}
 
 #ifdef USE_CUDNN
