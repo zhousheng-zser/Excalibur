@@ -1,5 +1,6 @@
 #include "../../include/Excalibur/operation_crop.hpp"
 #include "../../include/Excalibur/operation_reflector.hpp"
+#include "../../include/Excalibur/math_functions.hpp"
 
 namespace glasssix
 {
@@ -81,21 +82,24 @@ namespace glasssix
 			CHECK_LE(bottoms[1]->channels() + coffset_, bottoms[0]->channels()); 
 			CHECK_LE(bottoms[1]->height() + hoffset_, bottoms[0]->height());
 			CHECK_LE(bottoms[1]->width() + woffset_, bottoms[0]->width());
-			tops[0].reset(new memory::tensor<float>(bottoms[1]->data_shape(), bottoms[1]->device(), bottoms[1]->order(), bottoms[1]->allocator()));
+			tops[0].reset(new memory::tensor<float>(bottoms[1]->data_shape(), this->params_.device_, bottoms[1]->order(), bottoms[1]->allocator()));
 			auto top_data = tops[0]->mutable_cpu_data();
 			auto bottom_data = bottoms[0]->cpu_data();
 			if (bottoms[1]->order() == memory::NCHW)
 			{
 				int bottom_offset_n = bottoms[0]->count(1, 4);
 				int top_offset_n = tops[0]->count(1, 4);
+
+				int bottom_offset_c = bottoms[0]->count(2, 4);
+				int top_offset_c = tops[0]->count(2, 4);
+
+				int bottom_offset_h = bottoms[0]->count(3, 4);
+				int top_offset_h = tops[0]->count(3, 4);
+
 				for (size_t n = 0; n < bottoms[0]->num(); n++)
 				{
-					int bottom_offset_c = bottoms[0]->count(2, 4);
-					int top_offset_c = tops[0]->count(2, 4);
 					for (size_t c = 0; c < bottoms[1]->channels(); c++)
 					{
-						int bottom_offset_h = bottoms[0]->count(3, 4);
-						int top_offset_h = tops[0]->count(3, 4);
 						for (size_t h = 0; h < bottoms[1]->height(); h++)
 						{
 							memcpy(top_data + top_offset_n * n + top_offset_c * c + top_offset_h * h,
@@ -111,20 +115,9 @@ namespace glasssix
 			}
 		}
 
-
-		template<typename Dtype>
-		void operation_crop<Dtype>::forward_gpu_f32(
-#ifdef USE_CUDA
-			cublasHandle_t &cublas_handle_,
-#ifdef USE_CUDNN
-			cudnnHandle_t cudnn_handle,
-#endif //!USE_CUDNN
-#endif //!USE_CUDA
-			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
-			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
-		{
-			NOT_IMPLEMENTED;
-		}
+#ifndef USE_CUDA
+		STUB_GPU(operation_crop);
+#endif
 
 		INSTANCE_CLASS(operation_crop);
 		REGISTE(operation_crop);
