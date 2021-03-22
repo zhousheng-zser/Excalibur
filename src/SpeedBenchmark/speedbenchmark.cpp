@@ -6,10 +6,12 @@
 */
 
 #include <iostream>
+#include <fstream>
 #include <random>
 #include <cfloat>
 #include "../../include/Excalibur/pipeline.hpp"
 #include "../../include/Primitives/profiler.hpp"
+#include "../../include/Primitives/tensor_conversions.hpp"
 
 using namespace glasssix;
 
@@ -28,13 +30,18 @@ std::shared_ptr<memory::tensor<float>> get_random_tensor(std::vector<int> input_
 
 int main()
 {
-	std::vector<std::pair<std::string, std::vector<int>>> pipe_infos =
+	std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
 	{
-		{"longinus", {1, 3, 480, 640}}
-		,{"unicorn", {1, 3, 128, 128}}
-		//,{"unicorn_int8", {1, 3, 128, 128}}
-		//,{"unicorn_li", {1, 3, 128, 128}}
-		,{"mobile_unicorn", {1, 3, 128, 128}}
+		{"longinus", {1, 3, 240, 320}, 0}
+		,{"longinus", {1, 3, 240, 320}, -1}
+		//,{"mobile_unicorn_666398_usefulpart_merged", {1, 3, 128, 128}}
+		,{"unicorn", {1, 3, 128, 128}, 0}
+		//,{"unicorn_gdc_0x1C_int8_w6a8", {1, 3, 128, 128}, -1}
+		//{"unicorn_li_0x42_usefulpart", {1, 3, 128, 128}}
+		//,{"unicorn_li_0x42_usefulpart_int8", {1, 3, 128, 128}}
+		,{"mobile_unicorn", {1, 3, 128, 128}, 0}
+		//,{"mobile_unicorn_666398_usefulpart_merged", {1, 3, 128, 128}, -1}
+		//,{"mobile_unicorn_666398_usefulpart_merged_int8", {1, 3, 128, 128}}
 	};
 
 	timer t;
@@ -44,19 +51,24 @@ int main()
 
 	for (size_t i = 0; i < pipe_infos.size(); i++)
 	{
-		pipes.push_back(new excalibur::pipeline<float>(std::string("../../../../../models/") + pipe_infos[i].first + ".phai", -1));
+		pipes.push_back(new excalibur::pipeline<float>(std::string("../../../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("../../../../../models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
 	}
 	std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
+
+	//std::ifstream in("1.bin", std::ios::binary);
+	//std::shared_ptr<memory::tensor<uint8_t>> input_tensor_u8(new memory::tensor<uint8_t>(std::vector<int>{1, 3, 128, 128}, -1, memory::NCHW));
+	//in.read((char *)input_tensor_u8->mutable_cpu_data(), 3 * 128 * 128);
+	//auto input_tensor  = input_tensor_u8 | memory::tensor_convert_to<float>;
 	for (size_t i = 0; i < pipe_infos.size(); i++)
 	{
 		//excalibur::pipeline<float> pipe(std::string("../../models/") + pipe_infos[i].first + ".phai", -1);
 		auto allocator = new memory::pool_allocator<float>();
-		auto input_tensor = get_random_tensor(pipe_infos[i].second);
+		auto input_tensor = get_random_tensor(std::get<1>(pipe_infos[i]));
 		input_tensor->set_allocator(allocator);
 		// Warming up
 		for (size_t j = 0; j < warmup_loop_count; j++)
 		{
-			pipes[i]->forward_cpu(input_tensor);
+			pipes[i]->forward(input_tensor);
 		}
 
 		double time_min = DBL_MAX;
@@ -66,7 +78,7 @@ int main()
 		for (size_t j = 0; j < loop_count; j++)
 		{
 			t.start();
-			pipes[i]->forward_cpu(input_tensor);
+			pipes[i]->forward(input_tensor);
 			t.stop();
 
 			double time = t.get_elapsed_milli_seconds();
@@ -75,7 +87,7 @@ int main()
 			time_avg += time;
 		}
 		time_avg /= loop_count;
-		std::cout << pipe_infos[i].first << "\t" << time_min << "\t" << time_max << "\t" << time_avg << std::endl; 
+		std::cout << std::get<0>(pipe_infos[i]) << "\t" << time_min << "\t" << time_max << "\t" << time_avg << std::endl; 
 		
 		delete pipes[i];
 		pipes[i] = nullptr;

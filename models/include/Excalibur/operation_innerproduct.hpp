@@ -1,18 +1,21 @@
 #pragma once
-#ifndef _OPERATION_DECONVOLUTION_HPP_
-#define _OPERATION_DECONVOLUTION_HPP_
-
-#include "operation_general_conv.hpp"
+#ifndef _OPERATION_INNERPRODUCT_HPP_
+#define _OPERATION_INNERPRODUCT_HPP_
+#include "operation.hpp"
 
 namespace glasssix
 {
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class operation_deconvolution : public operation_general_conv<Dtype>
+		class operation_innerproduct : public operation<Dtype>
 		{
 		public:
-			operation_deconvolution(const operation_param& param);
+			explicit operation_innerproduct(const operation_param& param);
+
+			virtual const char* type() const { return this->params_.type_.c_str(); }
+
+			virtual ~operation_innerproduct() {}
 
 			virtual int init_weights();
 
@@ -24,7 +27,7 @@ namespace glasssix
 
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -33,16 +36,16 @@ namespace glasssix
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 		private:
-			void forward_sgemm(const float* input, const float* weights, float* output, memory::orderType order /*= memory::NCHW*/);
+			int num_output_ = 0;
+			bool bias_term_ = false;
+			int weight_data_size_ = 0;
+			bool int8_scale_term_ = false;
+			int activation_type_ = 0;
+			std::string activation_params_;
 
-			void forward_sbias(float* output, const float* bias, memory::orderType order/* = memory::NCHW*/);
-
-			std::shared_ptr<memory::tensor<float>> col_buffer_;
 			std::shared_ptr<memory::tensor<float>> bias_multiplier_;
-			float* col_buffer_data;
-			float* bias_multiplier_data;
 		};
 	}
 }
+#endif // !_OPERATION_INNERPRODUCT_HPP_
 
-#endif //!_OPERATION_DECONVOLUTION_HPP_

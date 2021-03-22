@@ -86,6 +86,7 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	add_definitions(-DFMT_SHARED)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /FS")
 endif()
 
 add_subdirectory(Primitives)
