@@ -128,9 +128,9 @@ namespace glasssix
 				case memory::NCHW:
 					tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
 						bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-					top_data = tops[0]->mutable_cpu_data();
 					for (size_t n = 0; n < this->num_; n++)
 					{
+						top_data = tops[0]->mutable_cpu_data() + n * tops[0]->count(1, 4);
 
 #ifdef _OPENMP 
 #pragma omp parallel for num_threads(2) 
@@ -167,7 +167,7 @@ namespace glasssix
 							{
 								aveval += bias_data[c];
 							}
-							top_data[n * tops[0]->count(1, 4) + i] = aveval;
+							top_data[i] = aveval;
 						}
 					}
 
