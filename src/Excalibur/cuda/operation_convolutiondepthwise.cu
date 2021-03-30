@@ -15,7 +15,6 @@ namespace glasssix
 		{
 			if (order == glasssix::memory::NCHW)
 			{
-				const int bottom_offset_n = num * channels * height * width;
 				CUDA_KERNEL_LOOP(index, nthreads)
 				{
 					const int pw = index % conved_width;
@@ -32,7 +31,7 @@ namespace glasssix
 					wend = min(wend, width);
 					float aveval = 0;
 					const float* const bottom_slice =
-						bottom_data + bottom_offset_n + (n * channels + c) * height * width;
+						bottom_data + (n * channels + c) * height * width;
 					const float* const weight_slice =
 						weight + c * kernel_h * kernel_w;
 					int khstart = hend < kernel_h ? kernel_h - hend : 0;
@@ -48,7 +47,7 @@ namespace glasssix
 					{
 						aveval += bias[c];
 					}
-					top_data[bottom_offset_n + index] = aveval;
+					top_data[index] = aveval;
 				}
 			}
 			else if (order == glasssix::memory::NHWC)
@@ -134,15 +133,12 @@ namespace glasssix
 				break;
 			}
 			auto top_data = tops[0]->mutable_gpu_data();
-			int count = tops[0]->count(1 ,4);
-			for (size_t n = 0; n < this->num_; n++)
-			{
-				depthwise_conv_kernel << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
-					count, bottom_data, n, this->input_channel_,
-					this->input_dim_h_, this->input_dim_w_, this->output_dim_h_, this->output_dim_w_, this->kernel_size_h_,
-					this->kernel_size_w_, this->stride_h_, this->stride_w_, this->pad_left_, this->pad_bottom_, 
-					top_data, weights_data, bias_data, this->bias_term_, order);
-			}
+			int count = tops[0]->count(0 ,4);
+			depthwise_conv_kernel << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
+				count, bottom_data, this->num_, this->input_channel_,
+				this->input_dim_h_, this->input_dim_w_, this->output_dim_h_, this->output_dim_w_, this->kernel_size_h_,
+				this->kernel_size_w_, this->stride_h_, this->stride_w_, this->pad_left_, this->pad_bottom_, 
+				top_data, weights_data, bias_data, this->bias_term_, order);
 			CUDA_POST_KERNEL_CHECK;
 		}
 
