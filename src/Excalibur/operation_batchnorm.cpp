@@ -1,6 +1,8 @@
 #include "../../include/Excalibur/operation_batchnorm.hpp"
 #include "../../include/Excalibur/operation_reflector.hpp"
 
+#include <random>
+
 namespace glasssix
 {
 	namespace excalibur
@@ -62,6 +64,59 @@ namespace glasssix
 			}
 			return channels_ * sizeof(float) * 4;
 		}
+
+		template<typename Dtype>
+		int operation_batchnorm<Dtype>::init_weights()
+		{
+			std::default_random_engine e;
+			std::normal_distribution<float> n(0, 0.3);
+			std::uniform_int_distribution<int> u(-128, 127);
+
+			// slope
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			for (size_t i = 0; i < channels_; i++)
+			{
+				this->weights_f32_[0]->mutable_cpu_data()[i] = n(e);
+			}
+			auto slope_data = this->weights_f32_[0]->cpu_data();
+			// mean
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			for (size_t i = 0; i < channels_; i++)
+			{
+				this->weights_f32_[1]->mutable_cpu_data()[i] = n(e);
+			}
+			auto mean_data = this->weights_f32_[1]->cpu_data();
+			// var
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			for (size_t i = 0; i < channels_; i++)
+			{
+				this->weights_f32_[2]->mutable_cpu_data()[i] = n(e);
+			}
+			auto var_data = this->weights_f32_[2]->cpu_data();
+			// bias
+			this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr)));
+			for (size_t i = 0; i < channels_; i++)
+			{
+				this->weights_f32_[3]->mutable_cpu_data()[i] = n(e);
+			}
+			auto bias_data = this->weights_f32_[3]->cpu_data();
+
+			//a = bias - slope * mean / sqrt(var)
+			a_.reset(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr));
+			auto a_data = a_->mutable_cpu_data();
+			//b = slope / sqrt(var)
+			b_.reset(new memory::tensor<float>(channels_, this->params_.device_, memory::NCHW, nullptr));
+			auto b_data = b_->mutable_cpu_data();
+
+			for (size_t i = 0; i < channels_; i++)
+			{
+				float sqrt_var = static_cast<float>(sqrt(var_data[i] + eps_));
+				a_data[i] = bias_data[i] - slope_data[i] * mean_data[i] / sqrt_var;
+				b_data[i] = slope_data[i] / sqrt_var;
+			}
+			return channels_ * sizeof(float) * 4;
+		}
+
 
 		template<typename Dtype>
 		void operation_batchnorm<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
