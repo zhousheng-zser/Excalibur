@@ -18,7 +18,7 @@ namespace glasssix
 
 			virtual ~operation_batchnorm() {}
 
-			virtual int init_weights() {return 0;}
+			virtual int init_weights();
 
 			virtual int init_weights(FILE *fp);
 
