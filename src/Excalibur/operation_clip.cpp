@@ -1,0 +1,51 @@
+#include "Excalibur/operation.hpp"
+#include "Excalibur/operation_clip.hpp"
+#include "Excalibur/operation_reflector.hpp"
+#include "Primitives/pool_allocator.hpp"
+
+namespace glasssix
+{
+    namespace excalibur
+    {
+        template <class Dtype>
+        operation_clip<Dtype>::operation_clip(const operation_param &param) : operation<Dtype>(param)
+        {
+            std::vector<std::string> attrs = split_string(param.specific_params_, " ");
+            for (int i = 0; i < attrs.size(); ++i)
+            {
+                std::vector<std::string> kvs = split_string(attrs[0], "=");
+                switch (std::stoi(kvs[0]))
+                {
+                case 0:
+                    this->min_ = std::stof(kvs[1]);
+                    break;
+                case 1:
+                    this->max_ = std::stof(kvs[1]);
+                    break;
+                default:
+                    LOG(FATAL) << "Un-supported Concat Attribution " << kvs[1];
+                    break;
+                }
+            }
+        }
+
+        template<class Dtype>
+        void operation_clip<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+        {
+            CHECK_EQ(bottoms.size(), 1);
+            CHECK_EQ(tops.size(), 1);
+
+            tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+            const float* bptr = bottoms[0]->cpu_data();
+            float* tptr = tops[0]->mutable_cpu_data();
+
+            for(int i = 0; i < bottoms[0]->count(); ++i)
+            {
+                tptr[i] = bptr[i] <= this->min_ ? this->min_ : bptr[i] >= this->max_ ? this->max_ : bptr[i];
+            }
+        }
+
+        INSTANCE_CLASS(operation_clip);
+        REGISTE(operation_clip);
+    }
+}
