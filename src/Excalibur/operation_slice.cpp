@@ -8,8 +8,13 @@ namespace glasssix
 {
     namespace excalibur
     {
+        static inline int cal_target_size(int a, int b)
+        {
+            return a % b ? a / b + 1 : a / b;
+        }
+
         template <class Dtype>
-        operation_slice<Dtype>::operation_slice(const operation_param &param) : operation<Dtype>(param)
+        operation_slice<Dtype>::operation_slice(const operation_param &param) : starts_(3, 0), ends_(3, INT_MAX), steps_(3, 1), operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
@@ -18,19 +23,22 @@ namespace glasssix
                 switch (std::stoi(kvs[0]))
                 {
                 case 0:
+                    this->starts_.clear();
                     for (std::string v : split_string(kvs[1], ","))
                     {
                         this->starts_.push_back(std::stoi(v));
                     }
                     break;
                 case 1:
+                    this->ends_.clear();
                     for (std::string v : split_string(kvs[1], ","))
                     {
                         int val = std::stoi(v);
-                        this->ends_.push_back( val== -1 ? INT_MAX : val );
+                        this->ends_.push_back(val == -1 ? INT_MAX : val);
                     }
                     break;
                 case 2:
+                    this->steps_.clear();
                     for (std::string v : split_string(kvs[1], ","))
                     {
                         this->steps_.push_back(std::stoi(v));
@@ -61,28 +69,30 @@ namespace glasssix
             int src_c = bottoms[0]->channels();
             int num = bottoms[0]->num();
 
-            int dst_w = ends_[0] == INT_MAX ? src_w - starts_[0] : ends_[0] - starts_[0];
-            int dst_h = ends_[1] == INT_MAX ? src_h - starts_[1] : ends_[1] - starts_[1];
-            int dst_c = ends_[2] == INT_MAX ? src_c - starts_[2] : ends_[2] - starts_[2];
-            tops[0].reset(new memory::tensor<float>(std::vector<int>{num, dst_c, dst_h, dst_w}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            const float *bottom_init_ptr = bottoms[0]->cpu_data();
-            float *top_init_ptr = tops[0]->mutable_cpu_data() + starts_[2] * src_w * src_h + starts_[0] + starts_[1] * src_w;
+            int _w = ends_[0] == INT_MAX ? src_w - starts_[0] : ends_[0] - starts_[0];
+            int _h = ends_[1] == INT_MAX ? src_h - starts_[1] : ends_[1] - starts_[1];
+            int _c = ends_[2] == INT_MAX ? src_c - starts_[2] : ends_[2] - starts_[2];
 
-            const float *bottom_ptr = nullptr;
-            float *top_ptr = nullptr;
+            int dst_w = cal_target_size(_w, steps_[0]);
+            int dst_h = cal_target_size(_h, steps_[1]);
+            int dst_c = cal_target_size(_c, steps_[2]);
+
+            tops[0].reset(new memory::tensor<float>(std::vector<int>{num, dst_c, dst_h, dst_w}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+
             for (int n = 0; n < num; ++n)
             {
+                float *top_data = tops[0]->mutable_cpu_data() + tops[0]->offset(n);
                 if (bottoms[0]->order() == memory::NCHW)
                 {
                     for (int ch = 0; ch < dst_c; ++ch)
                     {
-                        bottom_ptr = bottom_init_ptr + ch * src_w * src_h;
-                        top_ptr =  top_init_ptr + ch * dst_w * dst_h;
                         for (int h = 0; h < dst_h; ++h)
                         {
-                            memcpy(top_ptr, bottom_ptr, sizeof(float) * dst_w);
-                            bottom_ptr += src_w;
-                            top_ptr += dst_w;
+                            for (int w = 0; w < dst_w; ++w)
+                            {
+                                const float *bottom_data = bottoms[0]->cpu_data() + bottoms[0]->offset(n, starts_[2] + ch * steps_[2], starts_[1] + h * steps_[1], starts_[0] + w * steps_[0]);
+                                *(top_data++) = *bottom_data;
+                            }
                         }
                     }
                 }
