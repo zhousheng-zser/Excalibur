@@ -20,9 +20,9 @@ namespace glasssix
         
         private:
             // order: w h c
-            std::vector<int> starts_{0, 0, 0};
-            std::vector<int> ends_{INT_MAX, INT_MAX, INT_MAX};
-            std::vector<int> steps_{1, 1, 1};
+            std::vector<int> starts_;
+            std::vector<int> ends_;
+            std::vector<int> steps_;
         };
     }
 }
