@@ -20,7 +20,7 @@ namespace glasssix
 
         private:
             // w h c
-            std::vector<int> perms_{0, 1, 2};
+            std::vector<int> perms_;
         };
     }
 }

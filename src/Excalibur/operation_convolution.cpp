@@ -26,6 +26,7 @@ namespace glasssix
             {
                 this->weights_f32_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(this->weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
                 fread(this->weights_f32_[0]->mutable_cpu_data(), 1, this->weight_data_size_ * sizeof(float), fp);
+
                 mem += this->weight_data_size_ * sizeof(float);
                 if (this->bias_term_)
                 {
@@ -170,6 +171,7 @@ namespace glasssix
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
+
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
             const float *bottom_data = bottoms[0]->cpu_data();
@@ -903,6 +905,7 @@ namespace glasssix
                     int kernel_tm_cstep = kernel_tm_gemm_[g]->width() * kernel_tm_gemm_[g]->height();
                     const float *bottom_data = bottom_data_base + g * bottom_cstep * inch;
                     const float *bias = bias_0 + g * outch;
+
                     float *top_data = top_data_base + out_size * outch * g;
                     {
                         // im2col

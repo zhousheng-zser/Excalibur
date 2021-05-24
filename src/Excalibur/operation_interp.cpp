@@ -91,10 +91,33 @@ namespace glasssix
             }
 
             tops[0].reset(new memory::tensor<float>(std::vector<int>{num, bottom_c, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+
+            if (resize_type_ == 1) // nearest
+            {
+                const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
+                const float ws = outw ? bottom_w / (float)outw : 1.f / width_scale_;
+
+                for (int q = 0; q < bottom_c; q++)
+                {
+                    const float *ptr = bottoms[0]->cpu_data() + bottoms[0]->offset(0, q);
+                    float *outptr = tops[0]->mutable_cpu_data() + tops[0]->offset(0, q);
+                    for (int y = 0; y < outh; y++)
+                    {
+                        int in_y = std::min((int)(y * hs), (bottom_h - 1));
+                        for (int x = 0; x < outw; x++)
+                        {
+                            int in_x = std::min((int)(x * ws), (bottom_w - 1));
+                            *outptr++ = ptr[in_y * bottom_w + in_x];
+                        }
+                    }
+                }
+                return;
+            }
+
             resize_cpu(bottoms[0], tops[0], outh, outw, interpolationType(resize_type_ - 1));
         }
 
         INSTANCE_CLASS(operation_interp);
-		REGISTE(operation_interp);
+        REGISTE(operation_interp);
     }
 }

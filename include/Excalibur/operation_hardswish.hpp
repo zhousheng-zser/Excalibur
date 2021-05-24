@@ -19,9 +19,9 @@ namespace glasssix
             virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
 
         private:
-            float threshold_ = 6.0;
-            float scale_ = 6.0;
-            float offset_ = 3.0;
+            float threshold_;
+            float scale_;
+            float offset_;
         };
     }
 }

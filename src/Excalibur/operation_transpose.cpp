@@ -7,7 +7,7 @@ namespace glasssix
     namespace excalibur
     {
         template <class Dtype>
-        operation_transpose<Dtype>::operation_transpose(const operation_param &param) : operation<Dtype>(param)
+        operation_transpose<Dtype>::operation_transpose(const operation_param &param) : perms_{0, 1, 2}, operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
@@ -16,6 +16,7 @@ namespace glasssix
                 switch (std::stoi(kvs[0]))
                 {
                 case 0:
+                    perms_.clear();
                     for (std::string &v : split_string(kvs[1], ","))
                     {
                         this->perms_.push_back(std::stoi(v));
@@ -34,11 +35,6 @@ namespace glasssix
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
-            // std::vector<int> input_shape = bottoms[0]->data_shape();
-            // input_shape.erase(input_shape.begin());
-            // std::erase_if(input_shape, [](int i) { return i == 1; });
-            // int input_dims_size = input_shape.size();
-
             int num = bottoms[0]->num();
             int width = bottoms[0]->width();
             int height = bottoms[0]->height();
@@ -46,32 +42,6 @@ namespace glasssix
 
             if (bottoms[0]->order() == memory::NCHW)
             {
-                // if (input_dims_size == 2)
-                // {
-                //     // 2D
-                //     if (perms_[0] == 0 && perms_[1] == 1)
-                //     {
-                //         tops[0].reset(new memory::tensor<float>(std::vector<int>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator())));
-                //         tops[0] = bottoms[0];
-                //         return;
-                //     }
-                //     else if(perms_[0] == 1 && perms_[1] == 0)
-                //     {
-                //         tops[0].reset(new memory::tensor<float>(std::vector<int>{num, channels, width, height}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-                //         float *ptr = bottoms[0]->cpu_data();
-                //         float *outptr = tops[0]->mutable_cpu_data();
-                //         for (int i = 0; i < width; ++i)
-                //         {
-                //             for (int j = 0; j < height; ++j)
-                //             {
-                //                 outptr[i * height + j] = ptr[j * width + i];
-                //             }
-                //         }
-                //         return;
-                //     }
-                // }
-                // else
-                // {
                 if (perms_[0] == 0 && perms_[1] == 1 && perms_[2] == 2)
                 {
                     // w h c
@@ -84,8 +54,8 @@ namespace glasssix
                     // h w c
                     for (int ch = 0; ch < channels; ++ch)
                     {
-                        const float *ptr = bottoms[0]->cpu_data() + width * height * ch;
-                        float *outptr = tops[0]->mutable_cpu_data() + width * height * ch;
+                        const float *ptr = bottoms[0]->cpu_data() + bottoms[0]->offset(0, ch);
+                        float *outptr = tops[0]->mutable_cpu_data() + tops[0]->offset(0, ch);
 
                         for (int i = 0; i < width; ++i)
                         {
