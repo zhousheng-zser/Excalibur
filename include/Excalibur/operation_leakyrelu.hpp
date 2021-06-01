@@ -18,7 +18,7 @@ namespace glasssix
             void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
         
         private:
-            float alpha_ = 0.01;
+            float alpha_;
         };
     }
 }
