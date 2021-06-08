@@ -8,8 +8,8 @@ namespace glasssix
 {
     namespace excalibur
     {
-        template<class Dtype>
-        operation_leakyrelu<Dtype>::operation_leakyrelu(const operation_param &param):operation<Dtype>(param)
+        template <class Dtype>
+        operation_leakyrelu<Dtype>::operation_leakyrelu(const operation_param &param) : operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
@@ -27,7 +27,7 @@ namespace glasssix
             }
         }
 
-        template<class Dtype>
+        template <class Dtype>
         void operation_leakyrelu<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
             CHECK_EQ(bottoms.size(), 1);
@@ -41,6 +41,10 @@ namespace glasssix
                 top_data[i] = bottom_data[i] < 0 ? this->alpha_ * bottom_data[i] : bottom_data[i];
             }
         }
+
+#ifndef USE_CUDA
+        STUB_GPU(operation_leakyrelu);
+#endif
 
         INSTANCE_CLASS(operation_leakyrelu);
         REGISTE(operation_leakyrelu);

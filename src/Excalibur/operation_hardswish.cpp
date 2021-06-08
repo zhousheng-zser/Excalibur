@@ -44,9 +44,12 @@ namespace glasssix
             for (int i = 0; i < size; ++i)
             {
                 top_data[i] = bottom_data[i] * (std::min(std::max(0.f, bottom_data[i] + offset_), threshold_)) / scale_;
-                // top_data[i] = bottom_data[i] * (((bottom_data[i] + offset_) <= 0) ? 0 : (((bottom_data[i] + offset_) >= 6) ? 6 : (bottom_data[i] + offset_))) / scale_;
             }
         }
+
+#ifndef USE_CUDA
+        STUB_GPU(operation_hardswish);
+#endif
 
         INSTANCE_CLASS(operation_hardswish);
         REGISTE(operation_hardswish);

@@ -32,9 +32,7 @@ namespace glasssix
 
             for (int p = 0; p < outc; p++)
             {
-                // const float *ptr = bottoms[0]->channel(p % channels).row((p / channels) % 2) + ((p / channels) / 2);
                 const float *ptr = bottoms[0]->cpu_data() + bottoms[0]->offset(0, p % channels, (p / channels) % 2, (p / channels) / 2);
-                // float *outptr = (float *)tops[0]->channel(p);
                 float *outptr = tops[0]->mutable_cpu_data() + tops[0]->offset(0, p);
 
                 for (int i = 0; i < outh; i++)
@@ -42,17 +40,33 @@ namespace glasssix
                     for (int j = 0; j < outw; j++)
                     {
                         *outptr = *ptr;
-                        // float tmp = *ptr;
-                        // *outptr = 10;
 
                         outptr += 1;
                         ptr += 2;
                     }
-
                     ptr += w;
                 }
             }
         }
+
+        // #ifndef USE_CUDA
+        //         STUB_GPU(operation_yolov5focus);
+        // #endif
+
+        template <typename Dtype>
+        void operation_yolov5focus<Dtype>::forward_gpu_f32(
+#ifdef USE_CUDA
+            cublasHandle_t &cublas_handle_,
+#ifdef USE_CUDNN
+            cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+            const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
+            std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+        {
+            forward_cpu_f32(bottoms, tops);
+        }
+
         INSTANCE_CLASS(operation_yolov5focus);
         REGISTE(operation_yolov5focus);
     }

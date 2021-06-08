@@ -95,11 +95,11 @@ namespace glasssix
                     this->stride_h_ = 1;
                     this->stride_w_ = 1;
                 }
-                int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+                int pooled_height_ = static_cast<int>(floor(static_cast<float>(
                                                                height_ + pad_top_ + pad_bottom_ - kernel_size_h_) /
                                                            stride_h_)) +
                                      1;
-                int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+                int pooled_width_ = static_cast<int>(floor(static_cast<float>(
                                                               width_ + pad_left_ + pad_right_ - kernel_size_w_) /
                                                           stride_w_)) +
                                     1;

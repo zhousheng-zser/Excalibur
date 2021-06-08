@@ -5,6 +5,7 @@
 #include "../../include/Excalibur/operation_make_border.hpp"
 #include "../../include/Excalibur/operation_cut_border.hpp"
 #include "../../include/Primitives/simd_types.hpp"
+#include "../../include/Primitives/profiler.hpp"
 #include <random>
 
 namespace glasssix
@@ -34,7 +35,6 @@ namespace glasssix
                     fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
                     mem += this->output_channel_ * sizeof(float);
                 }
-
                 if (this->params_.device_ < 0)
                 {
                     if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1) && this->output_channel_ < 128)
@@ -171,6 +171,8 @@ namespace glasssix
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
+
+            std::string name = this->params_.name_;
 
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
