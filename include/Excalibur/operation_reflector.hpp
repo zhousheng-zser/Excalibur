@@ -98,7 +98,7 @@ void Operation_Name<Dtype>::forward_gpu_f32(\
 			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)\
 		{ NO_GPU; }
-			
+
 #define INSTANTIATE_OPERATION_CUDA_FWDF32(Operation_Name)\
 template void Operation_Name<float>::forward_gpu_f32(cublasHandle_t &cublas_handle_,\
  const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
