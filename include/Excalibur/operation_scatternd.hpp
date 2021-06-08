@@ -2,7 +2,7 @@
 #define _OPERATION_SCATTERND_H_
 
 #include "operation.hpp"
-
+ 
 namespace glasssix
 {
 	namespace excalibur

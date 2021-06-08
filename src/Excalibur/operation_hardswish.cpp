@@ -7,7 +7,7 @@ namespace glasssix
     namespace excalibur
     {
         template <class Dtype>
-        operation_hardswish<Dtype>::operation_hardswish(const operation_param &param) : operation<Dtype>(param)
+        operation_hardswish<Dtype>::operation_hardswish(const operation_param &param) : offset_(3.f), scale_(6.f), threshold_(6.f), operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
@@ -46,6 +46,10 @@ namespace glasssix
                 top_data[i] = bottom_data[i] * (std::min(std::max(0.f, bottom_data[i] + offset_), threshold_)) / scale_;
             }
         }
+
+#ifndef USE_CUDA
+        STUB_GPU(operation_hardswish);
+#endif
 
         INSTANCE_CLASS(operation_hardswish);
         REGISTE(operation_hardswish);

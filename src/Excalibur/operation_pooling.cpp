@@ -188,91 +188,100 @@ namespace glasssix
 					float* top_data = tops[i]->mutable_cpu_data();
 					const int top_count = tops[i]->count(0, 4);
 
-					switch (type_)
-					{
-					case MAX:
-						for (int n = 0; n < num_; ++n) {
-							int top_index0 = n * pooled_width_ * pooled_height_ * channels_;
-							int bottom_index0 = n * width_ * height_ * channels_;
-							for (int ph = 0; ph < pooled_height_; ++ph) {
-								int top_index1 = top_index0 + ph * pooled_width_ * channels_;
-								for (int pw = 0; pw < pooled_width_; ++pw) {
-									int top_index2 = top_index1 + pw * channels_;
-									int hstart = ph * stride_h_ - pad_top_;
-									int wstart = pw * stride_w_ - pad_left_;
-									int hend = std::min(hstart + kernel_size_h_, height_);
-									int wend = std::min(wstart + kernel_size_w_, width_);
-									hstart = std::max(hstart, 0);
-									wstart = std::max(wstart, 0);
+                    switch (type_)
+                    {
+                    case MAX:
+                        for (int n = 0; n < num_; ++n)
+                        {
+                            int top_index0 = n * pooled_width_ * pooled_height_ * channels_;
+                            int bottom_index0 = n * width_ * height_ * channels_;
+                            for (int ph = 0; ph < pooled_height_; ++ph)
+                            {
+                                int top_index1 = top_index0 + ph * pooled_width_ * channels_;
+                                for (int pw = 0; pw < pooled_width_; ++pw)
+                                {
+                                    int top_index2 = top_index1 + pw * channels_;
+                                    int hstart = ph * stride_h_ - pad_top_;
+                                    int wstart = pw * stride_w_ - pad_left_;
+                                    int hend = std::min(hstart + kernel_size_h_, height_);
+                                    int wend = std::min(wstart + kernel_size_w_, width_);
+                                    hstart = std::max(hstart, 0);
+                                    wstart = std::max(wstart, 0);
 
-									for (int c = 0; c < channels_; ++c)
-									{
-										float top_val = -FLT_MAX;
-										for (int h = hstart; h < hend; ++h) {
-											int bottom_index1 = bottom_index0 + h * width_ * channels_;
-											for (int w = wstart; w < wend; ++w)
-											{
-												int bottom_index2 = bottom_index1 + w * channels_;
-												top_val = std::max(top_val, bottom_data[bottom_index2 + c]);
-											}
-										}
-										top_data[top_index2 + c] = top_val;
-									}
-								}
-							}
-						}
-						break;
-					case AVE:
-						memset(top_data, 0, top_count * sizeof(float));
-						// The main loop
-						for (int n = 0; n < num_; ++n) {
-							int top_index0 = n * pooled_width_ * pooled_height_ * channels_;
-							int bottom_index0 = n * width_ * height_ * channels_;
-							for (int ph = 0; ph < pooled_height_; ++ph) {
-								int top_index1 = top_index0 + ph * pooled_width_ * channels_;
-								for (int pw = 0; pw < pooled_width_; ++pw) {
-									int top_index2 = top_index1 + pw * channels_;
-									int hstart = ph * stride_h_ - pad_top_;
-									int wstart = pw * stride_w_ - pad_left_;
-									int hend = std::min(hstart + kernel_size_h_, height_ + pad_bottom_);
-									int wend = std::min(wstart + kernel_size_w_, width_ + pad_right_);
-									int pool_size = (hend - hstart) * (wend - wstart);
-									hstart = std::max(hstart, 0);
-									wstart = std::max(wstart, 0);
-									hend = std::min(hend, height_);
-									wend = std::min(wend, width_);
+                                    for (int c = 0; c < channels_; ++c)
+                                    {
+                                        float top_val = -FLT_MAX;
+                                        for (int h = hstart; h < hend; ++h)
+                                        {
+                                            int bottom_index1 = bottom_index0 + h * width_ * channels_;
+                                            for (int w = wstart; w < wend; ++w)
+                                            {
+                                                int bottom_index2 = bottom_index1 + w * channels_;
+                                                top_val = std::max(top_val, bottom_data[bottom_index2 + c]);
+                                            }
+                                        }
+                                        top_data[top_index2 + c] = top_val;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case AVE:
+                        memset(top_data, 0, top_count * sizeof(float));
+                        // The main loop
+                        for (int n = 0; n < num_; ++n)
+                        {
+                            int top_index0 = n * pooled_width_ * pooled_height_ * channels_;
+                            int bottom_index0 = n * width_ * height_ * channels_;
+                            for (int ph = 0; ph < pooled_height_; ++ph)
+                            {
+                                int top_index1 = top_index0 + ph * pooled_width_ * channels_;
+                                for (int pw = 0; pw < pooled_width_; ++pw)
+                                {
+                                    int top_index2 = top_index1 + pw * channels_;
+                                    int hstart = ph * stride_h_ - pad_top_;
+                                    int wstart = pw * stride_w_ - pad_left_;
+                                    int hend = std::min(hstart + kernel_size_h_, height_ + pad_bottom_);
+                                    int wend = std::min(wstart + kernel_size_w_, width_ + pad_right_);
+                                    int pool_size = (hend - hstart) * (wend - wstart);
+                                    hstart = std::max(hstart, 0);
+                                    wstart = std::max(wstart, 0);
+                                    hend = std::min(hend, height_);
+                                    wend = std::min(wend, width_);
 
-									for (int c = 0; c < channels_; ++c) {
-										for (int h = hstart; h < hend; ++h) {
-											int bottom_index1 = bottom_index0 + h * width_ * channels_;
-											for (int w = wstart; w < wend; ++w) {
-												int bottom_index2 = bottom_index1 + w * channels_;
-												top_data[top_index2 + c] += bottom_data[bottom_index2 + c];
-											}
-										}
-										top_data[top_index2 + c] /= pool_size;
-									}
-								}
-							}
-						}
-						break;
-					default:
-						LOG(FATAL) << "Unknown pooling method.";
-					}
-				}
-				else
-				{
-					LOG(FATAL) << "Un-supported Order Type.";
-				}
-			}
-			
-		}
+                                    for (int c = 0; c < channels_; ++c)
+                                    {
+                                        for (int h = hstart; h < hend; ++h)
+                                        {
+                                            int bottom_index1 = bottom_index0 + h * width_ * channels_;
+                                            for (int w = wstart; w < wend; ++w)
+                                            {
+                                                int bottom_index2 = bottom_index1 + w * channels_;
+                                                top_data[top_index2 + c] += bottom_data[bottom_index2 + c];
+                                            }
+                                        }
+                                        top_data[top_index2 + c] /= pool_size;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        LOG(FATAL) << "Unknown pooling method.";
+                    }
+                }
+                else
+                {
+                    LOG(FATAL) << "Un-supported Order Type.";
+                }
+            }
+        }
 
 #ifndef USE_CUDA
-		STUB_GPU(operation_pooling);
+        STUB_GPU(operation_pooling);
 #endif
 
-		INSTANCE_CLASS(operation_pooling);
-		REGISTE(operation_pooling);
-	}
+        INSTANCE_CLASS(operation_pooling);
+        REGISTE(operation_pooling);
+    }
 }
