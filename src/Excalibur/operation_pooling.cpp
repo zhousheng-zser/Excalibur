@@ -7,7 +7,7 @@ namespace glasssix
 	namespace excalibur
 	{
 		template<typename Dtype>
-		operation_pooling<Dtype>::operation_pooling(const operation_param& param) : operation<Dtype>(param)
+		operation_pooling<Dtype>::operation_pooling(const operation_param& param) : global_pooling_(false), operation<Dtype>(param)
 		{
 			auto attrs = split_string(param.specific_params_, " ");
 			for (size_t i = 0; i < attrs.size(); i++)
@@ -40,6 +40,10 @@ namespace glasssix
 				else if (split_string(attrs[i], "=")[0] == "5")
 				{
 					pad_mode_ = atoi(split_string(attrs[i], "=")[1].c_str());
+				}
+				else if (split_string(attrs[i], "=")[0] == "6")
+				{
+					avgpool_count_include_pad_ = atoi(split_string(attrs[i], "=")[1].c_str());
 				}
 				else if (split_string(attrs[i], "=")[0] == "11")
 				{
@@ -94,9 +98,9 @@ namespace glasssix
 					this->stride_h_ = 1;
 					this->stride_w_ = 1;
 				}
-				int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+				int pooled_height_ = static_cast<int>(floor(static_cast<float>(
 					height_ + pad_top_ + pad_bottom_ -kernel_size_h_) / stride_h_)) + 1;
-				int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+				int pooled_width_ = static_cast<int>(floor(static_cast<float>(
 					width_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_)) + 1;
 				if (bottoms[i]->order() == memory::NCHW)
 				{
@@ -154,11 +158,15 @@ namespace glasssix
 										wstart = std::max(wstart, 0);
 										hend = std::min(hend, height_);
 										wend = std::min(wend, width_);
+										int area = 0;
 										for (int h = hstart; h < hend; ++h) {
 											for (int w = wstart; w < wend; ++w) {
 												top_data[ph * pooled_width_ + pw] += bottom_data[h * width_ + w];
+												area++;
 											}
 										}
+										if (avgpool_count_include_pad_ == 0)
+											pool_size = area;
 										top_data[ph * pooled_width_ + pw] /= pool_size;
 									}
 								}

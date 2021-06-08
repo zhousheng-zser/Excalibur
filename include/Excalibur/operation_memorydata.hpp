@@ -1,6 +1,6 @@
 #pragma once
-#ifndef _OPERATION_POOLING_HPP_
-#define _OPERATION_POOLING_HPP_
+#ifndef _OPERATION_MEMORYDATA_HPP_
+#define _OPERATION_MEMORYDATA_HPP_
 #include "operation.hpp"
 
 namespace glasssix
@@ -8,15 +8,18 @@ namespace glasssix
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class operation_pooling : public operation<Dtype>
+		class operation_memorydata : public operation<Dtype>
 		{
 		public:
-			explicit operation_pooling(const operation_param& param);
+			explicit operation_memorydata(const operation_param& param);
 
 			virtual const char* type() const { return this->params_.type_.c_str(); }
 
-			virtual ~operation_pooling() {}
+			virtual ~operation_memorydata() {}
 
+			virtual int init_weights();
+
+			virtual int init_weights(FILE* fp);
 
 		protected:
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
@@ -24,7 +27,7 @@ namespace glasssix
 
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
-				cublasHandle_t &cublas_handle_,
+				cublasHandle_t& cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
@@ -33,21 +36,11 @@ namespace glasssix
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 		private:
-			int kernel_size_w_ = 0;
-			int kernel_size_h_ = 0;
-			int stride_w_ = 1;
-			int stride_h_ = 1;
-			int pad_left_ = 0;
-			int pad_right_ = 0;
-			int pad_top_ = 0;
-			int pad_bottom_ = 0;
-			enum pooling_type { MAX, AVE };
-			pooling_type type_;
-			bool global_pooling_;
-			int pad_mode_;
-			int avgpool_count_include_pad_ = 0;
+			int c_ = 0;
+			int h_ = 1;
+			int w_ = 0;
 		};
 	}
 }
-#endif // !_OPERATION_POOLING_HPP_
+#endif // !_OPERATION_MEMORYDATA_HPP_
 

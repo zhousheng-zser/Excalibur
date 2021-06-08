@@ -180,9 +180,9 @@ namespace glasssix
 
 				featmaps_.resize(featmap_count_);
 
-				CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
-				for (size_t i = 0; i < input_featmap_names_.size(); i++)
-				{
+				//CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
+				//for (size_t i = 0; i < input_featmap_names_.size(); i++)
+				//{
 					/*auto id = find_child_op_index(input_featmap_names_[i]);
 					auto op_node_vec = bfs_ops_.traverse_undirected(op_nodes_[id]);*/
 					// TODO: Add DAG expand support!!!!
@@ -196,7 +196,7 @@ namespace glasssix
 						ops_execution_order_.push_back(res->second);
 						ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
 					}
-				}
+				//}
 			}
 
 			~impl()
