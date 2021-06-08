@@ -54,13 +54,12 @@ int main()
     int warmup_loop_count = 0;
     int loop_count = 1;
 
-    for (size_t i = 0; i < pipe_infos.size(); i++)
-    {
-        // pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
-        pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
-        // pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
-    }
-    std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
+	for (size_t i = 0; i < pipe_infos.size(); i++)
+	{
+		// pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
+		pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
+	}
+	std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
 
     //std::ifstream in("1.bin", std::ios::binary);
     //std::shared_ptr<memory::tensor<uint8_t>> input_tensor_u8(new memory::tensor<uint8_t>(std::vector<int>{1, 3, 128, 128}, -1, memory::NCHW));
