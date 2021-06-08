@@ -22,7 +22,6 @@ namespace glasssix
 			}
 		}
 
-
 		template<typename Dtype>
 		void operation_split<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA

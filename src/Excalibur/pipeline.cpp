@@ -271,6 +271,7 @@ namespace glasssix
                 {
                     p->scope_end();
                     p->turn_off();
+                    p->DumpProfile("output.json");
                 }
                 return results;
             }

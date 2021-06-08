@@ -19,8 +19,6 @@ namespace glasssix
             int bottom_h2 = bottom2->height();
             int bottom_c2 = bottom2->channels();
 
-            // brocast
-
             top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
             for (int q = 0; q < bottom_c1; ++q)
             {
@@ -210,6 +208,10 @@ namespace glasssix
                 NOT_IMPLEMENTED;
             }
         }
+
+#ifndef USE_CUDA
+        STUB_GPU(operation_binaryop);
+#endif
 
         INSTANCE_CLASS(operation_binaryop);
         REGISTE(operation_binaryop);

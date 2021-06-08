@@ -38,8 +38,6 @@ namespace glasssix
 			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
-			//CHECK_EQ(bottoms.size(), tops.size());
-
 			memory::tensor<float> means_var(means_.size() + 1, this->params_.device_, memory::NCHW, bottoms[0]->allocator());
 			std::copy(means_.data(), means_.data() + means_.size(), means_var.mutable_cpu_data());
 			*(means_var.mutable_cpu_data() + means_.size()) = var_;

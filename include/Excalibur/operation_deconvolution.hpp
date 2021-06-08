@@ -19,6 +19,8 @@ namespace glasssix
 			virtual int init_weights(FILE* fp);
 
 		protected:
+            void cut_padding(std::shared_ptr<memory::tensor<float>> &top_blob_bordered, std::shared_ptr<memory::tensor<float>> &top_blob);
+        
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
