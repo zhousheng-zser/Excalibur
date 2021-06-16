@@ -13,22 +13,43 @@ namespace glasssix
             int bottom_w1 = bottom1->width();
             int bottom_h1 = bottom1->height();
             int bottom_c1 = bottom1->channels();
+            int b1_dims = (bottom_w1 == 1 ? 0 : 1) + (bottom_h1 == 1 ? 0 : 1) + (bottom_c1 == 1 ? 0 : 1);
+            const float *b1 = bottom1->cpu_data();
             int size = bottom_w1 * bottom_h1;
 
             int bottom_w2 = bottom2->width();
             int bottom_h2 = bottom2->height();
             int bottom_c2 = bottom2->channels();
+            int b2_dims = (bottom_w2 == 1 ? 0 : 1) + (bottom_h2 == 1 ? 0 : 1) + (bottom_c2 == 1 ? 0 : 1);
+            const float *b2 = bottom2->cpu_data();
 
-            top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-            for (int q = 0; q < bottom_c1; ++q)
+            if (b1_dims == 3)
             {
-                const float *b1 = bottom1->cpu_data() + bottom1->offset(0, q);
-                const float *b2 = bottom2->cpu_data() + bottom2->offset(0, q);
-                float *outptr = top->mutable_cpu_data() + top->offset(0, q);
-
-                for (int i = 0; i < size; ++i)
+                if (b2_dims == 3)
                 {
-                    outptr[i] = op(b1[i], b2[i]);
+                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                    int count = bottom1->count();
+                    float *outptr = top->mutable_cpu_data();
+                    for (int i = 0; i < count; ++i)
+                    {
+                        outptr[i] = op(b1[i], b2[i]);
+                    }
+                }
+            }
+            else if (b1_dims == 2)
+            {
+                if (b2_dims == 1)
+                {
+                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                    float *outptr = top->mutable_cpu_data();
+                    for (int h = 0; h < bottom_h1; ++h)
+                    {
+                        for (int w = 0; w < bottom_w1; ++w)
+                        {
+                            outptr[h * bottom_w1 + w] = op(b1[w], b2[w]);
+                        }
+                        b1 += bottom_w1;
+                    }
                 }
             }
         }

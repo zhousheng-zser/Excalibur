@@ -256,33 +256,7 @@ namespace glasssix
                     }
                 }
             }
-
             cut_padding(top_blob_bordered, tops[0]);
-            /******************************************************/
-
-            //////////////////////////////////////////////////
-            std::cout << this->params_.name_ << " value: ";
-            for (int i = 0; i < 10; ++i)
-            {
-                std::cout << tops[0]->cpu_data()[i] << " : ";
-            }
-            std::cout << std::endl;
-
-            std::cout << "bottom";
-            for (int i = 0; i < 10; ++i)
-            {
-                std::cout << " : " << bottom_data[i];
-            }
-            std::cout << std::endl;
-
-            std::cout << "weight";
-            for (int i = 0; i < 10; ++i)
-            {
-                std::cout << " : " << this->weights_f32_[0]->cpu_data()[i];
-            }
-            std::cout << std::endl;
-            std::cout << std::endl;
-            //////////////////////////////////////////////////
         }
 
         template <typename Dtype>
