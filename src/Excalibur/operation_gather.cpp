@@ -132,10 +132,6 @@ namespace glasssix
             }
         }
 
-#ifndef USE_CUDA
-        STUB_GPU(operation_gather);
-#endif
-
         INSTANCE_CLASS(operation_gather);
         REGISTE(operation_gather);
     }
