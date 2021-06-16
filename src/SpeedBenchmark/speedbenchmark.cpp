@@ -32,8 +32,9 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
+            {"rec_crnn_resnet34", {1, 3, 32, 100}, -1}
             // {"pfld11_landmark65_simp", {1, 3, 112, 112}, -1}
-            {"pfld_land71_simp", {1, 3, 80, 80}, -1}
+            // {"pfld_land71_simp", {1, 3, 80, 80}, -1}
             // {"pfld_attri_simp", {1, 3, 80, 80}, -1}
             // {"hat_simp-opt", {1, 3, 640, 640}, 0}
             // {"longinus", {1, 3, 240, 320}, 0}
@@ -54,12 +55,12 @@ int main()
     int warmup_loop_count = 0;
     int loop_count = 1;
 
-	for (size_t i = 0; i < pipe_infos.size(); i++)
-	{
-		// pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
-		pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
-	}
-	std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
+    for (size_t i = 0; i < pipe_infos.size(); i++)
+    {
+        // pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
+        pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
+    }
+    std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
 
     //std::ifstream in("1.bin", std::ios::binary);
     //std::shared_ptr<memory::tensor<uint8_t>> input_tensor_u8(new memory::tensor<uint8_t>(std::vector<int>{1, 3, 128, 128}, -1, memory::NCHW));
@@ -95,11 +96,10 @@ int main()
         }
         time_avg /= loop_count;
         std::cout << std::get<0>(pipe_infos[i]) << "\t" << time_min << "\t" << time_max << "\t" << time_avg << std::endl;
-        
+
         delete pipes[i];
         pipes[i] = nullptr;
     }
-    
 
     return 0;
 }
