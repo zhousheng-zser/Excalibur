@@ -12063,20 +12063,20 @@ namespace glasssix
 			if (outch >= 4)
 			{
 				if (inch >= 8)
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch / 4 + outch % 4, inch / 8 + (inch % 8) / 4 + inch % 4, 32 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch / 4 + outch % 4, inch / 8 + (inch % 8) / 4 + inch % 4, 32 * maxk}, this->params_.device_, memory::NCHW));
 				else if (inch >= 4)
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch / 4 + outch % 4, inch / 4 + inch % 4, 16 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch / 4 + outch % 4, inch / 4 + inch % 4, 16 * maxk}, this->params_.device_, memory::NCHW));
 				else
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch / 4 + outch % 4, inch, 4 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch / 4 + outch % 4, inch, 4 * maxk}, this->params_.device_, memory::NCHW));
 			}
 			else
 			{
 				if (inch >= 8)
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch, inch / 8 + (inch % 8) / 4 + inch % 4, 8 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch, inch / 8 + (inch % 8) / 4 + inch % 4, 8 * maxk}, this->params_.device_, memory::NCHW));
 				else if (inch >= 4)
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch, inch / 4 + inch % 4, 4 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch, inch / 4 + inch % 4, 4 * maxk}, this->params_.device_, memory::NCHW));
 				else
-					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(1, outch, inch, 1 * maxk, this->params_.device_, memory::NCHW));
+					kernel_tm_gemm_int8_.reset(new memory::tensor<int8_t>(std::vector<int>{1, outch, inch, 1 * maxk}, this->params_.device_, memory::NCHW));
 			}
 
 			int q = 0;

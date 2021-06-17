@@ -2,7 +2,10 @@
 #include "../../include/Excalibur/operation_reflector.hpp"
 #include "../../include/Excalibur/math_functions.hpp"
 #include <random>
+
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
 #include "../../include/Excalibur/avx_mathfun.h"
+#endif
 
 namespace glasssix
 {
