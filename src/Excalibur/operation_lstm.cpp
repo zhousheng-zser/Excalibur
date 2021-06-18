@@ -252,8 +252,7 @@ namespace glasssix
                     // calculate hidden
                     // gate_input_t := W_hc * h_conted_{t-1} + W_xc * x_t + b_c
                     int ti = reverse ? T - 1 - t : t;
-
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) && false
                     int remain_output = (num_output_ >> 1) << 1;
                     for (int q = 0; q + 1 < num_output_; q += 2)
                     {

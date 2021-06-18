@@ -131,132 +131,47 @@ namespace glasssix
         void operation_deconvolution<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
                                                              std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
-            // CHECK_EQ(bottoms.size(), 1);
-            // CHECK_EQ(tops.size(), 1);
-
-            // this->num_ = bottoms[0]->data_shape()[0];
-            // this->bottom_dim_ = bottoms[0]->count(1, 4);
-            const float *bottom_data = bottoms[0]->cpu_data();
-            // const float *weights = this->weights_f32_[0]->cpu_data();
-            // const float *bias = nullptr;
-            // if (bottoms[0]->order() != memory::NCHW)
-            // {
-            //     bottoms[0]->convert_order();
-            // }
-            // this->input_channel_ = bottoms[0]->channels();
-            // this->input_dim_h_ = bottoms[0]->height();
-            // this->input_dim_w_ = bottoms[0]->width();
-            // this->input_spatial_dim_ = this->input_dim_h_ * this->input_dim_w_;
-            // this->output_dim_h_ = (this->input_dim_h_ - 1) * this->stride_h_ + this->kernel_size_h_ - (this->pad_top_ + this->pad_bottom_);
-            // this->output_dim_w_ = (this->input_dim_w_ - 1) * this->stride_w_ + this->kernel_size_w_ - (this->pad_left_ + this->pad_right_);
-            // this->output_spatial_dim_ = this->output_dim_w_ * this->output_dim_h_;
-            // tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
-            //                                         bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            // float *top_data = tops[0]->mutable_cpu_data();
-            // this->top_dim_ = tops[0]->count(1, 4);
-            // col_buffer_.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_ * this->kernel_size_h_ * this->kernel_size_w_, this->input_dim_h_, this->input_dim_w_},
-            //                                             this->params_.device_, memory::NCHW, nullptr));
-            // this->col_offset_ = this->input_spatial_dim_ * this->kernel_size_h_ * this->kernel_size_w_;
-            // this->output_offset_ = this->output_channel_ * this->output_spatial_dim_ / this->group_;
-            // if (this->bias_term_)
-            // {
-            //     this->bias_multiplier_.reset(new memory::tensor<float>(this->output_spatial_dim_, this->params_.device_, bottoms[0]->order(), nullptr));
-            //     math_functions::cpu_set(this->output_dim_w_ * this->output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
-            //     bias = this->weights_f32_[1]->cpu_data();
-            // }
-            // for (int n = 0; n < this->num_; n++)
-            // {
-            //     forward_sgemm(bottom_data + n * this->bottom_dim_, weights, top_data + n * this->top_dim_, bottoms[0]->order());
-            //     if (this->bias_term_)
-            //     {
-            //         forward_sbias(top_data + n * this->top_dim_, bias, bottoms[0]->order());
-            //     }
-            // }
-
-            /******************************************************/
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
-            int num = bottoms[0]->num();
-            int num_output = this->output_channel_;
-            int w = bottoms[0]->width();
-            int h = bottoms[0]->height();
-            int channels = bottoms[0]->channels();
-
-            const int kernel_extent_w = this->dilation_w_ * (this->kernel_size_w_ - 1) + 1;
-            const int kernel_extent_h = this->dilation_h_ * (this->kernel_size_h_ - 1) + 1;
-
-            int outw = (w - 1) * this->stride_w_ + kernel_extent_w;
-            int outh = (h - 1) * this->stride_h_ + kernel_extent_h;
-
-            // Mat top_blob_bordered;
-            std::shared_ptr<memory::tensor<float>> top_blob_bordered;
-            // top_blob_bordered.create(outw, outh, num_output, elemsize, opt.workspace_allocator);
-            top_blob_bordered.reset(new memory::tensor<float>(std::vector<int>{num, num_output, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            const int maxk = this->kernel_size_w_ * this->kernel_size_h_;
-
-            // kernel offsets
-            std::vector<int> _space_ofs(maxk);
-            int *space_ofs = &_space_ofs[0];
+            this->num_ = bottoms[0]->data_shape()[0];
+            this->bottom_dim_ = bottoms[0]->count(1, 4);
+            const float *bottom_data = bottoms[0]->cpu_data();
+            const float *weights = this->weights_f32_[0]->cpu_data();
+            const float *bias = nullptr;
+            if (bottoms[0]->order() != memory::NCHW)
             {
-                int p1 = 0;
-                int p2 = 0;
-                int gap = outw * this->dilation_h_ - this->kernel_size_w_ * this->dilation_w_;
-                for (int i = 0; i < this->kernel_size_h_; i++)
+                bottoms[0]->convert_order();
+            }
+            this->input_channel_ = bottoms[0]->channels();
+            this->input_dim_h_ = bottoms[0]->height();
+            this->input_dim_w_ = bottoms[0]->width();
+            this->input_spatial_dim_ = this->input_dim_h_ * this->input_dim_w_;
+            this->output_dim_h_ = (this->input_dim_h_ - 1) * this->stride_h_ + this->kernel_size_h_ - (this->pad_top_ + this->pad_bottom_);
+            this->output_dim_w_ = (this->input_dim_w_ - 1) * this->stride_w_ + this->kernel_size_w_ - (this->pad_left_ + this->pad_right_);
+            this->output_spatial_dim_ = this->output_dim_w_ * this->output_dim_h_;
+            tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
+                                                    bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+            float *top_data = tops[0]->mutable_cpu_data();
+            this->top_dim_ = tops[0]->count(1, 4);
+            col_buffer_.reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_ * this->kernel_size_h_ * this->kernel_size_w_, this->input_dim_h_, this->input_dim_w_},
+                                                        this->params_.device_, memory::NCHW, nullptr));
+            this->col_offset_ = this->input_spatial_dim_ * this->kernel_size_h_ * this->kernel_size_w_;
+            this->output_offset_ = this->output_channel_ * this->output_spatial_dim_ / this->group_;
+            if (this->bias_term_)
+            {
+                this->bias_multiplier_.reset(new memory::tensor<float>(this->output_spatial_dim_, this->params_.device_, bottoms[0]->order(), nullptr));
+                math_functions::cpu_set(this->output_dim_w_ * this->output_dim_h_, 1.0f, bias_multiplier_->mutable_cpu_data());
+                bias = this->weights_f32_[1]->cpu_data();
+            }
+            for (int n = 0; n < this->num_; n++)
+            {
+                forward_sgemm(bottom_data + n * this->bottom_dim_, weights, top_data + n * this->top_dim_, bottoms[0]->order());
+                if (this->bias_term_)
                 {
-                    for (int j = 0; j < this->kernel_size_w_; j++)
-                    {
-                        space_ofs[p1] = p2;
-                        p1++;
-                        p2 += this->dilation_w_;
-                    }
-                    p2 += gap;
+                    forward_sbias(top_data + n * this->top_dim_, bias, bottoms[0]->order());
                 }
             }
-            const float *weight_data = this->weights_f32_[0]->cpu_data();
-            // num_output
-            for (int p = 0; p < num_output; p++)
-            {
-                // Mat out = top_blob_bordered.channel(p);
-                float *out_data = top_blob_bordered->mutable_cpu_data() + top_blob_bordered->offset(0, p);
-
-                const float bias = this->bias_term_ ? this->weights_f32_[1]->cpu_data()[p] : 0.f;
-
-                for (int i = 0; i < outw * outh; ++i)
-                {
-                    out_data[i] = bias;
-                }
-
-                for (int i = 0; i < h; i++)
-                {
-                    for (int j = 0; j < w; j++)
-                    {
-                        // float *outptr = out.row(i * this->stride_h_) + j * this->stride_w_;
-                        float *outptr = out_data + i * this->stride_h_ * outw + j * this->stride_w_;
-
-                        const float *kptr = (const float *)weight_data + maxk * channels * p;
-
-                        // channels
-                        for (int q = 0; q < channels; q++)
-                        {
-                            // const Mat m = bottom_blob.channel(q);
-                            const float *m_data = bottoms[0]->cpu_data() + bottoms[0]->offset(0, q);
-
-                            // float val = *(m.row(i) + j);
-                            float val = m_data[i * w + j];
-
-                            for (int k = 0; k < maxk; k++)
-                            {
-                                float w = kptr[k];
-                                outptr[space_ofs[k]] += val * w;
-                            }
-
-                            kptr += maxk;
-                        }
-                    }
-                }
-            }
-            cut_padding(top_blob_bordered, tops[0]);
         }
 
         template <typename Dtype>
