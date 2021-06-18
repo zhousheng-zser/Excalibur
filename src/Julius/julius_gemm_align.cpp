@@ -9,8 +9,8 @@ namespace glasssix
 		{
 #if __ARM_NEON
 
-#define _mm_load_ps vld1q_f32
-#define _mm_store_ps vst1q_f32
+#define _mm_loadu_ps vld1q_f32
+#define _mm_storeu_ps vst1q_f32
 #define _mm_set1_ps vdupq_n_f32
 #define _mm_setzero_ps() vdupq_n_f32(0)
 #define _mm_mul_ps vmulq_f32
@@ -19,7 +19,7 @@ namespace glasssix
 				float s[4];
 				float32x4_t v;
 			};
-#define _mm_store_ps(x,y)\
+#define _mm_storeu_ps(x,y)\
 	vst1q_f32(x,y)
 #define final_sum_q0_4 (q.s[0]+q.s[1]+q.s[2]+q.s[3])
 #define final_sum_q0_2 (q.s[0]+q.s[1])
@@ -33,8 +33,8 @@ namespace glasssix
 
 #include "../../include/Julius/julius_sgemm_align128_raw.inc"
 
-#undef _mm_load_ps
-#undef _mm_store_ps
+#undef _mm_loadu_ps
+#undef _mm_storeu_ps
 #undef _mm_set1_ps
 #undef _mm_setzero_ps
 #undef _mm_mul_ps
@@ -42,12 +42,12 @@ namespace glasssix
 #undef store_to_q
 #undef final_sum_q0_4
 #undef final_sum_q0_2
-#undef _mm_store_ps
+#undef _mm_storeu_ps
 #undef _mm_fmadd_ps
 
 #if __ARM_NEON_FP16
-#define _mm256_load_ps vld1q_f16
-#define _mm256_store_ps vst1q_f16
+#define _mm256_loadu_ps vld1q_f16
+#define _mm256_storeu_ps vst1q_f16
 #define _mm256_set1_ps vdupq_n_f16
 #define _mm256_setzero_ps() vdupq_n_f16(0)
 #define _mm256_mul_ps vmulq_f16
@@ -60,7 +60,7 @@ namespace glasssix
 #define union_type_s_mm256 \
 	union union_type_s_mm128
 #define store_to_q(x,y)\
-	_mm256_store_ps(x,y)
+	_mm256_storeu_ps(x,y)
 #define final_sum_q0_4 (q.s[0]+q.s[1]+q.s[2]+q.s[3])
 #define final_sum_q0_2 (q.s[0]+q.s[1])
 #define final_sum_q (q.s[0]+q.s[1]+q.s[2]+q.s[3])
@@ -287,8 +287,8 @@ namespace glasssix
 
 #include "../../include/Julius/julius_sgemm_align256_raw.inc"
 
-#undef _mm256_load_ps
-#undef _mm256_store_ps
+#undef _mm256_loadu_ps
+#undef _mm256_storeu_ps
 #undef _mm256_set1_ps
 #undef _mm256_setzero_ps
 #undef _mm256_mul_ps
