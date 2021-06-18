@@ -25,8 +25,8 @@ namespace glasssix
 						for (int i = 0; i < partn; i += mm_align_size)
 						{
 							const mm_type v_x = mm_load_ps(x + i);
-							mm_type* v_y = (mm_type*)(y + i);
-							*v_y = mm_add_ps(mm_mul_ps(v_x, alphas), mm_mul_ps(*v_y, betas));
+							mm_type v_y = mm_load_ps(y + i);
+							mm_store_ps(y + i, mm_add_ps(mm_mul_ps(v_x, alphas), mm_mul_ps(v_y, betas)));
 						}
 						for (int i = partn; i < n; i++)
 						{
@@ -41,8 +41,8 @@ namespace glasssix
 							const mm_type v_x = _mm256_set_ps(x[(offset + 7) * incx], x[(offset + 6) * incx],
 								x[(offset + 5) * incx], x[(offset + 4) * incx], x[(offset + 3) * incx],
 								x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx]);
-							mm_type* v_y = (mm_type*)(y + i);
-							*v_y = mm_add_ps(mm_mul_ps(v_x, alphas), mm_mul_ps(*v_y, betas));
+							mm_type v_y = mm_load_ps(y + i);
+							mm_store_ps(y + i, mm_add_ps(mm_mul_ps(v_x, alphas), mm_mul_ps(v_y, betas)));
 						}
 						for (int i = partn; i < n; i++)
 						{

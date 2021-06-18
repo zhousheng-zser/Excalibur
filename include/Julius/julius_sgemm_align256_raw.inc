@@ -1,8 +1,8 @@
 //#pragma once
 
 #define op256_1x1 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	A_c_ptr1 += 8;\
 	B_c_ptr1 += 8
@@ -24,8 +24,8 @@
 	op256_1x1_8
 
 #define op256_1x1_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	A_c_ptr1 += 8;\
 	B_c_ptr1 += 8
@@ -47,9 +47,9 @@
 	op256_1x1_8
 
 #define op256_1x2 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
 	A_c_ptr1 += 8;\
@@ -73,9 +73,9 @@
 	op256_1x2_8
 
 #define op256_1x2_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
 	A_c_ptr1 += 8;\
@@ -100,11 +100,11 @@
 
 
 #define op256_1x4 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
 	sum_vec13 = _mm256_fmadd_ps(a_vec1, b_vec3, sum_vec13);\
@@ -132,11 +132,11 @@
 	op256_1x4_8
 
 #define op256_1x4_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
 	sum_vec13 = _mm256_mul_ps(a_vec1, b_vec3);\
@@ -164,15 +164,15 @@
 	op256_1x4_8
 
 #define op256_1x8 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
 	sum_vec13 = _mm256_fmadd_ps(a_vec1, b_vec3, sum_vec13);\
@@ -208,15 +208,15 @@
 	op256_1x8_8
 
 #define op256_1x8_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
 	sum_vec13 = _mm256_mul_ps(a_vec1, b_vec3);\
@@ -252,9 +252,9 @@
 	op256_1x8_8
 
 #define op256_2x1 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	A_c_ptr1 += 8;\
@@ -278,9 +278,9 @@
 	op256_2x1_8
 
 #define op256_2x1_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	A_c_ptr1 += 8;\
@@ -304,10 +304,10 @@
 	op256_2x1_8
 
 #define op256_2x2 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
@@ -334,10 +334,10 @@
 	op256_2x2_8
 
 #define op256_2x2_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
@@ -364,12 +364,12 @@
 	op256_2x2_8
 
 #define op256_2x4 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
@@ -402,12 +402,12 @@
 	op256_2x4_8
 
 #define op256_2x4_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
@@ -440,16 +440,16 @@
 	op256_2x4_8
 
 #define op256_2x8 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec12 = _mm256_fmadd_ps(a_vec1, b_vec2, sum_vec12);\
@@ -494,16 +494,16 @@
 	op256_2x8_8
 
 #define op256_2x8_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec12 = _mm256_mul_ps(a_vec1, b_vec2);\
@@ -548,11 +548,11 @@
 	op256_2x8_8
 
 #define op256_4x1 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -580,11 +580,11 @@
 	op256_4x1_8
 
 #define op256_4x1_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -612,12 +612,12 @@
 	op256_4x1_8
 
 #define op256_4x2 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -650,12 +650,12 @@
 	op256_4x2_8
 
 #define op256_4x2_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -690,14 +690,14 @@
 
 
 #define op256_4x4 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -724,22 +724,22 @@
 	B_c_ptr4 += 8
 
 #define op256_2_4x4 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	a_vec1_ = _mm256_load_ps(A_c_ptr1+8);\
-	a_vec2_ = _mm256_load_ps(A_c_ptr2 + 8); \
-	a_vec3_ = _mm256_load_ps(A_c_ptr3 + 8); \
-	a_vec4_ = _mm256_load_ps(A_c_ptr4 + 8); \
-	b_vec1_ = _mm256_load_ps(B_c_ptr1+8);\
-	b_vec2_ = _mm256_load_ps(B_c_ptr2+8);\
-	b_vec3_ = _mm256_load_ps(B_c_ptr3 + 8); \
-	b_vec4_ = _mm256_load_ps(B_c_ptr4 + 8); \
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	a_vec1_ = _mm256_loadu_ps(A_c_ptr1+8);\
+	a_vec2_ = _mm256_loadu_ps(A_c_ptr2 + 8); \
+	a_vec3_ = _mm256_loadu_ps(A_c_ptr3 + 8); \
+	a_vec4_ = _mm256_loadu_ps(A_c_ptr4 + 8); \
+	b_vec1_ = _mm256_loadu_ps(B_c_ptr1+8);\
+	b_vec2_ = _mm256_loadu_ps(B_c_ptr2+8);\
+	b_vec3_ = _mm256_loadu_ps(B_c_ptr3 + 8); \
+	b_vec4_ = _mm256_loadu_ps(B_c_ptr4 + 8); \
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1_, b_vec1_, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
@@ -815,14 +815,14 @@
 
 
 #define op256_4x4_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -849,22 +849,22 @@
 	B_c_ptr4 += 8
 
 #define op256_2_4x4_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec1_ = _mm256_load_ps(A_c_ptr1+8);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec2_ = _mm256_load_ps(A_c_ptr2+8);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec3_ = _mm256_load_ps(A_c_ptr3+8);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec4_ = _mm256_load_ps(A_c_ptr4+8);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec1_ = _mm256_load_ps(B_c_ptr1+8);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec2_ = _mm256_load_ps(B_c_ptr2+8);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec3_ = _mm256_load_ps(B_c_ptr3+8);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec4_ = _mm256_load_ps(B_c_ptr4+8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec1_ = _mm256_loadu_ps(A_c_ptr1+8);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec2_ = _mm256_loadu_ps(A_c_ptr2+8);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec3_ = _mm256_loadu_ps(A_c_ptr3+8);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec4_ = _mm256_loadu_ps(A_c_ptr4+8);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec1_ = _mm256_loadu_ps(B_c_ptr1+8);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec2_ = _mm256_loadu_ps(B_c_ptr2+8);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec3_ = _mm256_loadu_ps(B_c_ptr3+8);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec4_ = _mm256_loadu_ps(B_c_ptr4+8);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -940,18 +940,18 @@
 
 
 #define op256_4x8 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec31);\
@@ -1014,18 +1014,18 @@
 	op256_4x8_8
 
 #define op256_4x8_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
-	b_vec3 = _mm256_load_ps(B_c_ptr3);\
-	b_vec4 = _mm256_load_ps(B_c_ptr4);\
-	b_vec5 = _mm256_load_ps(B_c_ptr5);\
-	b_vec6 = _mm256_load_ps(B_c_ptr6);\
-	b_vec7 = _mm256_load_ps(B_c_ptr7);\
-	b_vec8 = _mm256_load_ps(B_c_ptr8);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
+	b_vec3 = _mm256_loadu_ps(B_c_ptr3);\
+	b_vec4 = _mm256_loadu_ps(B_c_ptr4);\
+	b_vec5 = _mm256_loadu_ps(B_c_ptr5);\
+	b_vec6 = _mm256_loadu_ps(B_c_ptr6);\
+	b_vec7 = _mm256_loadu_ps(B_c_ptr7);\
+	b_vec8 = _mm256_loadu_ps(B_c_ptr8);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -1086,15 +1086,15 @@
 	op256_4x8_8
 
 #define op256_8x1 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -1130,15 +1130,15 @@
 	op256_8x1_8
 
 #define op256_8x1_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -1174,16 +1174,16 @@
 	op256_8x1_8
 
 #define op256_8x2 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -1228,16 +1228,16 @@
 	op256_8x2_8
 
 #define op256_8x2_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
-	b_vec2 = _mm256_load_ps(B_c_ptr2);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
+	b_vec2 = _mm256_loadu_ps(B_c_ptr2);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -1283,23 +1283,23 @@
 	op256_8x2_8
 
 #define op256_16x1 \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	a_vec9 = _mm256_load_ps(A_c_ptr9);\
-	a_vecA = _mm256_load_ps(A_c_ptrA);\
-	a_vecB = _mm256_load_ps(A_c_ptrB);\
-	a_vecC = _mm256_load_ps(A_c_ptrC);\
-	a_vecD = _mm256_load_ps(A_c_ptrD);\
-	a_vecE = _mm256_load_ps(A_c_ptrE);\
-	a_vecF = _mm256_load_ps(A_c_ptrF);\
-	a_vecG = _mm256_load_ps(A_c_ptrG);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	a_vec9 = _mm256_loadu_ps(A_c_ptr9);\
+	a_vecA = _mm256_loadu_ps(A_c_ptrA);\
+	a_vecB = _mm256_loadu_ps(A_c_ptrB);\
+	a_vecC = _mm256_loadu_ps(A_c_ptrC);\
+	a_vecD = _mm256_loadu_ps(A_c_ptrD);\
+	a_vecE = _mm256_loadu_ps(A_c_ptrE);\
+	a_vecF = _mm256_loadu_ps(A_c_ptrF);\
+	a_vecG = _mm256_loadu_ps(A_c_ptrG);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_fmadd_ps(a_vec1, b_vec1, sum_vec11);\
 	sum_vec21 = _mm256_fmadd_ps(a_vec2, b_vec1, sum_vec21);\
 	sum_vec31 = _mm256_fmadd_ps(a_vec3, b_vec1, sum_vec31);\
@@ -1351,23 +1351,23 @@
 	op256_16x1_8
 
 #define op256_16x1_first \
-	a_vec1 = _mm256_load_ps(A_c_ptr1);\
-	a_vec2 = _mm256_load_ps(A_c_ptr2);\
-	a_vec3 = _mm256_load_ps(A_c_ptr3);\
-	a_vec4 = _mm256_load_ps(A_c_ptr4);\
-	a_vec5 = _mm256_load_ps(A_c_ptr5);\
-	a_vec6 = _mm256_load_ps(A_c_ptr6);\
-	a_vec7 = _mm256_load_ps(A_c_ptr7);\
-	a_vec8 = _mm256_load_ps(A_c_ptr8);\
-	a_vec9 = _mm256_load_ps(A_c_ptr9);\
-	a_vecA = _mm256_load_ps(A_c_ptrA);\
-	a_vecB = _mm256_load_ps(A_c_ptrB);\
-	a_vecC = _mm256_load_ps(A_c_ptrC);\
-	a_vecD = _mm256_load_ps(A_c_ptrD);\
-	a_vecE = _mm256_load_ps(A_c_ptrE);\
-	a_vecF = _mm256_load_ps(A_c_ptrF);\
-	a_vecG = _mm256_load_ps(A_c_ptrG);\
-	b_vec1 = _mm256_load_ps(B_c_ptr1);\
+	a_vec1 = _mm256_loadu_ps(A_c_ptr1);\
+	a_vec2 = _mm256_loadu_ps(A_c_ptr2);\
+	a_vec3 = _mm256_loadu_ps(A_c_ptr3);\
+	a_vec4 = _mm256_loadu_ps(A_c_ptr4);\
+	a_vec5 = _mm256_loadu_ps(A_c_ptr5);\
+	a_vec6 = _mm256_loadu_ps(A_c_ptr6);\
+	a_vec7 = _mm256_loadu_ps(A_c_ptr7);\
+	a_vec8 = _mm256_loadu_ps(A_c_ptr8);\
+	a_vec9 = _mm256_loadu_ps(A_c_ptr9);\
+	a_vecA = _mm256_loadu_ps(A_c_ptrA);\
+	a_vecB = _mm256_loadu_ps(A_c_ptrB);\
+	a_vecC = _mm256_loadu_ps(A_c_ptrC);\
+	a_vecD = _mm256_loadu_ps(A_c_ptrD);\
+	a_vecE = _mm256_loadu_ps(A_c_ptrE);\
+	a_vecF = _mm256_loadu_ps(A_c_ptrF);\
+	a_vecG = _mm256_loadu_ps(A_c_ptrG);\
+	b_vec1 = _mm256_loadu_ps(B_c_ptr1);\
 	sum_vec11 = _mm256_mul_ps(a_vec1, b_vec1);\
 	sum_vec21 = _mm256_mul_ps(a_vec2, b_vec1);\
 	sum_vec31 = _mm256_mul_ps(a_vec3, b_vec1);\
@@ -1420,370 +1420,370 @@
 
 #if CUR_IS_AVX
 #define store_1x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x8 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec15);\
+	_mm256_storeu_ps(q.s, sum_vec15);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec16);\
+	_mm256_storeu_ps(q.s, sum_vec16);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec17);\
+	_mm256_storeu_ps(q.s, sum_vec17);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec18);\
+	_mm256_storeu_ps(q.s, sum_vec18);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_2x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x8 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec15);\
+	_mm256_storeu_ps(q.s, sum_vec15);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec16);\
+	_mm256_storeu_ps(q.s, sum_vec16);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec17);\
+	_mm256_storeu_ps(q.s, sum_vec17);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec18);\
+	_mm256_storeu_ps(q.s, sum_vec18);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec25);\
+	_mm256_storeu_ps(q.s, sum_vec25);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec26);\
+	_mm256_storeu_ps(q.s, sum_vec26);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec27);\
+	_mm256_storeu_ps(q.s, sum_vec27);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec28);\
+	_mm256_storeu_ps(q.s, sum_vec28);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_4x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_4x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_4x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec33);\
+	_mm256_storeu_ps(q.s, sum_vec33);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec34);\
+	_mm256_storeu_ps(q.s, sum_vec34);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec43);\
+	_mm256_storeu_ps(q.s, sum_vec43);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec44);\
+	_mm256_storeu_ps(q.s, sum_vec44);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_8x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr8++) = final_sum_q0_4
 
 
 #define store_8x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec52);\
+	_mm256_storeu_ps(q.s, sum_vec52);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec62);\
+	_mm256_storeu_ps(q.s, sum_vec62);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec72);\
+	_mm256_storeu_ps(q.s, sum_vec72);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr8++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec82);\
+	_mm256_storeu_ps(q.s, sum_vec82);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr8++) = final_sum_q0_4
 
 #define store_16x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr8++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec91);\
+	_mm256_storeu_ps(q.s, sum_vec91);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptr9++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecA1);\
+	_mm256_storeu_ps(q.s, sum_vecA1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrA++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecB1);\
+	_mm256_storeu_ps(q.s, sum_vecB1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrB++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecC1);\
+	_mm256_storeu_ps(q.s, sum_vecC1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrC++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecD1);\
+	_mm256_storeu_ps(q.s, sum_vecD1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrD++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecE1);\
+	_mm256_storeu_ps(q.s, sum_vecE1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrE++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecF1);\
+	_mm256_storeu_ps(q.s, sum_vecF1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrF++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecG1);\
+	_mm256_storeu_ps(q.s, sum_vecG1);\
 	q.p[0] = _mm_add_ps(q.p[0],q.p[1]);\
 	*(C_c_ptrG++) = final_sum_q0_4
 
@@ -1932,257 +1932,257 @@
 
 #else
 #define store_1x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_1x8 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec15);\
+	_mm256_storeu_ps(q.s, sum_vec15);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec16);\
+	_mm256_storeu_ps(q.s, sum_vec16);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec17);\
+	_mm256_storeu_ps(q.s, sum_vec17);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec18);\
+	_mm256_storeu_ps(q.s, sum_vec18);\
 	*(C_c_ptr1++) = final_sum_q0_4
 
 #define store_2x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_2x8 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec15);\
+	_mm256_storeu_ps(q.s, sum_vec15);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec16);\
+	_mm256_storeu_ps(q.s, sum_vec16);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec17);\
+	_mm256_storeu_ps(q.s, sum_vec17);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec18);\
+	_mm256_storeu_ps(q.s, sum_vec18);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec25);\
+	_mm256_storeu_ps(q.s, sum_vec25);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec26);\
+	_mm256_storeu_ps(q.s, sum_vec26);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec27);\
+	_mm256_storeu_ps(q.s, sum_vec27);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec28);\
+	_mm256_storeu_ps(q.s, sum_vec28);\
 	*(C_c_ptr2++) = final_sum_q0_4
 
 #define store_4x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_4x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_4x4 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec13);\
+	_mm256_storeu_ps(q.s, sum_vec13);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec14);\
+	_mm256_storeu_ps(q.s, sum_vec14);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec23);\
+	_mm256_storeu_ps(q.s, sum_vec23);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec24);\
+	_mm256_storeu_ps(q.s, sum_vec24);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec33);\
+	_mm256_storeu_ps(q.s, sum_vec33);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec34);\
+	_mm256_storeu_ps(q.s, sum_vec34);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec43);\
+	_mm256_storeu_ps(q.s, sum_vec43);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec44);\
+	_mm256_storeu_ps(q.s, sum_vec44);\
 	*(C_c_ptr4++) = final_sum_q0_4
 
 #define store_8x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	*(C_c_ptr8++) = final_sum_q0_4
 
 #define store_8x2 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec12);\
+	_mm256_storeu_ps(q.s, sum_vec12);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec22);\
+	_mm256_storeu_ps(q.s, sum_vec22);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec32);\
+	_mm256_storeu_ps(q.s, sum_vec32);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec42);\
+	_mm256_storeu_ps(q.s, sum_vec42);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec52);\
+	_mm256_storeu_ps(q.s, sum_vec52);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec62);\
+	_mm256_storeu_ps(q.s, sum_vec62);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec72);\
+	_mm256_storeu_ps(q.s, sum_vec72);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	*(C_c_ptr8++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec82);\
+	_mm256_storeu_ps(q.s, sum_vec82);\
 	*(C_c_ptr8++) = final_sum_q0_4
 
 #define store_16x1 \
-	_mm256_store_ps(q.s, sum_vec11);\
+	_mm256_storeu_ps(q.s, sum_vec11);\
 	*(C_c_ptr1++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec21);\
+	_mm256_storeu_ps(q.s, sum_vec21);\
 	*(C_c_ptr2++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec31);\
+	_mm256_storeu_ps(q.s, sum_vec31);\
 	*(C_c_ptr3++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec41);\
+	_mm256_storeu_ps(q.s, sum_vec41);\
 	*(C_c_ptr4++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec51);\
+	_mm256_storeu_ps(q.s, sum_vec51);\
 	*(C_c_ptr5++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec61);\
+	_mm256_storeu_ps(q.s, sum_vec61);\
 	*(C_c_ptr6++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec71);\
+	_mm256_storeu_ps(q.s, sum_vec71);\
 	*(C_c_ptr7++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec81);\
+	_mm256_storeu_ps(q.s, sum_vec81);\
 	*(C_c_ptr8++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vec91);\
+	_mm256_storeu_ps(q.s, sum_vec91);\
 	*(C_c_ptr9++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecA1);\
+	_mm256_storeu_ps(q.s, sum_vecA1);\
 	*(C_c_ptrA++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecB1);\
+	_mm256_storeu_ps(q.s, sum_vecB1);\
 	*(C_c_ptrB++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecC1);\
+	_mm256_storeu_ps(q.s, sum_vecC1);\
 	*(C_c_ptrC++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecD1);\
+	_mm256_storeu_ps(q.s, sum_vecD1);\
 	*(C_c_ptrD++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecE1);\
+	_mm256_storeu_ps(q.s, sum_vecE1);\
 	*(C_c_ptrE++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecF1);\
+	_mm256_storeu_ps(q.s, sum_vecF1);\
 	*(C_c_ptrF++) = final_sum_q0_4;\
-	_mm256_store_ps(q.s, sum_vecG1);\
+	_mm256_storeu_ps(q.s, sum_vecG1);\
 	*(C_c_ptrG++) = final_sum_q0_4
 #endif
 
@@ -2248,7 +2248,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N1_Kgeneral(int M, int N, int K, const
 #if __ARM_NEON && __ARM_NEON_ARMV8
 			* C_c_ptr1 = vaddvq_f32(sum_vec11);
 #else
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
 #endif
 
@@ -2331,9 +2331,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N2_Kgeneral(int M, int N, int K, const
 			* (C_c_ptr1) = vaddvq_f32(sum_vec11);
 			*(C_c_ptr1 + 1) = vaddvq_f32(sum_vec12);
 #else
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
 #endif
 			for (; k < K; k++)
@@ -2384,7 +2384,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			for (; k < K; k++)
 			{
 				a1 = *(A_c_ptr1++);
@@ -2465,13 +2465,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x4;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -2523,7 +2523,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			for (; k < K; k++)
 			{
 				a1 = *(A_c_ptr1++);
@@ -2618,21 +2618,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x8;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec15);
+			_mm256_storeu_ps(q.s, sum_vec15);
 			*(C_c_ptr1 + 4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec16);
+			_mm256_storeu_ps(q.s, sum_vec16);
 			*(C_c_ptr1 + 5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec17);
+			_mm256_storeu_ps(q.s, sum_vec17);
 			*(C_c_ptr1 + 6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec18);
+			_mm256_storeu_ps(q.s, sum_vec18);
 			*(C_c_ptr1 + 7) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -2688,7 +2688,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M1_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			for (; k < K; k++)
 			{
 				a1 = *(A_c_ptr1++);
@@ -2765,9 +2765,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N1_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -2825,7 +2825,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N1_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -2908,13 +2908,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -2968,9 +2968,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3029,9 +3029,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3080,7 +3080,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3169,21 +3169,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x4;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec23);
+			_mm256_storeu_ps(q.s, sum_vec23);
 			*(C_c_ptr2 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec24);
+			_mm256_storeu_ps(q.s, sum_vec24);
 			*(C_c_ptr2 + 3) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3241,9 +3241,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3307,13 +3307,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x4;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3364,7 +3364,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3466,37 +3466,37 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x8;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec15);
+			_mm256_storeu_ps(q.s, sum_vec15);
 			*(C_c_ptr1 + 4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec16);
+			_mm256_storeu_ps(q.s, sum_vec16);
 			*(C_c_ptr1 + 5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec17);
+			_mm256_storeu_ps(q.s, sum_vec17);
 			*(C_c_ptr1 + 6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec18);
+			_mm256_storeu_ps(q.s, sum_vec18);
 			*(C_c_ptr1 + 7) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec23);
+			_mm256_storeu_ps(q.s, sum_vec23);
 			*(C_c_ptr2 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec24);
+			_mm256_storeu_ps(q.s, sum_vec24);
 			*(C_c_ptr2 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec25);
+			_mm256_storeu_ps(q.s, sum_vec25);
 			*(C_c_ptr2 + 4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec26);
+			_mm256_storeu_ps(q.s, sum_vec26);
 			*(C_c_ptr2 + 5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec27);
+			_mm256_storeu_ps(q.s, sum_vec27);
 			*(C_c_ptr2 + 6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec28);
+			_mm256_storeu_ps(q.s, sum_vec28);
 			*(C_c_ptr2 + 7) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3562,9 +3562,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_2x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3637,21 +3637,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x8;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec15);
+			_mm256_storeu_ps(q.s, sum_vec15);
 			*(C_c_ptr1 + 4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec16);
+			_mm256_storeu_ps(q.s, sum_vec16);
 			*(C_c_ptr1 + 5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec17);
+			_mm256_storeu_ps(q.s, sum_vec17);
 			*(C_c_ptr1 + 6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec18);
+			_mm256_storeu_ps(q.s, sum_vec18);
 			*(C_c_ptr1 + 7) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3706,7 +3706,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M2_N8_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3794,13 +3794,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N1_Kgeneral(int M, int N, int K, const
 				op256_4x1;
 			}
 
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
 
 			for (; k < K; k++)
@@ -3865,7 +3865,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N1_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -3956,21 +3956,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_4x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec32);
+			_mm256_storeu_ps(q.s, sum_vec32);
 			*(C_c_ptr3 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec42);
+			_mm256_storeu_ps(q.s, sum_vec42);
 			*(C_c_ptr4 + 1) = final_sum_q;
 
 			for (; k < K; k++)
@@ -4035,13 +4035,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_4x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*C_c_ptr3 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*C_c_ptr4 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4107,9 +4107,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4156,7 +4156,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4253,37 +4253,37 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_4x4;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec23);
+			_mm256_storeu_ps(q.s, sum_vec23);
 			*(C_c_ptr2 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec24);
+			_mm256_storeu_ps(q.s, sum_vec24);
 			*(C_c_ptr2 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec32);
+			_mm256_storeu_ps(q.s, sum_vec32);
 			*(C_c_ptr3 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec33);
+			_mm256_storeu_ps(q.s, sum_vec33);
 			*(C_c_ptr3 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec34);
+			_mm256_storeu_ps(q.s, sum_vec34);
 			*(C_c_ptr3 + 3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec42);
+			_mm256_storeu_ps(q.s, sum_vec42);
 			*(C_c_ptr4 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec43);
+			_mm256_storeu_ps(q.s, sum_vec43);
 			*(C_c_ptr4 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec44);
+			_mm256_storeu_ps(q.s, sum_vec44);
 			*(C_c_ptr4 + 3) = final_sum_q;
 
 			for (; k < K; k++)
@@ -4356,13 +4356,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_4x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*C_c_ptr3 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*C_c_ptr4 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4432,13 +4432,13 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x4;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec13);
+			_mm256_storeu_ps(q.s, sum_vec13);
 			*(C_c_ptr1 + 2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec14);
+			_mm256_storeu_ps(q.s, sum_vec14);
 			*(C_c_ptr1 + 3) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4489,7 +4489,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M4_N4_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4596,21 +4596,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N1_Kgeneral(int M, int N, int K, const
 				op256_8x1;
 			}
 
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec51);
+			_mm256_storeu_ps(q.s, sum_vec51);
 			*(C_c_ptr5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec61);
+			_mm256_storeu_ps(q.s, sum_vec61);
 			*(C_c_ptr6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec71);
+			_mm256_storeu_ps(q.s, sum_vec71);
 			*(C_c_ptr7) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec81);
+			_mm256_storeu_ps(q.s, sum_vec81);
 			*(C_c_ptr8) = final_sum_q;
 
 			for (; k < K; k++)
@@ -4687,7 +4687,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N1_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -4798,37 +4798,37 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_8x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec22);
+			_mm256_storeu_ps(q.s, sum_vec22);
 			*(C_c_ptr2 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec32);
+			_mm256_storeu_ps(q.s, sum_vec32);
 			*(C_c_ptr3 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec42);
+			_mm256_storeu_ps(q.s, sum_vec42);
 			*(C_c_ptr4 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec51);
+			_mm256_storeu_ps(q.s, sum_vec51);
 			*(C_c_ptr5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec52);
+			_mm256_storeu_ps(q.s, sum_vec52);
 			*(C_c_ptr5 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec61);
+			_mm256_storeu_ps(q.s, sum_vec61);
 			*(C_c_ptr6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec62);
+			_mm256_storeu_ps(q.s, sum_vec62);
 			*(C_c_ptr6 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec71);
+			_mm256_storeu_ps(q.s, sum_vec71);
 			*(C_c_ptr7) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec72);
+			_mm256_storeu_ps(q.s, sum_vec72);
 			*(C_c_ptr7 + 1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec81);
+			_mm256_storeu_ps(q.s, sum_vec81);
 			*(C_c_ptr8) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec82);
+			_mm256_storeu_ps(q.s, sum_vec82);
 			*(C_c_ptr8 + 1) = final_sum_q;
 
 			for (; k < K; k++)
@@ -4912,21 +4912,21 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_8x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*C_c_ptr2 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*C_c_ptr3 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*C_c_ptr4 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec51);
+			_mm256_storeu_ps(q.s, sum_vec51);
 			*C_c_ptr5 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec61);
+			_mm256_storeu_ps(q.s, sum_vec61);
 			*C_c_ptr6 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec71);
+			_mm256_storeu_ps(q.s, sum_vec71);
 			*C_c_ptr7 = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec81);
+			_mm256_storeu_ps(q.s, sum_vec81);
 			*C_c_ptr8 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -5004,9 +5004,9 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x2;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec12);
+			_mm256_storeu_ps(q.s, sum_vec12);
 			*(C_c_ptr1 + 1) = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -5055,7 +5055,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M8_N2_Kgeneral(int M, int N, int K, const
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*C_c_ptr1 = final_sum_q;
 			for (; k < K; k++)
 			{
@@ -5201,37 +5201,37 @@ void sgemm_align256bit_AnoTrans_Btrans_M16_N1_Kgeneral(int M, int N, int K, cons
 				op256_16x1;
 			}
 
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec21);
+			_mm256_storeu_ps(q.s, sum_vec21);
 			*(C_c_ptr2) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec31);
+			_mm256_storeu_ps(q.s, sum_vec31);
 			*(C_c_ptr3) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec41);
+			_mm256_storeu_ps(q.s, sum_vec41);
 			*(C_c_ptr4) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec51);
+			_mm256_storeu_ps(q.s, sum_vec51);
 			*(C_c_ptr5) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec61);
+			_mm256_storeu_ps(q.s, sum_vec61);
 			*(C_c_ptr6) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec71);
+			_mm256_storeu_ps(q.s, sum_vec71);
 			*(C_c_ptr7) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec81);
+			_mm256_storeu_ps(q.s, sum_vec81);
 			*(C_c_ptr8) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vec91);
+			_mm256_storeu_ps(q.s, sum_vec91);
 			*(C_c_ptr9) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecA1);
+			_mm256_storeu_ps(q.s, sum_vecA1);
 			*(C_c_ptrA) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecB1);
+			_mm256_storeu_ps(q.s, sum_vecB1);
 			*(C_c_ptrB) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecC1);
+			_mm256_storeu_ps(q.s, sum_vecC1);
 			*(C_c_ptrC) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecD1);
+			_mm256_storeu_ps(q.s, sum_vecD1);
 			*(C_c_ptrD) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecE1);
+			_mm256_storeu_ps(q.s, sum_vecE1);
 			*(C_c_ptrE) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecF1);
+			_mm256_storeu_ps(q.s, sum_vecF1);
 			*(C_c_ptrF) = final_sum_q;
-			_mm256_store_ps(q.s, sum_vecG1);
+			_mm256_storeu_ps(q.s, sum_vecG1);
 			*(C_c_ptrG) = final_sum_q;
 
 			for (; k < K; k++)
@@ -5332,7 +5332,7 @@ void sgemm_align256bit_AnoTrans_Btrans_M16_N1_Kgeneral(int M, int N, int K, cons
 			{
 				op256_1x1;
 			}
-			_mm256_store_ps(q.s, sum_vec11);
+			_mm256_storeu_ps(q.s, sum_vec11);
 			*(C_c_ptr1) = final_sum_q;
 			for (; k < K; k++)
 			{
