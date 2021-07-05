@@ -21,7 +21,9 @@ namespace glasssix
             int bottom_h2 = bottom2->height();
             int bottom_c2 = bottom2->channels();
             int b2_dims = (bottom_w2 == 1 ? 0 : 1) + (bottom_h2 == 1 ? 0 : 1) + (bottom_c2 == 1 ? 0 : 1);
+            b2_dims = b2_dims == 0 ? 1 : b2_dims;
             const float *b2 = bottom2->cpu_data();
+            int size1 = bottom_w2 * bottom_h2;
 
             if (b1_dims == 3)
             {
@@ -51,6 +53,53 @@ namespace glasssix
                         b1 += bottom_w1;
                     }
                 }
+            }
+            else if (b1_dims == 1)
+            {
+                if (b2_dims == 1 && bottom_w2 * bottom_h2 * bottom_c2 > 1)
+                {
+                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                    int count = bottom1->count();
+                    float *outptr = top->mutable_cpu_data();
+                    for (int i = 0; i < count; ++i)
+                    {
+                        outptr[i] = op(b1[i], b2[i]);
+                    }
+                }
+                else if (b2_dims == 1 && bottom_w2 * bottom_h2 * bottom_c2 == 1)
+                {
+                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                    int count = bottom1->count();
+                    float *outptr = top->mutable_cpu_data();
+                    for (int i = 0; i < count; ++i)
+                    {
+                        outptr[i] = op(b1[i], b2[0]);
+                    }
+                }
+                else if (b2_dims == 3)
+                {
+                    if (bottom_w1 == 1 && bottom_h1 == 1 && bottom_c1 == bottom_c2)
+                    {
+                        // special type 3
+                        top.reset(new memory::tensor<float>(bottom2->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                        float *top_data = top->mutable_cpu_data();
+                        for (int q = 0; q < bottom_c1; q++)
+                        {
+                            // const float *a0 = b1 + q * size;
+                            const float *ptr1 = b2 + q * size1;
+                            float *outptr = top_data + q * size1;
+                            for (int i = 0; i < size1; i++)
+                            {
+                                outptr[i] = op(b1[q], ptr1[i]);
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                NOT_IMPLEMENTED;
             }
         }
 
@@ -179,6 +228,10 @@ namespace glasssix
             CHECK_GE(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
+            /////////////////////////////
+            // std::cout << "input shape: " << bottoms[0]->channels() << " " << bottoms[0]->height() << " " << bottoms[0]->width() << std::endl;
+            /////////////////////////////
+
             if (bottoms[0]->order() == memory::NCHW)
             {
                 if (with_scalar_)
@@ -228,6 +281,10 @@ namespace glasssix
             {
                 NOT_IMPLEMENTED;
             }
+
+            /////////////////////////////
+            
+            /////////////////////////////
         }
 
 #ifndef USE_CUDA

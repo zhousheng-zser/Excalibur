@@ -29,9 +29,8 @@ namespace glasssix
                 std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
 
         private:
-            float threshold_;
-            float scale_;
-            float offset_;
+            float alpha_;
+            float beta_;
         };
     }
 }

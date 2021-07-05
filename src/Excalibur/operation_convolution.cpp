@@ -172,8 +172,6 @@ namespace glasssix
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
-            std::string name = this->params_.name_;
-
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
             const float *bottom_data = bottoms[0]->cpu_data();

@@ -7,7 +7,7 @@ namespace glasssix
     namespace excalibur
     {
         template <class Dtype>
-        operation_hardswish<Dtype>::operation_hardswish(const operation_param &param) : offset_(3.f), scale_(6.f), threshold_(6.f), operation<Dtype>(param)
+        operation_hardswish<Dtype>::operation_hardswish(const operation_param &param) : operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
@@ -16,13 +16,10 @@ namespace glasssix
                 switch (std::stoi(kvs[0]))
                 {
                 case 0:
-                    this->threshold_ = std::stof(kvs[1]);
+                    this->alpha_ = std::stof(kvs[1]);
                     break;
                 case 1:
-                    this->scale_ = std::stof(kvs[1]);
-                    break;
-                case 2:
-                    this->offset_ = std::stof(kvs[1]);
+                    this->beta_ = std::stof(kvs[1]);
                     break;
                 default:
                     LOG(FATAL) << "Un-supported HardSwish Attribution " << kvs[0];
@@ -43,7 +40,7 @@ namespace glasssix
             const float *bottom_data = bottoms[0]->cpu_data();
             for (int i = 0; i < size; ++i)
             {
-                top_data[i] = bottom_data[i] * (std::min(std::max(0.f, bottom_data[i] + offset_), threshold_)) / scale_;
+                top_data[i] = bottom_data[i] * std::min(std::max(0.f, alpha_ * bottom_data[i] + beta_), 1.f);
             }
         }
 

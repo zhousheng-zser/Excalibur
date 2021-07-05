@@ -32,12 +32,13 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
-            {"rec_crnn_resnet34", {1, 3, 32, 100}, -1}
+            // {"yolov5s", {1, 3, 640, 640}, -1}
+            // {"rec_crnn_resnet34", {1, 3, 32, 100}, -1}
             // {"det_db_resnet18", {1, 3, 800, 800}, -1}
             // {"pfld11_landmark65_simp", {1, 3, 112, 112}, -1}
             // {"pfld_land71_simp", {1, 3, 80, 80}, -1}
             // {"pfld_attri_simp", {1, 3, 80, 80}, -1}
-            // {"hat_simp-opt", {1, 3, 640, 640}, 0}
+            {"hat_simp-opt", {1, 3, 640, 640}, 0}
             // {"longinus", {1, 3, 240, 320}, 0}
             // {"longinus", {1, 3, 240, 320}, -1}
             //,{"mobile_unicorn_666398_usefulpart_merged", {1, 3, 128, 128}}

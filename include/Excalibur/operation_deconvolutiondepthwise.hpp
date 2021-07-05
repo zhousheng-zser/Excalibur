@@ -1,18 +1,26 @@
+#pragma once
 #ifndef _OPERATION_DECONVOLUTIONDEPTHWISE_HPP_
 #define _OPERATION_DECONVOLUTIONDEPTHWISE_HPP_
-#include "operation_deconvolution.hpp"
+
+#include "operation_general_conv.hpp"
 
 namespace glasssix
 {
 	namespace excalibur
 	{
 		template<typename Dtype>
-		class operation_deconvolutiondepthwise : public operation_deconvolution<Dtype>
+		class operation_deconvolutiondepthwise : public operation_general_conv<Dtype>
 		{
 		public:
 			operation_deconvolutiondepthwise(const operation_param& param);
 
+			virtual int init_weights();
+
+			virtual int init_weights(FILE* fp);
+
 		protected:
+            void cut_padding(std::shared_ptr<memory::tensor<float>> &top_blob_bordered, std::shared_ptr<memory::tensor<float>> &top_blob);
+        
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
@@ -27,7 +35,22 @@ namespace glasssix
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 		private:
+			void forward_sgemm(const float* input, const float* weights, float* output, memory::orderType order /*= memory::NCHW*/);
+
+			void forward_sbias(float* output, const float* bias, memory::orderType order/* = memory::NCHW*/);
+
+
+#ifdef USE_CUDA
+			void forward_sgemm(cublasHandle_t& cublas_handle_, const float* input, const float* weights, float* output, memory::orderType order);
+			void forward_sbias(cublasHandle_t& cublas_handle_, float* output, const float* bias, memory::orderType order);
+#endif
+
+			std::shared_ptr<memory::tensor<float>> col_buffer_;
+			std::shared_ptr<memory::tensor<float>> bias_multiplier_;
+			float* col_buffer_data;
+			float* bias_multiplier_data;
 		};
 	}
 }
-#endif // !_OPERATION_DECONVOLUTIONDEPTHWISE_HPP_
+
+#endif //!_OPERATION_DECONVOLUTION_HPP_

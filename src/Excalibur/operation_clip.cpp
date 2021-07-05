@@ -13,7 +13,7 @@ namespace glasssix
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
             {
-                std::vector<std::string> kvs = split_string(attrs[0], "=");
+                std::vector<std::string> kvs = split_string(attrs[i], "=");
                 switch (std::stoi(kvs[0]))
                 {
                 case 0:
@@ -41,7 +41,7 @@ namespace glasssix
 
             for(int i = 0; i < bottoms[0]->count(); ++i)
             {
-                tptr[i] = bptr[i] <= this->min_ ? this->min_ : bptr[i] >= this->max_ ? this->max_ : bptr[i];
+                tptr[i] = std::min(max_, std::max(min_, bptr[i]));
             }
         }
 
