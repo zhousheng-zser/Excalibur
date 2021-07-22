@@ -29,17 +29,29 @@ namespace glasssix
             }
         }
 
-        template<class Dtype>
+        template <class Dtype>
         void operation_clip<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            const float* bptr = bottoms[0]->cpu_data();
-            float* tptr = tops[0]->mutable_cpu_data();
-
-            for(int i = 0; i < bottoms[0]->count(); ++i)
+            const float *bptr = bottoms[0]->cpu_data();
+            float *tptr = tops[0]->mutable_cpu_data();
+            int count = bottoms[0]->count();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
+            __m256 min = _mm256_set1_ps(min_);
+            __m256 max = _mm256_set1_ps(max_);
+            for (int i = 0; i + 7 < count; i += 8)
+            {
+                __m256 x = _mm256_loadu_ps(bptr);
+                _mm256_store_ps(tptr, _mm256_max_ps(min, _mm256_min_ps(max, x)));
+                bptr += 8;
+                tptr += 8;
+            }
+#endif
+            int remain = count % 8;
+            for (int i = 0; i < remain; ++i)
             {
                 tptr[i] = std::min(max_, std::max(min_, bptr[i]));
             }

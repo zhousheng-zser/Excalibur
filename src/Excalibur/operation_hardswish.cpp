@@ -33,12 +33,28 @@ namespace glasssix
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
-
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            int size = bottoms[0]->count();
             float *top_data = tops[0]->mutable_cpu_data();
             const float *bottom_data = bottoms[0]->cpu_data();
-            for (int i = 0; i < size; ++i)
+            int size = bottoms[0]->count();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
+            __m256 zero = _mm256_set1_ps(0.f);
+            __m256 one = _mm256_set1_ps(1.f);
+            for (int i = 0; i + 7 < size; i += 8)
+            {
+                __m256 _p = _mm256_loadu_ps(bottom_data);
+                __m256 _ans = _mm256_set1_ps(beta_);
+                _ans = _mm256_fmadd_ps(_p, _mm256_set1_ps(alpha_), _ans);
+                _ans = _mm256_max_ps(_ans, zero);
+                _ans = _mm256_min_ps(_ans, one);
+                _ans = _mm256_mul_ps(_ans, _p);
+                _mm256_store_ps(top_data, _ans);
+                top_data += 8;
+                bottom_data += 8;
+            }
+#endif // AVX
+            int remain = size % 8;
+            for (int i = 0; i < remain; ++i)
             {
                 top_data[i] = bottom_data[i] * std::min(std::max(0.f, alpha_ * bottom_data[i] + beta_), 1.f);
             }

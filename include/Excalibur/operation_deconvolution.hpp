@@ -19,8 +19,6 @@ namespace glasssix
 			virtual int init_weights(FILE* fp);
 
 		protected:
-            void cut_padding(std::shared_ptr<memory::tensor<float>> &top_blob_bordered, std::shared_ptr<memory::tensor<float>> &top_blob);
-        
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
@@ -33,6 +31,22 @@ namespace glasssix
 #endif //!USE_CUDA
 				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+
+		private:
+			void forward_sgemm(const float* input, const float* weights, float* output, memory::orderType order /*= memory::NCHW*/);
+
+			void forward_sbias(float* output, const float* bias, memory::orderType order/* = memory::NCHW*/);
+
+
+#ifdef USE_CUDA
+			void forward_sgemm(cublasHandle_t& cublas_handle_, const float* input, const float* weights, float* output, memory::orderType order);
+			void forward_sbias(cublasHandle_t& cublas_handle_, float* output, const float* bias, memory::orderType order);
+#endif
+
+			std::shared_ptr<memory::tensor<float>> col_buffer_;
+			std::shared_ptr<memory::tensor<float>> bias_multiplier_;
+			float* col_buffer_data;
+			float* bias_multiplier_data;
 		};
 	}
 }

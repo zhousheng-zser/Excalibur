@@ -36,7 +36,21 @@ namespace glasssix
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
             const float *bottom_data = bottoms[0]->cpu_data();
             float *top_data = tops[0]->mutable_cpu_data();
-            for (int i = 0; i < bottoms[0]->count(); ++i)
+            int size = bottoms[0]->count();
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
+            for (int i = 0; i + 7 < size; i += 8)
+            {
+                __m256 _p = _mm256_load_ps(bottom_data);
+                __m256 pos = _mm256_max_ps(_mm256_setzero_ps(), _p);
+                __m256 neg = _mm256_min_ps(_mm256_setzero_ps(), _p);
+                _p = _mm256_add_ps(pos, _mm256_mul_ps(neg, _mm256_set1_ps(alpha_)));
+                _mm256_store_ps(top_data, _p);
+                top_data += 8;
+                bottom_data += 8;
+            }
+#endif
+            int remain = size % 8;
+            for (int i = 0; i < remain; ++i)
             {
                 top_data[i] = bottom_data[i] < 0 ? this->alpha_ * bottom_data[i] : bottom_data[i];
             }

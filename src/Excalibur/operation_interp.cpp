@@ -117,19 +117,9 @@ namespace glasssix
             resize_cpu(bottoms[0], tops[0], outh, outw, interpolationType(resize_type_ - 1));
         }
 
-        template <class Dtype>
-        void operation_interp<Dtype>::forward_gpu_f32(
-#ifdef USE_CUDA
-                cublasHandle_t &cublas_handle_,
-#ifdef USE_CUDNN
-                cudnnHandle_t cudnn_handle,
-#endif //!USE_CUDNN
-#endif //!USE_CUDA
-                const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
-                std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
-                {
-                    forward_cpu_f32(bottoms, tops);
-                }
+#ifndef USE_CUDA
+        STUB_GPU(operation_interp)
+#endif
 
         INSTANCE_CLASS(operation_interp);
         REGISTE(operation_interp);

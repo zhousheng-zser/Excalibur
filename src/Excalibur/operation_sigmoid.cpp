@@ -30,7 +30,6 @@ namespace glasssix
 			}
 		}
 
-
 		template<typename Dtype>
 		void operation_sigmoid<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA
@@ -42,7 +41,7 @@ namespace glasssix
 			const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
-			NOT_IMPLEMENTED;
+			forward_cpu_f32(bottoms, tops);
 		}
 
 		INSTANCE_CLASS(operation_sigmoid);

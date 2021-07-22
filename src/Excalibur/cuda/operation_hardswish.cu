@@ -7,11 +7,12 @@ namespace glasssix
     {
 #ifdef USE_CUDA
 
-        __global__ void hardswish_forward(int N, const float *bottom_data, float *top_data, float offset_, float threshold_, float scale_)
+        __global__ void hardswish_forward(int N, const float *bottom_data, float *top_data, float alpha, float beta)
         {
             CUDA_KERNEL_LOOP(i, N)
             {
-                top_data[i] = bottom_data[i] * (bottom_data[i] + offset_ < 0 ? 0 : bottom_data[i] + offset_ > threshold_ ? threshold_ : bottom_data[i] + offset_) / scale_;
+                float value = alpha * bottom_data[i] + beta;
+                top_data[i] = bottom_data[i] * (value < 0 ? 0 : value > 1 ? 1 : value);
             }
         }
 
@@ -32,7 +33,7 @@ namespace glasssix
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
             float *top_data = tops[0]->mutable_gpu_data();
             
-            hardswish_forward<<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_data, top_data, offset_, threshold_, scale_);
+            hardswish_forward<<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_data, top_data, alpha_, beta_);
         }
 
 #ifdef USE_CUDNN
