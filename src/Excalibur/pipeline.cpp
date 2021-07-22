@@ -255,23 +255,34 @@ namespace glasssix
                     {
                         output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
                     }
-
-                    /////////////////////////////
-                    // std::cout << name_ << " input shape: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
-                    /////////////////////////////
-
+                    ///////////////////////////
+                    // timer t;
+                    // if (i != 1)
+                    // {
+                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << " input shape: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
+                    //     std::cout << "input: ";
+                    //     for (int i = 0; i < 10; ++i)
+                    //     {
+                    //         std::cout << input[0]->cpu_data()[i] << " ";
+                    //     }
+                    //     std::cout << std::endl;
+                    //     // std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
+                    //     t.start();
+                    // }
+                    ///////////////////////////
                     operations_[ops_execution_order_[i]]->forward_cpu(input, output);
-
                     /////////////////////////////
-                    // std::cout << operations_[ops_execution_order_[i]]->param().name_ << " output shape: " << output[0]->channels() << " " << output[0]->height() << " " << output[0]->width() << std::endl;
+                    // t.stop();
+                    // std::cout << "output shape: " << output[0]->channels() << " " << output[0]->height() << " " << output[0]->width() << std::endl;
+                    // std::cout << "output: ";
                     // for (int i = 0; i < 10; ++i)
                     // {
                     //     std::cout << output[0]->cpu_data()[i] << " ";
                     // }
                     // std::cout << std::endl;
+                    // std::cout << "cost time: " << t.get_elapsed_milli_seconds() << std::endl;
                     // std::cout << std::endl;
                     /////////////////////////////
-
                     for (size_t j = 0; j < output.size(); j++)
                     {
                         featmaps_[ops_io_featmap_[i].second[j]] = output[j];
