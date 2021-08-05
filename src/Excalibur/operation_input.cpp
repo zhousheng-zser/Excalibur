@@ -50,7 +50,7 @@ namespace glasssix
         void operation_input<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
                                                      std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
-            //CHECK_EQ(bottoms.size(), tops.size());
+            CHECK_EQ(bottoms.size(), tops.size());
             for (size_t i = 0; i < bottoms.size(); i++)
             {
                 tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), this->params_.device_, bottoms[i]->order(), bottoms[i]->allocator()));
@@ -135,6 +135,7 @@ namespace glasssix
                     }
                 }
             }
+            // tops = bottoms;
         }
 
 #ifndef USE_CUDA

@@ -212,7 +212,7 @@ namespace glasssix
                     concat_shape[j] = concat_axis_dim;
                 }
             }
-            tops[0].reset(new memory::tensor<float>(concat_shape, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+            tops[0].reset(new memory::tensor<float>(concat_shape, this->params_.device_, bottoms[0]->order(), bottoms[0]->allocator()));
             if (bottoms[0]->order() == memory::NCHW)
             {
                 float *top_data = tops[0]->mutable_gpu_data();
@@ -251,6 +251,8 @@ namespace glasssix
                     /*for (size_t i = 7000; i < 7100; i++)
 					{
 						std::cout << top_data[i] << " ";
+
+                        
 					}
 					std::cout << std::endl;*/
                 }

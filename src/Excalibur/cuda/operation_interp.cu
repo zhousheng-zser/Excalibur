@@ -8,8 +8,7 @@ namespace glasssix
     namespace excalibur
     {
 #ifdef USE_CUDA
-
-        __global__ void interp_forward(int N, const float *bottom_data, float *top_data, float scalew, float scaleh, int iw, int ih, int ow, int oh, int resize_type)
+        __global__ void interp_forward_nearest(int N, const float *bottom_data, float *top_data, float scalew, float scaleh, int iw, int ih, int ow, int oh)
         {
             CUDA_KERNEL_LOOP(index, N)
             {
@@ -19,7 +18,7 @@ namespace glasssix
                 int z = tmp / oh;
                 int ix = min(max(0, (int)(x * scalew)), iw - 1);
                 int iy = min(max(0, (int)(y * scaleh)), ih - 1);
-                top_data[z * oh * ow + y * ow + x] = bottom_data[z * ih * iw + iy * iw + ix];
+                top_data[index] = bottom_data[z * ih * iw + iy * iw + ix];
             }
         }
 
@@ -49,13 +48,13 @@ namespace glasssix
                 outh = static_cast<int>(bottom_h * height_scale_);
             }
             tops[0].reset(new memory::tensor<float>(std::vector<int>{num, bottom_c, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            int count = bottoms[0]->count();
+            int count = tops[0]->count();
             const float *bottom_data = bottoms[0]->gpu_data();
             float *top_data = tops[0]->mutable_gpu_data();
             const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
             const float ws = outw ? bottom_w / (float)outw : 1.f / width_scale_;
 
-            interp_forward<<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_data, top_data, ws, hs, bottom_w, bottom_h, outw, outh, resize_type_);
+            interp_forward_nearest<<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_data, top_data, ws, hs, bottom_w, bottom_h, outw, outh);
         }
 
 #ifdef USE_CUDNN
