@@ -14,6 +14,8 @@ namespace glasssix
 		public:
 			operation_convolution_arm(const operation_param& param);
 
+			~operation_convolution_arm();
+
 			virtual int init_weights();
 
 			virtual int init_weights(FILE *fp);
@@ -65,6 +67,7 @@ namespace glasssix
 				std::shared_ptr<memory::tensor<int>>& top);
 			std::vector<std::shared_ptr<memory::tensor<short>>> kernel_tm_winograd_int8_;
 			std::shared_ptr<memory::tensor<int8_t>> kernel_tm_gemm_int8_;
+            operation<float>* op;
 		};
 	}
 }

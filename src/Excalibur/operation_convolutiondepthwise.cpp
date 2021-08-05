@@ -188,106 +188,13 @@ namespace glasssix
         void operation_convolutiondepthwise<Dtype>::forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
                                                                    std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
-            CHECK_EQ(bottoms.size(), 1);
-            CHECK_EQ(tops.size(), 1);
-            CHECK_EQ(this->output_channel_, this->group_);
-            this->num_ = bottoms[0]->num();
-            this->input_dim_h_ = bottoms[0]->height();
-            this->input_dim_w_ = bottoms[0]->width();
-            this->input_channel_ = bottoms[0]->channels();
-
-            CHECK_EQ(this->input_channel_, this->output_channel_);
-            this->output_dim_h_ = (this->input_dim_h_ + this->pad_bottom_ + this->pad_top_ - this->kernel_size_h_) / this->stride_h_ + 1;
-            this->output_dim_w_ = (this->input_dim_w_ + this->pad_left_ + this->pad_right_ - this->kernel_size_w_) / this->stride_w_ + 1;
-
-            tops[0].reset(new memory::tensor<float>(std::vector<int>{1, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, nullptr));
-
             if (this->int8_scale_term_ == 1)
             {
                 dequantize_int8(this->weights_i8_[0], this->weights_f32_[0], this->weights_scaletable_i8_);
                 this->int8_scale_term_ = 0;
             }
-            const float *weights_data = this->weights_f32_[0]->cpu_data();
 
-            if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1))
-            {
-                forward_k3s1_f32(bottoms[0], tops[0]);
-            }
-            else if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 2 && this->stride_w_ == 2))
-            {
-                forward_k3s2_f32(bottoms[0], tops[0]);
-            }
-            else
-            {
-                const float *bottom_data = bottoms[0]->cpu_data();
-                const float *weights_data = this->weights_f32_[0]->cpu_data();
-                const float *bias_data = nullptr;
-                float *top_data = nullptr;
-                if (this->bias_term_)
-                {
-                    bias_data = this->weights_f32_[1]->cpu_data();
-                }
-                switch (bottoms[0]->order())
-                {
-                case memory::NCHW:
-                    tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_},
-                                                            bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-                    top_data = tops[0]->mutable_cpu_data();
-                    for (size_t n = 0; n < this->num_; n++)
-                    {
-
-#ifdef _OPENMP
-#pragma omp parallel for num_threads(2)
-#endif
-                        for (int i = 0; i < tops[0]->count(1, 4); i++)
-                        {
-                            const int pw = i % this->output_dim_w_;
-                            const int ph = (i / this->output_dim_w_) % this->output_dim_h_;
-                            const int c = (i / this->output_dim_w_ / this->output_dim_h_) % this->output_channel_;
-                            const int n_step = i / this->output_dim_w_ / this->output_dim_h_ / this->output_channel_;
-                            int hstart = ph * this->stride_h_ - this->pad_top_;
-                            int wstart = pw * this->stride_w_ - this->pad_left_;
-                            int hend = std::min(hstart + this->kernel_size_h_, this->input_dim_h_ + this->pad_bottom_);
-                            int wend = std::min(wstart + this->kernel_size_w_, this->input_dim_w_ + this->pad_right_);
-                            hstart = std::max(hstart, 0);
-                            wstart = std::max(wstart, 0);
-                            hend = std::min(hend, this->input_dim_h_);
-                            wend = std::min(wend, this->input_dim_w_);
-                            float aveval = 0;
-                            const float *bottom_slice =
-                                bottom_data + n * bottoms[0]->count(1, 4) + (n_step * this->output_channel_ + c) * this->input_dim_h_ * this->input_dim_w_;
-                            const float *weight_slice =
-                                weights_data + c * this->kernel_size_h_ * this->kernel_size_w_;
-                            int khstart = hend < this->kernel_size_h_ ? this->kernel_size_h_ - hend : 0;
-                            int kwstart = wend < this->kernel_size_w_ ? this->kernel_size_w_ - wend : 0;
-                            for (int h = hstart; h < hend; ++h)
-                            {
-                                for (int w = wstart; w < wend; ++w)
-                                {
-                                    aveval += bottom_slice[h * this->input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * this->kernel_size_w_ + (kwstart + w - wstart)];
-                                }
-                            }
-                            if (this->bias_term_)
-                            {
-                                aveval += bias_data[c];
-                            }
-                            top_data[n * tops[0]->count(1, 4) + i] = aveval;
-                        }
-                    }
-
-                    break;
-                case memory::NHWC:
-                    tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_dim_h_, this->output_dim_w_, this->output_channel_},
-                                                            bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-                    NOT_IMPLEMENTED;
-                    break;
-                default:
-                    NOT_IMPLEMENTED;
-                    break;
-                }
-            }
-
-            this->suffix_activation_cpu_f32(tops);
+            forward_cpu_f32(bottoms, tops);
         }
 
         template <typename Dtype>
@@ -306,11 +213,12 @@ namespace glasssix
 #endif
             for (int q = 0; q < this->output_channel_; q++)
             {
+                float _scale = scale[q] <= 1e-6 ? 0 : 1.f / scale[q];
                 const signed char *ptr = bottom + q * size;
                 float *outptr = bottom_int8 + q * size;
                 for (int i = 0; i < size; i++)
                 {
-                    outptr[i] = ptr[i] / scale[q];
+                    outptr[i] = ptr[i] * _scale;
                 }
             }
             return 0;

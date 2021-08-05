@@ -34,15 +34,16 @@ int main()
         {
             // {"rec_crnn_resnet34", {1, 3, 32, 100}, -1}
             {"det_db_resnet18", {1, 3, 800, 800}, 0}
+            // {"det_combine_best", {1, 3, 800, 800}, 0}
             // {"pfld11_landmark65_simp", {1, 3, 112, 112}, -1}
             // {"pfld_land71_simp", {1, 3, 80, 80}, -1}
             // {"pfld_attri_simp", {1, 3, 80, 80}, -1}
             // {"hat_simp-opt", {1, 3, 640, 640}, 0}
             // {"yolov5s_simp", {1, 3, 640, 640}, -1}
             // {"longinus", {1, 3, 240, 320}, 0}
-            // {"longinus", {1, 3, 240, 320}, -1}
+            // {"selene", {1, 3, 128, 128}, -1}
             //,{"mobile_unicorn_666398_usefulpart_merged", {1, 3, 128, 128}}
-            // ,{"unicorn", {1, 3, 128, 128}, 0}
+            // {"unicorn", {1, 3, 128, 128}, -1}
             //,{"unicorn_gdc_0x1C_int8_w6a8", {1, 3, 128, 128}, -1}
             //{"unicorn_li_0x42_usefulpart", {1, 3, 128, 128}}
             //,{"unicorn_li_0x42_usefulpart_int8", {1, 3, 128, 128}}
