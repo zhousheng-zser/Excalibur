@@ -199,7 +199,7 @@ namespace glasssix::exposing
 		{
 			auto result = std::forward<Callable>(handler)();
 
-			return (std::forward<Callable>(handler)(), result);
+			return result;
 		}
 		else
 		{
