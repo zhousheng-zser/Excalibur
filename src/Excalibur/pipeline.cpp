@@ -180,24 +180,24 @@ namespace glasssix
 
                 featmaps_.resize(featmap_count_);
 
-				//CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
-				//for (size_t i = 0; i < input_featmap_names_.size(); i++)
-				//{
-					/*auto id = find_child_op_index(input_featmap_names_[i]);
+                //CHECK_EQ(input_featmap_names_.size(), 1) << "Now only support 1 input!";
+                //for (size_t i = 0; i < input_featmap_names_.size(); i++)
+                //{
+                /*auto id = find_child_op_index(input_featmap_names_[i]);
 					auto op_node_vec = bfs_ops_.traverse_undirected(op_nodes_[id]);*/
-					// TODO: Add DAG expand support!!!!
-					for (size_t j = 0; j < op_nodes_.size(); j++)
-					{
-						auto res = operation_names_index_.find(op_nodes_[j].value());
-						if (res == operation_names_index_.end())
-						{
-							LOG(FATAL) << "Un-inited operation.";
-						}
-						ops_execution_order_.push_back(res->second);
-						ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
-					}
-				//}
-			}
+                // TODO: Add DAG expand support!!!!
+                for (size_t j = 0; j < op_nodes_.size(); j++)
+                {
+                    auto res = operation_names_index_.find(op_nodes_[j].value());
+                    if (res == operation_names_index_.end())
+                    {
+                        LOG(FATAL) << "Un-inited operation.";
+                    }
+                    ops_execution_order_.push_back(res->second);
+                    ops_io_featmap_.push_back(std::pair<std::vector<int>, std::vector<int>>(get_op_input_featmap_idx(res->first), get_op_output_featmap_idx(res->first)));
+                }
+                //}
+            }
 
             ~impl()
             {
@@ -233,47 +233,88 @@ namespace glasssix
                 }
             }
 
-			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor)
-			{
-				profiler* p = profiler::get();
-				if (profile_)
-				{
-					p->turn_on();
-					p->scope_start(name_.c_str());
-				}
-				featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
-				for (size_t i = 0; i < ops_execution_order_.size(); i++)
-				{
-					p->scope_start(operations_[ops_execution_order_[i]]->param().name_.c_str());
-					std::vector<std::shared_ptr<memory::tensor<Dtype>>> input(ops_io_featmap_[i].first.size());
-					for (size_t j = 0; j < input.size(); j++)
-					{
-						input[j] = featmaps_[ops_io_featmap_[i].first[j]];
-					}
-					std::vector<std::shared_ptr<memory::tensor<Dtype>>> output(ops_io_featmap_[i].second.size());
-					for (size_t j = 0; j < output.size(); j++)
-					{
-						output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
-					}
-					operations_[ops_execution_order_[i]]->forward_cpu(input, output);
-					for (size_t j = 0; j < output.size(); j++)
-					{
-						featmaps_[ops_io_featmap_[i].second[j]] = output[j];
-					}
-					p->scope_end();
-				}
-				std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;
-				for (size_t i = 0; i < output_featmap_names_.size(); i++)
-				{
-					results[output_featmap_names_[i]] = featmaps_[featmap_names_index_[output_featmap_names_[i]]];
-				}
-				if (profile_)
-				{
-					p->scope_end();
-					p->turn_off();
-				}
-				return results;
-			}
+            std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_cpu(const std::shared_ptr<memory::tensor<Dtype>> &input_tensor)
+            {
+                profiler *p = profiler::get();
+                if (profile_)
+                {
+                    p->turn_on();
+                    p->scope_start(name_.c_str());
+                }
+                featmaps_[featmap_names_index_[input_featmap_names_[0]]] = input_tensor;
+                for (size_t i = 0; i < ops_execution_order_.size(); i++)
+                {
+                    p->scope_start(operations_[ops_execution_order_[i]]->param().name_.c_str());
+                    std::vector<std::shared_ptr<memory::tensor<Dtype>>> input(ops_io_featmap_[i].first.size());
+                    for (size_t j = 0; j < input.size(); j++)
+                    {
+                        input[j] = featmaps_[ops_io_featmap_[i].first[j]];
+                    }
+                    std::vector<std::shared_ptr<memory::tensor<Dtype>>> output(ops_io_featmap_[i].second.size());
+                    for (size_t j = 0; j < output.size(); j++)
+                    {
+                        output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
+                    }
+                    ///////////////////////////
+                    // timer t;
+                    // if (i != 1)
+                    // {
+                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << " input shape c h w: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
+                    //     std::cout << "input: ";
+                    //     for (int i = 0; i < 10; ++i)
+                    //     {
+                    //         std::cout << input[0]->cpu_data()[i] << " ";
+                    //     }
+                    //     std::cout << std::endl;
+                    //     // std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
+                    //     t.start();
+                    // }
+                    ///////////////////////////
+                    operations_[ops_execution_order_[i]]->forward_cpu(input, output);
+                    /////////////////////////////
+                    // t.stop();
+                    // std::cout << "output shape: " << output[0]->channels() << " " << output[0]->height() << " " << output[0]->width() << std::endl;
+                    // std::cout << "output: ";
+                    // float sum = 0.0;
+                    // for (int i = 0; i < 10; ++i)
+                    // {
+                    //     std::cout << output[0]->cpu_data()[i] << " ";
+                    // }
+                    // for (int i = 0; i < output[0]->count(); ++i)
+                    // {
+                    //     sum += output[0]->cpu_data()[i];
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << "output sum: " << sum << std::endl;
+                    // std::cout << "cost time: " << t.get_elapsed_milli_seconds() << std::endl;
+                    // std::cout << std::endl;
+
+                    // if (operations_[ops_execution_order_[i]]->param().name_ == "relu5")
+                    // {
+                    //     for (int i = 0; i < output[0]->count(); ++i)
+                    //     {
+                    //         std::cout << output[0]->cpu_data()[i] << " ";
+                    //     }
+                    // }
+                    /////////////////////////////
+                    for (size_t j = 0; j < output.size(); j++)
+                    {
+                        featmaps_[ops_io_featmap_[i].second[j]] = output[j];
+                    }
+                    p->scope_end();
+                }
+                std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;
+                for (size_t i = 0; i < output_featmap_names_.size(); i++)
+                {
+                    results[output_featmap_names_[i]] = featmaps_[featmap_names_index_[output_featmap_names_[i]]];
+                }
+                if (profile_)
+                {
+                    p->scope_end();
+                    p->turn_off();
+                }
+                return results;
+            }
 
             std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_gpu(const std::shared_ptr<memory::tensor<Dtype>> &input_tensor)
             {
@@ -297,6 +338,21 @@ namespace glasssix
                     {
                         output[j] = std::shared_ptr<memory::tensor<Dtype>>(featmaps_[ops_io_featmap_[i].second[j]]);
                     }
+                    ////////////////////////////////////
+                    // timer t;
+                    // if (i != 1)
+                    // {
+                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << " input shape: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
+                    //     // std::cout << "input: ";
+                    //     // for (int i = 0; i < 10; ++i)
+                    //     // {
+                    //     //     std::cout << input[0]->gpu_data()[i] << " ";
+                    //     // }
+                    //     std::cout << std::endl;
+                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
+                    //     t.start();
+                    // }
+                    ////////////////////////////////////
                     operations_[ops_execution_order_[i]]->forward_gpu(
 #ifdef USE_CUDA
                         cublas_handle_,
@@ -305,6 +361,21 @@ namespace glasssix
 #endif //!USE_CUDNN
 #endif //!USE_CUDA
                         input, output);
+                    /////////////////////////////////
+                    // t.stop();
+                    // std::cout << "output shape: " << output[0]->channels() << " " << output[0]->height() << " " << output[0]->width() << std::endl;
+                    // // std::cout << "output: ";
+                    // float sum = 0.0;
+                    // for (int i = 0; i < output[0]->count(); ++i)
+                    // {
+                    //     // std::cout << output[0]->cpu_data()[i] << " ";
+                    //     sum += output[0]->cpu_data()[i];
+                    // }
+                    // // std::cout << std::endl;
+                    // std::cout << "output sum: " << sum << std::endl;
+                    // std::cout << "cost time: " << t.get_elapsed_milli_seconds() << std::endl;
+                    // std::cout << std::endl;
+                    /////////////////////////////////
                     for (size_t j = 0; j < output.size(); j++)
                     {
                         if (output[j] == nullptr)

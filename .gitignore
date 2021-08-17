@@ -70,3 +70,4 @@
 .vscode/
 build/
 /cmake/ndk_cmake.bat
+/src/Test

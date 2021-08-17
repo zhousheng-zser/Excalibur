@@ -15,6 +15,11 @@ namespace glasssix
             virtual const char *type() { return this->params_.type_.c_str(); }
             virtual ~operation_expand() {}
 
+        private:
+            int w_;
+            int h_;
+            int c_;
+
         protected:
             void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
         };

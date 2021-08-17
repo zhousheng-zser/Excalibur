@@ -9,7 +9,7 @@ namespace glasssix
 {
     namespace excalibur
     {
-#if(SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
         static inline float _mm256_reduce_add_ps(__m256 x)
         {
             /* ( x3+x7, x2+x6, x1+x5, x0+x4 ) */

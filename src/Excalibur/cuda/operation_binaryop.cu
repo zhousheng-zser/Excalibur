@@ -79,7 +79,7 @@ namespace glasssix
             }
         }
 
-        template<class Dtype>
+        template <class Dtype>
         void operation_binaryop<Dtype>::forward_gpu_f32(
             cublasHandle_t &cublas_handle_,
 #ifdef USE_CUDNN
@@ -94,7 +94,7 @@ namespace glasssix
             int count = bottoms[0]->count();
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
             float *top_data = tops[0]->mutable_gpu_data();
-            
+
             if (bottoms[0]->order() == memory::NCHW)
             {
                 if (with_scalar_)
@@ -113,9 +113,9 @@ namespace glasssix
         }
 
 #ifdef USE_CUDNN
-    INSTANTIATE_OPERATION_CUDNN_FWDF32(operation_binaryop);
+        INSTANTIATE_OPERATION_CUDNN_FWDF32(operation_binaryop);
 #else
-    INSTANTIATE_OPERATION_CUDA_FWDF32(operation_binaryop);
+        INSTANTIATE_OPERATION_CUDA_FWDF32(operation_binaryop);
 #endif
 
 #endif

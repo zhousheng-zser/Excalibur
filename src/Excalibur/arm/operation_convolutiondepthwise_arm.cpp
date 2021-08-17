@@ -1301,7 +1301,6 @@ namespace glasssix
 			else
 			{
 				op->forward_cpu(bottoms, tops);
-				this->suffix_activation_cpu_f32(tops);
 				return;
 
 				//NOT_IMPLEMENTED;
