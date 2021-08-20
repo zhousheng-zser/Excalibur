@@ -25,7 +25,11 @@ namespace glasssix
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
-			virtual void lstm_cpu_f32(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top, int reverse);
+			void lstm_cpu_f32(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top, int reverse);
+
+#ifdef USE_CUDA
+			void lstm_gpu_f32(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top, int reverse);
+#endif
 
 			virtual void forward_gpu_f32(
 #ifdef USE_CUDA

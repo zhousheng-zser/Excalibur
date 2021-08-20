@@ -135,6 +135,7 @@ namespace glasssix
                     }
                 }
             }
+            
             // tops = bottoms;
         }
 
