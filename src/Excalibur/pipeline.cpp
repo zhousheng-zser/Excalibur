@@ -288,14 +288,6 @@ namespace glasssix
                     // std::cout << "output sum: " << sum << std::endl;
                     // std::cout << "cost time: " << t.get_elapsed_milli_seconds() << std::endl;
                     // std::cout << std::endl;
-
-                    // if (operations_[ops_execution_order_[i]]->param().name_ == "relu5")
-                    // {
-                    //     for (int i = 0; i < output[0]->count(); ++i)
-                    //     {
-                    //         std::cout << output[0]->cpu_data()[i] << " ";
-                    //     }
-                    // }
                     /////////////////////////////
                     for (size_t j = 0; j < output.size(); j++)
                     {

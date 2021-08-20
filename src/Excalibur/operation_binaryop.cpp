@@ -37,6 +37,21 @@ namespace glasssix
                         outptr[i] = op(b1[i], b2[i]);
                     }
                 }
+                else if (b2_dims == 1 && bottom_c2 > 1)
+                {
+                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                    float *top_data = top->mutable_cpu_data();
+                    for (int q = 0; q < bottom_c1; q++)
+                    {
+                        const float *ptr1 = b1 + q * size;
+                        float *outptr = top_data + q * size;
+                        for (int i = 0; i < size; i++)
+                        {
+                            outptr[i] = op(b2[q], ptr1[i]);
+                        }
+                    }
+                    return;
+                }
             }
             else if (b1_dims == 2)
             {
@@ -56,24 +71,27 @@ namespace glasssix
             }
             else if (b1_dims == 1)
             {
-                if (b2_dims == 1 && bottom_w2 * bottom_h2 * bottom_c2 > 1)
+                if (b2_dims == 1)
                 {
-                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                    int count = bottom1->count();
-                    float *outptr = top->mutable_cpu_data();
-                    for (int i = 0; i < count; ++i)
+                    if (bottom_w2 * bottom_h2 * bottom_c2 > 1)
                     {
-                        outptr[i] = op(b1[i], b2[i]);
+                        top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                        int count = bottom1->count();
+                        float *outptr = top->mutable_cpu_data();
+                        for (int i = 0; i < count; ++i)
+                        {
+                            outptr[i] = op(b1[i], b2[i]);
+                        }
                     }
-                }
-                else if (b2_dims == 1 && bottom_w2 * bottom_h2 * bottom_c2 == 1)
-                {
-                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                    int count = bottom1->count();
-                    float *outptr = top->mutable_cpu_data();
-                    for (int i = 0; i < count; ++i)
+                    else if (bottom_w2 * bottom_h2 * bottom_c2 == 1)
                     {
-                        outptr[i] = op(b1[i], b2[0]);
+                        top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
+                        int count = bottom1->count();
+                        float *outptr = top->mutable_cpu_data();
+                        for (int i = 0; i < count; ++i)
+                        {
+                            outptr[i] = op(b1[i], b2[0]);
+                        }
                     }
                 }
                 else if (b2_dims == 3)
@@ -281,19 +299,19 @@ namespace glasssix
             }
         }
 
-//         template <class Dtype>
-//         void operation_binaryop<Dtype>::forward_gpu_f32(
-// #ifdef USE_CUDA
-//             cublasHandle_t &cublas_handle_,
-// #ifdef USE_CUDNN
-//             cudnnHandle_t cudnn_handle,
-// #endif //!USE_CUDNN
-// #endif //!USE_CUDA
-//             const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
-//             std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
-//         {
-//             forward_cpu_f32(bottoms, tops);
-//         }
+        template <class Dtype>
+        void operation_binaryop<Dtype>::forward_gpu_f32(
+#ifdef USE_CUDA
+            cublasHandle_t &cublas_handle_,
+#ifdef USE_CUDNN
+            cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+            const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
+            std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+        {
+            forward_cpu_f32(bottoms, tops);
+        }
 
 #ifndef USE_CUDA
         STUB_GPU(operation_binaryop);
