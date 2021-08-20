@@ -44,15 +44,6 @@ namespace glasssix
             void forward_k3s2_f32(const std::shared_ptr<memory::tensor<float>> &bottom,
                                   std::shared_ptr<memory::tensor<float>> &top);
 
-            // void forward_k3s21_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
-            // 	std::shared_ptr < memory::tensor<float>>& top);
-
-            // void forward_k5s21_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
-            // 	std::shared_ptr < memory::tensor<float>>& top);
-
-            void forward_k5s1_f32(const std::shared_ptr<memory::tensor<float>> &bottom,
-                                  std::shared_ptr<memory::tensor<float>> &top);
-
             int dequantize_int8(const std::shared_ptr<memory::tensor<signed char>> &src,
                                 std::shared_ptr<memory::tensor<float>> &dst, std::vector<float> scale);
         };
