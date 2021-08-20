@@ -202,8 +202,6 @@ namespace glasssix
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
-            std::string name = this->params_.name_;
-
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
             const float *bottom_data = bottoms[0]->cpu_data();
@@ -436,7 +434,7 @@ namespace glasssix
                 {
                     const float *kernel_tm_data = kernel_tm_[g]->cpu_data();
                     const float *bottom_blob_bordered_data_n = bottom_data_base + g * inch * bordered_h * bordered_w;
-                    const float *bias = bias_0 + g * ou;
+                    const float *bias = this->bias_term_ ? bias_0 + g * ou : nullptr;
                     float *top_blob_bordered_data = top_data_base + g * ou * outh * outw;
 
                     {
@@ -802,20 +800,19 @@ namespace glasssix
         void operation_convolution<Dtype>::forward_im2col_tr_kernel()
         {
             const int input_channel_ = this->weight_data_size_ * this->group_ / this->output_channel_ / this->kernel_size_h_ / this->kernel_size_w_;
-            int inch = input_channel_ / this->group_;
             int outch = this->output_channel_ / this->group_;
+            int inch = input_channel_ / this->group_;
             int kernel_size = this->kernel_size_h_ * this->kernel_size_w_;
-
             const float *kernel_base = this->weights_f32_[0]->cpu_data();
-            // kernel memory packed 8 x 8
-            int kernel_tm_channel = outch / 8 + (outch % 8) / 4 + outch % 4;
             int nn_outch = 0;
             int remain_outch_start = 0;
-            nn_outch = outch >> 3;
-            remain_outch_start = nn_outch << 3;
 
             for (int g = 0; g < this->group_; g++)
             {
+                // kernel memory packed 8 x 8
+                int kernel_tm_channel = outch / 8 + (outch % 8) / 4 + outch % 4;
+                nn_outch = outch >> 3;
+                remain_outch_start = nn_outch << 3;
                 kernel_tm_gemm_.push_back(std::shared_ptr<memory::tensor<float>>(new memory::tensor<float>(std::vector<int>{1, kernel_tm_channel, inch, 8 * kernel_size}, this->params_.device_, memory::NCHW, nullptr)));
                 float *kernel_tm = kernel_tm_gemm_[g]->mutable_cpu_data();
                 int kernel_tm_cstep = kernel_tm_gemm_[g]->width() * kernel_tm_gemm_[g]->height();
@@ -936,7 +933,7 @@ namespace glasssix
 
                     int kernel_tm_cstep = kernel_tm_gemm_[g]->width() * kernel_tm_gemm_[g]->height();
                     const float *bottom_data = bottom_data_base + g * bottom_cstep * inch;
-                    const float *bias = bias_0 + g * outch;
+                    const float *bias = this->bias_term_ ? bias_0 + g * outch : 0;
 
                     float *top_data = top_data_base + out_size * outch * g;
                     {

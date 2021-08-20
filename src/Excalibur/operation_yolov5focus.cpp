@@ -49,10 +49,6 @@ namespace glasssix
             }
         }
 
-        // #ifndef USE_CUDA
-        //         STUB_GPU(operation_yolov5focus);
-        // #endif
-
         template <typename Dtype>
         void operation_yolov5focus<Dtype>::forward_gpu_f32(
 #ifdef USE_CUDA

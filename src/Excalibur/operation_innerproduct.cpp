@@ -9,7 +9,7 @@ namespace glasssix
 {
     namespace excalibur
     {
-#if(SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
         static inline float _mm256_reduce_add_ps(__m256 x)
         {
             /* ( x3+x7, x2+x6, x1+x5, x0+x4 ) */
@@ -178,6 +178,7 @@ namespace glasssix
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
+
             int m = bottoms[0]->num();
             int n = num_output_;
             int k = bottoms[0]->count(1, 4);
@@ -196,66 +197,16 @@ namespace glasssix
                 const int channels = bottoms[0]->channels();
                 const int width = bottoms[0]->width();
                 const int height = bottoms[0]->height();
-                if (channels == 1 && width == num_input && height > 1)
+                int dims = (width == 1 ? 0 : 1) + (height == 1 ? 0 : 1) + (channels == 1 ? 0 : 1);
+                if (dims == 2)
                 {
+                    // bottom->dim = 3
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{m, 1, height, n}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float *top_data = tops[0]->mutable_cpu_data();
-                    for (int j = 0; j < height; ++j)
-                    {
-                        float *outptr = top_data + n * j;
-                        for (int p = 0; p < num_output_; p++)
-                        {
-                            const float *kptr = weight + num_input * p;
-                            const float *bm = bottom_data + j * width;
-                            float sum = 0.f;
-
-                            if (bias_term_)
-                            {
-                                sum = weight[p];
-                            }
-
-                            int i = 0;
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE2_VERSION)                                                 // SSE2
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
-                            __m256 _sum = _mm256_set1_ps(0.f);
-                            for (; i + 7 < num_input; i += 8)
-                            {
-                                __m256 _m = _mm256_loadu_ps(bm);
-                                __m256 _w = _mm256_loadu_ps(kptr);
-                                _sum = _mm256_fmadd_ps(_m, _w, _sum);
-
-                                bm += 8;
-                                kptr += 8;
-                            }
-#endif // __AVX__
-                            __m128 _suml = _mm_set1_ps(0.f);
-                            for (; i + 3 < num_input; i += 4)
-                            {
-                                __m128 _val = _mm_loadu_ps(bm);
-                                __m128 _k = _mm_loadu_ps(kptr);
-                                _suml = _mm_add_ps(_mm_mul_ps(_val, _k), _suml);
-
-                                bm += 4;
-                                kptr += 4;
-                            }
-#endif // __SSE2__
-                            for (; i < num_input; i++)
-                            {
-                                sum += *bm++ * *kptr++;
-                            }
-
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE2_VERSION) // SSE2
-
-#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
-                            sum += _mm256_reduce_add_ps(_sum);
-#endif // __AVX__
-                            sum += _mm_reduce_add_ps(_suml);
-#endif // __SSE2__
-
-                            outptr[0] = sum;
-                            outptr += 1;
-                        }
-                    }
+                    m = height;
+                    k = width;
+                    math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, m, n, k, 1.0f,
+                                              bottom_data, weight, 0.0f, top_data);
                 }
                 else
                 {
@@ -311,6 +262,7 @@ namespace glasssix
 #ifndef USE_CUDA
         STUB_GPU(operation_innerproduct);
 #endif
+
         INSTANCE_CLASS(operation_innerproduct);
         REGISTE(operation_innerproduct);
     }

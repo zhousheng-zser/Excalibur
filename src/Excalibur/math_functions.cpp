@@ -9,7 +9,6 @@ namespace glasssix
 		{
 		}
 
-
 		math_functions::~math_functions()
 		{
 		}

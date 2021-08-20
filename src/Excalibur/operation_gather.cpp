@@ -4,6 +4,9 @@
 #include "Primitives/pool_allocator.hpp"
 #include "Excalibur/math_functions.hpp"
 
+#include <algorithm>
+#include <numeric>
+
 namespace glasssix
 {
     namespace excalibur
@@ -39,97 +42,60 @@ namespace glasssix
         {
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
-            int num = bottoms[0]->num();
-            int channels = bottoms[0]->channels();
-            int width = bottoms[0]->width();
-            int height = bottoms[0]->height();
-            const float *bottom_data = bottoms[0]->cpu_data();
-
-            if (channels > 1)
-            {
-                if (axis_ == 0)
-                {
-                    NOT_IMPLEMENTED;
-                }
-                else if (axis_ == 1)
-                {
-                    NOT_IMPLEMENTED;
-                }
-                else if (axis_ == 2)
-                {
-                    tops[0].reset(new memory::tensor<float>(std::vector<int>{num, (int)indexs_.size(), channels, width}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-                }
-            }
-            else
-            {
-                if (axis_ == 0)
-                {
-                    NOT_IMPLEMENTED;
-                }
-                else if (axis_ == 1)
-                {
-                    NOT_IMPLEMENTED;
-                }
-                else if (axis_ == 2)
-                {
-                    tops[0].reset(new memory::tensor<float>(std::vector<int>{num, 1, height, (int)indexs_.size()}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-                }
-            }
-            float *top_data = tops[0]->mutable_cpu_data();
 
             if (bottoms[0]->order() == memory::NCHW)
             {
-                for (int n = 0; n < num; ++n)
+                std::vector<int> input_shape = bottoms[0]->data_shape();
+                int input_rank = input_shape.size();
+                int M = std::accumulate(input_shape.begin(), input_shape.begin() + axis_, 1, std::multiplies<int>());
+                int N = indexs_.size();
+                int block = std::accumulate(input_shape.begin() + axis_ + 1, input_shape.end(), 1, std::multiplies<int>());
+                int data_batch = std::accumulate(input_shape.begin() + axis_, input_shape.end(), 1, std::multiplies<int>());
+                int generate_batch = N * block;
+                std::vector<int> output_shape;
+                output_shape.reserve(4);
+                output_shape.insert(output_shape.end(), input_shape.begin(), input_shape.begin() + axis_);
+                output_shape.insert(output_shape.end(), input_shape.begin() + axis_ + 1, input_shape.end());
+                output_shape.insert(output_shape.end(), N);
+                tops[0].reset(new memory::tensor<float>(output_shape, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+
+                const float *src_base = bottoms[0]->cpu_data();
+                float *dst_base = tops[0]->mutable_cpu_data();
+
+                auto lambda = [&](int index)
                 {
-                    if (channels > 1)
-                    {
-                        if (axis_ == 0)
-                        {
-                            NOT_IMPLEMENTED;
-                        }
-                        else if (axis_ == 1)
-                        {
-                            NOT_IMPLEMENTED;
-                        }
-                        else if (axis_ == 2)
-                        {
-                            for (int i = 0; i < indexs_.size(); ++i)
-                            {
-                                for (int c = 0; c < channels; ++c)
-                                {
-                                    std::copy(bottom_data + bottoms[0]->offset(n, c, indexs_[0]), bottom_data + bottoms[0]->offset(n, c, indexs_[0]) + width, top_data);
-                                    top_data += width;
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        if (axis_ == 0)
-                        {
-                            NOT_IMPLEMENTED;
-                        }
-                        else if (axis_ == 1)
-                        {
-                            NOT_IMPLEMENTED;
-                        }
-                        else if (axis_ == 2)
-                        {
-                            for (int i = 0; i < indexs_.size(); ++i)
-                            {
-                                for (int h = 0; h < height; ++h)
-                                {
-                                    *(top_data++) = *(bottom_data + bottoms[0]->offset(n, 0, h, indexs_[i]));
-                                }
-                            }
-                        }
-                    }
+                    int batch = index / N;
+                    int i = index % N;
+                    int src_offset_batch = batch * data_batch;
+                    int dst_offset_batch = batch * generate_batch;
+                    int idx = indexs_[i];
+                    int src_offset = src_offset_batch + idx * block;
+                    int dst_offset = dst_offset_batch + i * block;
+                    memcpy(dst_base + dst_offset, src_base + src_offset, block * sizeof(float));
+                };
+                for (int i = 0; i < M * N; ++i)
+                {
+                    lambda(i);
                 }
             }
             else
             {
                 NOT_IMPLEMENTED;
             }
+        }
+
+        template <typename Dtype>
+        void operation_gather<Dtype>::forward_gpu_f32(
+#ifdef USE_CUDA
+            cublasHandle_t &cublas_handle_,
+#ifdef USE_CUDNN
+            cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+            const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
+            std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+        {
+            forward_cpu_f32(bottoms, tops);
         }
 
         INSTANCE_CLASS(operation_gather);

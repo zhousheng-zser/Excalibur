@@ -86,7 +86,7 @@ namespace glasssix
 						0.0f, col_buffer_data + this->col_offset_ * g);
 				}
 
-				col2im_gpu(col_buffer_data, this->input_channel_, this->output_dim_h_, this->output_dim_w_, this->kernel_size_h_,
+				col2im_gpu(col_buffer_data, this->output_channel_, this->output_dim_h_, this->output_dim_w_, this->kernel_size_h_,
 					this->kernel_size_w_, this->pad_left_, this->pad_top_, this->stride_h_, this->stride_w_, this->dilation_h_, this->dilation_w_, output);
 			}
 			else if (order == memory::NHWC)

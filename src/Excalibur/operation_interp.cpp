@@ -54,10 +54,8 @@ namespace glasssix
             int bottom_w = bottoms[0]->width();
             int bottom_h = bottoms[0]->height();
             int bottom_c = bottoms[0]->channels();
-
             int outw = output_width_;
             int outh = output_height_;
-
             if (output_width_ == 0 || output_height_ == 0)
             {
                 outw = static_cast<int>(bottom_w * width_scale_);
@@ -91,7 +89,6 @@ namespace glasssix
             }
 
             tops[0].reset(new memory::tensor<float>(std::vector<int>{num, bottom_c, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-
             if (resize_type_ == 1) // nearest
             {
                 const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
@@ -117,19 +114,9 @@ namespace glasssix
             resize_cpu(bottoms[0], tops[0], outh, outw, interpolationType(resize_type_ - 1));
         }
 
-        template <class Dtype>
-        void operation_interp<Dtype>::forward_gpu_f32(
-#ifdef USE_CUDA
-                cublasHandle_t &cublas_handle_,
-#ifdef USE_CUDNN
-                cudnnHandle_t cudnn_handle,
-#endif //!USE_CUDNN
-#endif //!USE_CUDA
-                const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
-                std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
-                {
-                    forward_cpu_f32(bottoms, tops);
-                }
+#ifndef USE_CUDA
+        STUB_GPU(operation_interp)
+#endif
 
         INSTANCE_CLASS(operation_interp);
         REGISTE(operation_interp);

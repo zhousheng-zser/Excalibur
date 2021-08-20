@@ -16,7 +16,7 @@ namespace glasssix
 			const int pooled_width, const int kernel_h, const int kernel_w,
 			const int stride_h, const int stride_w, const int pad_h, const int pad_w,
 			float* const top_data, memory::orderType order) {
-
+ 
 			if (order == memory::NCHW)
 			{
 				CUDA_KERNEL_LOOP(index, nthreads) {
@@ -198,9 +198,9 @@ namespace glasssix
 					this->stride_w_ = 1;
 				}
 
-				int pooled_height_ = static_cast<int>(ceil(static_cast<float>(
+				int pooled_height_ = static_cast<int>(floor(static_cast<float>(
 					height_ + pad_top_ + pad_bottom_ - kernel_size_h_) / stride_h_)) + 1;
-				int pooled_width_ = static_cast<int>(ceil(static_cast<float>(
+				int pooled_width_ = static_cast<int>(floor(static_cast<float>(
 					width_ + pad_left_ + pad_right_ - kernel_size_w_) / stride_w_)) + 1;
 
 				int spatial_dim;
