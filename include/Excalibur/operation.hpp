@@ -108,7 +108,7 @@ namespace glasssix
 		public:
 			operation() {}
 
-			explicit operation(const operation_param& param) : params_(param) {}
+			explicit operation(const operation_param& param);
 
 			virtual ~operation() {}
 

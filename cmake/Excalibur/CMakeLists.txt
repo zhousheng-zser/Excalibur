@@ -12,8 +12,8 @@ file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Excalibur/*.hpp ${CMA
 list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/main.cpp")
 
 if(USE_CUDA)
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_61,code=sm_61")
 	CUDA_ADD_LIBRARY(${module_name} SHARED ${src} ${header})
-#	set(CUDA_NVCC_FLAGS -arch=compute_30)
 else()
 	add_library(${module_name} SHARED ${src} ${header})
 endif()

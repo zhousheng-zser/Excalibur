@@ -35,6 +35,16 @@ namespace glasssix
 				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
+#ifdef USE_CUDA
+			virtual void forward_gpu_f16(
+				cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+				cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+				const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops);
+#endif //!USE_CUDA
+
 		private:
 
 			void conv3x3s1_winograd23_tr_kernel();
@@ -67,6 +77,10 @@ namespace glasssix
 			void forward_gpu_sgemm(cublasHandle_t &cublas_handle, const float* input, const float* weights, float* output, memory::orderType order);
 
 			void forward_gpu_sbias(cublasHandle_t &cublas_handle, float* output, const float* bias, memory::orderType order);
+
+			void forward_gpu_hgemm(cublasHandle_t& cublas_handle, const unsigned short* input, const unsigned short* weights, unsigned short* output, memory::orderType order);
+
+			void forward_gpu_hbias(cublasHandle_t& cublas_handle, unsigned short* output, const unsigned short* bias, memory::orderType order);
 #endif //!USE_CUDA
 
 			void forward_cpu_k1s1_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
@@ -86,6 +100,9 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<float> > bottom_blob_bordered_;
 			std::shared_ptr<memory::tensor<float> > bottom_blob_tm_;
 
+			float* col_buffer_data;
+			float* bias_multiplier_data;
+
 
 			//int8 convolution multiplication
 			std::shared_ptr<memory::tensor<int>> top_int32_;            
@@ -101,9 +118,11 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<signed char>> bottom_im2row_;
 			
 
-
-			float* col_buffer_data;
-			float* bias_multiplier_data;
+			//fp16
+			std::shared_ptr<memory::tensor<unsigned short>> col_buffer_f16_;
+			std::shared_ptr<memory::tensor<unsigned short>> bias_multiplier_f16_;
+			unsigned short* col_buffer_f16_data_;
+			unsigned short* bias_multiplier_f16_data_;
 		};
 	}
 }

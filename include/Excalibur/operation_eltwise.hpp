@@ -31,6 +31,16 @@ namespace glasssix
 				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
+#ifdef USE_CUDA
+			virtual void forward_gpu_f16(
+				cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+				cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+				const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops);
+#endif //!USE_CUDA
+
 		private:
 			enum eltwise_type { PROD, SUM, MAX };
 			eltwise_type type_ = eltwise_type::SUM;

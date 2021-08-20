@@ -41,17 +41,18 @@ namespace glasssix
 
             explicit impl(const std::vector<std::string> &hardcode_params, std::string_view model_file, int device = -1)
             {
-#ifdef USE_CUDA
-                CUBLAS_CHECK(cublasCreate(&cublas_handle_));
-#ifdef USE_CUDNN
-                CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
-#endif
                 if (device >= 0)
                 {
+
+#ifdef USE_CUDA
+                    CUBLAS_CHECK(cublasCreate(&cublas_handle_));
+#ifdef USE_CUDNN
+                    CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
+#endif
                     CUDA_CHECK(cudaSetDevice(device));
                     device_ = device;
-                }
 #endif
+                }
                 decltype(auto) lines = hardcode_params;
                 if (lines.size() <= 0)
                 {

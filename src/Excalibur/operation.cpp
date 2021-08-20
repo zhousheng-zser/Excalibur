@@ -4,6 +4,17 @@ namespace glasssix
 {
 	namespace excalibur
 	{
+		template<typename Dtype>
+		operation<Dtype>::operation(const operation_param& param) : params_(param)
+		{
+		}
+
+		template<>
+		operation<unsigned short>::operation(const operation_param& param) : params_(param)
+		{
+			params_.set_float16(true);
+		}
+
 		template <>
 		void operation<float>::forward_cpu(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)

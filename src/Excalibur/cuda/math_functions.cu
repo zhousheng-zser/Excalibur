@@ -1,5 +1,6 @@
 #ifdef USE_CUDA
 #include "../../../include/Excalibur/math_functions.hpp"
+#include <cuda_fp16.h>
 
 namespace glasssix
 {
@@ -18,6 +19,23 @@ namespace glasssix
 				return;
 			}
 			set_kernel << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> >(
+				N, alpha, Y);
+		}
+
+		__global__ void set_kernel_f16(const int n, const unsigned short alpha, unsigned short* y) {
+			CUDA_KERNEL_LOOP(index, n) {
+				y[index] = alpha;
+			}
+		}
+
+		void math_functions::gpu_set(const int N, const unsigned short alpha, unsigned short* Y)
+		{
+			if (alpha == 0) {
+				CUDA_CHECK(cudaMemset(Y, 0, sizeof(unsigned short) * N));
+				return;
+			}
+			
+			set_kernel_f16 << <CUDA_GET_BLOCKS(N), CUDA_NUM_THREADS >> > (
 				N, alpha, Y);
 		}
 
@@ -78,6 +96,22 @@ namespace glasssix
 			int beta = 0;
 			CUBLAS_CHECK(cublasGemmEx(cublas_handle_, cuTransB, cuTransA,
 				N, M, K, &alpha, B, CUDA_R_8I, ldb, A, CUDA_R_8I, lda, &beta, C, CUDA_R_32I, N, CUDA_R_32I, CUBLAS_GEMM_DFALT));
+		}
+
+		void math_functions::gpu_gemmEx(cublasHandle_t& cublas_handle_, const CBLAS_TRANSPOSE TransA,
+			const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K, const unsigned short alpha,
+			const unsigned short* A, const unsigned short* B, const unsigned short beta, unsigned short* C)
+		{
+			// Note that cublas follows fortran order.
+			int lda = (TransA == CblasNoTrans) ? K : M;
+			int ldb = (TransB == CblasNoTrans) ? N : K;
+			cublasOperation_t cuTransA =
+				(TransA == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+			cublasOperation_t cuTransB =
+				(TransB == CblasNoTrans) ? CUBLAS_OP_N : CUBLAS_OP_T;
+
+			CUBLAS_CHECK(cublasGemmEx(cublas_handle_, cuTransB, cuTransA,
+				N, M, K, &alpha, B, CUDA_R_16F, ldb, A, CUDA_R_16F, lda, &beta, C, CUDA_R_16F, N, CUDA_R_16F, CUBLAS_GEMM_DFALT));
 		}
 
 		void math_functions::gpu_saxpy(cublasHandle_t &cublas_handle_, const int N, const float alpha, const float* X, float* Y)
