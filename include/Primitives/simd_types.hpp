@@ -313,14 +313,25 @@ namespace glasssix
 
     //************************types convertors**************************//
 
+    // convert float32 to half
+    EXPORT_EXCALIBUR_PRIMITIVES unsigned short float32_to_float16(float value);
+
+    // convert half to float32
+    EXPORT_EXCALIBUR_PRIMITIVES float float16_to_float32(unsigned short value);
+
     // convert float to brain half
     EXPORT_EXCALIBUR_PRIMITIVES unsigned short float32_to_bfloat16(float value);
 
     // convert brain half to float
     EXPORT_EXCALIBUR_PRIMITIVES float bfloat16_to_float32(unsigned short value);
 
-    // round to nearest
+    // convert float32 to int8
     EXPORT_EXCALIBUR_PRIMITIVES signed char float32_to_int8(float value);
+
+    // convert float32 to int8 with SIMD
+#if __ARM_NEON
+    EXPORT_EXCALIBUR_PRIMITIVES int8x8_t float32_to_int8(float32x4_t _vlow, float32x4_t _vhigh);
+#endif
 
     EXPORT_EXCALIBUR_PRIMITIVES void int8_to_float(const signed char *int8_data, const float *scales, float *floats, int num, int group);
 

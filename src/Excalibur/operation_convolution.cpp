@@ -46,6 +46,21 @@ namespace glasssix
                         forward_im2col_tr_kernel();
                     }
                 }
+                
+                if (this->params_.float16_)
+                {
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
+                    this->weights_f16_.push_back(std::shared_ptr<memory::tensor<unsigned short>>(new memory::tensor<unsigned short>(this->weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+                    float2half(this->weights_f32_[0]->cpu_data(), this->weights_f16_[0]->mutable_cpu_data(), this->weight_data_size_);
+                    if (this->bias_term_)
+                    {
+                        this->weights_f16_.push_back(std::shared_ptr<memory::tensor<unsigned short>>(new memory::tensor<unsigned short>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr)));
+                        float2half(this->weights_f32_[1]->cpu_data(), this->weights_f16_[1]->mutable_cpu_data(), this->output_channel_);
+                    }
+#else
+                    NOT_IMPLEMENTED;
+#endif
+                }
             }
             else if (quantize_tag == 871224)
             {
@@ -110,7 +125,7 @@ namespace glasssix
                     mem += this->output_channel_ * sizeof(float);
                 }
 
-                if (this->params_.device_)
+                if (this->params_.device_ < 0)
                 {
                     if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1) && this->output_channel_ < 128)
                     {
@@ -120,6 +135,21 @@ namespace glasssix
                     {
                         forward_im2col_tr_kernel();
                     }
+                }
+
+                if (this->params_.float16_)
+                {
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_SSE_VERSION)
+                    this->weights_f16_.push_back(std::shared_ptr<memory::tensor<unsigned short>>(new memory::tensor<unsigned short>(this->weight_data_size_, this->params_.device_, memory::NCHW, nullptr)));
+                    float2half(this->weights_f32_[0]->cpu_data(), this->weights_f16_[0]->mutable_cpu_data(), this->weight_data_size_);
+                    if (this->bias_term_)
+                    {
+                        this->weights_f16_.push_back(std::shared_ptr<memory::tensor<unsigned short>>(new memory::tensor<unsigned short>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr)));
+                        float2half(this->weights_f32_[1]->cpu_data(), this->weights_f16_[1]->mutable_cpu_data(), this->output_channel_);
+                    }
+#else
+                    NOT_IMPLEMENTED;
+#endif
                 }
             }
             else

@@ -151,6 +151,31 @@ namespace glasssix
 		return static_cast<signed char>(tmp);
 	}
 
+#if __ARM_NEON
+	int8x8_t float32_to_int8(float32x4_t _vlow, float32x4_t _vhigh)
+	{
+#if __aarch64__
+		int32x4_t _vlow32 = vcvtaq_s32_f32(_vlow);
+		int32x4_t _vhigh32 = vcvtaq_s32_f32(_vhigh);
+#else
+		// use vcvtr.s32.f32
+		int32x4_t _vlow32 = int32x4_t();
+		int32x4_t _vhigh32 = int32x4_t();
+		_vlow32 = vsetq_lane_s32(round(vgetq_lane_f32(_vlow, 0)), _vlow32, 0);
+		_vlow32 = vsetq_lane_s32(round(vgetq_lane_f32(_vlow, 1)), _vlow32, 1);
+		_vlow32 = vsetq_lane_s32(round(vgetq_lane_f32(_vlow, 2)), _vlow32, 2);
+		_vlow32 = vsetq_lane_s32(round(vgetq_lane_f32(_vlow, 3)), _vlow32, 3);
+		_vhigh32 = vsetq_lane_s32(round(vgetq_lane_f32(_vhigh, 0)), _vhigh32, 0);
+		_vhigh32 = vsetq_lane_s32(round(vgetq_lane_f32(_vhigh, 1)), _vhigh32, 1);
+		_vhigh32 = vsetq_lane_s32(round(vgetq_lane_f32(_vhigh, 2)), _vhigh32, 2);
+		_vhigh32 = vsetq_lane_s32(round(vgetq_lane_f32(_vhigh, 3)), _vhigh32, 3);
+#endif
+		int16x8_t _v16 = vcombine_s16(vqmovn_s32(_vlow32), vqmovn_s32(_vhigh32));
+		int8x8_t _v8 = vqmovn_s16(_v16);
+		return vmax_s8(_v8, vdup_n_s8(-127));
+	}
+#endif
+
 	void int8_to_float(const signed char* int8_data, const float* scales, float* floats, int num, int group)
 	{
 		if (num % group != 0)

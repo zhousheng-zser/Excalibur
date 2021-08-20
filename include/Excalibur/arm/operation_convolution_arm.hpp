@@ -28,30 +28,35 @@ namespace glasssix
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
 		private:
-
-			void conv1x1s1_sgemm_transform_kernel_neon();
-			void conv3x3s1_winograd64_transform_kernel_neon5();
-			void conv3x3s2_transform_kernel_neon();
-			void conv_im2col_sgemm_transform_kernel_neon();
-
-			void conv1x1s1_sgemm_neon(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-			void conv1x1s1_neon(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-			void conv3x3s1_winograd64_neon5(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-			void conv3x3s1_neon(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-			void conv3x3s2_packed_neon(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-			void conv_im2col_sgemm_neon(const std::shared_ptr < memory::tensor<float>>& bottom,
-				std::shared_ptr < memory::tensor<float>>& top);
-
-			//f32 convolution multiplication
+			//float32 pack1
 			std::shared_ptr<memory::tensor<float>> kernel_tm_;
 			std::shared_ptr<memory::tensor<float>> kernel_tm_gemm_;
 
-			//for int8
+#ifdef __ARM_NEON
+			//float32 pack4
+			void conv3x3s1_winograd64_transform_kernel_pack4_neon();
+			void conv3x3s1_winograd42_transform_kernel_pack4_neon();
+			void convolution_transform_kernel_pack4_neon();
+
+			std::shared_ptr<memory::tensor<float>> weight_data_pack4_;
+			std::shared_ptr<memory::tensor<float>> weight_sgemm_data_pack4_;
+			std::shared_ptr<memory::tensor<float>> weight_3x3_winograd42_data_pack4_;
+
+			//float32 pack1to4
+			void convolution_transform_kernel_pack1to4_neon();
+
+			std::shared_ptr<memory::tensor<float>> weight_data_pack1to4_;
+
+			//pack4to1
+			void conv1x1s1_sgemm_transform_kernel_pack4to1_neon();
+			void conv3x3s1_winograd64_transform_kernel_pack4to1_neon();
+			void convolution_transform_kernel_pack4to1_neon();
+
+			std::shared_ptr<memory::tensor<float>> weight_data_pack4to1_;
+#endif
+
+
+			//int8 pack1
 			void im2col_sgemm_int8_neon(const int8_t* kernel_tm_gemm_int8_data, int kernel_tm_gemm_int8_cstep, 
 				const int8_t *bottom_im2col, int size, int maxk, int inch, 
 				int* top, int outw, int outh, int outch);
@@ -65,6 +70,7 @@ namespace glasssix
 				std::shared_ptr<memory::tensor<int>>& top);
 			void conv_im2col_sgemm_int8_neon(const std::shared_ptr<memory::tensor<int8_t>>& bottom, 
 				std::shared_ptr<memory::tensor<int>>& top);
+
 			std::vector<std::shared_ptr<memory::tensor<short>>> kernel_tm_winograd_int8_;
 			std::shared_ptr<memory::tensor<int8_t>> kernel_tm_gemm_int8_;
             operation<float>* op;

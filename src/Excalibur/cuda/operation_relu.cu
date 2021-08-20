@@ -1,6 +1,10 @@
 #include "../../../include/Excalibur/operation_relu.hpp"
 #include "../../../include/Excalibur/operation_reflector.hpp"
 
+#ifdef USE_CUDA
+#include <cuda_fp16.hpp>
+#endif
+
 namespace glasssix
 {
 	namespace excalibur
@@ -36,10 +40,44 @@ namespace glasssix
 			CUDA_POST_KERNEL_CHECK;
 		}
 
+		__global__ void relu_kernel_f16(const int n, const unsigned short* in, unsigned short* out)
+		{
+			CUDA_KERNEL_LOOP(index, n)
+			{
+				__half value = __ushort_as_half(in[index]);
+				__half zero = __float2half(0.0f);
+				out[index] = __half_as_ushort(__hgt(value, zero) ? value : zero);
+			}
+		}
+
+		template<typename Dtype>
+		void operation_relu<Dtype>::forward_gpu_f16(
+			cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+			cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+			const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
+			std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops)
+		{
+			CHECK_EQ(bottoms.size(), tops.size());
+			for (size_t i = 0; i < bottoms.size(); i++)
+			{
+				tops[i].reset(new memory::tensor<unsigned short>(bottoms[i]->data_shape(), this->params_.device_, bottoms[i]->order(), bottoms[i]->allocator()));
+				unsigned short* top_data = tops[i]->mutable_gpu_data();
+				const unsigned short* bottom_data = bottoms[i]->gpu_data();
+				const int count = bottoms[i]->count();
+				relu_kernel_f16 << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
+					count, bottom_data, top_data);
+			}
+			CUDA_POST_KERNEL_CHECK;
+		}
+
 #ifdef USE_CUDNN
 		INSTANTIATE_OPERATION_CUDNN_FWDF32(operation_relu);
+		INSTANTIATE_OPERATION_CUDNN_FWDF16(operation_relu);
 #else
 		INSTANTIATE_OPERATION_CUDA_FWDF32(operation_relu);
+		INSTANTIATE_OPERATION_CUDA_FWDF16(operation_relu);
 #endif
 
 #endif // USE_CUDA

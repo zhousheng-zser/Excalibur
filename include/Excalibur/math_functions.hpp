@@ -266,9 +266,16 @@ namespace glasssix
 				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
 				const signed char* A, const signed char* B, int* C);
 
+			static void gpu_gemmEx(cublasHandle_t& cublas_handle_, const CBLAS_TRANSPOSE TransA,
+				const CBLAS_TRANSPOSE TransB, const int M, const int N, const int K,
+				const unsigned short alpha, const unsigned short* A, const unsigned short* B, const unsigned short beta,
+				unsigned short* C);
+
 			static void gpu_saxpy(cublasHandle_t &cublas_handle_, const int N, const float alpha, const float* X, float* Y);
 
 			static void gpu_set(const int N, const float alpha, float* Y);
+
+			static void gpu_set(const int N, const unsigned short alpha, unsigned short* Y);
 
 			static void gpu_powx(const int n, const float* a, const float b, float* y);
 
