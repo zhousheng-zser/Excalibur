@@ -119,10 +119,6 @@ namespace glasssix
 #include "../../../include/Excalibur/arm/convolution_sgemm_pack4.hpp"
 #endif
 
-
-		template<typename Dtype>
-		operation_convolution_arm<Dtype>::operation_convolution_arm(const operation_param& param) : operation_general_conv<Dtype>(param)
-		{
         template <typename Dtype>
         operation_convolution_arm<Dtype>::operation_convolution_arm(const operation_param &param) : operation_general_conv<Dtype>(param)
         {
