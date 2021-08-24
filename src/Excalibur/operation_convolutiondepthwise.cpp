@@ -140,22 +140,20 @@ namespace glasssix
                 //             int wstart = pw * this->stride_w_ - this->pad_left_;
                 //             int hend = std::min(hstart + this->kernel_size_h_, this->input_dim_h_ + this->pad_bottom_);
                 //             int wend = std::min(wstart + this->kernel_size_w_, this->input_dim_w_ + this->pad_right_);
+                //             float aveval = 0;
+                //             const float *bottom_slice = bottom_data + n * bottoms[0]->count(1, 4) + (n_step * this->output_channel_ + c) * this->input_dim_h_ * this->input_dim_w_;
+                //             const float *weight_slice = weights_data + c * this->kernel_size_h_ * this->kernel_size_w_;
+                //             int khstart = hstart < 0 ? std::abs(hstart) : 0;
+                //             int kwstart = wstart < 0 ? std::abs(wstart) : 0;
                 //             hstart = std::max(hstart, 0);
                 //             wstart = std::max(wstart, 0);
                 //             hend = std::min(hend, this->input_dim_h_);
                 //             wend = std::min(wend, this->input_dim_w_);
-                //             float aveval = 0;
-                //             const float *bottom_slice =
-                //                 bottom_data + n * bottoms[0]->count(1, 4) + (n_step * this->output_channel_ + c) * this->input_dim_h_ * this->input_dim_w_;
-                //             const float *weight_slice =
-                //                 weights_data + c * this->kernel_size_h_ * this->kernel_size_w_;
-                //             int khstart = hend < this->kernel_size_h_ ? this->kernel_size_h_ - hend : 0;
-                //             int kwstart = wend < this->kernel_size_w_ ? this->kernel_size_w_ - wend : 0;
                 //             for (int h = hstart; h < hend; ++h)
                 //             {
                 //                 for (int w = wstart; w < wend; ++w)
                 //                 {
-                //                     aveval += bottom_slice[h * this->input_dim_h_ + w] * weight_slice[(khstart + h - hstart) * this->kernel_size_w_ + (kwstart + w - wstart)];
+                //                     aveval += bottom_slice[h * this->input_dim_w_ + w] * weight_slice[(khstart + h - hstart) * this->kernel_size_w_ + (kwstart + w - wstart)];
                 //                 }
                 //             }
                 //             if (this->bias_term_)

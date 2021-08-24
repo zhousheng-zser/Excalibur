@@ -28,17 +28,15 @@ namespace glasssix
 					int wstart = pw * stride_w - pad_w;
 					int hend = min(hstart + kernel_h, height + pad_h);
 					int wend = min(wstart + kernel_w, width + pad_w);
-					hstart = max(hstart, 0);
+					float aveval = 0;
+					const float* const bottom_slice = bottom_data + (n * channels + c) * height * width;
+					const float* const weight_slice = weight + c * kernel_h * kernel_w;
+                    int khstart = hstart < 0 ? abs(hstart) : 0;
+                    int kwstart = wstart < 0 ? abs(wstart) : 0;
+                    hstart = max(hstart, 0);
 					wstart = max(wstart, 0);
 					hend = min(hend, height);
 					wend = min(wend, width);
-					float aveval = 0;
-					const float* const bottom_slice =
-						bottom_data + (n * channels + c) * height * width;
-					const float* const weight_slice =
-						weight + c * kernel_h * kernel_w;
-					int khstart = hend < kernel_h ? kernel_h - hend : 0;
-					int kwstart = wend < kernel_w ? kernel_w - wend : 0;
 					for (int h = hstart; h < hend; ++h) 
 					{
 						for (int w = wstart; w < wend; ++w) 
