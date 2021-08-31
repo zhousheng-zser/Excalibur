@@ -12,7 +12,13 @@ file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Excalibur/*.hpp ${CMA
 list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/main.cpp")
 
 if(USE_CUDA)
-    set(CUDA_NVCC_FLAGS -gencode arch=compute_60,code="sm_60,sm_70";)
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -gencode arch=compute_60,code=sm_60;
+											-gencode arch=compute_61,code=sm_61;
+											-gencode arch=compute_70,code=sm_70;
+											-gencode arch=compute_72,code=sm_72;
+											-gencode arch=compute_75,code=sm_75;
+											-gencode arch=compute_80,code=sm_80;
+											-gencode arch=compute_86,code=sm_86")
 	CUDA_ADD_LIBRARY(${module_name} SHARED ${src} ${header})
 else()
 	add_library(${module_name} SHARED ${src} ${header})
