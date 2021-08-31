@@ -16,6 +16,10 @@
 #include "../3rdparty/proto/caffe.pb.h"
 #endif // CAFFE_SUPPORT
 
+#ifdef USE_CUDNN
+#include <cudnn.h>
+#endif // USE_CUDNN
+
 namespace glasssix
 {
 	namespace excalibur
