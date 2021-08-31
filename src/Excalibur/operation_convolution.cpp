@@ -18,6 +18,18 @@ namespace glasssix
         }
 
         template <typename Dtype>
+        operation_convolution<Dtype>::~operation_convolution()
+        {
+#ifdef USE_CUDNN
+            // destroy
+            cudnnDestroyTensorDescriptor(input_descriptor_);
+            cudnnDestroyTensorDescriptor(output_descriptor_);
+            cudnnDestroyFilterDescriptor(kernel_descriptor_);  
+            cudnnDestroyConvolutionDescriptor(conv_descriptor_);
+#endif
+        }
+
+        template <typename Dtype>
         int operation_convolution<Dtype>::init_weights(FILE *fp)
         {
             int quantize_tag;
@@ -97,6 +109,34 @@ namespace glasssix
             {
                 NOT_IMPLEMENTED;
             }
+#ifdef USE_CUDNN
+            // kernel
+            int input_channel = this->weight_data_size_ / this->output_channel_ / this->group_ / this->kernel_size_h_ / this->kernel_size_w_ * this->group_;
+            cudnnCreateFilterDescriptor(&kernel_descriptor_);
+            cudnnSetFilter4dDescriptor(kernel_descriptor_,
+                                       CUDNN_DATA_FLOAT,
+                                       CUDNN_TENSOR_NCHW,
+                                       this->output_channel_, input_channel, this->kernel_size_h_, this->kernel_size_w_);
+            // cudnnConvolutionDescriptor_t conv_descriptor;
+            cudnnCreateConvolutionDescriptor(&conv_descriptor_);
+            cudnnSetConvolution2dDescriptor(conv_descriptor_,
+                                            this->pad_top_, this->pad_left_,      // zero-padding
+                                            this->stride_h_, this->stride_w_,     // stride
+                                            this->dilation_h_, this->dilation_w_, // dilation
+                                            CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);
+            cudnnCreateTensorDescriptor(&input_descriptor_);
+            cudnnCreateTensorDescriptor(&output_descriptor_);
+            // algorithm
+            // cudnnConvolutionFwdAlgo_t algo;
+            if (this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3 && this->stride_h_ == 1 && this->stride_w_ == 1)
+            {
+                algo_ = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD;
+            }
+            else
+            {
+                algo_ = CUDNN_CONVOLUTION_FWD_ALGO_GEMM;
+            }
+#endif
             return mem;
         }
 
@@ -192,6 +232,33 @@ namespace glasssix
                     }
                 }
             }
+#ifdef USE_CUDNN
+            // kernel
+            int input_channel = this->weight_data_size_ / this->output_channel_ / this->group_ / this->kernel_size_h_ / this->kernel_size_w_ * this->group_;
+            cudnnCreateFilterDescriptor(&kernel_descriptor_);
+            cudnnSetFilter4dDescriptor(kernel_descriptor_,
+                                       CUDNN_DATA_FLOAT,
+                                       CUDNN_TENSOR_NCHW,
+                                       this->output_channel_, input_channel, this->kernel_size_h_, this->kernel_size_w_);
+            // cudnnConvolutionDescriptor_t conv_descriptor;
+            cudnnCreateConvolutionDescriptor(&conv_descriptor_);
+            cudnnSetConvolution2dDescriptor(conv_descriptor_,
+                                            this->pad_top_, this->pad_left_,      // zero-padding
+                                            this->stride_h_, this->stride_w_,     // stride
+                                            this->dilation_h_, this->dilation_w_, // dilation
+                                            CUDNN_CROSS_CORRELATION, CUDNN_DATA_FLOAT);
+            cudnnCreateTensorDescriptor(&input_descriptor_);
+            cudnnCreateTensorDescriptor(&output_descriptor_);
+            // algorithm
+            if (this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3 && this->stride_h_ == 1 && this->stride_w_ == 1)
+            {
+                algo_ = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD;
+            }
+            else
+            {
+                algo_ = CUDNN_CONVOLUTION_FWD_ALGO_GEMM;
+            }
+#endif
             return mem;
         }
 

@@ -84,6 +84,14 @@ namespace glasssix
     CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
   } while (0)
 
+// CUDNN: various checks for different function calls.
+#define CUDNN_CHECK(condition) \
+  /* Code block avoids redefinition of cudaError_t error */ \
+  do { \
+    cudnnStatus_t error = condition; \
+    CHECK_EQ(error, cudaSuccess) << " " << cudnnGetErrorString(error); \
+  } while (0)
+
 #define CUDA_DRIVER_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
   do { \

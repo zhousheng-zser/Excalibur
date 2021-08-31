@@ -313,10 +313,6 @@ namespace glasssix
             forward_cpu_f32(bottoms, tops);
         }
 
-#ifndef USE_CUDA
-        STUB_GPU(operation_binaryop);
-#endif
-
         INSTANCE_CLASS(operation_binaryop);
         REGISTE(operation_binaryop);
     }

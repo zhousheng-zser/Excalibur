@@ -13,7 +13,7 @@ namespace glasssix
 		{
 		public:
 			operation_convolution(const operation_param& param);
-			virtual ~operation_convolution() {}
+			virtual ~operation_convolution();
 			virtual int init_weights();
 
 			virtual int init_weights(FILE *fp);
@@ -123,6 +123,15 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<unsigned short>> bias_multiplier_f16_;
 			unsigned short* col_buffer_f16_data_;
 			unsigned short* bias_multiplier_f16_data_;
+
+            // cudnn
+#ifdef USE_CUDNN
+            cudnnTensorDescriptor_t input_descriptor_;
+            cudnnTensorDescriptor_t output_descriptor_;
+            cudnnConvolutionDescriptor_t conv_descriptor_;
+            cudnnFilterDescriptor_t kernel_descriptor_;
+            cudnnConvolutionFwdAlgo_t algo_;
+#endif // USE_CUDNN
 		};
 	}
 }
