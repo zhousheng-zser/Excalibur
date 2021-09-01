@@ -452,7 +452,7 @@ namespace glasssix
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(2)
 #endif
-				for (size_t p = 0; p < num_output_; p++)
+				for (int p = 0; p < num_output_; p++)
 				{
 					const int8_t* weight_i8_data = this->weights_i8_[0]->cpu_data() + p * size;
 					for (int i = 0; i < size; i++)
