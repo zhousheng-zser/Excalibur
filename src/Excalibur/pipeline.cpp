@@ -377,6 +377,11 @@ namespace glasssix
                         }
                         featmaps_[ops_io_featmap_[i].second[j]] = output[j];
                     }
+                    // free memory
+                    for (size_t j = 0; j < input.size(); j++)
+                    {
+                        featmaps_[ops_io_featmap_[i].first[j]].reset();
+                    }
                     p->scope_end();
                 }
                 std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;

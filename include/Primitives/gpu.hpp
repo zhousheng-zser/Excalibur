@@ -80,12 +80,23 @@ namespace glasssix
 #ifdef x86
 #ifdef USE_CUDA
 // CUDA: various checks for different function calls.
+
 #define CUDA_CHECK(condition) \
-  /* Code block avoids redefinition of cudaError_t error */ \
-  do { \
-    cudaError_t error = condition; \
-    CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
-  } while (0)
+/* Code block avoids redefinition of cudaError_t error */ \
+do { \
+cudaError_t error = condition; \
+CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
+} while (0)
+
+// CUDNN: various checks for different function calls.
+#ifdef USE_CUDNN
+    #define CUDNN_CHECK(condition) \
+    /* Code block avoids redefinition of cudaError_t error */ \
+    do { \
+        cudnnStatus_t error = condition; \
+        CHECK_EQ(error, cudaSuccess) << " " << cudnnGetErrorString(error); \
+    } while (0)
+#endif // USE_CUDNN
 
 #define CUDA_DRIVER_CHECK(condition) \
   /* Code block avoids redefinition of cudaError_t error */ \
