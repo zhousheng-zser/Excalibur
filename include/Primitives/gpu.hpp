@@ -10,7 +10,7 @@
 #include <cuda_runtime.h>
 #ifdef USE_CUDNN
 #include <cudnn.h>
-#endif // USE_CUDNN
+#endif //!USE_CUDNN
 #endif //!USE_CUDA
 #endif //!x86
 
@@ -113,6 +113,29 @@ CHECK_EQ(error, cudaSuccess) << " " << cudaGetErrorString(error); \
 
 // CUDA: check for error after kernel execution and exit loudly if there is one.
 #define CUDA_POST_KERNEL_CHECK CUDA_CHECK(cudaPeekAtLastError())
+
+#ifdef USE_CUDNN
+#define CUDNN_VERSION_MIN(major, minor, patch) \
+    (CUDNN_VERSION >= (major * 1000 + minor * 100 + patch))
+
+#if !defined(CUDNN_VERSION) || !CUDNN_VERSION_MIN(6, 0, 0)
+#error "Primitives and higher requires CUDNN version 6.0.0 or higher"
+#endif
+
+#define CUDNN_CHECK(condition) \
+  do { \
+    cudnnStatus_t status = condition; \
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << " "\
+      << cudnnGetErrorString(status) << ", device " /*<< glasssix::current_device()*/; \
+  } while (0)
+
+#define CUDNN_CHECK2(condition, arg1, arg2) \
+  do { \
+    cudnnStatus_t status = condition; \
+    CHECK_EQ(status, CUDNN_STATUS_SUCCESS) << "CUDNN error " \
+      << (int)status << " " << (arg1) << " " << (arg2); \
+  } while (0)
+#endif
 #endif //!USE_CUDA
 #endif //!x86
 
