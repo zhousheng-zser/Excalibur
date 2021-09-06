@@ -32,7 +32,7 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
-            // {"det_cool_1000epoch_use_pretrained", {1, 3, 960, 1440}, 0},
+            {"det_cool_1000epoch_use_pretrained", {1, 3, 960, 1440}, 0},
             // {"rec_cool_500epoch_use_pretrained", {1, 3, 32, 320}, 0}
             // {"angle_best", {1, 3, 32, 320}, 0},
             // {"rec_combine_best", {1, 3, 32, 320}, 0}
@@ -40,7 +40,7 @@ int main()
             // {"rec_crnn_resnet34", {1, 3, 32, 100}, 0}
             // {"det_db_resnet18", {1, 3, 800, 800}, 0}
             // {"pfld11_landmark65_simp", {1, 3, 112, 112}, -1}
-            {"pfld_land71_simp", {1, 3, 80, 80}, 0}
+            // {"pfld_land71_simp", {1, 3, 80, 80}, 0}
             // {"pfld_attri_simp", {1, 3, 80, 80}, -1}
             // {"hat_simp-opt", {1, 3, 640, 640}, 0}
             // {"yolov5s_simp", {1, 3, 640, 640}, 0}

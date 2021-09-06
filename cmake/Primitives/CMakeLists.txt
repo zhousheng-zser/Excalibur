@@ -21,10 +21,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	target_compile_definitions(${module_name} PRIVATE -DFMT_EXPORT -DEXPORT_EXCALIBUR_PRIMITIVES -D_WINDLL)
 endif()
 
+if(NOT DEFINED USE_MKL OR NOT DEFINED USE_OPENBLAS)
+	target_include_directories(${module_name} PRIVATE ../../include)
+endif()
+
 if(USE_CUDA)
 	target_include_directories(${module_name} SYSTEM PRIVATE ${CUDA_INCLUDE_DIRS})
 	target_compile_definitions(${module_name} PRIVATE -DUSE_CUDA)
-	target_link_libraries(${module_name} ${CUDA_LIBRARIES})
+	target_link_libraries(${module_name} ${CUDA_CUDART_LIBRARY} ${CUDA_CUBLAS_LIBRARIES})
 endif()
 
 if(USE_CUDNN)

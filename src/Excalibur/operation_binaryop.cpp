@@ -36,6 +36,7 @@ namespace glasssix
                     {
                         outptr[i] = op(b1[i], b2[i]);
                     }
+                    return;
                 }
                 else if (b2_dims == 1 && bottom_c2 > 1)
                 {
@@ -67,6 +68,7 @@ namespace glasssix
                         }
                         b1 += bottom_w1;
                     }
+                    return;
                 }
             }
             else if (b1_dims == 1)
@@ -82,6 +84,7 @@ namespace glasssix
                         {
                             outptr[i] = op(b1[i], b2[i]);
                         }
+                        return;
                     }
                     else if (bottom_w2 * bottom_h2 * bottom_c2 == 1)
                     {
@@ -92,6 +95,7 @@ namespace glasssix
                         {
                             outptr[i] = op(b1[i], b2[0]);
                         }
+                        return;
                     }
                 }
                 else if (b2_dims == 3)
@@ -115,10 +119,7 @@ namespace glasssix
                     }
                 }
             }
-            else
-            {
-                NOT_IMPLEMENTED;
-            }
+            NOT_IMPLEMENTED;
         }
 
         template <typename Op>
