@@ -32,10 +32,10 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
-            // {"det_cool_1000epoch_use_pretrained", {1, 3, 960, 1440}, 0},
+            {"det_cool_1000epoch_use_pretrained", {1, 3, 960, 1440}, 0},
             // {"rec_cool_500epoch_use_pretrained", {1, 3, 32, 320}, 0}
             // {"angle_best", {1, 3, 32, 320}, 0},
-            {"rec_combine_best", {1, 3, 32, 320}, 0}
+            // {"rec_combine_best", {1, 3, 32, 320}, 0}
             // {"det_combine_best", {1, 3, 800, 800}, 0}
             // {"rec_crnn_resnet34", {1, 3, 32, 100}, 0}
             // {"det_db_resnet18", {1, 3, 800, 800}, 0}
