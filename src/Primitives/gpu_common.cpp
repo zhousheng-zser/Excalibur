@@ -2,7 +2,6 @@
 
 namespace glasssix
 {
-
     std::uint32_t lwp_id()
 	{
 #if defined(APPLE) || defined(WIN32)

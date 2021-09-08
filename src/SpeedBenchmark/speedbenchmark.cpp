@@ -60,7 +60,7 @@ int main()
     timer t;
     std::vector<excalibur::pipeline<float> *> pipes;
     int warmup_loop_count = 5;
-    int loop_count = 100;
+    int loop_count = 1;
 
     for (size_t i = 0; i < pipe_infos.size(); i++)
     {
