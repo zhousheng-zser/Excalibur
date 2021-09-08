@@ -1,5 +1,9 @@
 #include "gpu_common.hpp"
-
+#ifdef __linux__
+#include <sys/syscall.h>
+#include <unistd.h>
+#include <sched.h>
+#endif
 namespace glasssix
 {
     std::uint32_t lwp_id()
@@ -9,18 +13,20 @@ namespace glasssix
         auto tid = std::this_thread::get_id();
         _Thrd_t t = *(_Thrd_t*)(char*)&tid;
         return t._Id;
-#else
+#elif defined(__GLIBC__)
         return static_cast<std::uint32_t>(syscall(SYS_gettid));
+#else
+        return static_cast<std::uint32_t>(gettid());
 #endif
     }
 
+#ifdef USE_CUDA
     std::uint64_t lwp_dev_id(int dev)
 	{
         std::uint64_t dev64 = static_cast<std::uint64_t>(dev < 0 ? cudaGetDevice(&dev) : dev);
         return lwp_id() + (dev64 << 32LL);
     }
 
-#ifdef USE_CUDA
     CUDAStream::CUDAStream(bool high_priority)
 	{
         if (high_priority) 

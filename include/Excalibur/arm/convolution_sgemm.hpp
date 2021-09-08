@@ -93,7 +93,7 @@ static void convolution_im2col_sgemm_transform_kernel_neon(
 	}
 	for (; q < outch; q++)
 	{
-		const float* k0 = kernel + q * kernel_dim;
+		const float* k0 = kernel_data + q * kernel_dim;
 
 #if __aarch64__
 		float* g00 = kernel_sgemm_data + (q / 8 + (q % 8) / 4 + q % 4) * kernel_sgemm_cstep;
