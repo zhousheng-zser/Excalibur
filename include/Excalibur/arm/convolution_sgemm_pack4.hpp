@@ -200,7 +200,7 @@ static void convolution_im2col_sgemm_pack4_neon(const std::shared_ptr<glasssix::
     const int maxk = kernel_w * kernel_h;
 
     // im2col
-    auto bottom_im2col = std::make_shared<std::shared_ptr<glasssix::memory::tensor<float>>>(std::vector<int>{1, inch, maxk, size}, bottom->device());
+    auto bottom_im2col = std::make_shared<glasssix::memory::tensor<float>>(std::vector<int>{1, inch, maxk, size}, bottom->device());
     float* bottom_im2col_data = bottom_im2col->mutable_cpu_data();
     int bottom_im2col_cstep = bottom_im2col->count(2, 4);
     for (size_t num_i = 0; num_i < num; num_i++)

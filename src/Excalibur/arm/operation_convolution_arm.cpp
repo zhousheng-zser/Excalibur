@@ -115,7 +115,7 @@ namespace glasssix
 #include "../../../include/Excalibur/arm/convolution_1x1.hpp"
 #include "../../../include/Excalibur/arm/convolution_3x3.hpp"
 
-#ifdef __ARM_NEON
+#if __ARM_NEON && 0
 #include "../../../include/Excalibur/arm/convolution_sgemm_pack4.hpp"
 #endif
 
@@ -155,7 +155,7 @@ namespace glasssix
 					const int maxk = this->kernel_size_h_ * this->kernel_size_w_;
 					int elempack = this->input_channel_ % 4 ? 1 : 4;
 					int out_elempack = this->output_channel_ % 4 ? 1 : 4;
-#if __ARM_NEON
+#if __ARM_NEON && 0
 					if (elempack == 4 && out_elempack == 4)
 					{
 						bool prefer_sgemm = (this->dilation_w_ == 1 && this->dilation_h_ == 1 && this->stride_w_ == 1 && this->stride_h_ == 1

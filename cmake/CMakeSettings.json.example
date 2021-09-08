@@ -15,6 +15,11 @@
           "name": "USE_CUDA",
           "value": "False",
           "type": "BOOL"
+        },
+		{
+          "name": "USE_CUDNN",
+          "value": "False",
+          "type": "BOOL"
         }
       ]
     },
@@ -31,6 +36,11 @@
       "variables": [
         {
           "name": "USE_CUDA",
+          "value": "False",
+          "type": "BOOL"
+        },
+		{
+          "name": "USE_CUDNN",
           "value": "False",
           "type": "BOOL"
         }
