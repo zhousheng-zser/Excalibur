@@ -2,4 +2,5 @@ build/
 out/
 .vs/
 CMakeSettings.json
+rv1109_cross_compile.toolchain
 Test/
