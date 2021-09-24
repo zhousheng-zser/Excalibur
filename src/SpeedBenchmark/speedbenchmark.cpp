@@ -32,7 +32,7 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
-            {"det_cool_1000epoch_use_pretrained", {1, 3, 960, 1440}, 0},
+            {"det_cool_1000epoch_use_pretrained", {1, 3, 640, 800}, 0},
             // {"rec_cool_500epoch_use_pretrained", {1, 3, 32, 320}, 0}
             // {"angle_best", {1, 3, 32, 320}, 0},
             // {"rec_combine_best", {1, 3, 32, 320}, 0}
@@ -60,12 +60,12 @@ int main()
     timer t;
     std::vector<excalibur::pipeline<float> *> pipes;
     int warmup_loop_count = 5;
-    int loop_count = 1;
+    int loop_count = 100;
 
     for (size_t i = 0; i < pipe_infos.size(); i++)
     {
         // pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
-        pipes.push_back(new excalibur::pipeline<float>(std::string("../../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
+        pipes.push_back(new excalibur::pipeline<float>(std::string("../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
     }
     std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
 
