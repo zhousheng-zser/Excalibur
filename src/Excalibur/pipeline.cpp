@@ -333,17 +333,18 @@ namespace glasssix
                     }
                     ////////////////////////////////////
                     // timer t;
+                    // std::cout << operations_[ops_execution_order_[i]]->param().name_ << " : " << std::endl;
                     // if (i != 1)
                     // {
-                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << " input shape: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
-                    //     // std::cout << "input: ";
-                    //     // for (int i = 0; i < 10; ++i)
-                    //     // {
-                    //     //     std::cout << input[0]->gpu_data()[i] << " ";
-                    //     // }
-                    //     std::cout << std::endl;
-                    //     std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
-                    //     t.start();
+                    // std::cout << operations_[ops_execution_order_[i]]->param().name_ << " input shape: " << input[0]->channels() << " " << input[0]->height() << " " << input[0]->width() << std::endl;
+                    // std::cout << "input: ";
+                    // for (int i = 0; i < 10; ++i)
+                    // {
+                    //     std::cout << input[0]->gpu_data()[i] << " ";
+                    // }
+                    // std::cout << std::endl;
+                    // std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
+                    // t.start();
                     // }
                     ////////////////////////////////////
                     operations_[ops_execution_order_[i]]->forward_gpu(
@@ -364,7 +365,7 @@ namespace glasssix
                     //     // std::cout << output[0]->cpu_data()[i] << " ";
                     //     sum += output[0]->cpu_data()[i];
                     // }
-                    // // std::cout << std::endl;
+                    // std::cout << std::endl;
                     // std::cout << "output sum: " << sum << std::endl;
                     // std::cout << "cost time: " << t.get_elapsed_milli_seconds() << std::endl;
                     // std::cout << std::endl;
@@ -378,10 +379,10 @@ namespace glasssix
                         featmaps_[ops_io_featmap_[i].second[j]] = output[j];
                     }
                     // free memory
-                    for (size_t j = 0; j < input.size(); j++)
-                    {
-                        featmaps_[ops_io_featmap_[i].first[j]].reset();
-                    }
+                    // for (size_t j = 0; j < input.size(); j++)
+                    // {
+                    //     featmaps_[ops_io_featmap_[i].first[j]].reset();
+                    // }
                     p->scope_end();
                 }
                 std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> results;

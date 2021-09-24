@@ -14,6 +14,7 @@ namespace glasssix
             int bottom_h1 = bottom1->height();
             int bottom_c1 = bottom1->channels();
             int b1_dims = (bottom_w1 == 1 ? 0 : 1) + (bottom_h1 == 1 ? 0 : 1) + (bottom_c1 == 1 ? 0 : 1);
+            b1_dims = b1_dims == 0 ? 1 : b1_dims;
             const float *b1 = bottom1->cpu_data();
             int size = bottom_w1 * bottom_h1;
 
@@ -247,8 +248,6 @@ namespace glasssix
             CHECK_GE(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
-            std::string name = this->params_.name_.c_str();
-
             if (bottoms[0]->order() == memory::NCHW)
             {
                 if (with_scalar_)
@@ -300,19 +299,19 @@ namespace glasssix
             }
         }
 
-        template <class Dtype>
-        void operation_binaryop<Dtype>::forward_gpu_f32(
-#ifdef USE_CUDA
-            cublasHandle_t &cublas_handle_,
-#ifdef USE_CUDNN
-            cudnnHandle_t cudnn_handle,
-#endif //!USE_CUDNN
-#endif //!USE_CUDA
-            const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
-            std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
-        {
-            forward_cpu_f32(bottoms, tops);
-        }
+//         template <class Dtype>
+//         void operation_binaryop<Dtype>::forward_gpu_f32(
+// #ifdef USE_CUDA
+//             cublasHandle_t &cublas_handle_,
+// #ifdef USE_CUDNN
+//             cudnnHandle_t cudnn_handle,
+// #endif //!USE_CUDNN
+// #endif //!USE_CUDA
+//             const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
+//             std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+//         {
+//             forward_cpu_f32(bottoms, tops);
+//         }
 
         INSTANCE_CLASS(operation_binaryop);
         REGISTE(operation_binaryop);

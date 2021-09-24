@@ -1,6 +1,8 @@
 #include "../../../include/Excalibur/operation_pooling.hpp"
 #include "../../../include/Excalibur/operation_reflector.hpp"
 
+#include <cfloat>
+
 #ifdef USE_CUDA
 #include <cuda_fp16.hpp>
 #endif
