@@ -45,7 +45,7 @@ namespace glasssix
 		// 		}
 
 #ifndef USE_CUDA
-		STUB_GPU(operation_slice);
+		STUB_GPU(operation_sigmoid);
 #endif
 
 		INSTANCE_CLASS(operation_sigmoid);
