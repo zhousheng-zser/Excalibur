@@ -364,10 +364,10 @@ namespace glasssix
 						convolution_im2col_sgemm_transform_kernel_neon(this->weights_f32_[0], kernel_tm_gemm_, this->input_channel_, this->output_channel_, this->kernel_size_w_, this->kernel_size_h_);
 					}
 				}
-				else
-				{
-					NOT_IMPLEMENTED;
-				}
+                else
+                {
+                    op->init_weights();
+                }
 			}
 			else
 			{

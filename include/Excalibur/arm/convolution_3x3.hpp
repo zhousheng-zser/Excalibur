@@ -179,7 +179,7 @@ static void conv3x3s1_winograd64_transform_kernel_neon5(
 			}
 		}
 	}
-	*kernel_3x3_winograd64 = kernel_tm2;
+	kernel_3x3_winograd64.reset(new glasssix::memory::tensor<float>(kernel_tm2));
 }
 static void conv3x3s2_transform_kernel_neon(
 	const std::shared_ptr<glasssix::memory::tensor<float>>& kernel,
