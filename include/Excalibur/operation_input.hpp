@@ -46,7 +46,7 @@ namespace glasssix
 			int w_ = 0;
 			int h_ = 0;
 			int c_ = 0;
-			float var_ = 1.0f;
+			std::vector<float> vars_;
 			std::vector<float> means_;
 		};
 	}

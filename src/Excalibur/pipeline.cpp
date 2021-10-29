@@ -22,13 +22,6 @@ namespace glasssix
         public:
             explicit impl()
             {
-#ifdef USE_CUDA
-                CUBLAS_CHECK(cublasCreate(&cublas_handle_));
-#ifdef USE_CUDNN
-                CUDNN_CHECK(cudnnCreate(&cudnn_handle_));
-#endif
-                CUDA_CHECK(cudaSetDevice(device_));
-#endif
             }
 
             explicit impl(std::string_view param_file, std::string_view model_file, int device) : impl{read_param_file(param_file), model_file, device}
@@ -202,20 +195,24 @@ namespace glasssix
 
             ~impl()
             {
+                if (device_ >= 0)
+                {
+
 #ifdef USE_CUDA
-                if (cublas_handle_)
-                {
-                    CUBLAS_CHECK(cublasDestroy(cublas_handle_));
-                    cublas_handle_ = nullptr;
-                }
+                    if (cublas_handle_)
+                    {
+                        CUBLAS_CHECK(cublasDestroy(cublas_handle_));
+                        cublas_handle_ = nullptr;
+                    }
 #ifdef USE_CUDNN
-                if (cudnn_handle_)
-                {
-                    CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
-                    cudnn_handle_ = nullptr;
+                    if (cudnn_handle_)
+                    {
+                        CUDNN_CHECK(cudnnDestroy(cudnn_handle_));
+                        cudnn_handle_ = nullptr;
+                    }
+#endif
+#endif
                 }
-#endif
-#endif
             }
 
             std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward(const std::shared_ptr<memory::tensor<Dtype>> &input_tensor)
