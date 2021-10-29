@@ -3,7 +3,7 @@
 #include "gpu_common.hpp"
 #include "gpu_memory.hpp"
 #define NOMINMAX
-#include "excub\util_allocator.cuh"
+#include "excub/util_allocator.cuh"
 namespace glasssix
 {
 	namespace memory

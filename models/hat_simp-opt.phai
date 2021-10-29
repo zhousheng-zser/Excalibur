@@ -1,6 +1,6 @@
 glsv1 hat_simp
 192 304
-Input            images                   0 1 images 0=640 1=640 2=3 3=0,0,0 4=1
+Input            images                   0 1 images 0=640 1=640 2=3 3=0,0,0 4=0.0039215
 Yolov5focus      yolov5focus              1 1 images yolov5focus
 Convolution      Conv_41                  1 1 yolov5focus 208 0=32 1=3 11=3 2=1 12=1 3=1 13=1 4=1 14=1 15=1 16=1 5=1 6=3456
 HardSwish        Div_49                   1 1 208 216 0=1.666667e-01 1=5.000000e-01
