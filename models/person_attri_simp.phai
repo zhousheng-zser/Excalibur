@@ -1,6 +1,6 @@
 glsv1
 205 224
-Input            input                    0 1 input 0=640 1=640 2=3 3=0,0,0 4=1
+Input            input                    0 1 input 0=640 1=640 2=3 3=0,0,0 4=0.0039215
 Convolution      Conv_0                   1 1 input 153 0=16 1=3 11=3 2=1 12=1 3=2 13=2 4=1 14=1 15=1 16=1 5=1 6=432
 HardSwish        Div_5                    1 1 153 160 0=1.666667e-01 1=5.000000e-01
 Split            splitexcalibur_0         1 2 160 160_splitexcalibur_0 160_splitexcalibur_1
