@@ -33,7 +33,18 @@ namespace glasssix
                 }
                 else if (split_string(attrs[i], "=")[0] == "4")
                 {
-                    var_ = atof(split_string(attrs[i], "=")[1].c_str());
+                    auto vars_str = split_string(split_string(attrs[i], "=")[1], ",");
+                    for (size_t j = 0; j < vars_str.size(); j++)
+                    {
+                        vars_.push_back(atof(vars_str[j].c_str()));
+                    }
+                    if (c_ != 1 && c_ != vars_.size())
+                    {
+                        if(vars_.size())
+                            vars_.resize(1);
+                        for (size_t i = 1; i < c_; i++)
+                            vars_.push_back(vars_[0]);
+                    }
                 }
                 else if (split_string(attrs[i], "=")[0] == "-23330")
                 {
@@ -81,7 +92,7 @@ namespace glasssix
                                         for (int w = 0; w < width; w++)
                                         {
                                             top_data[offset + sub_offset + subsub_offset + w] =
-                                                (bottom_data[offset + sub_offset + subsub_offset + w] - means_[c]) * var_;
+                                                (bottom_data[offset + sub_offset + subsub_offset + w] - means_[c]) * vars_[c];
                                         }
                                     }
                                 }
@@ -101,7 +112,7 @@ namespace glasssix
                                         for (int c = 0; c < 3; c++)
                                         {
                                             top_data[offset + sub_offset + subsub_offset + c] =
-                                                (bottom_data[offset + sub_offset + subsub_offset + c] - means_[c]) * var_;
+                                                (bottom_data[offset + sub_offset + subsub_offset + c] - means_[c]) * vars_[c];
                                         }
                                     }
                                 }
@@ -124,7 +135,7 @@ namespace glasssix
                                 for (int w = 0; w < width; w++)
                                 {
                                     top_data[offset + subsub_offset + w] =
-                                        (bottom_data[offset + subsub_offset + w] - means_[0]) * var_;
+                                        (bottom_data[offset + subsub_offset + w] - means_[0]) * vars_[0];
                                 }
                             }
                         }

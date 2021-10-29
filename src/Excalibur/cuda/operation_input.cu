@@ -11,14 +11,14 @@ namespace glasssix
     {
 #ifdef USE_CUDA
 
-        __global__ void input_forward(int n, const float *bottom_data, int channels, int height, int width, memory::orderType order, float *top_data, const float *means_var)
+        __global__ void input_forward(int n, const float *bottom_data, int channels, int height, int width, memory::orderType order, float *top_data, const float *means_vars)
         {
             if (order == memory::NCHW)
             {
                 CUDA_KERNEL_LOOP(index, n)
                 {
                     int c = (index / height / width) % channels;
-                    top_data[index] = (bottom_data[index] - means_var[c]) * means_var[channels];
+                    top_data[index] = (bottom_data[index] - means_vars[c]) * means_vars[channels + c];
                 }
             }
             else if (order == memory::NHWC)
@@ -26,7 +26,7 @@ namespace glasssix
                 CUDA_KERNEL_LOOP(index, n)
                 {
                     int c = index % channels;
-                    top_data[index] = (bottom_data[index] - means_var[c]) * means_var[channels];
+                    top_data[index] = (bottom_data[index] - means_vars[c]) * means_vars[channels + c];
                 }
             }
             else
@@ -44,9 +44,9 @@ namespace glasssix
             const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
             std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
-            memory::tensor<float> means_var(means_.size() + 1, this->params_.device_, memory::NCHW, bottoms[0]->allocator());
-            std::copy(means_.data(), means_.data() + means_.size(), means_var.mutable_cpu_data());
-            *(means_var.mutable_cpu_data() + means_.size()) = var_;
+            memory::tensor<float> means_vars(means_.size() + vars_.size(), this->params_.device_, memory::NCHW, bottoms[0]->allocator());
+            std::copy(means_.data(), means_.data() + means_.size(), means_vars.mutable_cpu_data());
+			std::copy(vars_.data(), vars_.data() + vars_.size(), means_vars.mutable_cpu_data() + means_.size());
 
             for (size_t i = 0; i < bottoms.size(); i++)
             {
@@ -65,27 +65,27 @@ namespace glasssix
             	}
 
             	input_forward << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
-            		count, bottom_data, channels, height, width, bottoms[i]->order(), top_data, means_var.gpu_data());
+            		count, bottom_data, channels, height, width, bottoms[i]->order(), top_data, means_vars.gpu_data());
             }
             CUDA_POST_KERNEL_CHECK;
             // tops = bottoms;
         }
 
-		__global__ void input_forward_f16(int n, const unsigned short* bottom_data, int channels, int height, int width, memory::orderType order, unsigned short* top_data, const unsigned short* means_var)
+		__global__ void input_forward_f16(int n, const unsigned short* bottom_data, int channels, int height, int width, memory::orderType order, unsigned short* top_data, const unsigned short* means_vars)
 		{
 			if (order == memory::NCHW)
 			{
 				CUDA_KERNEL_LOOP(index, n) 
 				{
 					int c = (index / height / width) % channels;
-					top_data[index] = __half_as_ushort(__hmul(__hsub(__ushort_as_half(bottom_data[index]), __ushort_as_half(means_var[c])), __ushort_as_half(means_var[channels])));
+					top_data[index] = __half_as_ushort(__hmul(__hsub(__ushort_as_half(bottom_data[index]), __ushort_as_half(means_vars[c])), __ushort_as_half(means_vars[channels + c])));
 				}
 			}
 			else if (order == memory::NHWC)
 			{
 				CUDA_KERNEL_LOOP(index, n) {
 					int c = index % channels;
-					top_data[index] = __half_as_ushort(__hmul(__hsub(__ushort_as_half(bottom_data[index]), __ushort_as_half(means_var[c])), __ushort_as_half(means_var[channels])));
+					top_data[index] = __half_as_ushort(__hmul(__hsub(__ushort_as_half(bottom_data[index]), __ushort_as_half(means_vars[c])), __ushort_as_half(means_vars[channels + c])));
 				}
 			}
 			else
@@ -103,10 +103,10 @@ namespace glasssix
 			const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
 			std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops)
 		{
-			memory::tensor<unsigned short> means_var(means_.size() + 1, this->params_.device_, memory::NCHW, bottoms[0]->allocator());
-			unsigned short* means_var_data = means_var.mutable_cpu_data();
-			float2half(means_.data(), means_var_data, means_.size());
-			*(means_var_data + means_.size()) = float32_to_float16(var_);
+			memory::tensor<unsigned short> means_vars(means_.size() + vars_.size(), this->params_.device_, memory::NCHW, bottoms[0]->allocator());
+			unsigned short* means_vars_data = means_vars.mutable_cpu_data();
+			float2half(means_.data(), means_vars_data, means_.size());
+			float2half(vars_.data(), means_vars_data + means_.size(), vars_.size());
 
 			for (size_t i = 0; i < bottoms.size(); i++)
 			{
@@ -125,7 +125,7 @@ namespace glasssix
 				}
 
 				input_forward_f16 << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
-					count, bottom_data, channels, height, width, bottoms[i]->order(), top_data, means_var.gpu_data());
+					count, bottom_data, channels, height, width, bottoms[i]->order(), top_data, means_vars.gpu_data());
 			}
 			CUDA_POST_KERNEL_CHECK;
 		}
