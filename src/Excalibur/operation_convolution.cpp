@@ -254,6 +254,9 @@ namespace glasssix
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
+            if (bottoms[0]->order() == memory::NHWC)
+                bottoms[0]->convert_order();
+
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
             const float *bottom_data = bottoms[0]->cpu_data();
