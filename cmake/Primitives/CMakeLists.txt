@@ -14,9 +14,9 @@ file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/*.hpp
 
 list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/log.cpp")
 list(REMOVE_ITEM header "${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/log.hpp")
-if(NOT USE_CUDA)
+#if(NOT USE_CUDA)
 	list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/gpu_memory.cpp")
-endif()
+#endif()
 
 add_library(${module_name} SHARED ${src} ${header})
 
