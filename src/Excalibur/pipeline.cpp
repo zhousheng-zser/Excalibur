@@ -337,7 +337,7 @@ namespace glasssix
                     // std::cout << "input: ";
                     // for (int i = 0; i < 10; ++i)
                     // {
-                    //     std::cout << input[0]->gpu_data()[i] << " ";
+                    //     std::cout << input[0]->cpu_data()[i] << " ";
                     // }
                     // std::cout << std::endl;
                     // std::cout << operations_[ops_execution_order_[i]]->param().name_ << std::endl;
