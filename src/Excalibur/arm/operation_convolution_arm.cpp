@@ -153,9 +153,9 @@ namespace glasssix
 				if (this->group_ == 1)
 				{
 					const int maxk = this->kernel_size_h_ * this->kernel_size_w_;
-					int elempack = this->input_channel_ % 4 ? 1 : 4;
-					int out_elempack = this->output_channel_ % 4 ? 1 : 4;
 #if __ARM_NEON && 0
+                    int elempack = this->input_channel_ % 4 ? 1 : 4;
+                    int out_elempack = this->output_channel_ % 4 ? 1 : 4;
 					if (elempack == 4 && out_elempack == 4)
 					{
 						bool prefer_sgemm = (this->dilation_w_ == 1 && this->dilation_h_ == 1 && this->stride_w_ == 1 && this->stride_h_ == 1
