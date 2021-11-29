@@ -283,7 +283,7 @@ namespace glasssix
 			size_t scale_data_size = this->featmap_scaletable_i8_.size();
 			const float* scale_data = this->featmap_scaletable_i8_.data();
 
-#if __ARM_NEON
+#if __ARM_NEON & 0
 			int elempack = input_channel_ % 4 ? 1 : 4;
 
 			if (elempack == 4)
