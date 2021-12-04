@@ -71,6 +71,25 @@ namespace glasssix
 					}
 				}
 			}
+			else if (src->order() == memory::NHWC)
+			{
+				dst_temp.reset(new memory::tensor<Dtype>(std::vector<int>{num, dst_height, dst_width, channels}, src->device(), src->order()));
+				Dtype* dst_data = dst_temp->mutable_cpu_data();
+				const Dtype* src_data = src->cpu_data();
+
+				for (int n = 0; n < num; n++)
+				{
+					int src_n_offset = n * src_num_offset;
+					int dst_n_offset = n * dst_num_offset;
+
+					for (int row = 0; row < dst_height; ++row)
+					{
+						int src_index = ((row + top) * width + left) * channels;
+						int dst_index = row * dst_width * channels;
+						memcpy(dst_data + dst_n_offset + dst_index, src_data + src_n_offset + src_index, dst_width * channels * sizeof(Dtype));
+					}
+				}
+			}
 			else
 			{
 				NOT_IMPLEMENTED;
