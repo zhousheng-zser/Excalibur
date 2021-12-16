@@ -153,6 +153,15 @@ namespace glasssix::details
 	{
 	public:
 		/// <summary>
+		/// Sets the current log config file.
+		/// </summary>
+		/// <param name="level">The log level</param>
+		static void init(exposing::utf8_string_view config_path)
+		{
+			get_logger().init(config_path);
+		}
+
+		/// <summary>
 		/// Sets the current log level.
 		/// </summary>
 		/// <param name="level">The log level</param>
@@ -167,6 +176,7 @@ namespace glasssix::details
 		/// <param name="message">The message</param>
 		static void d(exposing::utf8_string_view message, const source_location& location = source_location::current())
 		{
+			invoke_impl(location, [&] { get_logger().debug(message, IncludingDebuggingInfo); });
 			invoke_impl(location, [&] { get_logger().debug(message, IncludingDebuggingInfo); });
 		}
 

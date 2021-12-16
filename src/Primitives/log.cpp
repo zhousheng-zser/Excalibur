@@ -2,6 +2,7 @@
 #include "fmt/format.h"
 #include "filesystem.hpp"
 #include "log_config.hpp"
+#include "bounded_blocking_queue.hpp"
 
 #include <ctime>
 #include <array>
@@ -22,6 +23,7 @@
 #include <Windows.h>
 #elif defined(__linux__)
 #include <pthread.h>
+#include <unistd.h>
 #else
 #error "Unsupported platform."
 #endif
@@ -42,6 +44,15 @@ namespace glasssix
 			return GetCurrentThreadId();
 #else
 			return pthread_self();
+#endif
+		}
+
+		std::uint32_t get_current_process_id() noexcept
+		{
+#ifdef _WIN32
+			return GetCurrentProcessId();
+#else
+			return getpid();
 #endif
 		}
 
@@ -135,7 +146,7 @@ namespace glasssix::logging
 					current_debugging_info = source_location::current();
 				}
 
-				return fmt::format(FMT_STRING("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5} {}:{}][{}] {}"),
+				return fmt::format("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5} {}:{}][{}] {}",
 					1900 + time.tm_year,
 					time.tm_mon + 1,
 					time.tm_mday,
@@ -149,8 +160,8 @@ namespace glasssix::logging
 					message
 				);
 			}
-			
-			return fmt::format(FMT_STRING("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5}][{}] {}"),
+
+			return fmt::format("[{:04}-{:02}-{:02} {:02}:{:02}:{:02} {:5}][{}] {}",
 				1900 + time.tm_year,
 				time.tm_mon + 1,
 				time.tm_mday,
@@ -282,36 +293,161 @@ namespace glasssix::logging
 		};
 #endif
 
+		class append_file
+		{
+		public:
+			explicit append_file(std::string_view filename)
+				: fp_{ nullptr }
+				, written_bytes_{ 0 }
+			{
+				fopen_s(&fp_, filename.data(), "a");
+				assert(fp_);
+			}
+
+			~append_file()
+			{
+				std::fclose(fp_);
+			}
+
+			void append(std::string_view logline)
+			{
+				std::size_t written{ 0 };
+
+				while (written < logline.size())
+				{
+					std::size_t n{ std::fwrite(logline.data() + written, 1, logline.size() - written, fp_) };
+					if (n == 0)
+					{
+						if (int err = std::ferror(fp_); err)
+						{
+							fprintf(stderr, "Append file failed %d\n", err);
+						}
+						break;
+					}
+					written += n;
+				}
+
+				std::fwrite("\n", 1, 1, fp_);
+#ifdef _WIN32
+				written_bytes_ += logline.size() + 2;
+#else
+				written_bytes_ += logline.size() + 1;
+#endif
+			}
+
+			void flush()
+			{
+				std::fflush(fp_);
+			}
+
+			std::size_t written_bytes() const
+			{
+				return written_bytes_;
+			}
+
+		private:
+			FILE* fp_;
+			std::size_t written_bytes_;
+		};
+
 		/// <summary>
 		/// Manages the rotation of log files.
 		/// </summary>
-		class log_rotate
+		class log_rotate_file
 		{
+			constexpr static std::uint64_t seconds_per_day_{ 60 * 60 * 24 };
+
 		public:
-			log_rotate(std::string_view home_directory, std::string_view application_name) noexcept : home_directory_ { home_directory }, application_name_{ application_name }, days_since_1970_{ get_local_days_since_1970() }
+			log_rotate_file(std::string_view home_directory, std::string_view application_name, std::uint64_t max_size) noexcept
+				: home_directory_{ home_directory },
+				application_name_{ application_name },
+				roll_size_{ max_size },
+				flush_interval_{ 3 },
+				days_since_1970_{},
+				last_roll_{},
+				last_flush_{}
 			{
+				rotate();
 			}
 
-			std::ofstream& current()
+			void append(std::string_view logline)
 			{
-				auto days_since_1970 = get_local_days_since_1970();
+				output_file_->append(logline);
 
-				if (days_since_1970_ == days_since_1970)
+				if (output_file_->written_bytes() > roll_size_)
 				{
+					rotate();
+				}
+				else
+				{
+					const std::time_t now_time{ get_local_timestamp() };
+
+					if ((now_time / seconds_per_day_) != days_since_1970_)
+					{
+						rotate();
+					}
+					else if (now_time - last_flush_ > flush_interval_)
+					{
+						last_flush_ = now_time;
+						output_file_->flush();
+					}
+				}
+			}
+
+			void flush()
+			{
+				output_file_->flush();
+			}
+
+		private:
+			bool rotate()
+			{
+				time_t now_time{ get_local_timestamp() };;
+				std::string filename = get_log_file_name(now_time);
+
+				if (now_time > last_roll_)
+				{
+					last_roll_ = now_time;
+					last_flush_ = now_time;
+					days_since_1970_ = now_time / seconds_per_day_;
+
+					output_file_ = std::make_unique<append_file>(filename);
+
+					return true;
 				}
 
-				days_since_1970_ == days_since_1970;
+				return false;
 			}
-		private:
-			void rotate()
+
+			std::string get_log_file_name(const time_t& now)
 			{
+				const auto& time{ get_local_time(now) };
 
+				// example.exe.20211208-152443.16600.log
+				const std::string& filename = fmt::format("{}.{:04}{:02}{:02}-{:02}{:02}{:02}.{}.log",
+					application_name_,
+					1900 + time.tm_year,
+					time.tm_mon + 1,
+					time.tm_mday,
+					time.tm_hour,
+					time.tm_min,
+					time.tm_sec,
+					get_current_process_id());
+
+				const auto& path = fs::path(home_directory_) / filename;
+
+				return path.string();
 			}
 
-			std::string home_directory_;
-			std::string application_name_;
+		private:
+			const std::string home_directory_;
+			const std::string application_name_;
+			const std::uint64_t roll_size_;
+			const std::int32_t flush_interval_;
 			std::uint64_t days_since_1970_;
-			std::shared_ptr<FILE> output_file_;
+			time_t last_roll_;
+			time_t last_flush_;
+			std::unique_ptr<append_file> output_file_;
 		};
 	}
 
@@ -319,45 +455,67 @@ namespace glasssix::logging
 	{
 	public:
 		log_impl() noexcept
+			: log_queue_{ 4096 },
+			running_{ false }
 		{
 		}
 
-		void init(const param_string& config_path)
+		~log_impl()
 		{
-			std::error_code code;
-			fs::path real_config_path{ to_narrow_string(config_path) };
-			auto config = log_config::load_from_file_or_default(to_narrow_string(config_path));
-
-			if (config.enable_file_output)
+			if (running_)
 			{
-				if (!fs::exists(real_config_path, code))
+				running_.store(false);
+				if (log_to_file_thread_->joinable())
 				{
-					fs::create_directories(real_config_path, code);
+					log_to_file_thread_->join();
 				}
 			}
 		}
 
-		void debug(const param_string& message, bool including_debugging_info) const
+		void init(const param_string& config_path)
+		{
+			static std::once_flag flag;
+
+			std::call_once(flag, [&]
+				{
+					auto config = log_config::load_from_file_or_default(to_narrow_string(config_path));
+
+					if (config.enable_file_output)
+					{
+						std::error_code code;
+						if (!fs::exists(config.home_directory, code))
+						{
+							fs::create_directories(config.home_directory, code);
+						}
+
+						log_to_file_thread_ = std::make_unique<std::thread>(&log_impl::worker_loop, this);
+					}
+
+					std::atomic_store_explicit(&config_, std::make_shared<log_config>(std::move(config)), std::memory_order_release);
+				});
+		}
+
+		void debug(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::debug>(message, including_debugging_info);
 		}
 
-		void info(const param_string& message, bool including_debugging_info) const
+		void info(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::info>(message, including_debugging_info);
 		}
 
-		void warning(const param_string& message, bool including_debugging_info) const
+		void warning(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::warning>(message, including_debugging_info);
 		}
 
-		void error(const param_string& message, bool including_debugging_info) const
+		void error(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::error>(message, including_debugging_info);
 		}
 
-		void fatal(const param_string& message, bool including_debugging_info) const
+		void fatal(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::fatal>(message, including_debugging_info);
 			std::terminate();
@@ -372,19 +530,55 @@ namespace glasssix::logging
 		}
 	private:
 		template<log_level CurrentLevel>
-		void print_utf8(utf8_string_view str, bool including_debugging_info) const
+		void print_utf8(utf8_string_view str, bool including_debugging_info)
 		{
-			if (auto level = std::atomic_load_explicit(&config_, std::memory_order_acquire)->level; level != log_level::none && CurrentLevel >= level)
+			if (auto config{ *std::atomic_load_explicit(&config_, std::memory_order_acquire) }; config.level != log_level::none && CurrentLevel >= config.level)
 			{
-				std::scoped_lock lock{ mutex };
-				terminal_color_decorator decorator{ log_level_foreground_colors[static_cast<std::size_t>(CurrentLevel)], terminal_color::black };
+				auto logline = format_log_text(CurrentLevel, to_narrow_string(str), including_debugging_info);
 
-				decorator.str().append(format_log_text(CurrentLevel, to_narrow_string(str), including_debugging_info));
+				if (config.enable_stderr_output)
+				{
+					std::scoped_lock lock{ mutex };
+					terminal_color_decorator decorator{ log_level_foreground_colors[static_cast<std::size_t>(CurrentLevel)], terminal_color::black };
+
+					decorator.str().append(logline);
+				}
+
+				if (config.enable_file_output)
+				{
+					if (!log_queue_.enqueue_for(std::move(logline), std::chrono::milliseconds{ 500 }))
+					{
+						printf("overrun_counter:%lld\n", log_queue_.size());
+					}
+				}
 			}
 		}
 
-		std::ofstream output_stream_;
+		void worker_loop()
+		{
+			running_.store(true);
+			// initial log rotate file
+			auto rotate_file{ std::make_unique<log_rotate_file>(config_->home_directory, config_->application_name, config_->max_size) };
+
+			while (running_)
+			{
+				std::string incoming_async_msg;
+
+				bool dequeued = log_queue_.dequeue_for(incoming_async_msg, std::chrono::seconds(3));
+				if (dequeued)
+				{
+					rotate_file->append(incoming_async_msg);
+				}
+			}
+
+			rotate_file->flush();
+		}
+
+	private:
 		std::shared_ptr<log_config> config_;
+		memory::bounded_blocking_queue<std::string> log_queue_;
+		std::unique_ptr<std::thread> log_to_file_thread_;
+		std::atomic<bool> running_;
 	};
 }
 

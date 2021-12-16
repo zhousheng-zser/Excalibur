@@ -12,8 +12,9 @@ file(GLOB header ${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/*.hpp
 					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/fmt/*.h
 					${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/nlohmann/*.hpp)
 
-list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/log.cpp")
-list(REMOVE_ITEM header "${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/log.hpp")
+#list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/log.cpp")
+#list(REMOVE_ITEM header "${CMAKE_CURRENT_SOURCE_DIR}/../../include/Primitives/log.hpp")
+
 #if(NOT USE_CUDA)
 	list(REMOVE_ITEM src "${CMAKE_CURRENT_SOURCE_DIR}/../../src/Primitives/gpu_memory.cpp")
 #endif()
