@@ -10,7 +10,7 @@
 
 #include "log.hpp"
 #include "log_config.hpp"
-#include "D:\Project\Excalibur\src\Primitives\log_config.cpp"
+#include "../Primitives/log_config.cpp"
 
 using namespace glasssix;
 
@@ -89,9 +89,9 @@ TEST(log, output)
 	glasssix::log::set_log_level(glasssix::log_level::debug);
 
 	std::vector<std::shared_ptr<std::thread>> threads;
-	for (int i = 0; i < 4; ++i)
+	for (int id = 0; id < 4; ++id)
 	{
-		threads.push_back(std::make_shared<std::thread>([]
+		threads.push_back(std::make_shared<std::thread>([=]
 			{
 				for (int i = 0; i < 1000000; ++i)
 				{
@@ -99,10 +99,41 @@ TEST(log, output)
 					glasssix::log::i("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 					glasssix::log::w(u8"输出中文警告日志测试！");
 					glasssix::log::e("Hello");
-					glasssix::log::i("Atomic types are types that encapsulate a value whose access is ");
+
+					glasssix::log::d("123456-{}", i);
+					glasssix::log::i("ABCDEFGHIJ-{}-KLMNOP-{}+QRSTUVWXYZ", i, i);
+					glasssix::log::w(u8"输出中文警告日志测试！{}", u8"测试参数");
+					glasssix::log::e("Hello {}", "world!");
+
+					glasssix::logd::d("Atomic types are types that encapsulate a value whose access is ");
 					glasssix::logd::i("guaranteed to not cause data races and can be used to synchronize memory accesses among different threads.");
-					//glasssix::logfmt("thread {}")
+					glasssix::logd::w("thread");
+					glasssix::logd::e("1234567890+abcdefg");
+
+					glasssix::logd::d("{} Atomic types are types that encapsulate a value whose access is ", i);
+					glasssix::logd::i("{} guaranteed to not cause data races and can be used to synchronize memory accesses among different threads.", i);
+					glasssix::logd::w("{} count", i);
+					glasssix::logd::e("{} 1234567890+abcdefg", i + i);
+
+					//glasssix::log::f("The class lock_guard");
 					//glasssix::logd::f("This header declares two C++ classes.");
+
+					//glasssix::log::f("RAII-style mechanism for owning a mutex for {}.", "the duration of a scoped block");
+					//glasssix::logd::f("This header declares two {} classes, {}.", "C++", i);
+
+					glasssix::assert::lt(1, 2);
+					glasssix::assert::le(2, 2);
+					glasssix::assert::eq(5, 5);
+					glasssix::assert::ge(3, 3);
+					glasssix::assert::gt(4, 2);
+					glasssix::assert::ne(1, 2);
+					glasssix::assert::is_false(1 == 2);
+					static char c{ 'A' };
+					glasssix::assert::is_non_nullptr(&c);
+					glasssix::assert::is_nullptr(nullptr);
+					glasssix::assert::is_true(3 == 3);
+
+					glasssix::logd::d("Thread index {}, loop count {}", id + 1, i + 1);
 				}
 			})
 		);

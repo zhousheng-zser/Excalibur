@@ -11,6 +11,7 @@
 #include <chrono>
 #include <cstdio>
 #include <string>
+#include <thread>
 #include <memory>
 #include <cstdint>
 #include <fstream>
@@ -174,6 +175,25 @@ namespace glasssix::logging
 			);
 		}
 
+		/// <summary>
+		/// Async msg type. 
+		/// </summary>
+		enum class async_msg_type
+		{
+			log,
+			flush,
+			terminate
+		};
+
+		/// <summary>
+		/// Async msg to move to/from the queue.
+		/// </summary>
+		struct async_msg
+		{
+			async_msg_type msg_type{ async_msg_type::log };
+			std::string message;
+		};
+
 #ifdef _WIN32
 		/// <summary>
 		/// Converts colors to a Win32 console attribute.
@@ -297,10 +317,9 @@ namespace glasssix::logging
 		{
 		public:
 			explicit append_file(std::string_view filename)
-				: fp_{ nullptr }
+				: fp_{ std::fopen(filename.data(), "a") }
 				, written_bytes_{ 0 }
 			{
-				fopen_s(&fp_, filename.data(), "a");
 				assert(fp_);
 			}
 
@@ -421,7 +440,7 @@ namespace glasssix::logging
 
 			std::string get_log_file_name(const time_t& now)
 			{
-				const auto& time{ get_local_time(now) };
+				const tm& time{ get_local_time(now) };
 
 				// example.exe.20211208-152443.16600.log
 				const std::string& filename = fmt::format("{}.{:04}{:02}{:02}-{:02}{:02}{:02}.{}.log",
@@ -455,21 +474,13 @@ namespace glasssix::logging
 	{
 	public:
 		log_impl() noexcept
-			: log_queue_{ 4096 },
-			running_{ false }
+			: log_queue_{ 4096 }
 		{
 		}
 
 		~log_impl()
 		{
-			if (running_)
-			{
-				running_.store(false);
-				if (log_to_file_thread_->joinable())
-				{
-					log_to_file_thread_->join();
-				}
-			}
+			stop_loop();
 		}
 
 		void init(const param_string& config_path)
@@ -518,6 +529,7 @@ namespace glasssix::logging
 		void fatal(const param_string& message, bool including_debugging_info)
 		{
 			print_utf8<log_level::fatal>(message, including_debugging_info);
+			stop_loop();
 			std::terminate();
 		}
 
@@ -546,9 +558,9 @@ namespace glasssix::logging
 
 				if (config.enable_file_output)
 				{
-					if (!log_queue_.enqueue_for(std::move(logline), std::chrono::milliseconds{ 500 }))
+					if (!log_queue_.enqueue_for(async_msg{ async_msg_type::log, std::move(logline) }, std::chrono::milliseconds{ 900 }))
 					{
-						printf("overrun_counter:%lld\n", log_queue_.size());
+						fprintf(stderr, "Loss a log.\n");
 					}
 				}
 			}
@@ -556,29 +568,47 @@ namespace glasssix::logging
 
 		void worker_loop()
 		{
-			running_.store(true);
-			// initial log rotate file
 			auto rotate_file{ std::make_unique<log_rotate_file>(config_->home_directory, config_->application_name, config_->max_size) };
 
-			while (running_)
+			while (true)
 			{
-				std::string incoming_async_msg;
+				async_msg incoming_async_msg;
 
-				bool dequeued = log_queue_.dequeue_for(incoming_async_msg, std::chrono::seconds(3));
-				if (dequeued)
+				if (!log_queue_.dequeue_for(incoming_async_msg, std::chrono::seconds(3)))
 				{
-					rotate_file->append(incoming_async_msg);
+					continue;
+				}
+
+				if (incoming_async_msg.msg_type == async_msg_type::log) [[likely]]
+				{
+					rotate_file->append(incoming_async_msg.message);
+				}
+				else if (incoming_async_msg.msg_type == async_msg_type::flush) [[unlikely]]
+				{
+					rotate_file->flush();
+				}
+				else if (incoming_async_msg.msg_type == async_msg_type::terminate) [[unlikely]]
+				{
+					break;
 				}
 			}
 
 			rotate_file->flush();
 		}
 
+		void stop_loop()
+		{
+			log_queue_.enqueue_for(async_msg{ async_msg_type::terminate, {} }, std::chrono::milliseconds{ 900 });
+			if (log_to_file_thread_->joinable())
+			{
+				log_to_file_thread_->join();
+			}
+		}
+
 	private:
 		std::shared_ptr<log_config> config_;
-		memory::bounded_blocking_queue<std::string> log_queue_;
 		std::unique_ptr<std::thread> log_to_file_thread_;
-		std::atomic<bool> running_;
+		memory::bounded_blocking_queue<async_msg> log_queue_;
 	};
 }
 

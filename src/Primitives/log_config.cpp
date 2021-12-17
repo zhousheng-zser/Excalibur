@@ -43,11 +43,9 @@ namespace glasssix::logging
 			{
 				if (std::cmatch matches; std::regex_match(value.data(), value.data() + value.size(), matches, disk_size_pattern))
 				{
-					auto count = matches.size();
-					assert(count == 3);
 					size_in_bytes_ = std::atoll(matches.str(1).c_str());
 
-					std::string& unit = matches.str(2);
+					std::string unit = matches.str(2);
 					std::transform(unit.begin(), unit.end(), unit.begin(), ::toupper);
 					if (auto iter = unit_conversion_factor.find(unit.data()); iter != unit_conversion_factor.cend())
 					{

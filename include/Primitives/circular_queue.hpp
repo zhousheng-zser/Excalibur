@@ -21,11 +21,11 @@ namespace glasssix {
 			circular_queue() = delete;
 
 			explicit circular_queue(std::size_t max_items)
-				: head_{ 0 }
-				, tail_{ 0 }
-				, overrun_counter_{ 0 }
-				, max_items_(max_items + 1) // Keep an item as a marker for the full vec_.
-				, vec_(max_items_)
+				: max_items_(max_items + 1), // Keep an item as a marker for the full vec_.
+				head_{ 0 },
+				tail_{ 0 },
+				overrun_counter_{ 0 },
+				vec_(max_items_)
 			{}
 
 			circular_queue(const circular_queue&) = default;
