@@ -115,6 +115,7 @@ static void convolution_im2col_sgemm_transform_kernel_neon(
 	}
 #else
 	kernel_sgemm = kernel;
+	kernel_sgemm->reshape(std::vector<int>{ 1, outch, inch, maxk });
 #endif // __ARM_NEON
 }
 
