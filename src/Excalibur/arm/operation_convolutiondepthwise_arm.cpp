@@ -155,7 +155,6 @@ namespace glasssix
 			int outh = (h - this->kernel_size_h_) / this->stride_h_ + 1;
 
 			tops[0].reset(new memory::tensor<float>(std::vector<int> {n, this->output_channel_, outh, outw }, -1, memory::NCHW));
-
 			memory::orderType order = bottoms[0]->order();
 			if (!((order == memory::NCHW) || (order == memory::NHWC)))
 			{
@@ -179,10 +178,8 @@ namespace glasssix
 			else
 			{
 				op->forward_cpu(bottoms, tops);
-
 				//NOT_IMPLEMENTED;
 			}
-
 			this->suffix_activation_cpu_f32(tops);
 		}
 
@@ -514,7 +511,7 @@ namespace glasssix
 						{
 							asm volatile(
 								"pld        [%3, #192]          \n"
-								"vld1.f32   {d18-d20}, [%3 :64] \n"// r0
+								"vld1.f32   {d18-d20}, [%3] \n"// r0
 								"add        %3, #16             \n"
 
 								"vext.32    q11, q9, q10, #1    \n"
@@ -547,7 +544,7 @@ namespace glasssix
 								"vmla.f32   q15, q12, %f14[0]   \n"
 
 								"pld        [%5, #192]          \n"
-								"vld1.f32   {d18-d20}, [%5 :64] \n"// r2
+								"vld1.f32   {d18-d20}, [%5] \n"// r2
 								"add        %5, #16             \n"
 
 								"vmla.f32   q7, q9, %e16[0]     \n"
@@ -577,8 +574,7 @@ namespace glasssix
 								"vadd.f32   q7, q7, q6          \n"
 
 								"pld        [%3, #192]          \n"
-								"vld1.f32   {d18-d20}, [%3 :64] \n"// r0
-
+								"vld1.f32   {d18-d20}, [%3] \n"// r0
 								"vadd.f32   q8, q8, q14         \n"
 								"vadd.f32   q7, q7, q13         \n"
 								"vadd.f32   q8, q8, q15         \n"

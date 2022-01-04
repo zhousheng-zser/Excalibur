@@ -974,10 +974,10 @@ static void im2col_sgemm_neon(
 				"2:                             \n"
 
 				"pld        [%4, #256]          \n"
-				"vld1.f32   {d8-d11}, [%4 :128]!    \n"
+				"vld1.f32   {d8-d11}, [%4]!    \n"
 
 				"pld        [%5, #128]          \n"
-				"vld1.f32   {d0-d1}, [%5 :128]!     \n"
+				"vld1.f32   {d0-d1}, [%5]!     \n"
 
 				"vmla.f32   q8, q4, d0[0]       \n"
 				"vmla.f32   q10, q4, d0[1]      \n"
@@ -995,10 +995,10 @@ static void im2col_sgemm_neon(
 
 				"3:                             \n"
 
-				"vst1.f32   {d16-d19}, [%0 :128]!   \n"
-				"vst1.f32   {d20-d23}, [%1 :128]!   \n"
-				"vst1.f32   {d24-d27}, [%2 :128]!   \n"
-				"vst1.f32   {d28-d31}, [%3 :128]!   \n"
+				"vst1.f32   {d16-d19}, [%0]!   \n"
+				"vst1.f32   {d20-d23}, [%1]!   \n"
+				"vst1.f32   {d24-d27}, [%2]!   \n"
+				"vst1.f32   {d28-d31}, [%3]!   \n"
 
 				: "=r"(outptr0), // %0
 				"=r"(outptr1), // %1
@@ -1178,10 +1178,12 @@ static void im2col_sgemm_neon(
 				"2:                             \n"
 
 				"pld        [%4, #128]          \n"
-				"vld1.f32   {d8-d9}, [%4 :128]! \n"
+				// "vld1.f32   {d8-d9}, [%4 :128]! \n"
+				"vld1.f32   {d8-d9}, [%4]! \n"
 
 				"pld        [%5, #128]          \n"
-				"vld1.f32   {d0-d1}, [%5 :128]! \n"
+				// "vld1.f32   {d0-d1}, [%5 :128]! \n"
+				"vld1.f32   {d0-d1}, [%5]! \n"
 
 				"subs       r4, r4, #1          \n"
 
@@ -1194,10 +1196,10 @@ static void im2col_sgemm_neon(
 
 				"3:                             \n"
 
-				"vst1.f32   {d16-d17}, [%0 :128]!   \n"
-				"vst1.f32   {d18-d19}, [%1 :128]!   \n"
-				"vst1.f32   {d20-d21}, [%2 :128]!   \n"
-				"vst1.f32   {d22-d23}, [%3 :128]!   \n"
+				"vst1.f32   {d16-d17}, [%0]!   \n"
+				"vst1.f32   {d18-d19}, [%1]!   \n"
+				"vst1.f32   {d20-d21}, [%2]!   \n"
+				"vst1.f32   {d22-d23}, [%3]!   \n"
 
 				: "=r"(outptr0), // %0
 				"=r"(outptr1), // %1
@@ -1323,7 +1325,7 @@ static void im2col_sgemm_neon(
 				"0:                             \n"
 
 				"pld        [%4, #128]          \n"
-				"vld1.f32   {d8-d9}, [%4 :128]! \n"
+				"vld1.f32   {d8-d9}, [%4]! \n"
 
 				"pld        [%5, #512]          \n"
 				"vldm       %5!, {d0-d7}       \n"
@@ -1357,7 +1359,7 @@ static void im2col_sgemm_neon(
 				"vld1.f32   {d8[],d9[]}, [%4]!  \n"
 
 				"pld        [%5, #128]          \n"
-				"vld1.f32   {d0-d1}, [%5 :128]! \n"
+				"vld1.f32   {d0-d1}, [%5]! \n"
 
 				"subs       r4, r4, #1          \n"
 
@@ -1504,7 +1506,7 @@ static void im2col_sgemm_neon(
 				//                 "vld1.f32   {d12-d15}, [%1 :128]!   \n"
 
 				"pld        [%2, #128]          \n"
-				"vld1.f32   {d0-d1}, [%2 :128]! \n"
+				"vld1.f32   {d0-d1}, [%2]! \n"
 
 				"vmla.f32   q8, q4, d0[0]       \n"
 				"vmla.f32   q9, q5, d0[0]       \n"
@@ -1537,7 +1539,7 @@ static void im2col_sgemm_neon(
 				"2:                             \n"
 
 				"pld        [%1, #256]          \n"
-				"vld1.f32   {d8-d11}, [%1 :128]!    \n"
+				"vld1.f32   {d8-d11}, [%1]!    \n"
 
 				"pld        [%2, #32]           \n"
 				"vld1.f32   {d0[],d1[]}, [%2]!  \n"
@@ -1551,7 +1553,7 @@ static void im2col_sgemm_neon(
 
 				"3:                             \n"
 
-				"vst1.f32   {d16-d19}, [%0 :128]!   \n"
+				"vst1.f32   {d16-d19}, [%0]!   \n"
 
 				: "=r"(outptr0), // %0
 				"=r"(tmpptr),  // %1
@@ -1673,7 +1675,7 @@ static void im2col_sgemm_neon(
 				"2:                             \n"
 
 				"pld        [%1, #128]          \n"
-				"vld1.f32   {d8-d9}, [%1 :128]! \n"
+				"vld1.f32   {d8-d9}, [%1]! \n"
 
 				"pld        [%2, #32]           \n"
 				"vld1.f32   {d0[],d1[]}, [%2]!  \n"
@@ -1686,7 +1688,7 @@ static void im2col_sgemm_neon(
 
 				"3:                             \n"
 
-				"vst1.f32   {d16-d17}, [%0 :128]!   \n"
+				"vst1.f32   {d16-d17}, [%0]!   \n"
 
 				: "=r"(outptr0), // %0
 				"=r"(tmpptr),  // %1
