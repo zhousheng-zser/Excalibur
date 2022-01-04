@@ -122,12 +122,12 @@ namespace glasssix
 								"0:                             \n"
 								"pld        [%1, #128]          \n"
 								"pld        [%2, #128]          \n"
-								"vld1.f32   {d0-d1}, [%1 :128]! \n"
-								"vld1.f32   {d2-d3}, [%2 :128]! \n"
+								"vld1.f32   {d0-d1}, [%1]! \n"
+								"vld1.f32   {d2-d3}, [%2]! \n"			
 								"vmul.f32   q0, q0, %q8         \n"
 								"vmla.f32   q0, q1, %q9         \n"
 								"subs       %0, #1              \n"
-								"vst1.f32   {d0-d1}, [%3 :128]! \n"
+								"vst1.f32   {d0-d1}, [%3]! \n"
 								"bne        0b                  \n"
 								: "=r"(nn),     // %0
 								"=r"(ptr),    // %1
@@ -203,11 +203,11 @@ namespace glasssix
 									"0:                             \n"
 									"pld        [%1, #128]          \n"
 									"pld        [%2, #128]          \n"
-									"vld1.f32   {d0-d1}, [%1 :128]! \n"
-									"vld1.f32   {d2-d3}, [%2 :128]  \n"
+									"vld1.f32   {d0-d1}, [%1]! \n"
+									"vld1.f32   {d2-d3}, [%2]  \n"
 									"vmla.f32   q1, q0, %q6         \n"
 									"subs       %0, #1              \n"
-									"vst1.f32   {d2-d3}, [%2 :128]! \n"
+									"vst1.f32   {d2-d3}, [%2]! \n"
 									"bne        0b                  \n"
 									: "=r"(nn),     // %0
 									"=r"(ptr),    // %1
@@ -288,11 +288,11 @@ namespace glasssix
 								"0:                             \n"
 								"pld        [%1, #128]          \n"
 								"pld        [%2, #128]          \n"
-								"vld1.f32   {d0-d1}, [%1 :128]! \n"
-								"vld1.f32   {d2-d3}, [%2 :128]! \n"
+								"vld1.f32   {d0-d1}, [%1]! \n"
+								"vld1.f32   {d2-d3}, [%2]! \n"
 								"vmax.f32   q0, q0, q1          \n"
 								"subs       %0, #1              \n"
-								"vst1.f32   {d0-d1}, [%3 :128]! \n"
+								"vst1.f32   {d0-d1}, [%3]! \n"
 								"bne        0b                  \n"
 								: "=r"(nn),     // %0
 								"=r"(ptr),    // %1
@@ -363,11 +363,11 @@ namespace glasssix
 									"0:                             \n"
 									"pld        [%1, #128]          \n"
 									"pld        [%2, #128]          \n"
-									"vld1.f32   {d0-d1}, [%1 :128]! \n"
-									"vld1.f32   {d2-d3}, [%2 :128]  \n"
+									"vld1.f32   {d0-d1}, [%1]! \n"
+									"vld1.f32   {d2-d3}, [%2]  \n"
 									"vmax.f32   q0, q0, q1          \n"
 									"subs       %0, #1              \n"
-									"vst1.f32   {d0-d1}, [%2 :128]! \n"
+									"vst1.f32   {d0-d1}, [%2]! \n"
 									"bne        0b                  \n"
 									: "=r"(nn),     // %0
 									"=r"(ptr),    // %1
