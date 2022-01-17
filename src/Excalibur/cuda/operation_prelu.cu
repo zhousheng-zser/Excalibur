@@ -10,19 +10,19 @@ namespace glasssix
 
 		__global__ void PReLUForward(const int n, const int channels, const int dim,
 			const float* in, float* out, const float* slope_data,
-			const int div_factor, memory::orderType order) {
+			const bool share_channel, const int div_factor, memory::orderType order) {
 
 			if (order == memory::NCHW)
 			{
 				CUDA_KERNEL_LOOP(index, n) {
-					int c = (index / dim) % channels / div_factor;
+					int c = share_channel ? 0 : (index / dim) % channels / div_factor;
 					out[index] = in[index] > 0 ? in[index] : in[index] * slope_data[c];
 				}
 			}
 			else if (order == memory::NHWC)
 			{
 				CUDA_KERNEL_LOOP(index, n) {
-					int c = index % channels / div_factor;
+					int c = share_channel ? 0 : index % channels / div_factor;
 					out[index] = in[index] > 0 ? in[index] : in[index] * slope_data[c];
 				}
 			}
@@ -64,7 +64,7 @@ namespace glasssix
 
 				// NOLINT_NEXT_LINE(whitespace/operators)
 				PReLUForward << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (
-					count, channels, dim, bottom_data, top_data, slope_data, div_factor, order);
+					count, channels, dim, bottom_data, top_data, slope_data, share_channel_, div_factor, order);
 			}
 			CUDA_POST_KERNEL_CHECK;
 		}
