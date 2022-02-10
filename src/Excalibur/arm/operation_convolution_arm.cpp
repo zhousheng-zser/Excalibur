@@ -152,7 +152,6 @@ namespace glasssix
 
 				if (this->group_ == 1)
 				{
-					const int maxk = this->kernel_size_h_ * this->kernel_size_w_;
 #if __ARM_NEON && 0
                     int elempack = this->input_channel_ % 4 ? 1 : 4;
                     int out_elempack = this->output_channel_ % 4 ? 1 : 4;
@@ -166,7 +165,7 @@ namespace glasssix
 
 						if (this->kernel_size_w_ == 1 && this->kernel_size_h_ == 1 && this->dilation_w_ == 1 && this->dilation_h_ == 1 && this->stride_w_ == 1 && this->stride_h_ == 1)
 						{
-							convolution_im2col_sgemm_transform_kernel_pack4_neon(this->weights_f32_[0], weight_data_pack4_, this->input_channel_, this->output_channel_, this->kernel_size_w_, this->kernel_size_h_);
+							convolution_im2col_sgemm_transform_kernel_pack4_neon(this->weights_f32_[0], kernel_tm_gemm_, this->input_channel_, this->output_channel_, this->kernel_size_w_, this->kernel_size_h_);
 						}
 						else if (this->kernel_size_w_ == 1 && this->kernel_size_h_ == 1 && this->dilation_w_ == 1 && this->dilation_h_ == 1 && this->stride_w_ == 2 && this->stride_h_ == 2)
 						{

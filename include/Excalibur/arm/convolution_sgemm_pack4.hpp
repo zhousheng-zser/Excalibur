@@ -1,7 +1,3 @@
-#ifdef __ARM_NEON
-#include <arm_neon.h>
-#include "../../../include/Primitives/tensor.hpp"
-
 static void convolution_im2col_sgemm_transform_kernel_pack4_neon(const std::shared_ptr<glasssix::memory::tensor<float>>& kernel, std::shared_ptr<glasssix::memory::tensor<float>>& kernel_tm, int inch, int outch, int kernel_w, int kernel_h)
 {
     const int maxk = kernel_w * kernel_h;
@@ -11,9 +7,9 @@ static void convolution_im2col_sgemm_transform_kernel_pack4_neon(const std::shar
     // dst = 4b-4a-maxk-inch/4a-outch/4b
 
 #if __aarch64__
-    kernel_tm.reset(new glasssix::memory::tensor<float>(outch / 8 + (outch % 8) / 4, inch / 4, 32 * maxk);
+    kernel_tm.reset(new glasssix::memory::tensor<float>(outch / 8 + (outch % 8) / 4, inch / 4, 32 * maxk, -1));
 #else
-    kernel_tm.reset(new glasssix::memory::tensor<float>(outch / 4, inch / 4, 16 * maxk);
+    kernel_tm.reset(new glasssix::memory::tensor<float>(outch / 4, inch / 4, 16 * maxk, -1));
 #endif
 
     const float* kernel_data = kernel->cpu_data();
@@ -188,27 +184,30 @@ static void convolution_im2col_sgemm_transform_kernel_pack4_neon(const std::shar
 static void convolution_im2col_sgemm_pack4_neon(const std::shared_ptr<glasssix::memory::tensor<float>>& bottom, std::shared_ptr<glasssix::memory::tensor<float>>& top, const std::shared_ptr<glasssix::memory::tensor<float>>& kernel,
     const std::shared_ptr<glasssix::memory::tensor<float>>& bias, int kernel_w, int kernel_h, int dilation_w, int dilation_h, int stride_w, int stride_h)
 {
-    int w = bottom->width();
+    const int elempack = 4;
+
+    int num = bottom->num();
+    int w = bottom->width() / elempack;
     int inch = bottom->channels();
     int bottom_cstep = bottom->count(2, 4);
 
-    int outw = top->width();
+    int outw = top->width() / elempack;
     int outh = top->height();
+    int outch = top->channels();
     const int size = outw * outh;
     int top_cstep = top->count(2, 4);
 
     const int maxk = kernel_w * kernel_h;
 
     // im2col
-    auto bottom_im2col = std::make_shared<glasssix::memory::tensor<float>>(std::vector<int>{1, inch, maxk, size}, bottom->device());
+    auto bottom_im2col = std::make_shared<glasssix::memory::tensor<float>>(std::vector<int>{1, inch, maxk, size * elempack}, bottom->device());
     float* bottom_im2col_data = bottom_im2col->mutable_cpu_data();
     int bottom_im2col_cstep = bottom_im2col->count(2, 4);
     for (size_t num_i = 0; num_i < num; num_i++)
     {
         const float* bottom_data = bottom->cpu_data() + num_i * bottom->count(1, 4);
         float* top_data = top->mutable_cpu_data() + num_i * top->count(1, 4);
-        //const int gap = (w * stride_h - outw * stride_w) * 4;
-        const int gap = w * stride_h - outw * stride_w;
+        const int gap = (w * stride_h - outw * stride_w) * elempack;
 
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(2)
@@ -222,7 +221,7 @@ static void convolution_im2col_sgemm_pack4_neon(const std::shared_ptr<glasssix::
             {
                 for (int v = 0; v < kernel_w; v++)
                 {
-                    const float* sptr = img + (dilation_h * u) * w + dilation_w * v * 4;
+                    const float* sptr = img + (dilation_h * u) * w * elempack + dilation_w * v * elempack;
 
                     for (int i = 0; i < outh; i++)
                     {
@@ -265,17 +264,16 @@ static void convolution_im2col_sgemm_pack4_neon(const std::shared_ptr<glasssix::
                 }
             }
         }
-        im2col_sgemm_pack4_neon(bottom_im2col_data, top_data, kernel->cpu_data(), bias.get() ? bias->cpu_data() : nullptr);
+        im2col_sgemm_pack4_neon(bottom_im2col_data, inch, maxk, size, top_data, outch, outh, outw, kernel->cpu_data(), bias.get() ? bias->cpu_data() : nullptr);
     }
 }
 
-static void im2col_sgemm_pack4_neon(const float* bottom_im2col_data, const int inch, const int h, const int w, float* top_data, const int outch, int outh, int outw
+static void im2col_sgemm_pack4_neon(const float* bottom_im2col_data, const int inch, const int maxk, const int size, float* top_data, const int outch, int outh, int outw,
     const float* kernel_data, const float* bias_data)
 {
-    const int size = w / 4;
-    const int maxk = h;
-    const int bottom_im2col_cstep = w * h;
-    const int top_cstep = outw * outh;
+    const int elempack = 4;
+    const int bottom_im2col_cstep = maxk * size * elempack;
+    const int top_cstep = outw * outh * elempack;
 #if __aarch64__
     const int kernel_cstep = inch * 32 * maxk;
 #else
@@ -286,24 +284,24 @@ static void im2col_sgemm_pack4_neon(const float* bottom_im2col_data, const int i
     glasssix::memory::tensor<float> tmp;
 #if __aarch64__
     if (size >= 12)
-        tmp = glasssix::memory::tensor<float>(size / 12 + (size % 12) / 8 + (size % 12 % 8) / 4 + (size % 12 % 4) / 2 + size % 12 % 2, inch, 12 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 12 + (size % 12) / 8 + (size % 12 % 8) / 4 + (size % 12 % 4) / 2 + size % 12 % 2, inch, 12 * maxk * elempack, -1);
     else if (size >= 8)
-        tmp = glasssix::memory::tensor<float>(size / 8 + (size % 8) / 4 + (size % 4) / 2 + size % 2, inch, 8 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 8 + (size % 8) / 4 + (size % 4) / 2 + size % 2, inch, 8 * maxk * elempack, -1);
     else if (size >= 4)
-        tmp = glasssix::memory::tensor<float>(size / 4 + (size % 4) / 2 + size % 2, inch, 4 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 4 + (size % 4) / 2 + size % 2, inch, 4 * maxk * elempack, -1);
     else if (size >= 2)
-        tmp = glasssix::memory::tensor<float>(size / 2 + size % 2, inch, 2 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 2 + size % 2, inch, 2 * maxk * elempack, -1);
     else
-        tmp.create(size, inch, maxk);
+        tmp = glasssix::memory::tensor<float>(size, inch, maxk * elempack, -1);
 #else
     if (size >= 8)
-        tmp = glasssix::memory::tensor<float>(size / 8 + (size % 8) / 4 + (size % 4) / 2 + size % 2, inch, 8 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 8 + (size % 8) / 4 + (size % 4) / 2 + size % 2, inch, 8 * maxk * elempack, -1);
     else if (size >= 4)
-        tmp = glasssix::memory::tensor<float>(size / 4 + (size % 4) / 2 + size % 2, inch, 4 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 4 + (size % 4) / 2 + size % 2, inch, 4 * maxk * elempack, -1);
     else if (size >= 2)
-        tmp = glasssix::memory::tensor<float>(size / 2 + size % 2, inch, 2 * maxk);
+        tmp = glasssix::memory::tensor<float>(size / 2 + size % 2, inch, 2 * maxk * elempack, -1);
     else
-        tmp = glasssix::memory::tensor<float>(size, inch, maxk);
+        tmp = glasssix::memory::tensor<float>(size, inch, maxk * elempack, -1);
 #endif
 
     float* tmp_data = tmp.mutable_cpu_data();
@@ -1711,5 +1709,3 @@ static void im2col_sgemm_pack4_neon(const float* bottom_im2col_data, const int i
         }
     }
 }
-
-#endif
