@@ -39,6 +39,7 @@ namespace glasssix
             const float *bptr = bottoms[0]->cpu_data();
             float *tptr = tops[0]->mutable_cpu_data();
             int count = bottoms[0]->count();
+            int remain = count;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
             __m256 min = _mm256_set1_ps(min_);
             __m256 max = _mm256_set1_ps(max_);
@@ -49,8 +50,8 @@ namespace glasssix
                 bptr += 8;
                 tptr += 8;
             }
+            remain = count % 8;
 #endif
-            int remain = count % 8;
             for (int i = 0; i < remain; ++i)
             {
                 tptr[i] = std::min(max_, std::max(min_, bptr[i]));

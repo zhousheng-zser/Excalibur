@@ -43,30 +43,24 @@ namespace glasssix
             // int bottom_c = bottoms[0]->channels();
             int num = bottoms[0]->num();
             // int bottom_cstep = bottom_w * bottom_h;
-            int bottom_count = bottoms[0]->count();
-            int top_count = num * c_ * h_ * w_;
 
-            tops[0].reset(new memory::tensor<float>(std::vector<int>{num, c_, h_, w_}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+            if(bottoms[0]->order() == memory::NCHW)
+                tops[0].reset(new memory::tensor<float>(std::vector<int>{num, c_, h_, w_}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+            else
+                tops[0].reset(new memory::tensor<float>(std::vector<int>{num, h_, w_, c_}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
 
-            if (bottoms[0]->order() == memory::NCHW)
+            for (int n = 0; n < num; ++n)
             {
-                for (int n = 0; n < num; ++n)
-                {
-                    const float *bottom_data = bottoms[0]->cpu_data() + bottoms[0]->offset(n);
-                    float *top_data = tops[0]->mutable_cpu_data() + tops[0]->offset(n);
+                const float *bottom_data = bottoms[0]->cpu_data() + bottoms[0]->offset(n);
+                float *top_data = tops[0]->mutable_cpu_data() + tops[0]->offset(n);
 
-                    if (bottom_count == 1) // input 1
+                if (bottoms[n]->count() == 1) // input 1
+                {
+                    for (int i = 0; i < tops[n]->count(); ++i)
                     {
-                        for (int i = 0; i < top_count; ++i)
-                        {
-                            top_data[i] = *bottom_data;
-                        }
+                        top_data[i] = *bottom_data;
                     }
                 }
-            }
-            else
-            {
-                NOT_IMPLEMENTED;
             }
         }
 

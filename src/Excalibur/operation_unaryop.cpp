@@ -162,7 +162,7 @@ namespace glasssix
         }
 
         template <typename Op>
-        static void unary_op_inplace(const std::shared_ptr<memory::tensor<float>> &bottom, std::shared_ptr<memory::tensor<float>> &top)
+        static void unary_op(const std::shared_ptr<memory::tensor<float>> &bottom, std::shared_ptr<memory::tensor<float>> &top)
         {
             Op op;
 
@@ -184,55 +184,55 @@ namespace glasssix
 
             tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
             if (op_type_ == Operation_ABS)
-                return unary_op_inplace<unary_op_abs>(bottoms[0], tops[0]);
+                return unary_op<unary_op_abs>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_NEG)
-                return unary_op_inplace<unary_op_neg>(bottoms[0], tops[0]);
+                return unary_op<unary_op_neg>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_FLOOR)
-                return unary_op_inplace<unary_op_floor>(bottoms[0], tops[0]);
+                return unary_op<unary_op_floor>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_CEIL)
-                return unary_op_inplace<unary_op_ceil>(bottoms[0], tops[0]);
+                return unary_op<unary_op_ceil>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_SQUARE)
-                return unary_op_inplace<unary_op_square>(bottoms[0], tops[0]);
+                return unary_op<unary_op_square>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_SQRT)
-                return unary_op_inplace<unary_op_sqrt>(bottoms[0], tops[0]);
+                return unary_op<unary_op_sqrt>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_RSQRT)
-                return unary_op_inplace<unary_op_rsqrt>(bottoms[0], tops[0]);
+                return unary_op<unary_op_rsqrt>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_EXP)
-                return unary_op_inplace<unary_op_exp>(bottoms[0], tops[0]);
+                return unary_op<unary_op_exp>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_LOG)
-                return unary_op_inplace<unary_op_log>(bottoms[0], tops[0]);
+                return unary_op<unary_op_log>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_SIN)
-                return unary_op_inplace<unary_op_sin>(bottoms[0], tops[0]);
+                return unary_op<unary_op_sin>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_COS)
-                return unary_op_inplace<unary_op_cos>(bottoms[0], tops[0]);
+                return unary_op<unary_op_cos>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_TAN)
-                return unary_op_inplace<unary_op_tan>(bottoms[0], tops[0]);
+                return unary_op<unary_op_tan>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_ASIN)
-                return unary_op_inplace<unary_op_asin>(bottoms[0], tops[0]);
+                return unary_op<unary_op_asin>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_ACOS)
-                return unary_op_inplace<unary_op_acos>(bottoms[0], tops[0]);
+                return unary_op<unary_op_acos>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_ATAN)
-                return unary_op_inplace<unary_op_atan>(bottoms[0], tops[0]);
+                return unary_op<unary_op_atan>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_RECIPROCAL)
-                return unary_op_inplace<unary_op_reciprocal>(bottoms[0], tops[0]);
+                return unary_op<unary_op_reciprocal>(bottoms[0], tops[0]);
 
             if (op_type_ == Operation_TANH)
-                return unary_op_inplace<unary_op_tanh>(bottoms[0], tops[0]);
+                return unary_op<unary_op_tanh>(bottoms[0], tops[0]);
         }
 
         INSTANCE_CLASS(operation_unaryop);
