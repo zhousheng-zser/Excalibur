@@ -1,8 +1,6 @@
 #include "../../../include/Excalibur/operation_interp.hpp"
 #include "../../../include/Excalibur/operation_reflector.hpp"
 
-#include <cfloat>
-
 namespace glasssix
 {
     namespace excalibur

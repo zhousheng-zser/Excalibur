@@ -39,7 +39,6 @@ namespace glasssix
         static void reduction_op_keepdims(const std::shared_ptr<memory::tensor<float>> &bottom, std::shared_ptr<memory::tensor<float>> &top, float v0, bool reduce_w, bool reduce_h, bool reduce_c)
         {
             Op op;
-            Op2 op2;
             int width = bottom->width();
             int height = bottom->height();
             int channels = bottom->channels();
@@ -144,7 +143,9 @@ namespace glasssix
             }
 
             if (operation_ == ReductionOp_L2)
-                return reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
+                reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
+            else
+                NOT_IMPLEMENTED;
         }
 
         INSTANCE_CLASS(operation_reduction);
