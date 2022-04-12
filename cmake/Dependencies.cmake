@@ -5,7 +5,8 @@ if(USE_CUDA)
 	if(${CUDA_VERSION} VERSION_LESS 11.1)
 		message(FATAL_ERROR "CUDA version is too lower(${CUDA_VERSION} vs 11.1)")
 	endif()
-
+	
+	set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -allow-unsupported-compiler")
 	if(USE_CUDNN)
 		if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 			set(CUDNN_INCLUDE_DIRS $ENV{CUDA_PATH}/include)
