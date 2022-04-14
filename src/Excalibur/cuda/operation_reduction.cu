@@ -149,6 +149,9 @@ namespace glasssix
             const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
             std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
         {
+            forward_cpu_f32(bottoms, tops);
+            return;
+
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
