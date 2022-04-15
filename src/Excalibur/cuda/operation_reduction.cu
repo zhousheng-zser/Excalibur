@@ -77,7 +77,7 @@ namespace glasssix
                     float* dst_data = top->mutable_gpu_data() + num;
 
                     for (int len = (width + WARP_SIZE - 1) & ~(WARP_SIZE - 1), N = width;
-                        len > WARP_SIZE && N > 1;
+                        len >= WARP_SIZE && N > 1;
                         N = len / WARP_SIZE, len = (len / WARP_SIZE + WARP_SIZE - 1) & ~(WARP_SIZE - 1))
                         dst_data += len / WARP_SIZE;
 
@@ -149,9 +149,6 @@ namespace glasssix
             const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
             std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
         {
-            forward_cpu_f32(bottoms, tops);
-            return;
-
             CHECK_EQ(bottoms.size(), 1);
             CHECK_EQ(tops.size(), 1);
 
