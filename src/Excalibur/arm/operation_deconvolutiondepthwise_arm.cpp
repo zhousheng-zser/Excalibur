@@ -1,6 +1,6 @@
 #include "../../../include/Excalibur/operation_reflector.hpp"
 #include "../../../include/Excalibur/arm/operation_deconvolutiondepthwise_arm.hpp"
-#include "../../../include/Excalibur/operation_make_border.hpp"
+#include "../../../include/Excalibur/operation_cut_border.hpp"
 #include <random>
 
 namespace glasssix
@@ -224,7 +224,7 @@ namespace glasssix
 
 			if (this->pad_bottom_ > 0 || this->pad_left_ > 0 || this->pad_right_ > 0 || this->pad_top_ > 0)
 			{
-				make_border(tops[0], tops[0], this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_);
+				cut_border_cpu(tops[0], tops[0], this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_);
 			}
 		}
 
