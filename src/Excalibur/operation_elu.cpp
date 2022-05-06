@@ -43,6 +43,11 @@ namespace glasssix
             }
         }
 
+
+#ifndef USE_CUDA
+        STUB_GPU(operation_relu);
+#endif
+
         INSTANCE_CLASS(operation_elu);
         REGISTE(operation_elu);
     }
