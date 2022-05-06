@@ -45,7 +45,7 @@ namespace glasssix
 
 
 #ifndef USE_CUDA
-        STUB_GPU(operation_relu);
+        STUB_GPU(operation_elu);
 #endif
 
         INSTANCE_CLASS(operation_elu);
