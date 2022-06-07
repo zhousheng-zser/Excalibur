@@ -78,8 +78,8 @@ namespace glasssix
                         top_data += 1;
                         bottom_data += 16;
                         weights_data += 16;
-#endif
-#if __ARM_NEON
+
+#elif SIMD_ARM_INSTR_SET >= SIMD_ARM7_NEON_VERSION
                         float32x4_t _sum1 = vdupq_n_f32(0);
                         float32x4_t _sum2 = vdupq_n_f32(0);
 
@@ -107,6 +107,8 @@ namespace glasssix
                         top_data += 1;
                         bottom_data += 16;
                         weights_data += 16;
+#else
+                        operation_convolution<Dtype>::forward_cpu_f32(bottoms, tops);
 #endif
                     }
                 }
@@ -193,7 +195,7 @@ namespace glasssix
 
         template <typename Dtype>
         int operation_convolutiondepthwise<Dtype>::dequantize_int8(const std::shared_ptr<memory::tensor<signed char>> &src,
-                                                                   std::shared_ptr<memory::tensor<float>> &dst, std::vector<float> scale)
+                                                                   std::shared_ptr<memory::tensor<float>> &dst, std::shared_ptr<memory::tensor<float>>& scale)
         {
             size_t align_data_size = (this->weight_data_size_ + 4 - 1) & -4;
             int w = src->width();
@@ -201,13 +203,14 @@ namespace glasssix
             dst.reset(new memory::tensor<float>(align_data_size, this->params_.device_, src->order(), nullptr));
             const signed char *bottom = src->cpu_data();
             float *bottom_int8 = dst->mutable_cpu_data();
+            const float *scale_data = scale->cpu_data();
 
 #ifdef _OPENMP
 #pragma omp parallel for num_threads(2)
 #endif
             for (int q = 0; q < this->output_channel_; q++)
             {
-                float _scale = scale[q] <= 1e-6 ? 0 : 1.f / scale[q];
+                float _scale = scale_data[q] <= 1e-6 ? 0 : 1.f / scale_data[q];
                 const signed char *ptr = bottom + q * size;
                 float *outptr = bottom_int8 + q * size;
                 for (int i = 0; i < size; i++)

@@ -125,10 +125,10 @@ namespace glasssix
                     fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
                     mem += this->output_channel_ * sizeof(float);
                 }
-                this->weights_scaletable_i8_.resize(this->output_channel_);
-                fread(this->weights_scaletable_i8_.data(), 1, this->output_channel_ * sizeof(float), fp);
-                this->featmap_scaletable_i8_.resize(1);
-                fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+                this->weights_scaletable_i8_.reset(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr));
+                fread(this->weights_scaletable_i8_->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
+                this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+                fread(this->featmap_scaletable_i8_->mutable_cpu_data(), 1, 1 * sizeof(float), fp);
                 mem += (this->output_channel_ + 1) * sizeof(float);
 
                 if (this->params_.device_ < 0)
@@ -222,13 +222,13 @@ namespace glasssix
                     }
                     mem += this->output_channel_ * sizeof(float);
                 }
-                this->weights_scaletable_i8_.resize(this->output_channel_);
+                this->weights_scaletable_i8_.reset(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr));
                 for (size_t i = 0; i < this->output_channel_; i++)
                 {
-                    this->weights_scaletable_i8_[i] = n(e);
+                    this->weights_scaletable_i8_->mutable_cpu_data()[i] = n(e);
                 }
-                this->featmap_scaletable_i8_.resize(1);
-                this->featmap_scaletable_i8_[0] = n(e);
+                this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+                this->featmap_scaletable_i8_->mutable_cpu_data()[0] = n(e);
                 mem += (this->output_channel_ + 1) * sizeof(float);
 
                 if (this->params_.device_ < 0)
@@ -260,6 +260,7 @@ namespace glasssix
             memory::orderType order = bottoms[0]->order();
             this->num_ = bottoms[0]->num();
             const float *bottom_data = bottoms[0]->cpu_data();
+            int bottom_dim = bottoms[0]->count(1, 4);
             const float *weights_data = this->weights_f32_[0]->cpu_data();
             const float *bias_data = nullptr;
 
@@ -283,17 +284,8 @@ namespace glasssix
             {
                 LOG(FATAL) << "Un-supported data arrange.";
             }
-            float *top_data = tops[0]->mutable_cpu_data();
-            col_buffer_.reset(new memory::tensor<float>(std::vector<int>{this->kernel_dim_ / this->group_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, bottoms[0]->allocator()));
-            col_buffer_data = col_buffer_->mutable_cpu_data();
-            if (this->bias_term_)
-            {
-                bias_multiplier_.reset(new memory::tensor<float>(std::vector<int>{this->output_dim_w_ * this->output_dim_h_}, this->params_.device_, memory::NCHW, bottoms[0]->allocator()));
-                bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
-                math_functions::cpu_set(this->output_spatial_dim_, 1.0f, bias_multiplier_data);
-                bias_data = this->weights_f32_[1]->cpu_data();
-            }
 
+#if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION)
             if (this->pad_left_ != 0)
             {
                 make_border<float>(bottoms[0], border_bottom_, this->pad_top_, this->pad_bottom_, this->pad_left_, this->pad_right_, border_constant, this->pad_value_);
@@ -311,6 +303,28 @@ namespace glasssix
             {
                 forward_im2col(border_bottom_, tops[0]);
             }
+#else
+            float* top_data = tops[0]->mutable_cpu_data();
+            int top_dim = tops[0]->count(1, 4);
+            col_buffer_.reset(new memory::tensor<float>(std::vector<int>{this->kernel_dim_ / this->group_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, bottoms[0]->allocator()));
+            col_buffer_data = col_buffer_->mutable_cpu_data();
+            for (int n = 0; n < this->num_; n++)
+            {
+                forward_cpu_sgemm(bottom_data + n * bottom_dim, weights_data, top_data + n * top_dim, order);
+            }
+
+            if (this->bias_term_)
+            {
+                bias_multiplier_.reset(new memory::tensor<float>(std::vector<int>{this->output_dim_w_* this->output_dim_h_}, this->params_.device_, memory::NCHW, bottoms[0]->allocator()));
+                bias_multiplier_data = bias_multiplier_->mutable_cpu_data();
+                math_functions::cpu_set(this->output_spatial_dim_, 1.0f, bias_multiplier_data);
+                bias_data = this->weights_f32_[1]->cpu_data();
+                for (int n = 0; n < this->num_; n++)
+                {
+                    forward_cpu_sbias(top_data + n * top_dim, bias_data, order);
+                }
+            }
+#endif
             this->suffix_activation_cpu_f32(tops);
         }
 
@@ -374,15 +388,19 @@ namespace glasssix
             }
             else
             {
+                size_t feat_scale_data_size = this->featmap_scaletable_i8_->count();
+                const float* feat_scale_data = this->featmap_scaletable_i8_->cpu_data();
+
+                size_t weights_scaletable_i8_data_size = this->weights_scaletable_i8_->count();
+                const float* weights_scaletable_i8_data = this->weights_scaletable_i8_->cpu_data();
+
                 std::vector<float> dequantize_scales;
                 for (size_t q = 0; q < this->output_channel_; q++)
                 {
-                    float scale_in;
-                    if (this->weights_scaletable_i8_[q] <= 1e-6)
-                        scale_in = 0;
-                    else
-                        scale_in = 1.f / (this->featmap_scaletable_i8_[0] * this->weights_scaletable_i8_[q]);
-                    dequantize_scales.push_back(scale_in);
+                    const float feat_scale = feat_scale_data_size == 1 ? feat_scale_data[0] : feat_scale_data[q];
+                    const float weight_scale = weights_scaletable_i8_data_size == 1 ? weights_scaletable_i8_data[0] : weights_scaletable_i8_data[q];
+                    float scale = (std::fabs(weight_scale) <= 1e-6) ? 0.f : (1.0f / (weight_scale * feat_scale));
+                    dequantize_scales.push_back(scale);
                 }
 
                 conv_im2col_sgemm_int8_dequant_sse(bottom_int8_bordered_, tops[0], dequantize_scales);
@@ -2958,6 +2976,57 @@ namespace glasssix
                 }
             }
         }
+        template <typename Dtype>
+        void operation_convolution<Dtype>::forward_cpu_sgemm(const float* input, const float* weights, float* output, memory::orderType order)
+        {
+            const float* col_buff = input;
+
+            if (order == memory::NCHW)
+            {
+                if (this->group_ == 1)
+                {
+                    im2col_cpu(input, this->input_channel_, this->input_dim_h_, this->input_dim_w_, this->kernel_size_h_,
+                        this->kernel_size_w_, this->pad_left_, this->pad_top_, this->stride_h_, this->stride_w_,
+                        this->dilation_h_, this->dilation_w_, col_buffer_data, order);
+                    col_buff = col_buffer_data;
+                    math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, this->output_channel_,
+                        this->output_spatial_dim_, this->kernel_dim_, 1.0f,
+                        weights, col_buff, 0.0f, output);
+                }
+                else
+                {
+                    for (int g = 0; g < this->group_; ++g)
+                    {
+                        int gistep = this->input_channel_ / this->group_;
+                        int gostep = this->output_channel_ / this->group_;
+                        im2col_cpu(input + this->input_dim_h_ * this->input_dim_w_ * gistep * g, gistep, this->input_dim_h_, this->input_dim_w_, this->kernel_size_h_,
+                            this->kernel_size_w_, this->pad_left_, this->pad_top_, this->stride_h_, this->stride_w_, this->dilation_h_, this->dilation_w_, col_buffer_data, order);
+                        col_buff = col_buffer_data;
+                        math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, gostep,
+                            this->output_spatial_dim_, this->kernel_size_h_ * this->kernel_size_w_ * gistep, 1.0f,
+                            weights + this->kernel_size_h_ * this->kernel_size_w_ * gistep * g * gostep,
+                            col_buff, 0.0f, output + this->output_spatial_dim_ * g * gostep);
+                    }
+                }
+            }
+            else if (order == memory::NHWC)
+            {
+                if (this->group_ == 1)
+                {
+                    math_functions::cpu_sgemm(CblasTrans, CblasTrans, this->output_spatial_dim_, this->output_channel_,
+                        this->kernel_dim_, 1.0f,
+                        col_buff, weights, 0.0f, output);
+                }
+                else
+                {
+                    NOT_IMPLEMENTED;
+                }
+            }
+            else
+            {
+                NOT_IMPLEMENTED;
+            }
+        }
 
         template <typename Dtype>
         void operation_convolution<Dtype>::forward_cpu_sbias(float *output, const float *bias, memory::orderType order)
@@ -3006,10 +3075,6 @@ namespace glasssix
                 forward_cpu_sbias(top_data, this->weights_f32_[1]->cpu_data(), memory::NCHW);
             }
         }
-
-#ifndef USE_CUDA
-        STUB_GPU(operation_convolution);
-#endif
 
         INSTANCE_CLASS(operation_convolution);
         REGISTE(operation_convolution);

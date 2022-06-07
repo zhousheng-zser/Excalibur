@@ -99,6 +99,17 @@ void Operation_Name<Dtype>::forward_gpu_f32(\
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)\
 		{ NO_GPU; }
 
+#define INSTANTIATE_OPERATION_CUDA_FWDI8(Operation_Name)\
+template void Operation_Name<float>::forward_gpu_i8(cublasHandle_t &cublas_handle_,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
+template void Operation_Name<double>::forward_gpu_i8(cublasHandle_t &cublas_handle_,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
+template void Operation_Name<unsigned short>::forward_gpu_i8(cublasHandle_t &cublas_handle_,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
+
 #define INSTANTIATE_OPERATION_CUDA_FWDF32(Operation_Name)\
 template void Operation_Name<float>::forward_gpu_f32(cublasHandle_t &cublas_handle_,\
  const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
@@ -142,6 +153,17 @@ std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops);\
 template void Operation_Name<unsigned short>::forward_gpu_f16(cublasHandle_t &cublas_handle_, cudnnHandle_t cudnn_handle,\
  const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,\
 std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops);\
+
+#define INSTANTIATE_OPERATION_CUDNN_FWDI8(Operation_Name)\
+template void Operation_Name<float>::forward_gpu_i8(cublasHandle_t &cublas_handle_, cudnnHandle_t cudnn_handle,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
+template void Operation_Name<double>::forward_gpu_i8(cublasHandle_t &cublas_handle_, cudnnHandle_t cudnn_handle,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
+template void Operation_Name<unsigned short>::forward_gpu_i8(cublasHandle_t &cublas_handle_, cudnnHandle_t cudnn_handle,\
+ const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,\
+std::vector<std::shared_ptr<memory::tensor<float>>>& tops);\
 
 	}
 }

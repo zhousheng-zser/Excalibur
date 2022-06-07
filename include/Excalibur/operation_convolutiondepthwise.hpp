@@ -55,7 +55,7 @@ namespace glasssix
                                   std::shared_ptr<memory::tensor<float>> &top);
 
             int dequantize_int8(const std::shared_ptr<memory::tensor<signed char>> &src,
-                                std::shared_ptr<memory::tensor<float>> &dst, std::vector<float> scale);
+                                std::shared_ptr<memory::tensor<float>> &dst, std::shared_ptr<memory::tensor<float>>& scale);
         };
     }
 }

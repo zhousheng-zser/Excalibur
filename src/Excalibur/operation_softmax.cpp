@@ -18,7 +18,7 @@ namespace glasssix
 				}
 				else if (split_string(attrs[i], "=")[0] == "1")
 				{
-					LOG(WARNING)<< "Un-supported Convolution Attribution " << split_string(attrs[i], "=")[0];
+					//do nothing
 				}
 				else if (split_string(attrs[i], "=")[0] == "-23330")
 				{

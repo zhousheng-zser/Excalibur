@@ -66,13 +66,13 @@ namespace glasssix
 					}
 					mem += this->output_channel_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(this->output_channel_);
+				this->weights_scaletable_i8_.reset(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr));
 				for (size_t i = 0; i < this->output_channel_; i++)
 				{
-					this->weights_scaletable_i8_[i] = n(e);
+					this->weights_scaletable_i8_->mutable_cpu_data()[i] = n(e);
 				}
-				this->featmap_scaletable_i8_.resize(1);
-				this->featmap_scaletable_i8_[0] = n(e);
+				this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				this->featmap_scaletable_i8_->mutable_cpu_data()[0] = n(e);
 				mem += (this->output_channel_ + 1) * sizeof(float);
 			}
 
@@ -113,10 +113,10 @@ namespace glasssix
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
 					mem += this->output_channel_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(this->output_channel_);
-				fread(this->weights_scaletable_i8_.data(), 1, this->output_channel_ * sizeof(float), fp);
-				this->featmap_scaletable_i8_.resize(1);
-				fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+				this->weights_scaletable_i8_.reset(new memory::tensor<float>(this->output_channel_, this->params_.device_, memory::NCHW, nullptr));
+				fread(this->weights_scaletable_i8_->mutable_cpu_data(), 1, this->output_channel_ * sizeof(float), fp);
+				this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				fread(this->featmap_scaletable_i8_->mutable_cpu_data(), 1, 1 * sizeof(float), fp);
 				mem += (this->output_channel_ + 1)  * sizeof(float);
 			}
 			else
