@@ -94,16 +94,11 @@ namespace glasssix
 					}
 					mem += num_output_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(1);
-				this->weights_scaletable_i8_[0] = n(e);
-				this->featmap_scaletable_i8_.resize(1);
-				this->featmap_scaletable_i8_[0] = n(e);
+				this->weights_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				this->weights_scaletable_i8_->mutable_cpu_data()[0] = n(e);
+				this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				this->featmap_scaletable_i8_->mutable_cpu_data()[0] = n(e);
 				mem += 2 * sizeof(float);
-
-				if (std::fabs(this->weights_scaletable_i8_[0]) <= 1e-6)
-					scale_in = 0.f;
-				else
-					scale_in = 1.f / (4 * this->weights_scaletable_i8_[0] * this->featmap_scaletable_i8_[0]);
 
 #ifdef __aarch64__
 				weight_i8_reordered_.reset(new memory::tensor<int8_t>(this->weights_i8_[0]->count(), this->params_.device_, memory::NCHW, nullptr));
@@ -146,16 +141,11 @@ namespace glasssix
 					fread(this->weights_f32_[1]->mutable_cpu_data(), 1, num_output_ * sizeof(float), fp);
 					mem += num_output_ * sizeof(float);
 				}
-				this->weights_scaletable_i8_.resize(1);
-				fread(this->weights_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
-				this->featmap_scaletable_i8_.resize(1);
-				fread(this->featmap_scaletable_i8_.data(), 1, 1 * sizeof(float), fp);
+				this->weights_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				fread(this->weights_scaletable_i8_->mutable_cpu_data(), 1, 1 * sizeof(float), fp);
+				this->featmap_scaletable_i8_.reset(new memory::tensor<float>(1, this->params_.device_, memory::NCHW, nullptr));
+				fread(this->featmap_scaletable_i8_->mutable_cpu_data(), 1, 1 * sizeof(float), fp);
 				mem += 2 * sizeof(float);
-
-				if (std::fabs(this->weights_scaletable_i8_[0]) <= 1e-6)
-					scale_in = 0.f;
-				else
-					scale_in = 1.f / (4 * this->weights_scaletable_i8_[0] * this->featmap_scaletable_i8_[0]);
 
 #ifdef __aarch64__
 				weight_i8_reordered_.reset(new memory::tensor<int8_t>(this->weights_i8_[0]->count(), this->params_.device_, memory::NCHW, nullptr));
@@ -481,7 +471,7 @@ namespace glasssix
 #endif
 			for (int i = 0; i < total_size; i++)
 			{
-				bottom_int8_[i] = float32_to_int8(bottom[i] * this->featmap_scaletable_i8_[0]);
+				bottom_int8_[i] = float32_to_int8(bottom[i] * this->featmap_scaletable_i8_->cpu_data()[0]);
 			}
 		}
 

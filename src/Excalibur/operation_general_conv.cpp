@@ -280,8 +280,8 @@ namespace glasssix
 			int h = src->height();
 			int c = src->channels();
 
-			size_t scale_data_size = this->featmap_scaletable_i8_.size();
-			const float* scale_data = this->featmap_scaletable_i8_.data();
+			size_t scale_data_size = this->featmap_scaletable_i8_->count();
+			const float* scale_data = this->featmap_scaletable_i8_->cpu_data();
 
 #if __ARM_NEON & 0
 			int elempack = input_channel_ % 4 ? 1 : 4;
@@ -733,6 +733,12 @@ namespace glasssix
 			if (this->bias_term_)
 				bias_data = this->weights_f32_[1]->cpu_data();
 
+			size_t feat_scale_data_size = this->featmap_scaletable_i8_->count();
+			const float* feat_scale_data = this->featmap_scaletable_i8_->cpu_data();
+
+			size_t weights_scaletable_i8_data_size = this->weights_scaletable_i8_->count();
+			const float* weights_scaletable_i8_data = this->weights_scaletable_i8_->cpu_data();
+
 			for (size_t n = 0; n < num; n++)
 			{
 				const int* top_int32_data = src->cpu_data() + n * size * channels;
@@ -745,7 +751,9 @@ namespace glasssix
 #endif
 					for (int q = 0; q < channels; q++)
 					{
-						float scale = (std::fabs(this->weights_scaletable_i8_[q]) <= 1e-6) ? 0.f : (1.0f / (this->weights_scaletable_i8_[q] * this->featmap_scaletable_i8_[0]));
+						const float feat_scale = feat_scale_data_size == 1 ? feat_scale_data[0] : feat_scale_data[q];
+						const float weight_scale = weights_scaletable_i8_data_size == 1 ? weights_scaletable_i8_data[0] : weights_scaletable_i8_data[q];
+						float scale = (std::fabs(weight_scale) <= 1e-6) ? 0.f : (1.0f / (weight_scale * feat_scale));
 						const int* intptr = top_int32_data + q * size;
 						float* ptr = top_f32_data + q * size;
 						float bias = bias_data[q];
@@ -845,7 +853,9 @@ namespace glasssix
 #endif
 					for (int q = 0; q < channels; q++)
 					{
-						float scale = (std::fabs(this->weights_scaletable_i8_[q]) <= 1e-6) ? 0.f : (1.0f / (this->weights_scaletable_i8_[q] * this->featmap_scaletable_i8_[0]));
+						const float feat_scale = feat_scale_data_size == 1 ? feat_scale_data[0] : feat_scale_data[q];
+						const float weight_scale = weights_scaletable_i8_data_size == 1 ? weights_scaletable_i8_data[0] : weights_scaletable_i8_data[q];
+						float scale = (std::fabs(weight_scale) <= 1e-6) ? 0.f : (1.0f / (weight_scale * feat_scale));
 						const int* intptr = top_int32_data + q * size;
 						float* ptr = top_f32_data + q * size;
 

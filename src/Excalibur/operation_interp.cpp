@@ -31,6 +31,9 @@ namespace glasssix
                 case 4:
                     this->output_height_ = std::stoi(kvs[1]);
                     break;
+                case 6:
+                    //do thing
+                    break;
                 default:
                     LOG(FATAL) << "Un-supported Interp Attribution " << kvs[0];
                     break;

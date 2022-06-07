@@ -25,15 +25,15 @@ namespace glasssix
 			virtual void forward_cpu_i8(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 
-			virtual void forward_gpu_f32(
 #ifdef USE_CUDA
+			virtual void forward_gpu_f32(
 				cublasHandle_t &cublas_handle_,
 #ifdef USE_CUDNN
 				cudnnHandle_t cudnn_handle,
 #endif //!USE_CUDNN
-#endif //!USE_CUDA
 				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
+#endif //!USE_CUDA
 
 #ifdef USE_CUDA
 			virtual void forward_gpu_f16(
@@ -43,6 +43,16 @@ namespace glasssix
 #endif //!USE_CUDNN
 				const std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<unsigned short>>>& tops);
+#endif //!USE_CUDA
+
+#ifdef USE_CUDA
+			virtual void forward_gpu_i8(
+				cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+				cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+				const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+				std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
 #endif //!USE_CUDA
 
 		private:
@@ -81,6 +91,8 @@ namespace glasssix
 			void forward_gpu_hgemm(cublasHandle_t& cublas_handle, const unsigned short* input, const unsigned short* weights, unsigned short* output, memory::orderType order);
 
 			void forward_gpu_hbias(cublasHandle_t& cublas_handle, unsigned short* output, const unsigned short* bias, memory::orderType order);
+
+			void forward_gpu_igemm(cublasHandle_t& cublas_handle, const signed char* input, const signed char* weights, int* output, memory::orderType order);
 #endif //!USE_CUDA
 
 			void forward_cpu_k1s1_f32(const std::shared_ptr < memory::tensor<float>>& bottom,
@@ -123,6 +135,10 @@ namespace glasssix
 			std::shared_ptr<memory::tensor<unsigned short>> bias_multiplier_f16_;
 			unsigned short* col_buffer_f16_data_;
 			unsigned short* bias_multiplier_f16_data_;
+
+			//int8
+			std::shared_ptr<memory::tensor<signed char>> col_buffer_i8_;
+			signed char* col_buffer_i8_data_;
 
             // cudnn
 #ifdef USE_CUDNN

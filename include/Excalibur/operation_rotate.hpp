@@ -166,7 +166,7 @@ namespace glasssix
 
         // remapBilinear
         template <typename Dtype>
-        static void remapBilinear(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, Dtype *dpart, int d_width, int d_height, ushort *_XY, int x_start, int y_start, Dtype fill_pixel_value, ushort *bufa, const short *ctab)
+        static void remapBilinear(const std::shared_ptr<memory::tensor<Dtype>> &src, std::shared_ptr<memory::tensor<Dtype>> &dst, Dtype *dpart, int d_width, int d_height, std::uint16_t *_XY, int x_start, int y_start, Dtype fill_pixel_value, std::uint16_t *bufa, const short *ctab)
         {
             int s_width = src->width();
             int s_height = src->height();
@@ -182,13 +182,13 @@ namespace glasssix
 
                 for (int dy = 0; dy < d_height; ++dy)
                 {
-                    const ushort *FXY = bufa + dy * d_width;
+                    const std::uint16_t *FXY = bufa + dy * d_width;
                     D = dpart + dy * dstep;
-                    const ushort *XY = _XY + dy * d_width * 2;
+                    const std::uint16_t *XY = _XY + dy * d_width * 2;
 
                     for (int dx = 0; dx < d_width; ++dx, D += cn)
                     {
-                        ushort sx = XY[dx * 2], sy = XY[dx * 2 + 1];
+                        std::uint16_t sx = XY[dx * 2], sy = XY[dx * 2 + 1];
                         if (sx >= s_width || sx + 1 < 0 || sy >= s_height || sy + 1 < 0)
                         {
                             for (int k = 0; k < cn; k++)
@@ -225,13 +225,13 @@ namespace glasssix
                 const int sstep = s_width * s_height;
                 for (int dy = 0; dy < d_height; ++dy)
                 {
-                    const ushort *FXY = bufa + dy * d_width;
+                    const std::uint16_t *FXY = bufa + dy * d_width;
                     D = dpart + dy * d_width;
-                    const ushort *XY = _XY + dy * d_width * 2;
+                    const std::uint16_t *XY = _XY + dy * d_width * 2;
 
                     for (int dx = 0; dx < d_width; ++dx, ++D)
                     {
-                        ushort sx = XY[dx * 2], sy = XY[dx * 2 + 1];
+                        std::uint16_t sx = XY[dx * 2], sy = XY[dx * 2 + 1];
                         if (sx >= s_width || sx + 1 < 0 || sy >= s_height || sy + 1 < 0)
                         {
                             for (int k = 0; k < cn; k++)

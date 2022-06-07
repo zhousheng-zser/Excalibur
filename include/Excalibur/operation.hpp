@@ -160,8 +160,8 @@ namespace glasssix
 			std::vector<std::shared_ptr<memory::tensor<unsigned short>>> weights_f16_;
 			std::vector<std::shared_ptr<memory::tensor<signed char>>> weights_i8_;
 			operation_param params_;
-			std::vector<float> weights_scaletable_i8_;
-			std::vector<float> featmap_scaletable_i8_;
+			std::shared_ptr<memory::tensor<float>> weights_scaletable_i8_;
+			std::shared_ptr<memory::tensor<float>> featmap_scaletable_i8_;
 
 			virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
 				std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
