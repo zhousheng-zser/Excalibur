@@ -268,6 +268,14 @@ namespace glasssix
                     //     t.start();
                     // }
                     ///////////////////////////
+#ifdef SUPPORT_QUANTIZATION
+                    if (op_params_[i].type_ == "Convolution" || op_params_[i].type_ == "ConvolutionDepthWise" || op_params_[i].type_ == "Deconvolution")
+                    {
+                        std::shared_ptr<memory::tensor<Dtype>> ptr_of_bottom = input[0];
+                        in_tensor_ptr[op_params_[i].name_] = ptr_of_bottom;
+                    }
+#endif
+
                     operations_[ops_execution_order_[i]]->forward_cpu(input, output);
                     /////////////////////////////
                     // t.stop();
@@ -550,6 +558,10 @@ namespace glasssix
             bool profile_ = false;
             int weights_mem_cost_ = 0;
             int featmap_mem_cost_ = 0;
+#ifdef SUPPORT_QUANTIZATION
+            public:
+            std::map <std::string, std::shared_ptr<memory::tensor<Dtype>>> in_tensor_ptr;
+#endif
 
 #ifdef USE_CUDA
             cublasHandle_t cublas_handle_ = nullptr;
@@ -624,6 +636,20 @@ namespace glasssix
             impl_->disable_profiler();
         }
 
+#ifdef SUPPORT_QUANTIZATION
+        template <typename Dtype>
+        std::map<std::string, std::shared_ptr<memory::tensor<Dtype>>>  pipeline<Dtype>::get_blob_ptr()
+        {
+            if (impl_ != NULL)
+            {
+                return impl_->in_tensor_ptr;
+            }
+            else
+            {
+                std::cout << "ruined";
+            }
+        }
+#endif
         INSTANCE_CLASS(pipeline);
     }
 }
