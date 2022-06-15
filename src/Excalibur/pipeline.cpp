@@ -560,7 +560,7 @@ namespace glasssix
             int featmap_mem_cost_ = 0;
 #ifdef SUPPORT_QUANTIZATION
             public:
-            std::map <std::string, std::shared_ptr<memory::tensor<Dtype>>> in_tensor_ptr;
+            std::unordered_map <std::string, std::shared_ptr<memory::tensor<Dtype>>> in_tensor_ptr;
 #endif
 
 #ifdef USE_CUDA
@@ -638,7 +638,7 @@ namespace glasssix
 
 #ifdef SUPPORT_QUANTIZATION
         template <typename Dtype>
-        std::map<std::string, std::shared_ptr<memory::tensor<Dtype>>>  pipeline<Dtype>::get_blob_ptr()
+        std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>  pipeline<Dtype>::get_blob_ptr()
         {
             if (impl_ != NULL)
             {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14.3)
 set(module_name excalibur)
-option(SUPPORT_QUANTIZATION "Support quantization" ON)
+option(SUPPORT_QUANTIZATION "Support quantization" off)
 include_directories(../../include/Excalibur ../../include)
 if(USE_CUDA)
 	file(GLOB src ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/arm/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/cuda/*.cu)
