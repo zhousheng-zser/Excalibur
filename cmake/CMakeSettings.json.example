@@ -16,9 +16,14 @@
           "value": "False",
           "type": "BOOL"
         },
-		{
+        {
           "name": "USE_CUDNN",
           "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "SUPPORT_QUANTIZATION",
+          "value": "True",
           "type": "BOOL"
         }
       ]
@@ -39,9 +44,14 @@
           "value": "False",
           "type": "BOOL"
         },
-		{
+        {
           "name": "USE_CUDNN",
           "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "SUPPORT_QUANTIZATION",
+          "value": "True",
           "type": "BOOL"
         }
       ]

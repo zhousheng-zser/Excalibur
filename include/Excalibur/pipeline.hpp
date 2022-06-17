@@ -30,6 +30,11 @@ namespace glasssix
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_cpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
 			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>> forward_gpu(const std::shared_ptr<memory::tensor<Dtype>>& input_tensor);
 			std::shared_ptr<memory::tensor<Dtype>> get_featmap(std::string_view featmap_name);
+
+#ifdef SUPPORT_QUANTIZATION
+			std::unordered_map<std::string, std::shared_ptr<memory::tensor<Dtype>>>  get_blob_ptr();
+#endif
+
 			void enable_profiler();
 			void disable_profiler();
 		private:

@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.14.3)
 set(module_name excalibur)
+option(SUPPORT_QUANTIZATION "Support quantization" off)
 include_directories(../../include/Excalibur ../../include)
 if(USE_CUDA)
 	file(GLOB src ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/arm/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/../../src/Excalibur/cuda/*.cu)
@@ -42,6 +43,10 @@ endif()
 
 if(USE_OPENMP)
 	target_link_libraries(${module_name} OpenMP::OpenMP_CXX)
+endif()
+
+if(SUPPORT_QUANTIZATION)
+	target_compile_definitions(${module_name} PRIVATE -DSUPPORT_QUANTIZATION)
 endif()
 
 target_link_libraries(${module_name} julius primitives Threads::Threads)
