@@ -9,31 +9,35 @@ namespace glasssix
     namespace excalibur
     {
         template <class Dtype>
-        operation_slice<Dtype>::operation_slice(const operation_param &param) : start_(INT_MAX), end_(INT_MAX), axis_(INT_MAX), operation<Dtype>(param)
+        operation_slice<Dtype>::operation_slice(const operation_param &param) : start_(INT_MAX), end_(INT_MAX), axis_(INT_MAX), step_(INT_MAX), operation<Dtype>(param)
         {
             std::vector<std::string> attrs = split_string(param.specific_params_, " ");
             for (int i = 0; i < attrs.size(); ++i)
             {
                 std::vector<std::string> kvs = split_string(attrs[i], "=");
+                std::vector<std::string> sub_kvs = split_string(kvs[1], ",");
                 switch (std::stoi(kvs[0]))
                 {
                 case 0:
-                    start_ = std::stoi(kvs[1]);
+                    start_ = std::stoi(sub_kvs[1]);
                     break;
                 case 1:
-                    end_ = std::stoi(kvs[1]);
+                    end_ = std::stoi(sub_kvs[1]);
                     break;
                 case 2:
-                    axis_ = std::stoi(kvs[1]);
+                    axis_ = std::stoi(sub_kvs[1]);
+                    break;
+                case 3:
+                    step_ = std::stoi(sub_kvs[1]);
                     break;
                 default:
                     LOG(FATAL) << "Un-supported Slice Attribution " << kvs[0];
                     break;
                 }
             }
-            if (start_ == INT_MAX || end_ == INT_MAX || axis_ == INT_MAX)
+            if (start_ == INT_MAX || step_ == INT_MAX || axis_ == INT_MAX)
             {
-                LOG(FATAL) << "The starts/ends/axes are required.";
+                LOG(FATAL) << "The starts/step_/axes are required.";
             }
         }
 
@@ -44,24 +48,26 @@ namespace glasssix
             CHECK_EQ(tops.size(), 1);
 
             std::vector<int> shape = bottoms[0]->data_shape();
-            CHECK_GE(axis_, 0);
-            CHECK_LT(axis_, shape.size());
-            int input_dim = shape[axis_];
+            int axis = axis_ + 1;
+            CHECK_GT(axis, 0);
+            CHECK_LT(axis, shape.size());
+            int input_dim = shape[axis];
             CHECK_GE(start_, 0);
-            CHECK_LE(end_, input_dim);
+            int end = end_ == INT_MAX ? input_dim : end_;
+            CHECK_LE(end, input_dim);
 
-            int output_dim = end_ - start_;
+            int output_dim = (end - start_) / step_;
             int inner_size = 1;
-            for (int i = axis_ + 1; i < shape.size(); ++i)
+            for (int i = axis + 1; i < shape.size(); ++i)
             {
                 inner_size *= shape[i];
             }
             int input_stride = input_dim * inner_size;
             std::vector<int> output_shape(shape);
-            output_shape[axis_] = output_dim;
+            output_shape[axis] = output_dim;
             tops[0].reset(new memory::tensor<float>(output_shape, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
             int outer_size = 1;
-            for (int i = 0; i < axis_; ++i)
+            for (int i = 0; i < axis; ++i)
             {
                 outer_size *= shape[i];
             }
@@ -76,7 +82,15 @@ namespace glasssix
                 {
                     const float *input_base = input_data + i * input_stride + offset;
                     float *output_base = output_data + i * output_stride;
-                    memcpy(output_base, input_base, output_stride * sizeof(float));
+                    if(step_ == 1)
+                        memcpy(output_base, input_base, output_stride * sizeof(float));
+                    else
+                    {
+                        for (size_t k = 0; k < output_stride; k++)
+                        {
+                            output_base[k] = input_base[k / inner_size * step_ * inner_size + k % inner_size];
+                        }
+                    }
                 }
             }
             else

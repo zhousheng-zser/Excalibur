@@ -32,6 +32,7 @@ namespace glasssix
             int start_;
             int end_;
             int axis_;
+            int step_;
         };
     }
 }
