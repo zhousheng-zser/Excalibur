@@ -300,7 +300,7 @@ namespace glasssix
         }
 
 #ifndef USE_CUDA
-        STUB_GPU(operation_slice);
+        STUB_GPU(operation_pad);
 #endif
 
         INSTANCE_CLASS(operation_pad);
