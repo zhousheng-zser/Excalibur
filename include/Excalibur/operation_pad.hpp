@@ -15,16 +15,30 @@ namespace glasssix
             virtual ~operation_pad() {}
 
         protected:
-            void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
-
+            virtual void forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, 
+                std::vector<std::shared_ptr<memory::tensor<float>>> &tops);
+            virtual void forward_gpu_f32(
+#ifdef USE_CUDA
+                cublasHandle_t& cublas_handle_,
+#ifdef USE_CUDNN
+                cudnnHandle_t cudnn_handle,
+#endif //!USE_CUDNN
+#endif //!USE_CUDA
+                const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms,
+                std::vector<std::shared_ptr<memory::tensor<float>>>& tops);
         private:
             void copy_make_border_image(const std::shared_ptr<memory::tensor<float>> &bottoms, std::shared_ptr<memory::tensor<float>> &tops);
 
-            enum pad_type { CONSTANT, REFLECT, EDGE };
+            enum pad_mode { CONSTANT = 0, EDGE, REFLECT };
             //top left bottom right
-            std::vector<int> pads_{0, 0, 0, 0};
-            float constant_value_ = 0;
-            pad_type type_ = pad_type::CONSTANT;
+            int top_ = 0;
+            int bottom_ = 0;
+            int left_ = 0;
+            int right_ = 0;
+            int mode_ = pad_mode::CONSTANT;
+            float constant_value_ = 0.f;
+            int front_ = 0;
+            int behind_ = 0;
         };
     }
 }

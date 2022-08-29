@@ -6,11 +6,11 @@ namespace glasssix
     namespace excalibur
     {
 #ifdef USE_CUDA
-        __global__ void slice_kernel(const int n, const float *in, float *out)
+        __global__ void slice_kernel(const int n, const float *in, float *out, int step, int inner_size)
         {
             CUDA_KERNEL_LOOP(index, n)
             {
-                out[index] = in[index];
+                out[index] = in[index / inner_size * step * inner_size + index % inner_size];
             }
         }
 
@@ -27,24 +27,26 @@ namespace glasssix
             CHECK_EQ(tops.size(), 1);
 
             std::vector<int> shape = bottoms[0]->data_shape();
-            CHECK_GE(axis_, 0);
-            CHECK_LT(axis_, shape.size());
-            int input_dim = shape[axis_];
+            int axis = axis_ + 1;
+            CHECK_GT(axis, 0);
+            CHECK_LT(axis, shape.size());
+            int input_dim = shape[axis];
             CHECK_GE(start_, 0);
-            CHECK_LE(end_, input_dim);
+            int end = end_ == INT_MAX ? input_dim : end_;
+            CHECK_LE(end, input_dim);
 
-            int output_dim = end_ - start_;
+            int output_dim = (end - start_) / step_;
             int inner_size = 1;
-            for (int i = axis_ + 1; i < shape.size(); ++i)
+            for (int i = axis + 1; i < shape.size(); ++i)
             {
                 inner_size *= shape[i];
             }
             int input_stride = input_dim * inner_size;
             std::vector<int> output_shape(shape);
-            output_shape[axis_] = output_dim;
+            output_shape[axis] = output_dim;
             tops[0].reset(new memory::tensor<float>(output_shape, this->params_.device_, bottoms[0]->order(), bottoms[0]->allocator()));
             int outer_size = 1;
-            for (int i = 0; i < axis_; ++i)
+            for (int i = 0; i < axis; ++i)
             {
                 outer_size *= shape[i];
             }
@@ -59,7 +61,7 @@ namespace glasssix
                 {
                     const float *input_base = input_data + i * input_stride + offset;
                     float *output_base = output_data + i * output_stride;
-                    slice_kernel<<<CUDA_GET_BLOCKS(output_stride), CUDA_NUM_THREADS>>>(output_stride, input_base, output_base);
+                    slice_kernel<<<CUDA_GET_BLOCKS(output_stride), CUDA_NUM_THREADS>>>(output_stride, input_base, output_base, step_, inner_size);
                 }
             }
             else
