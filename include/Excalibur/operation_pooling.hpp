@@ -54,7 +54,7 @@ namespace glasssix
 			enum pooling_type { MAX, AVE };
 			pooling_type type_;
 			bool global_pooling_;
-			int pad_mode_;
+			int pad_mode_ = 1;
 			int avgpool_count_include_pad_ = 0;
 		};
 	}
