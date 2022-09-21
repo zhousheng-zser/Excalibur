@@ -124,7 +124,7 @@ namespace glasssix
                 else if(perms_[0] == 2 && perms_[1] == 1 && perms_[2] == 0)
                 {
                     // c h w
-                    tops[0].reset(new memory::tensor<float>(std::vector<int>{num, width, height, channels}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+                    tops[0].reset(new memory::tensor<float>(std::vector<int>{num, channels, height, width}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
                     for(int ch = 0; ch < width; ++ch)
                     {
