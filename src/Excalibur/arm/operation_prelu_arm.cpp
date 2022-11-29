@@ -118,12 +118,12 @@ namespace glasssix
 								"vdup.f32   q2, %4              \n"
 								"0:                             \n"
 								"pld        [%1, #128]          \n"
-								"vld1.f32   {d0-d1}, [%1 :128]  \n"
+								"vld1.f32   {d0-d1}, [%1]  \n"
 								"vcle.f32   q3, q0, q1          \n"
 								"vmul.f32   q4, q0, q2          \n"
 								"vbit.32    q0, q4, q3          \n"
 								"subs       %0, #1              \n"
-								"vst1.f32   {d0-d1}, [%1 :128]! \n"
+								"vst1.f32   {d0-d1}, [%1]! \n"
 								"bne        0b                  \n"
 								: "=r"(nn),     // %0
 								"=r"(ptr)     // %1
