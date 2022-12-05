@@ -97,20 +97,17 @@ namespace glasssix
 				std::shared_ptr<memory::tensor<float> > bottom_bordered = bottoms[i];
 
 				int wtailpad = 0, htailpad = 0;
-				int wtail = (w + pad_left_ + pad_right_ - kernel_size_w_) % stride_w_;
-				int htail = (h + pad_top_ + pad_bottom_ - kernel_size_h_) % stride_h_;
-
-				if (wtail || htail)
+				if (pad_mode_ == 0)
 				{
-					if (wtail)
-						wtailpad = stride_w_ - wtail;
-					if (htail)
-						htailpad = stride_h_ - htail;
-
-					make_border(bottoms[i], bottom_bordered, pad_top_, pad_bottom_ + htailpad, pad_left_, pad_right_ + wtailpad, border_constant, -FLT_MAX);
-					w = bottom_bordered->width();
-					h = bottom_bordered->height();
+					int wtail = (w + pad_left_ + pad_right_ - kernel_size_w_) % stride_w_;
+					wtailpad = stride_w_ - wtail;
+					int htail = (h + pad_top_ + pad_bottom_ - kernel_size_h_) % stride_h_;
+					htailpad = stride_h_ - htail;
 				}
+
+				make_border(bottoms[i], bottom_bordered, pad_top_, pad_bottom_ + htailpad, pad_left_, pad_right_ + wtailpad, border_constant, -FLT_MAX);
+				w = bottom_bordered->width();
+				h = bottom_bordered->height();
 
 				int outw = (w - kernel_size_w_) / stride_w_ + 1;
 				int outh = (h - kernel_size_h_) / stride_h_ + 1;

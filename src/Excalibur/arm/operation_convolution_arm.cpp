@@ -454,9 +454,10 @@ namespace glasssix
 			{
 				if ((this->kernel_size_h_ == 3 && this->kernel_size_w_ == 3) && (this->stride_h_ == 1 && this->stride_w_ == 1) && (this->dilation_h_ == 1 && this->dilation_w_ == 1))
 				{
-					if ((w <= 120 && h <= 120) && (this->input_channel_ >= 16 && this->output_channel_ >= 16))
-						conv3x3s1_winograd64_neon5(bottom_bordered, tops[0], kernel_tm_, this->weights_f32_[1]);
-					else
+                    //conv3x3s1_winograd64_neon5 can't output correctly on armv7a 
+					//if ((w <= 120 && h <= 120) && (this->input_channel_ >= 16 && this->output_channel_ >= 16))
+					//	conv3x3s1_winograd64_neon5(bottom_bordered, tops[0], kernel_tm_, this->weights_f32_[1]);
+					//else
 						conv3x3s1_neon(bottom_bordered, tops[0], this->weights_f32_[0], this->weights_f32_[1]);
 				}
 				else if ((this->kernel_size_h_ == 1 && this->kernel_size_w_ == 1) && (this->stride_h_ == 1 && this->stride_w_ == 1) && (this->dilation_h_ == 1 && this->dilation_w_ == 1))
