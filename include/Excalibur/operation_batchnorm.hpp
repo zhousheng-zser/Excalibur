@@ -38,7 +38,7 @@ namespace glasssix
 
 		private:
 			int channels_ = 0;
-			float eps_ = 1e-05f;
+			float eps_ = 0.f;
 			std::shared_ptr<memory::tensor<float>> a_;
 			std::shared_ptr<memory::tensor<float>> b_;
 		};
