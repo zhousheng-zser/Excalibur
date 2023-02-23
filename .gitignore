@@ -70,5 +70,7 @@
 .vscode/
 build/
 build_v7/
+build_centos/
+build_ubuntu/
 /cmake/ndk_cmake.bat
 #/src/Test
