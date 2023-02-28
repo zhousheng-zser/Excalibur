@@ -6,120 +6,224 @@ namespace glasssix
 {
     namespace excalibur
     {
+        static void bottom_assign(
+            std::shared_ptr<memory::tensor<float>>& bottom_max,
+            std::shared_ptr<memory::tensor<float>>& bottom_min,
+            const std::shared_ptr<memory::tensor<float>>& bottom1,
+            const std::shared_ptr<memory::tensor<float>>& bottom2)
+        {
+            bool secondBottomMax = false;
+            auto b1_shape = bottom1->data_shape();
+            auto b2_shape = bottom2->data_shape();
+            CHECK_EQ(b1_shape.size(), 4);
+            CHECK_EQ(b2_shape.size(), 4);
+            CHECK_EQ(b1_shape[0], 1); // excalibur not support 4dims
+            CHECK_EQ(b2_shape[0], 1); // could refactor it when support 4dims, so must check it now
+            if (b1_shape != b2_shape) {
+                int dims_1 = (bottom1->width() == 1 ? 0 : 1) + (bottom1->height() == 1 ? 0 : 1) + (bottom1->channels() == 1 ? 0 : 1);
+                int dims_2 = (bottom2->width() == 1 ? 0 : 1) + (bottom2->height() == 1 ? 0 : 1) + (bottom2->channels() == 1 ? 0 : 1);
+                if (dims_2 > dims_1) {
+                    secondBottomMax = true;
+                }
+                else if (dims_2 == dims_1) {
+                    for (int i = 1; i < 4; i++) {
+                        if (b2_shape[i] > b1_shape[i]) {
+                            secondBottomMax = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (secondBottomMax) {
+                bottom_max = bottom2;
+                bottom_min = bottom1;
+            }
+            else {
+                bottom_max = bottom1;
+                bottom_min = bottom2;
+            }
+        }
+
         template <typename Op>
-        static void binary_op(const std::shared_ptr<memory::tensor<float>> &bottom1, const std::shared_ptr<memory::tensor<float>> &bottom2, std::shared_ptr<memory::tensor<float>> &top)
+        static void binary_op(const std::shared_ptr<memory::tensor<float>>& bottom1, const std::shared_ptr<memory::tensor<float>>& bottom2, std::shared_ptr<memory::tensor<float>>& top)
         {
             Op op;
-            int bottom_w1 = bottom1->width();
-            int bottom_h1 = bottom1->height();
-            int bottom_c1 = bottom1->channels();
-            int b1_dims = (bottom_w1 == 1 ? 0 : 1) + (bottom_h1 == 1 ? 0 : 1) + (bottom_c1 == 1 ? 0 : 1);
-            b1_dims = b1_dims == 0 ? 1 : b1_dims;
-            const float *b1 = bottom1->cpu_data();
-            int size = bottom_w1 * bottom_h1;
+            std::shared_ptr<memory::tensor<float>> bottom_max;
+            std::shared_ptr<memory::tensor<float>> bottom_min;
+            bottom_assign(bottom_max, bottom_min, bottom1, bottom2);
 
-            int bottom_w2 = bottom2->width();
-            int bottom_h2 = bottom2->height();
-            int bottom_c2 = bottom2->channels();
-            int b2_dims = (bottom_w2 == 1 ? 0 : 1) + (bottom_h2 == 1 ? 0 : 1) + (bottom_c2 == 1 ? 0 : 1);
-            b2_dims = b2_dims == 0 ? 1 : b2_dims;
-            const float *b2 = bottom2->cpu_data();
-            int size1 = bottom_w2 * bottom_h2;
+            int bmax_W = bottom_max->width();
+            int bmax_H = bottom_max->height();
+            int bmax_C = bottom_max->channels();
+            std::vector<int> bmax_shape = bottom_max->data_shape();
+            int bmax_dims = (bmax_W == 1 ? 0 : 1) + (bmax_H == 1 ? 0 : 1) + (bmax_C == 1 ? 0 : 1);
+            bmax_dims = bmax_dims == 0 ? 1 : bmax_dims;
+            const float* bmax_data = bottom_max->cpu_data();
+            int size = bmax_W * bmax_H;
+            int maxWHsize = bmax_W * bmax_H;
 
-            if (b1_dims == 3)
+            int bmin_W = bottom_min->width();
+            int bmin_H = bottom_min->height();
+            int bmin_C = bottom_min->channels();
+            std::vector<int> bmin_shape = bottom_min->data_shape();
+            int bmin_dims = (bmin_W == 1 ? 0 : 1) + (bmin_H == 1 ? 0 : 1) + (bmin_C == 1 ? 0 : 1);
+            bmin_dims = bmin_dims == 0 ? 1 : bmin_dims;
+            const float* bmin_data = bottom_min->cpu_data();
+            int size1 = bmin_W * bmin_H;
+            int minWHsize = bmin_W * bmin_H;
+
+            if (bmax_shape == bmin_shape)
             {
-                if (b2_dims == 3)
+                top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                float* top_data = top->mutable_cpu_data();
+                CHECK_EQ(bottom_max->count(), bottom_min->count());
+                for (int i = 0; i < bottom_max->count(); ++i) {
+                    top_data[i] = op(bmax_data[i], bmin_data[i]);
+                }
+                return;
+            }
+            else if (bmax_dims == 3)
+            {
+                if (bmin_dims == 3 && bmax_C != bmin_C && bmax_C > 3)
                 {
-                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                    int count = bottom1->count();
-                    float *outptr = top->mutable_cpu_data();
-                    for (int i = 0; i < count; ++i)
+                    // e.g for: [ 6 * 2 * 160 * 160 ] op [ 1 * 2 * 160 * 160 ]
+                    // in excalibur to be [ 1 * 12 * 160 * 160 ] op [ 1 * 2 * 160 * 160 ] }
+                    const float* bmax = bottom_max->cpu_data();
+                    const float* bmin = bottom_min->cpu_data();
+                    top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    float* top_data = top->mutable_cpu_data();
+                    const double m = bmin_C;
+                    const double nd = double(bmax_C) / m;
+                    if (ceil(nd) == floor(nd))
                     {
-                        outptr[i] = op(b1[i], b2[i]);
+                        const int n = nd;
+                        if (n >= m) {
+                            /*
+                            * m*n OP m
+                            * e.g.: [4 * 24 * 160 * 160] OP [4 * 1 * 160 * 160]
+                            * this 24=n 4=m
+                            * [24 * B] * [1 * B] loop 4 times
+                            */
+                            const int step = n * minWHsize;
+                            for (int i = 0; i < m; ++i) {
+                                float* top_ptr = top_data + i * step;
+                                const float* max_ptr = bmax_data + i * step;
+                                const float* min_ptr = bmin_data + i * minWHsize;
+                                for (int j = 0; j < step; ++j) {
+                                    top_ptr[j] = op(max_ptr[j], min_ptr[j % minWHsize]);
+                                }
+                            }
+                            return;
+                        }
+                        else {
+                            NOT_IMPLEMENTED;
+                        }
+                    }
+                }
+                else if (bmin_dims == 2) {
+                    CHECK_EQ(maxWHsize, minWHsize);
+                    top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    float* top_data = top->mutable_cpu_data();
+                    for (size_t c = 0; c < bmax_C; c++)
+                    {
+                        const float* ChnlPtrBmax = bmax_data + c * minWHsize; // maxBottom assign channel
+                        float* ChnlPtrTop = top_data + c * minWHsize;
+                        for (size_t i = 0; i < minWHsize; i++)
+                        {
+                            ChnlPtrTop[i] = op(bmin_data[i], ChnlPtrBmax[i]);
+                        }
                     }
                     return;
                 }
-                else if (b2_dims == 1 && bottom_c2 > 1)
+                else if (bmin_dims == 1 && bmin_C > 1)
                 {
-                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                    float *top_data = top->mutable_cpu_data();
-                    for (int q = 0; q < bottom_c1; q++)
+                    top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    float* top_data = top->mutable_cpu_data();
+                    for (int q = 0; q < bmax_C; q++)
                     {
-                        const float *ptr1 = b1 + q * size;
-                        float *outptr = top_data + q * size;
+                        const float* ptr1 = bmax_data + q * size;
+                        float* outptr = top_data + q * size;
                         for (int i = 0; i < size; i++)
                         {
-                            outptr[i] = op(b2[q], ptr1[i]);
+                            outptr[i] = op(bmin_data[q], ptr1[i]);
                         }
                     }
                     return;
                 }
             }
-            else if (b1_dims == 2)
+            else if (bmax_dims == 2)
             {
-                if (b2_dims == 1)
+                if (bmin_dims == 1)
                 {
-                    top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                    float *outptr = top->mutable_cpu_data();
-                    for (int h = 0; h < bottom_h1; ++h)
+                    top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    float* outptr = top->mutable_cpu_data();
+                    for (int h = 0; h < bmax_H; ++h)
                     {
-                        for (int w = 0; w < bottom_w1; ++w)
+                        for (int w = 0; w < bmax_W; ++w)
                         {
-                            outptr[h * bottom_w1 + w] = op(b1[w], b2[w]);
+                            outptr[h * bmax_W + w] = op(bmax_data[w], bmin_data[w]);
                         }
-                        b1 += bottom_w1;
+                        bmax_data += bmax_W;
                     }
                     return;
                 }
-            }
-            else if (b1_dims == 1)
-            {
-                if (b2_dims == 1)
+                else if (bmin_dims == 2 && bmax_shape != bmin_shape)
                 {
-                    if (bottom_w2 * bottom_h2 * bottom_c2 > 1)
+                    //e.g for: [1 * 1 * 4 * 4] op [1 * 1 * 2 * 4]
+                    //top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    //float* outptr = top->mutable_cpu_data();
+                    NOT_IMPLEMENTED;
+                }
+            }
+            else if (bmax_dims == 1)
+            {
+                if (bmin_dims == 1)
+                {
+                    if (bmin_W * bmin_H * bmin_C > 1)
                     {
-                        top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                        int count = bottom1->count();
-                        float *outptr = top->mutable_cpu_data();
+                        top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                        int count = bottom_max->count();
+                        float* outptr = top->mutable_cpu_data();
                         for (int i = 0; i < count; ++i)
                         {
-                            outptr[i] = op(b1[i], b2[i]);
+                            outptr[i] = op(bmax_data[i], bmin_data[i]);
                         }
                         return;
                     }
-                    else if (bottom_w2 * bottom_h2 * bottom_c2 == 1)
+                    else if (bmin_W * bmin_H * bmin_C == 1)
                     {
-                        top.reset(new memory::tensor<float>(bottom1->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                        int count = bottom1->count();
-                        float *outptr = top->mutable_cpu_data();
+                        top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                        int count = bottom_max->count();
+                        float* outptr = top->mutable_cpu_data();
                         for (int i = 0; i < count; ++i)
                         {
-                            outptr[i] = op(b1[i], b2[0]);
+                            outptr[i] = op(bmax_data[i], bmin_data[0]);
                         }
                         return;
                     }
                 }
-                else if (b2_dims == 3)
+                else if (bmin_dims == 3)
                 {
-                    if (bottom_w1 == 1 && bottom_h1 == 1 && bottom_c1 == bottom_c2)
+                    if (bmax_W == 1 && bmax_H == 1 && bmax_C == bmin_C)
                     {
                         // special type 3
-                        top.reset(new memory::tensor<float>(bottom2->data_shape(), bottom1->device(), bottom1->order(), bottom1->allocator()));
-                        float *top_data = top->mutable_cpu_data();
-                        for (int q = 0; q < bottom_c1; q++)
+                        top.reset(new memory::tensor<float>(bottom_min->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                        float* top_data = top->mutable_cpu_data();
+                        for (int q = 0; q < bmax_C; q++)
                         {
-                            // const float *a0 = b1 + q * size;
-                            const float *ptr1 = b2 + q * size1;
-                            float *outptr = top_data + q * size1;
+                            // const float *a0 = bmax_data + q * size;
+                            const float* ptr1 = bmin_data + q * size1;
+                            float* outptr = top_data + q * size1;
                             for (int i = 0; i < size1; i++)
                             {
-                                outptr[i] = op(b1[q], ptr1[i]);
+                                outptr[i] = op(bmax_data[q], ptr1[i]);
                             }
                         }
                         return;
                     }
                 }
             }
+
             NOT_IMPLEMENTED;
         }
 
