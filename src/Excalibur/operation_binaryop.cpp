@@ -72,7 +72,17 @@ namespace glasssix
             int size1 = bmin_W * bmin_H;
             int minWHsize = bmin_W * bmin_H;
 
-            if (bmax_shape == bmin_shape)
+            std::vector<int> const_ones(4, 1);
+            if (bmin_shape == const_ones) {
+                top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                float bmin_Value = bmin_data[0];
+                float* top_data = top->mutable_cpu_data();
+                for (int i = 0; i < bottom_max->count(); ++i) {
+                    top_data[i] = op(bmax_data[i], bmin_Value);
+                }
+                return;
+            }
+            else if (bmax_shape == bmin_shape)
             {
                 top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
                 float* top_data = top->mutable_cpu_data();
@@ -187,17 +197,6 @@ namespace glasssix
                         for (int i = 0; i < count; ++i)
                         {
                             outptr[i] = op(bmax_data[i], bmin_data[i]);
-                        }
-                        return;
-                    }
-                    else if (bmin_W * bmin_H * bmin_C == 1)
-                    {
-                        top.reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
-                        int count = bottom_max->count();
-                        float* outptr = top->mutable_cpu_data();
-                        for (int i = 0; i < count; ++i)
-                        {
-                            outptr[i] = op(bmax_data[i], bmin_data[0]);
                         }
                         return;
                     }
