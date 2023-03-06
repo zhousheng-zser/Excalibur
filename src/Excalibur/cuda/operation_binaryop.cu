@@ -187,9 +187,15 @@ namespace glasssix
             tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
             int count = bottom_max->count();
             int count_min = bottom_min->count();
-            if (bmax_shape == bmin_shape)
+            std::vector<int> const_ones(4, 1);
+            if (bmin_shape == const_ones)
             {
-                binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                binaryop_kernel_mod_num<Op> << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count, 1, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                return;
+            }
+            else if (bmax_shape == bmin_shape)
+            {
+                binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                 return;
             }
             else if (bmax_dims == 3)
@@ -216,7 +222,7 @@ namespace glasssix
                                 float* top_ptr = tops[0]->mutable_gpu_data() + i * n * c_step_min;
                                 const float* max_ptr = bmax_data + i * n * c_step_min;
                                 const float* min_ptr = bmin_data + i * c_step_min;
-                                binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(n * c_step_min),CUDA_NUM_THREADS>>>(n * c_step_min, c_step_min, max_ptr, min_ptr, top_ptr);
+                                binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(n * c_step_min), CUDA_NUM_THREADS>>>(n * c_step_min, c_step_min, max_ptr, min_ptr, top_ptr);
                             }
                             return;
                         }
@@ -232,12 +238,12 @@ namespace glasssix
                     //e.g for: [1 * 2 * 4 * 4] op [1 * 1 * 4 * 4]
                     CHECK_EQ(c_step_min, c_step_max);
                     tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
-                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
                 else if (bmin_dims == 1 && bmin_C > 1)
                 {
-                    binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
             }
@@ -245,7 +251,7 @@ namespace glasssix
             {
                 if (bmin_dims == 1)
                 {
-                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, bmax_W, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_W, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
                 else if (bmin_dims == 2 && bmax_shape != bmin_shape)
@@ -260,12 +266,7 @@ namespace glasssix
                 {
                     if (bmin_W * bmin_H * bmin_C > 1)
                     {
-                        binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
-                        return;
-                    }
-                    else if (bmin_W * bmin_H * bmin_C == 1)
-                    {
-                        binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, 1, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                        binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                         return;
                     }
                 }
@@ -275,7 +276,7 @@ namespace glasssix
                     {
                         tops[0].reset(new memory::tensor<float>(bottom_min->data_shape(), bottom_min->device(), bottom_min->order(), bottom_min->allocator()));
                         count = bottom_min->count();
-                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count),CUDA_NUM_THREADS>>>(count, c_step_min, bmin_data, bmax_data, tops[0]->mutable_gpu_data());
+                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_min, bmin_data, bmax_data, tops[0]->mutable_gpu_data());
                         return;
                     }
                 }
