@@ -96,6 +96,9 @@ namespace glasssix
                 if (direction_ == 0 || direction_ == 1)
                 {
                     lstm_gpu_f32(bottoms[0], tops[0], direction_);
+                    cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+                    cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+                    //cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
                 }
                 else if (direction_ == 2)
                 {
@@ -106,6 +109,9 @@ namespace glasssix
                     cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
                     cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
                     lstm_gpu_f32(bottoms[0], top_reverse, 1);
+                    cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+                    cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+                    //cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
 
                     const float *top_forward_data = top_forward->gpu_data();
                     const float *top_reverse_data = top_reverse->gpu_data();
