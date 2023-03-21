@@ -184,6 +184,9 @@ namespace glasssix
                 if (direction_ == 0 || direction_ == 1)
                 {
                     lstm_cpu_f32(bottoms[0], tops[0], direction_);
+                    std::memset(hidden_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+                    std::memset(cell_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+                    //std::memset(gates_->mutable_cpu_data(), 0, num_output_ * 4 * sizeof(float));
                 }
                 else if (direction_ == 2)
                 {
@@ -194,6 +197,9 @@ namespace glasssix
                     std::memset(cell_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
                     std::memset(gates_->mutable_cpu_data(), 0, num_output_ * 4 * sizeof(float));
                     lstm_cpu_f32(bottoms[0], top_reverse, 1);
+                    std::memset(hidden_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+                    std::memset(cell_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+                    //std::memset(gates_->mutable_cpu_data(), 0, num_output_ * 4 * sizeof(float));
 
                     const float *top_forward_data = top_forward->cpu_data();
                     const float *top_reverse_data = top_reverse->cpu_data();
