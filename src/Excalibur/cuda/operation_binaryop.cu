@@ -131,8 +131,6 @@ namespace glasssix
             auto b2_shape = bottom2->data_shape();
             CHECK_EQ(b1_shape.size(), 4);
             CHECK_EQ(b2_shape.size(), 4);
-            CHECK_EQ(b1_shape[0], 1); // excalibur not support 4dims
-            CHECK_EQ(b2_shape[0], 1); // could refactor it when support 4dims, so must check it now
             if (b1_shape != b2_shape) {
                 int dims_1 = (bottom1->width() == 1 ? 0 : 1) + (bottom1->height() == 1 ? 0 : 1) + (bottom1->channels() == 1 ? 0 : 1);
                 int dims_2 = (bottom2->width() == 1 ? 0 : 1) + (bottom2->height() == 1 ? 0 : 1) + (bottom2->channels() == 1 ? 0 : 1);
