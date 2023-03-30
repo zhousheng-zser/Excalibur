@@ -205,8 +205,10 @@ namespace glasssix
                     float *top_data = tops[0]->mutable_cpu_data();
                     m = height;
                     k = width;
-                    math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, m, n, k, 1.0f,
-                                              bottom_data, weight, 0.0f, top_data);
+                    for (int num = 0; num < bottoms[0]->num(); num++) {
+                        math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, m, n, k, 1.0f,
+                            bottom_data + bottoms[0]->offset(num), weight, 0.0f, top_data + tops[0]->offset(num));
+                    }
                 }
                 else
                 {
@@ -214,16 +216,19 @@ namespace glasssix
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{m, n, 1, 1}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float *top_data = tops[0]->mutable_cpu_data();
                     math_functions::cpu_sgemm(CblasNoTrans, CblasTrans, m, n, k, 1.0f,
-                                              bottom_data, weight, 0.0f, top_data);
+                        bottom_data, weight, 0.0f, top_data);
                     if (this->bias_term_)
                     {
                         math_functions::cpu_sgemm(CblasNoTrans, CblasNoTrans, m, n, 1, 1.0f,
-                                                  bias_multiplier_->cpu_data(), this->weights_f32_[1]->cpu_data(), 1.0f, top_data);
+                            bias_multiplier_->cpu_data(), this->weights_f32_[1]->cpu_data(), 1.0f, top_data);
                     }
                 }
             }
             else if (bottoms[0]->order() == memory::NHWC)
             {
+                if (bottoms[0]->num() > 1) {
+                    NOT_IMPLEMENTED;
+                }
                 tops[0].reset(new memory::tensor<float>(std::vector<int>{m, 1, 1, n}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                 const float *bottom_data = bottoms[0]->cpu_data();
                 float *top_data = tops[0]->mutable_cpu_data();

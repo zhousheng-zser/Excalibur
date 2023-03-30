@@ -96,22 +96,13 @@ namespace glasssix
                 if (direction_ == 0 || direction_ == 1)
                 {
                     lstm_gpu_f32(bottoms[0], tops[0], direction_);
-                    cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    //cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
                 }
                 else if (direction_ == 2)
                 {
                     auto top_forward = std::make_shared<memory::tensor<float>>(num, T, num_output_, this->params_.device_);
                     auto top_reverse = std::make_shared<memory::tensor<float>>(num, T, num_output_, this->params_.device_);
                     lstm_gpu_f32(bottoms[0], top_forward, 0);
-                    cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
                     lstm_gpu_f32(bottoms[0], top_reverse, 1);
-                    cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
-                    //cudaMemset(gates_->mutable_gpu_data(), 0, num_output_ * 4 * sizeof(float));
 
                     const float *top_forward_data = top_forward->gpu_data();
                     const float *top_reverse_data = top_reverse->gpu_data();
@@ -154,6 +145,9 @@ namespace glasssix
 
             for (int n = 0; n < num; n++)
             {
+                cudaMemset(hidden_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+                cudaMemset(cell_->mutable_gpu_data(), 0, num_output_ * sizeof(float));
+
                 const float *bottom_data = bottom->gpu_data() + n * size * T;
                 float *top_data = top->mutable_gpu_data() + n * T * num_output_;
 

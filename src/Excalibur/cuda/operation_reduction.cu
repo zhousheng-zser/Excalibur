@@ -159,21 +159,37 @@ namespace glasssix
 
         static void reduction_mean(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
         {
+            //auto shape = bottom->data_shape();
+            //int channels_num = shape[1];
+            //int steps = shape[2] * shape[3];
+
+            //shape[1] = 1; //reset outTensor channels
+            //top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
+            //float* bottom_data = bottom->mutable_gpu_data();
+            //float* top_data = top->mutable_gpu_data();
+            //const int top_count = top->count();
+            //ReduceMeanForward << <CUDA_GET_BLOCKS(top_count), CUDA_NUM_THREADS >> > (top_count, bottom_data, top_data, channels_num, steps);
             auto shape = bottom->data_shape();
-            CHECK_EQ(shape.size(), 4);
-            CHECK_EQ(shape[0], 1);
-            CHECK_GT(shape[1], 1);
-            CHECK_GT(shape[2], 1);
-            CHECK_GT(shape[3], 1);
-            int channels_num = shape[1];
-            int steps = shape[2] * shape[3];
+            int NUM = shape[0];
+            int Channels = shape[1];
+            int Height = shape[2];
+            int Width = shape[3];
+            int HWsize = Height * Width;
+            int bottomCHWstp = Channels * Height * Width;
 
             shape[1] = 1; //reset outTensor channels
             top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
-            float* bottom_data = bottom->mutable_gpu_data();
-            float* top_data = top->mutable_gpu_data();
-            const int top_count = top->count();
-            ReduceMeanForward << <CUDA_GET_BLOCKS(top_count), CUDA_NUM_THREADS >> > (top_count, bottom_data, top_data, channels_num, steps);
+            int topCHWstp = top->channels() * top->height() * top->width(); //top_count
+
+            float* top_data = top->mutable_cpu_data();
+            float* bottom_data = bottom->mutable_cpu_data();
+
+            for (int num = 0; num < NUM; ++num) { // BatchNum
+                float* top_data_num = top_data + num * topCHWstp;
+                const float* bottom_data_num = bottom_data + num * bottomCHWstp;
+                ReduceMeanForward << <CUDA_GET_BLOCKS(topCHWstp), CUDA_NUM_THREADS >> > (topCHWstp, bottom_data_num, top_data_num, Channels, HWsize);
+
+            }
         }
 
         template <class Dtype>
