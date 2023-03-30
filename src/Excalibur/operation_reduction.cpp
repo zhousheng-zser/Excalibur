@@ -128,28 +128,30 @@ namespace glasssix
 
         static void reduction_mean(const std::shared_ptr<memory::tensor<float>> &bottom, std::shared_ptr<memory::tensor<float>> &top)
         {
-            /*
-            * support 3dims only e.g 1*3*40*40 -> 1*1*40*40
-            */
             auto shape = bottom->data_shape();
-            CHECK_EQ(shape[0], 1);
-            CHECK_GT(shape[1], 1);
-            CHECK_GT(shape[2], 1);
-            CHECK_GT(shape[3], 1);
-            int channels_num = shape[1];
-            int steps = shape[2] * shape[3];
-
+            int NUM = shape[0];
+            int Channels = shape[1];
+            int Height = shape[2];
+            int Width = shape[3];
+			int HWsize = Height * Width;
+			int bottomCHWstp = Channels * Height * Width;
             shape[1] = 1; //reset outTensor channels
             top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
-            float* bottom_data = bottom->mutable_cpu_data();
+			int topCHWstp = top->channels()* top->height()* top->width();
+
             float* top_data = top->mutable_cpu_data();
-            const int top_count = top->count();
-            for (size_t i = 0; i < steps; ++i) {
-                float sum = 0;
-                for (size_t c = 0; c < channels_num; ++c) {
-                    sum += bottom_data[c * steps + i];
+            float* bottom_data = bottom->mutable_cpu_data();
+
+            for (int num = 0; num < NUM; ++num) { // BatchNum
+                float* top_data_num = top_data + num * topCHWstp;
+                const float* bottom_data_num = bottom_data + num * bottomCHWstp;
+                for (size_t i = 0; i < HWsize; ++i) {
+                    float sum = 0;
+                    for (size_t c = 0; c < Channels; ++c) {
+                        sum += bottom_data_num[c * HWsize + i];
+                    }
+                    top_data_num[i] = sum / Channels;
                 }
-                top_data[i] = sum / channels_num;
             }
         }
 
@@ -176,7 +178,7 @@ namespace glasssix
             if (operation_ == ReductionOp_L2)
                 reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
             if (operation_ == ReductionOp_MEAN)
-                reduction_mean(bottoms[0], tops[0]); //support 3dims only
+                reduction_mean(bottoms[0], tops[0]); //support reduction channel just only
             else
                 NOT_IMPLEMENTED;
         }

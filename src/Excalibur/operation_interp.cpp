@@ -65,17 +65,19 @@ namespace glasssix
                 const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
                 const float ws = outw ? bottom_w / (float)outw : 1.f / width_scale_;
 
-                for (int q = 0; q < bottom_c; q++)
-                {
-                    const float *ptr = bottoms[0]->cpu_data() + bottoms[0]->offset(0, q);
-                    float *outptr = tops[0]->mutable_cpu_data() + tops[0]->offset(0, q);
-                    for (int y = 0; y < outh; y++)
+                for (int n = 0; n < num; n++) {
+                    for (int q = 0; q < bottom_c; q++)
                     {
-                        int in_y = std::min((int)(y * hs), (bottom_h - 1));
-                        for (int x = 0; x < outw; x++)
+                        const float* ptr = bottoms[0]->cpu_data() + bottoms[0]->offset(n, q);
+                        float* outptr = tops[0]->mutable_cpu_data() + tops[0]->offset(n, q);
+                        for (int y = 0; y < outh; y++)
                         {
-                            int in_x = std::min((int)(x * ws), (bottom_w - 1));
-                            *outptr++ = ptr[in_y * bottom_w + in_x];
+                            int in_y = std::min((int)(y * hs), (bottom_h - 1));
+                            for (int x = 0; x < outw; x++)
+                            {
+                                int in_x = std::min((int)(x * ws), (bottom_w - 1));
+                                *outptr++ = ptr[in_y * bottom_w + in_x];
+                            }
                         }
                     }
                 }

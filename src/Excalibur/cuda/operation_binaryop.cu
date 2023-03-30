@@ -164,6 +164,7 @@ namespace glasssix
             std::shared_ptr<memory::tensor<float>> bottom_min;
             bottom_assign(bottom_max, bottom_min, bottoms[0], bottoms[1]);
 
+            int NUM = bottom_max->num();
             int bmax_W = bottom_max->width();
             int bmax_H = bottom_max->height();
             int bmax_C = bottom_max->channels();
@@ -171,8 +172,11 @@ namespace glasssix
             int bmax_dims = (bmax_W == 1 ? 0 : 1) + (bmax_H == 1 ? 0 : 1) + (bmax_C == 1 ? 0 : 1);
             bmax_dims = bmax_dims == 0 ? 1 : bmax_dims;
             const float* bmax_data = bottom_max->gpu_data();
-            int c_step_max = bmax_W * bmax_H;
+            int max_CHWstp = bmax_C * bmax_H * bmax_W;
+            int maxHWsize = bmax_W * bmax_H;
+            int max_count = bottom_max->count();
 
+            int minNUM = bottom_min->num();
             int bmin_W = bottom_min->width();
             int bmin_H = bottom_min->height();
             int bmin_C = bottom_min->channels();
@@ -180,7 +184,9 @@ namespace glasssix
             int bmin_dims = (bmin_W == 1 ? 0 : 1) + (bmin_H == 1 ? 0 : 1) + (bmin_C == 1 ? 0 : 1);
             bmin_dims = bmin_dims == 0 ? 1 : bmin_dims;
             const float* bmin_data = bottom_min->gpu_data();
-            int c_step_min = bmin_W * bmin_H;
+            int min_CHWstp = bmin_C * bmin_H * bmin_W;
+            int minHWsize = bmin_W * bmin_H;
+            int min_count = bottom_min->count();
 
             tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
             int count = bottom_max->count();
@@ -216,11 +222,15 @@ namespace glasssix
                             * this 24=n 4=m
                             * [24 * B] * [1 * B] loop 4 times
                             */
-                            for (int i = 0; i < m; ++i) {
-                                float* top_ptr = tops[0]->mutable_gpu_data() + i * n * c_step_min;
-                                const float* max_ptr = bmax_data + i * n * c_step_min;
-                                const float* min_ptr = bmin_data + i * c_step_min;
-                                binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(n * c_step_min), CUDA_NUM_THREADS>>>(n * c_step_min, c_step_min, max_ptr, min_ptr, top_ptr);
+                            CHECK(minHWsize, maxHWsize);
+                            int HWsize = maxHWsize;
+                            for (int num = 0; num < NUM; ++num) { //Batch infer
+                                for (int i = 0; i < m; ++i) {
+                                    float* top_ptr = tops[0]->mutable_gpu_data() + i * n * HWsize + num * max_CHWstp;
+                                    const float* max_ptr = bmax_data + i * n * HWsize + num * max_CHWstp;
+                                    const float* min_ptr = bmin_data + i * HWsize + (num % minNUM) * min_CHWstp;
+                                    binaryop_kernel_mod_num<Op> << <CUDA_GET_BLOCKS(n * minHWsize), CUDA_NUM_THREADS >> > (n * HWsize, HWsize, max_ptr, min_ptr, top_ptr);
+                                }
                             }
                             return;
                         }
@@ -234,14 +244,23 @@ namespace glasssix
                 }
                 else if (bmin_dims == 2) {
                     //e.g for: [1 * 2 * 4 * 4] op [1 * 1 * 4 * 4]
-                    CHECK_EQ(c_step_min, c_step_max);
+                    CHECK_EQ(minHWsize, maxHWsize);
                     tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
-                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, maxHWsize, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
                 else if (bmin_dims == 1 && bmin_C > 1)
                 {
-                    binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_max, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    //binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, maxHWsize, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    if (NUM > minNUM && minNUM != 1) {
+                        NOT_IMPLEMENTED;
+                    }
+                    for (int num = 0; num < NUM; ++num) { //Batch infer
+                        float* top_ptr = tops[0]->mutable_gpu_data() + num * max_CHWstp;
+                        const float* max_ptr = bmax_data + num * max_CHWstp;
+                        const float* min_ptr = bmin_data + (num % minNUM) * min_CHWstp;
+						binaryop_kernel_div_num<Op> << <CUDA_GET_BLOCKS(max_CHWstp), CUDA_NUM_THREADS >> > (max_CHWstp, maxHWsize, max_ptr, min_ptr, top_ptr);
+                    }
                     return;
                 }
             }
@@ -274,7 +293,7 @@ namespace glasssix
                     {
                         tops[0].reset(new memory::tensor<float>(bottom_min->data_shape(), bottom_min->device(), bottom_min->order(), bottom_min->allocator()));
                         count = bottom_min->count();
-                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step_min, bmin_data, bmax_data, tops[0]->mutable_gpu_data());
+                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, minHWsize, bmin_data, bmax_data, tops[0]->mutable_gpu_data());
                         return;
                     }
                 }
