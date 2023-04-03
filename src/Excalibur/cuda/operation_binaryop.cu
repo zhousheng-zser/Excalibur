@@ -222,7 +222,7 @@ namespace glasssix
                             * this 24=n 4=m
                             * [24 * B] * [1 * B] loop 4 times
                             */
-                            CHECK(minHWsize, maxHWsize);
+                            CHECK_EQ(minHWsize, maxHWsize);
                             int HWsize = maxHWsize;
                             for (int num = 0; num < NUM; ++num) { //Batch infer
                                 for (int i = 0; i < m; ++i) {
