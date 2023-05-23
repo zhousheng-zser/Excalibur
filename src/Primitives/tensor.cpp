@@ -175,7 +175,7 @@ namespace glasssix
 		template<typename Dtype>
 		tensor<Dtype>::tensor(const std::vector<int>& shape, int device, orderType order, pool_allocator<Dtype>* allocator) :order_(order), device_(device), allocator_(allocator)
 		{
-			CHECK_LE(shape.size(), 4);
+			// CHECK_LE(shape.size(), 4);
 			shape_ = std::vector<int>(4);
 			if (shape.size() == 1)
 			{
@@ -193,14 +193,28 @@ namespace glasssix
 			{
 				memcpy(shape_.data(), shape.data(), 4 * sizeof(int));
 			}
+			if (shape.size() >4)
+			{
+				shape_.resize(shape.size());
+				memcpy(shape_.data(), shape.data(), shape.size() * sizeof(int) ) ;
+			}
 			if (device_ >= 0)
 			{
 #ifndef USE_CUDA
 				NO_GPU;
 #endif // CPU only
 			}
-			step_ = align_size(shape_[2] * shape_[3] * sizeof(Dtype), 16) / sizeof(Dtype);
+
+			size_t size=1;
+			for(int i=2; i<shape.size(); i++)
+			{
+				size*=shape_[i];
+			}
+			
+			step_ = align_size(size * sizeof(Dtype), 16) / sizeof(Dtype);
+
 			count_ = shape_[0] * shape_[1] * step_;
+
 			data_ = std::make_shared<syncedmem<Dtype>>(align_size(count_ * sizeof(Dtype), 4) / sizeof(Dtype), device_);
 			data_->set_allocator(allocator_);
 		}
