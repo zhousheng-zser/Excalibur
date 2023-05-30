@@ -31,28 +31,42 @@ namespace glasssix
             const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms,
             std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
-            CHECK_EQ(bottoms.size(), 1);
-            CHECK_EQ(tops.size(), 1);
-
-            int num = bottoms[0]->num();
-            int bottom_w = bottoms[0]->width();
-            int bottom_h = bottoms[0]->height();
-            int bottom_c = bottoms[0]->channels();
-            int outw = output_width_;
-            int outh = output_height_;
-            if (output_width_ == 0 || output_height_ == 0)
+            if (resize_type_ == 1 && align_corner_ == 0)
             {
-                outw = static_cast<int>(bottom_w * width_scale_);
-                outh = static_cast<int>(bottom_h * height_scale_);
-            }
-            tops[0].reset(new memory::tensor<float>(std::vector<int>{num, bottom_c, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            int count = tops[0]->count();
-            const float *bottom_data = bottoms[0]->gpu_data();
-            float *top_data = tops[0]->mutable_gpu_data();
-            const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
-            const float ws = outw ? bottom_w / (float)outw : 1.f / width_scale_;
+                CHECK_GE(bottoms.size(), 1);
+                CHECK_LE(bottoms.size(), 2);
+                CHECK_EQ(tops.size(), 1);
 
-            interp_forward_nearest<<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_data, top_data, ws, hs, bottom_w, bottom_h, outw, outh);
+                int num = bottoms[0]->num();
+                int bottom_w = bottoms[0]->width();
+                int bottom_h = bottoms[0]->height();
+                int bottom_c = bottoms[0]->channels();
+                int outw = output_width_;
+                int outh = output_height_;
+                if (output_width_ == 0 || output_height_ == 0)
+                {
+                    if (bottoms.size() == 1)
+                    {
+                        outh = static_cast<int>(bottom_h * height_scale_);
+                        outw = static_cast<int>(bottom_w * width_scale_);
+                    }
+                    else
+                    {
+                        outh = bottoms[1]->cpu_data()[2];
+                        outw = bottoms[1]->cpu_data()[3];
+                    }
+                }
+                tops[0].reset(new memory::tensor<float>(std::vector<int>{num, bottom_c, outh, outw}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
+                int count = tops[0]->count();
+                const float* bottom_data = bottoms[0]->gpu_data();
+                float* top_data = tops[0]->mutable_gpu_data();
+                const float hs = outh ? bottom_h / (float)outh : 1.f / height_scale_;
+                const float ws = outw ? bottom_w / (float)outw : 1.f / width_scale_;
+
+                interp_forward_nearest << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count, bottom_data, top_data, ws, hs, bottom_w, bottom_h, outw, outh);
+            }
+            else
+                forward_cpu_f32(bottoms, tops);
         }
 
 #ifdef USE_CUDNN

@@ -32,7 +32,7 @@ int main()
 {
     std::vector<std::tuple<std::string, std::vector<int>, int>> pipe_infos =
         {
-            {"det_cool_1000epoch_use_pretrained", {1, 3, 640, 800}, 0},
+            {"single_meter_sim", {1, 3, 256, 192}, 0},
             // {"rec_cool_500epoch_use_pretrained", {1, 3, 32, 320}, 0}
             // {"angle_best", {1, 3, 32, 320}, 0},
             // {"rec_combine_best", {1, 3, 32, 320}, 0}
@@ -59,26 +59,27 @@ int main()
 
     timer t;
     std::vector<excalibur::pipeline<float> *> pipes;
-    int warmup_loop_count = 5;
-    int loop_count = 100;
+    int warmup_loop_count = 0;
+    int loop_count = 1;
 
     for (size_t i = 0; i < pipe_infos.size(); i++)
     {
-        // pipes.push_back(new excalibur::pipeline<float>(std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:/Users/Glasssix-ZYF/Desktop/models/") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
-        pipes.push_back(new excalibur::pipeline<float>(std::string("../../models/") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
+        pipes.push_back(new excalibur::pipeline<float>(std::string("C:\\Users\\Glasssix-ZYF\\Desktop\\meter_sim\\") + std::get<0>(pipe_infos[i]) + ".phai", std::string("C:\\Users\\Glasssix-ZYF\\Desktop\\meter_sim\\") + std::get<0>(pipe_infos[i]) + ".racy", std::get<2>(pipe_infos[i])));
+        //pipes.push_back(new excalibur::pipeline<float>(std::string("C:\\Users\\Glasssix-ZYF\\Desktop\\meter_sim\\") + std::get<0>(pipe_infos[i]) + ".phai", std::get<2>(pipe_infos[i])));
     }
     std::cout << "Pipeline\t Min\t Max\t Ave " << std::endl;
 
-    //std::ifstream in("1.bin", std::ios::binary);
-    //std::shared_ptr<memory::tensor<uint8_t>> input_tensor_u8(new memory::tensor<uint8_t>(std::vector<int>{1, 3, 128, 128}, -1, memory::NCHW));
-    //in.read((char *)input_tensor_u8->mutable_cpu_data(), 3 * 128 * 128);
-    //auto input_tensor  = input_tensor_u8 | memory::tensor_convert_to<float>;
+    std::ifstream in("crop_image_cut.bin", std::ios::binary);
+    std::shared_ptr<memory::tensor<uint8_t>> input_tensor_u8(new memory::tensor<uint8_t>(std::vector<int>{1, 256, 192, 3}, -1, memory::NHWC));
+    in.read((char *)input_tensor_u8->mutable_cpu_data(), 3 * 256 * 192);
+    input_tensor_u8->convert_order();
+    auto input_tensor  = input_tensor_u8 | memory::tensor_convert_to<float>;
     for (size_t i = 0; i < pipe_infos.size(); i++)
     {
         //excalibur::pipeline<float> pipe(std::string("../../models/") + pipe_infos[i].first + ".phai", -1);
-        auto allocator = new memory::pool_allocator<float>();
-        auto input_tensor = get_random_tensor(std::get<1>(pipe_infos[i]));
-        input_tensor->set_allocator(allocator);
+        //auto allocator = new memory::pool_allocator<float>();
+        //auto input_tensor = get_random_tensor(std::get<1>(pipe_infos[i]));
+        //input_tensor->set_allocator(allocator);
         // input_tensor->set_allocator(nullptr);
         // Warming up
         for (size_t j = 0; j < warmup_loop_count; j++)
@@ -95,7 +96,18 @@ int main()
             profiler *p = profiler::get();
             pipes[i]->enable_profiler();
             t.start();
-            pipes[i]->forward(input_tensor);
+            auto result = pipes[i]->forward(input_tensor);
+            for (auto& x : result)
+            {
+                if (x.first == "output")
+                {
+                    std::cout << x.first << ": " << std::endl;
+                    for (size_t nn = 0; nn < x.second->count(); nn++)
+                    {
+                        std::cout << nn << ": " << x.second->cpu_data()[nn] << std::endl;
+                    }
+                }
+            }
             t.stop();
             double time = t.get_elapsed_milli_seconds();
             time_min = std::min(time_min, time);
