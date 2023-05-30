@@ -121,6 +121,27 @@ namespace glasssix
 					}
 					std::cout << std::endl;*/
                 }
+                else if (concat_axis == 3)
+                {
+                    for (size_t n = 0; n < concat_shape[0]; n++)
+                    {
+                        for (size_t c = 0; c < concat_shape[1]; c++)
+                        {
+                            for (size_t h = 0; h < concat_shape[2]; h++)
+                            {
+                                int top_offset = 0;
+                                float* top_data_slice_h = top_data + tops[0]->count(1, 4) * n + tops[0]->count(2, 4) * c + tops[0]->count(3, 4) * h;
+                                for (int i = 0; i < bottoms.size(); i++)
+                                {
+                                    auto bottom_data_slice_h = bottoms[i]->cpu_data() + bottoms[i]->count(1, 4) * n + bottoms[i]->count(2, 4) * c + bottoms[i]->count(3, 4) * h;
+                                    math_functions::excalibur_copy(bottoms[i]->count(concat_axis, 4), bottom_data_slice_h,
+                                        top_data_slice_h + top_offset, bottoms[i]->device());
+                                    top_offset += bottoms[i]->count(concat_axis, 4);
+                                }
+                            }
+                        }
+                    }
+                }
                 else
                 {
                     NOT_IMPLEMENTED;
@@ -255,6 +276,27 @@ namespace glasssix
                         
 					}
 					std::cout << std::endl;*/
+                }
+                else if (concat_axis == 3)
+                {
+                    for (size_t n = 0; n < concat_shape[0]; n++)
+                    {
+                        for (size_t c = 0; c < concat_shape[1]; c++)
+                        {
+                            for (size_t h = 0; h < concat_shape[2]; h++)
+                            {
+                                int top_offset = 0;
+                                float* top_data_slice_h = top_data + tops[0]->count(1, 4) * n + tops[0]->count(2, 4) * c + tops[0]->count(3, 4) * h;
+                                for (int i = 0; i < bottoms.size(); i++)
+                                {
+                                    auto bottom_data_slice_h = bottoms[i]->gpu_data() + bottoms[i]->count(1, 4) * n + bottoms[i]->count(2, 4) * c + bottoms[i]->count(3, 4) * h;
+                                    math_functions::excalibur_copy(bottoms[i]->count(concat_axis, 4), bottom_data_slice_h,
+                                        top_data_slice_h + top_offset, bottoms[i]->device());
+                                    top_offset += bottoms[i]->count(concat_axis, 4);
+                                }
+                            }
+                        }
+                    }
                 }
                 else
                 {
