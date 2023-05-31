@@ -206,7 +206,7 @@ namespace glasssix
 			}
 
 			size_t size=1;
-			for(int i=2; i<shape.size(); i++)
+			for(int i=2; i<shape_.size(); i++)
 			{
 				size*=shape_[i];
 			}
