@@ -37,6 +37,7 @@ namespace glasssix
             const float *bottom_data = bottoms[0]->cpu_data();
             float *top_data = tops[0]->mutable_cpu_data();
             int size = bottoms[0]->count();
+            int remain = size;
 #if (SIMD_X86_INSTR_SET >= SIMD_X86_AVX_VERSION) && (SIMD_X86_INSTR_SET <= SIMD_X86_AVX2_VERSION) // AVX
             for (int i = 0; i + 7 < size; i += 8)
             {
@@ -48,8 +49,8 @@ namespace glasssix
                 top_data += 8;
                 bottom_data += 8;
             }
+            remain = size % 8;
 #endif
-            int remain = size % 8;
             for (int i = 0; i < remain; ++i)
             {
                 top_data[i] = bottom_data[i] < 0 ? this->alpha_ * bottom_data[i] : bottom_data[i];
