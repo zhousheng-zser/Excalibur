@@ -37,6 +37,8 @@ namespace glasssix
 
 			void enable_profiler();
 			void disable_profiler();
+
+			static std::string version();
 		private:
 			impl* impl_;
 			DISABLE_COPY_AND_ASSIGN(pipeline);

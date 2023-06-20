@@ -650,6 +650,12 @@ namespace glasssix
             }
         }
 #endif
+        template <typename Dtype>
+        std::string pipeline<Dtype>::version()
+        {
+            return "1.0.0";
+        }
+
         INSTANCE_CLASS(pipeline);
     }
 }
