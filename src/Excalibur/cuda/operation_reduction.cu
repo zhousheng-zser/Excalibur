@@ -220,7 +220,7 @@ namespace glasssix
 
             if (operation_ == ReductionOp_L2)
                 reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
-            if (operation_ == ReductionOp_MEAN)
+            else if (operation_ == ReductionOp_MEAN)
                 reduction_mean(bottoms[0], tops[0]); //support 3dims only
             else
                 NOT_IMPLEMENTED;
