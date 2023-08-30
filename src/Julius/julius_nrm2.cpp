@@ -92,7 +92,41 @@ namespace glasssix
 					sum += x[i * incx] * x[i * incx];
 				}
 				return sqrtf(sum);
-#else 
+#elif (SIMD_ARM_INSTR_SET >= SIMD_ARM7_NEON_VERSION)
+				float sum = 0.0f;
+				const int restn = n % mm_align_size;
+				const int partn = n - restn;
+				float32x4_t re= vdupq_n_f32(0.0f);
+				for (int i = 0; i < partn; i += mm_align_size)
+				{
+					float32x4_t val_x;
+					if (incx == 1)
+					{
+						val_x = vld1q_f32(x + i);
+					}
+					else
+					{
+						const int offset = i * mm_align_size;
+						val_x = (float32x4_t){ x[(offset + 3) * incx], x[(offset + 2) * incx], x[(offset + 1) * incx], x[(offset + 0) * incx] };
+					}
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
+					re = vfmaq_f32(re, val_x, val_x);
+#else
+					re = vmlaq_f32(re, val_x, val_x);
+#endif
+				}
+#if (SIMD_ARM_INSTR_SET >= SIMD_ARM8_64_NEON_VERSION)
+				sum = vaddvq_f32(re);
+#else
+				float32x2_t _ss = vadd_f32(vget_low_f32(re), vget_high_f32(re));
+				sum = vget_lane_f32(vpadd_f32(_ss, _ss), 0);
+#endif
+				for (int i = partn; i < n; i++)
+				{
+					sum += x[i * incx] * x[i * incx];
+				}
+				return sqrtf(sum);
+#else
 #define UNHANDLED
 				NATIVE_CODE_WARNING;
 #endif 
