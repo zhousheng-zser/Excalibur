@@ -5,24 +5,19 @@
       "generator": "Ninja",
       "configurationType": "Debug",
       "inheritEnvironments": [ "msvc_x64_x64" ],
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "buildRoot": "${projectDir}\\build\\build_windows_x64\\${configurationType}",
+      "installRoot": "${projectDir}\\install\\windows_x64\\${configurationType}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
       "variables": [
         {
           "name": "USE_CUDA",
-          "value": "False",
+          "value": "True",
           "type": "BOOL"
         },
         {
           "name": "USE_CUDNN",
-          "value": "False",
-          "type": "BOOL"
-        },
-        {
-          "name": "SUPPORT_QUANTIZATION",
           "value": "True",
           "type": "BOOL"
         }
@@ -32,8 +27,31 @@
       "name": "x64-Release",
       "generator": "Ninja",
       "configurationType": "Release",
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "buildRoot": "${projectDir}\\build\\build_windows_x64\\${configurationType}",
+      "installRoot": "${projectDir}\\install\\windows_x64\\${configurationType}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "USE_CUDA",
+          "value": "True",
+          "type": "BOOL"
+        },
+        {
+          "name": "USE_CUDNN",
+          "value": "True",
+          "type": "BOOL"
+        }
+      ]
+    },
+    {
+      "name": "x64-Release-cpu-only",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\build\\build_windows_x64-cpu-only\\${configurationType}",
+      "installRoot": "${projectDir}\\install\\windows_x64-cpu-only\\${configurationType}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
@@ -48,20 +66,15 @@
           "name": "USE_CUDNN",
           "value": "False",
           "type": "BOOL"
-        },
-        {
-          "name": "SUPPORT_QUANTIZATION",
-          "value": "True",
-          "type": "BOOL"
         }
       ]
     },
     {
-      "name": "x86-Release",
+      "name": "x86-Release-cpu-only",
       "generator": "Ninja",
       "configurationType": "Release",
-      "buildRoot": "${projectDir}\\out\\build\\${name}",
-      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "buildRoot": "${projectDir}\\build\\build_windows_x86-cpu-only\\${configurationType}",
+      "installRoot": "${projectDir}\\install\\windows_x86-cpu-only\\${configurationType}",
       "cmakeCommandArgs": "",
       "buildCommandArgs": "",
       "ctestCommandArgs": "",
@@ -69,6 +82,11 @@
       "variables": [
         {
           "name": "USE_CUDA",
+          "value": "False",
+          "type": "BOOL"
+        },
+        {
+          "name": "USE_CUDNN",
           "value": "False",
           "type": "BOOL"
         }
