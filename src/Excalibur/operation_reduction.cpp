@@ -97,6 +97,10 @@ namespace glasssix
                 {
                     this->keepdims_ = std::stof(kvs[1]);
                 }
+                else if (std::stoi(kvs[0]) == -23330)
+                {
+                    //do nothing
+                }
                 else
                 {
                     LOG(FATAL) << "Un-supported Reduction Attribution " << kvs[1];
@@ -122,6 +126,35 @@ namespace glasssix
             }
         }
 
+        static void reduction_mean(const std::shared_ptr<memory::tensor<float>> &bottom, std::shared_ptr<memory::tensor<float>> &top)
+        {
+            auto shape = bottom->data_shape();
+            int NUM = shape[0];
+            int Channels = shape[1];
+            int Height = shape[2];
+            int Width = shape[3];
+			int HWsize = Height * Width;
+			int bottomCHWstp = Channels * Height * Width;
+            shape[1] = 1; //reset outTensor channels
+            top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
+			int topCHWstp = top->channels()* top->height()* top->width();
+
+            float* top_data = top->mutable_cpu_data();
+            float* bottom_data = bottom->mutable_cpu_data();
+
+            for (int num = 0; num < NUM; ++num) { // BatchNum
+                float* top_data_num = top_data + num * topCHWstp;
+                const float* bottom_data_num = bottom_data + num * bottomCHWstp;
+                for (size_t i = 0; i < HWsize; ++i) {
+                    float sum = 0;
+                    for (size_t c = 0; c < Channels; ++c) {
+                        sum += bottom_data_num[c * HWsize + i];
+                    }
+                    top_data_num[i] = sum / Channels;
+                }
+            }
+        }
+
         template <class Dtype>
         void operation_reduction<Dtype>::forward_cpu_f32(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
         {
@@ -144,6 +177,8 @@ namespace glasssix
 
             if (operation_ == ReductionOp_L2)
                 reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
+            else if (operation_ == ReductionOp_MEAN)
+                reduction_mean(bottoms[0], tops[0]); //support reduction channel just only
             else
                 NOT_IMPLEMENTED;
         }

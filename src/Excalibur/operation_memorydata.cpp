@@ -19,7 +19,7 @@ namespace glasssix
 				}
 				else if (split_string(attrs[i], "=")[0] == "1")
 				{
-					h_ = (bool)atoi(split_string(attrs[i], "=")[1].c_str());
+					h_ = atoi(split_string(attrs[i], "=")[1].c_str());
 				}
 				else if (split_string(attrs[i], "=")[0] == "2")
 				{

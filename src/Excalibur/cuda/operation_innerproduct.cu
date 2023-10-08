@@ -44,24 +44,29 @@ namespace glasssix
                     float *top_data = tops[0]->mutable_gpu_data();
                     m = height;
                     k = width;
-                    math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasTrans, m, n, k, 1.0f,
-                                              bottom_data, weight, 0.0f, top_data);
+                    for (int num = 0; num < bottoms[0]->num(); num++) {
+                        math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasTrans, m, n, k, 1.0f,
+                            bottom_data + bottoms[0]->offset(num), weight, 0.0f, top_data + tops[0]->offset(num));
+                    }
                 }
                 else
                 {
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{m, n, 1, 1}, this->params_.device_, order, bottoms[0]->allocator()));
                     float *top_data = tops[0]->mutable_gpu_data();
                     math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasTrans, m, n, k, 1.0f,
-                                              bottom_data, weight, 0.0f, top_data);
+                        bottom_data, weight, 0.0f, top_data);
                     if (bias_term_)
                     {
                         math_functions::gpu_sgemm(cublas_handle_, CblasNoTrans, CblasNoTrans, m, n, 1,
-                                                  1.0f, bias_multiplier_->gpu_data(), this->weights_f32_[1]->gpu_data(), 1.0f, top_data);
+                            1.0f, bias_multiplier_->gpu_data(), this->weights_f32_[1]->gpu_data(), 1.0f, top_data);
                     }
                 }
             }
             else if (order == memory::NHWC)
             {
+                if (bottoms[0]->num() > 1) {
+                    NOT_IMPLEMENTED;
+                }
                 tops[0].reset(new memory::tensor<float>(std::vector<int>{m, 1, 1, n}, this->params_.device_, order, bottoms[0]->allocator()));
                 //
                 const float *bottom_data = bottoms[0]->gpu_data();

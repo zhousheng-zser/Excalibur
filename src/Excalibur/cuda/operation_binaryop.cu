@@ -120,71 +120,180 @@ namespace glasssix
             }
         }
 
+        static void bottom_assign(
+            std::shared_ptr<memory::tensor<float>>& bottom_max,
+            std::shared_ptr<memory::tensor<float>>& bottom_min,
+            const std::shared_ptr<memory::tensor<float>>& bottom1,
+            const std::shared_ptr<memory::tensor<float>>& bottom2)
+        {
+            bool secondBottomMax = false;
+            auto b1_shape = bottom1->data_shape();
+            auto b2_shape = bottom2->data_shape();
+            CHECK_EQ(b1_shape.size(), 4);
+            CHECK_EQ(b2_shape.size(), 4);
+            if (b1_shape != b2_shape) {
+                int dims_1 = (bottom1->width() == 1 ? 0 : 1) + (bottom1->height() == 1 ? 0 : 1) + (bottom1->channels() == 1 ? 0 : 1);
+                int dims_2 = (bottom2->width() == 1 ? 0 : 1) + (bottom2->height() == 1 ? 0 : 1) + (bottom2->channels() == 1 ? 0 : 1);
+                if (dims_2 > dims_1) {
+                    secondBottomMax = true;
+                }
+                else if (dims_2 == dims_1) {
+                    for (int i = 1; i < 4; i++) {
+                        if (b2_shape[i] > b1_shape[i]) {
+                            secondBottomMax = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (secondBottomMax) {
+                bottom_max = bottom2;
+                bottom_min = bottom1;
+            }
+            else {
+                bottom_max = bottom1;
+                bottom_min = bottom2;
+            }
+        }
+
         template <typename Op>
-        static void binary_op(const std::vector<std::shared_ptr<memory::tensor<float>>> &bottoms, std::vector<std::shared_ptr<memory::tensor<float>>> &tops)
+        static void binary_op(const std::vector<std::shared_ptr<memory::tensor<float>>>& bottoms, std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
         {
             Op op;
-            int bottom_w1 = bottoms[0]->width();
-            int bottom_h1 = bottoms[0]->height();
-            int bottom_c1 = bottoms[0]->channels();
-            int b1_dims = (bottom_w1 == 1 ? 0 : 1) + (bottom_h1 == 1 ? 0 : 1) + (bottom_c1 == 1 ? 0 : 1);
-            b1_dims = b1_dims == 0 ? 1 : b1_dims;
-            const float *b1 = bottoms[0]->gpu_data();
-            int c_step1 = bottom_w1 * bottom_h1;
+            std::shared_ptr<memory::tensor<float>> bottom_max;
+            std::shared_ptr<memory::tensor<float>> bottom_min;
+            bottom_assign(bottom_max, bottom_min, bottoms[0], bottoms[1]);
 
-            int bottom_w2 = bottoms[1]->width();
-            int bottom_h2 = bottoms[1]->height();
-            int bottom_c2 = bottoms[1]->channels();
-            int b2_dims = (bottom_w2 == 1 ? 0 : 1) + (bottom_h2 == 1 ? 0 : 1) + (bottom_c2 == 1 ? 0 : 1);
-            b2_dims = b2_dims == 0 ? 1 : b2_dims;
-            const float *b2 = bottoms[1]->gpu_data();
-            int c_step2 = bottom_w2 * bottom_h2;
+            int NUM = bottom_max->num();
+            int bmax_W = bottom_max->width();
+            int bmax_H = bottom_max->height();
+            int bmax_C = bottom_max->channels();
+            std::vector<int> bmax_shape = bottom_max->data_shape();
+            int bmax_dims = (bmax_W == 1 ? 0 : 1) + (bmax_H == 1 ? 0 : 1) + (bmax_C == 1 ? 0 : 1);
+            bmax_dims = bmax_dims == 0 ? 1 : bmax_dims;
+            const float* bmax_data = bottom_max->gpu_data();
+            int max_CHWstp = bmax_C * bmax_H * bmax_W;
+            int maxHWsize = bmax_W * bmax_H;
+            int max_count = bottom_max->count();
 
-            tops[0].reset(new memory::tensor<float>(bottoms[0]->data_shape(), bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
-            int count = bottoms[0]->count();
-            if (b1_dims == 3)
+            int minNUM = bottom_min->num();
+            int bmin_W = bottom_min->width();
+            int bmin_H = bottom_min->height();
+            int bmin_C = bottom_min->channels();
+            std::vector<int> bmin_shape = bottom_min->data_shape();
+            int bmin_dims = (bmin_W == 1 ? 0 : 1) + (bmin_H == 1 ? 0 : 1) + (bmin_C == 1 ? 0 : 1);
+            bmin_dims = bmin_dims == 0 ? 1 : bmin_dims;
+            const float* bmin_data = bottom_min->gpu_data();
+            int min_CHWstp = bmin_C * bmin_H * bmin_W;
+            int minHWsize = bmin_W * bmin_H;
+            int min_count = bottom_min->count();
+
+            tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+            int count = bottom_max->count();
+            int count_min = bottom_min->count();
+            std::vector<int> const_ones(4, 1);
+            if (bmin_shape == const_ones)
             {
-                if (b2_dims == 3)
+                binaryop_kernel_mod_num<Op> << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count, 1, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                return;
+            }
+            else if (bmax_shape == bmin_shape)
+            {
+                binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                return;
+            }
+            else if (bmax_dims == 3)
+            {
+                if (bmin_dims == 3 && bmax_C != bmin_C && bmax_C > 3)
                 {
-                    binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, b1, b2, tops[0]->mutable_gpu_data());
+
+                    tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    // M*batch(HW) OP m*batch(HW) -> m*n*batch (or n*m*batch) OP m*batch, generally m < n
+                    // here bmin_C == m
+                    const double m = static_cast<double>(bmin_C);
+                    const double nd = static_cast<double>(bmax_C) / m;
+                    if (ceil(nd) == floor(nd))
+                    {
+                        const int n = nd;
+                        if (n >= m) {
+                            /*
+                            * m*n OP m
+                            * e.g.: [4 * 24 * 160 * 160] OP [4 * 1 * 160 * 160]
+                            * this 24=n 4=m
+                            * [24 * B] * [1 * B] loop 4 times
+                            */
+                            CHECK_EQ(minHWsize, maxHWsize);
+                            int HWsize = maxHWsize;
+                            for (int num = 0; num < NUM; ++num) { //Batch infer
+                                for (int i = 0; i < m; ++i) {
+                                    float* top_ptr = tops[0]->mutable_gpu_data() + i * n * HWsize + num * max_CHWstp;
+                                    const float* max_ptr = bmax_data + i * n * HWsize + num * max_CHWstp;
+                                    const float* min_ptr = bmin_data + i * HWsize + (num % minNUM) * min_CHWstp;
+                                    binaryop_kernel_mod_num<Op> << <CUDA_GET_BLOCKS(n * minHWsize), CUDA_NUM_THREADS >> > (n * HWsize, HWsize, max_ptr, min_ptr, top_ptr);
+                                }
+                            }
+                            return;
+                        }
+                        else {
+                            // still not meet, maybe u can try:
+                            //binaryop_kernel_mod_num<Op> << <CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS >> > (count, count_min, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                            //return;
+                            NOT_IMPLEMENTED;
+                        }
+                    }
+                }
+                else if (bmin_dims == 2) {
+                    //e.g for: [1 * 2 * 4 * 4] op [1 * 1 * 4 * 4]
+                    CHECK_EQ(minHWsize, maxHWsize);
+                    tops[0].reset(new memory::tensor<float>(bottom_max->data_shape(), bottom_max->device(), bottom_max->order(), bottom_max->allocator()));
+                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, maxHWsize, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
-                else if (b2_dims == 1 && bottom_c2 > 1)
+                else if (bmin_dims == 1 && bmin_C > 1)
                 {
-                    binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step1, b1, b2, tops[0]->mutable_gpu_data());
+                    //binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, maxHWsize, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
+                    if (NUM > minNUM && minNUM != 1) {
+                        NOT_IMPLEMENTED;
+                    }
+                    for (int num = 0; num < NUM; ++num) { //Batch infer
+                        float* top_ptr = tops[0]->mutable_gpu_data() + num * max_CHWstp;
+                        const float* max_ptr = bmax_data + num * max_CHWstp;
+                        const float* min_ptr = bmin_data + (num % minNUM) * min_CHWstp;
+						binaryop_kernel_div_num<Op> << <CUDA_GET_BLOCKS(max_CHWstp), CUDA_NUM_THREADS >> > (max_CHWstp, maxHWsize, max_ptr, min_ptr, top_ptr);
+                    }
                     return;
                 }
             }
-            else if (b1_dims == 2)
+            else if (bmax_dims == 2)
             {
-                if (b2_dims == 1)
+                if (bmin_dims == 1)
                 {
-                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bottom_w1, b1, b2, tops[0]->mutable_gpu_data());
+                    binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_W, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                     return;
                 }
-            }
-            else if (b1_dims == 1)
-            {
-                if (b2_dims == 1)
+                else if (bmin_dims == 2 && bmax_shape != bmin_shape)
                 {
-                    if (bottom_w2 * bottom_h2 * bottom_c2 > 1)
+                    //e.g for: [1 * 1 * 4 * 4] op [1 * 1 * 2 * 4]
+                    NOT_IMPLEMENTED;
+                }
+            }
+            else if (bmax_dims == 1)
+            {
+                if (bmin_dims == 1)
+                {
+                    if (bmin_W * bmin_H * bmin_C > 1)
                     {
-                        binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, b1, b2, tops[0]->mutable_gpu_data());
-                        return;
-                    }
-                    else if (bottom_w2 * bottom_h2 * bottom_c2 == 1)
-                    {
-                        binaryop_kernel_mod_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, 1, b1, b2, tops[0]->mutable_gpu_data());
+                        binaryop_kernel_equal_dim<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, bmax_data, bmin_data, tops[0]->mutable_gpu_data());
                         return;
                     }
                 }
-                else if (b2_dims == 3)
+                else if (bmin_dims == 3)
                 {
-                    if (bottom_w1 == 1 && bottom_h1 == 1 && bottom_c1 == bottom_c2)
+                    if (bmax_W == 1 && bmax_H == 1 && bmax_C == bmin_C)
                     {
-                        tops[0].reset(new memory::tensor<float>(bottoms[1]->data_shape(), bottoms[1]->device(), bottoms[1]->order(), bottoms[1]->allocator()));
-                        count = bottoms[1]->count();
-                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, c_step2, b2, b1, tops[0]->mutable_gpu_data());
+                        tops[0].reset(new memory::tensor<float>(bottom_min->data_shape(), bottom_min->device(), bottom_min->order(), bottom_min->allocator()));
+                        count = bottom_min->count();
+                        binaryop_kernel_div_num<Op><<<CUDA_GET_BLOCKS(count), CUDA_NUM_THREADS>>>(count, minHWsize, bmin_data, bmax_data, tops[0]->mutable_gpu_data());
                         return;
                     }
                 }

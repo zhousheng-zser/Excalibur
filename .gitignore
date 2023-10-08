@@ -68,7 +68,6 @@
 *.CopyComplete
 *.bin
 .vscode/
-build/
-build_v7/
+build*/
 /cmake/ndk_cmake.bat
 #/src/Test

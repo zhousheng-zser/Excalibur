@@ -29,12 +29,12 @@ namespace glasssix
         private:
             // param
             int resize_type_; //1=nearest  2=bilinear  3=bicubic
-            float width_scale_;
-            float height_scale_;
-            int output_width_;
-            int output_height_;
+            float width_scale_ = 1.0f;
+            float height_scale_ = 1.0f;
+            int output_width_ = 0;
+            int output_height_ = 0;
             int dynamic_target_size_;
-            int align_corner_;
+            int align_corner_ = 0;
         };
     }
 }

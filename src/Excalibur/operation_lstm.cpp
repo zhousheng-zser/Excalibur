@@ -190,9 +190,6 @@ namespace glasssix
                     auto top_forward = std::make_shared<memory::tensor<float>>(num, T, num_output_, this->params_.device_);
                     auto top_reverse = std::make_shared<memory::tensor<float>>(num, T, num_output_, this->params_.device_);
                     lstm_cpu_f32(bottoms[0], top_forward, 0);
-                    std::memset(hidden_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
-                    std::memset(cell_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
-                    std::memset(gates_->mutable_cpu_data(), 0, num_output_ * 4 * sizeof(float));
                     lstm_cpu_f32(bottoms[0], top_reverse, 1);
 
                     const float *top_forward_data = top_forward->cpu_data();
@@ -239,6 +236,9 @@ namespace glasssix
 
             for (int n = 0; n < num; n++)
             {
+                std::memset(hidden_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+                std::memset(cell_->mutable_cpu_data(), 0, num_output_ * sizeof(float));
+
                 const float *bottom_data = bottom->cpu_data() + n * size * T;
                 float *top_data = top->mutable_cpu_data() + n * T * num_output_;
 

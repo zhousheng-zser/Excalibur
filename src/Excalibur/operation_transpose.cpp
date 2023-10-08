@@ -53,16 +53,18 @@ namespace glasssix
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{num, channels, width, height}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
                     // h w c
-                    for (int ch = 0; ch < channels; ++ch)
-                    {
-                        const float *ptr = bottom_data + bottoms[0]->offset(0, ch);
-                        float *outptr = top_data + tops[0]->offset(0, ch);
-
-                        for (int i = 0; i < width; ++i)
+                    for (int n = 0; n < num; n++) {
+                        for (int ch = 0; ch < channels; ++ch)
                         {
-                            for (int j = 0; j < height; ++j)
+                            const float *ptr = bottom_data + bottoms[0]->offset(n, ch);
+                            float *outptr = top_data + tops[0]->offset(n, ch);
+
+                            for (int i = 0; i < width; ++i)
                             {
-                                outptr[i * height + j] = ptr[j * width + i];
+                                for (int j = 0; j < height; ++j)
+                                {
+                                    outptr[i * height + j] = ptr[j * width + i];
+                                }
                             }
                         }
                     }
@@ -72,15 +74,17 @@ namespace glasssix
                     // w c h
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{num, width, channels, height}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
-                    for (int ch = 0; ch < height; ++ch)
-                    {
-                        float *outptr = top_data + ch * channels * width;
-                        for (int i = 0; i < channels; ++i)
+                    for (int n = 0; n < num; n++) {
+                        for (int ch = 0; ch < height; ++ch)
                         {
-                            const float *ptr = bottom_data + i * width * height + ch * width;
-                            for (int j = 0; j < width; ++j)
+                            float *outptr = top_data + tops[0]->offset(n, ch) + ch * channels * width;
+                            for (int i = 0; i < channels; ++i)
                             {
-                                outptr[i * width + j] = ptr[j];
+                                const float *ptr = bottom_data + bottoms[0]->offset(n, ch) + i * width * height + ch * width;
+                                for (int j = 0; j < width; ++j)
+                                {
+                                    outptr[i * width + j] = ptr[j];
+                                }
                             }
                         }
                     }
@@ -90,15 +94,17 @@ namespace glasssix
                     // c w h
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{num, width, channels, height}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
-                    for (int ch = 0; ch < height; ++ch)
-                    {
-                        float *outptr = top_data + ch * width * channels;
-                        for (int i = 0; i < width; ++i)
+                    for (int n = 0; n < num; n++) {
+                        for (int ch = 0; ch < height; ++ch)
                         {
-                            for (int j = 0; j < channels; ++j)
+                            float *outptr = top_data + tops[0]->offset(n, ch) + ch * width * channels;
+                            for (int i = 0; i < width; ++i)
                             {
-                                const float *ptr = bottom_data + j * width * height + ch * width + i;
-                                outptr[i * channels + j] = *ptr;
+                                for (int j = 0; j < channels; ++j)
+                                {
+                                    const float *ptr = bottom_data + bottoms[0]->offset(n, ch) + j * width * height + ch * width + i;
+                                    outptr[i * channels + j] = *ptr;
+                                }
                             }
                         }
                     }
@@ -108,15 +114,17 @@ namespace glasssix
                     // h c w
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{num, width, channels, height}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
-                    for(int ch = 0; ch < width; ++ch)
-                    {
-                        float *outptr = top_data + ch * height * channels;
-                        for(int i = 0; i < channels; ++i)
+                    for (int n = 0; n < num; n++) {
+                        for (int ch = 0; ch < width; ++ch)
                         {
-                            const float *ptr = bottom_data + i * width * height + ch;
-                            for(int j = 0; j < height; ++j)
+                            float *outptr = top_data + tops[0]->offset(n, ch) + ch * height * channels;
+                            for (int i = 0; i < channels; ++i)
                             {
-                                outptr[i * height + j] = ptr[j * width];
+                                const float *ptr = bottom_data + bottoms[0]->offset(n, ch) + i * width * height + ch;
+                                for (int j = 0; j < height; ++j)
+                                {
+                                    outptr[i * height + j] = ptr[j * width];
+                                }
                             }
                         }
                     }
@@ -126,15 +134,18 @@ namespace glasssix
                     // c h w
                     tops[0].reset(new memory::tensor<float>(std::vector<int>{num, channels, height, width}, bottoms[0]->device(), bottoms[0]->order(), bottoms[0]->allocator()));
                     float* top_data = tops[0]->mutable_cpu_data();
-                    for(int ch = 0; ch < width; ++ch)
-                    {
-                        float *outptr = top_data + ch * height * channels;
-                        for(int i = 0; i < height; ++i)
+
+                    for (int n = 0; n < num; n++) {
+                        for (int ch = 0; ch < width; ++ch)
                         {
-                            for(int j = 0; j < channels; ++j)
+                            float *outptr = top_data + tops[0]->offset(n, ch) + ch * height * channels;
+                            for (int i = 0; i < height; ++i)
                             {
-                                const float *ptr = bottom_data + j * width * height + i * width + ch;
-                                outptr[i * channels + j] = *ptr;
+                                for (int j = 0; j < channels; ++j)
+                                {
+                                    const float *ptr = bottom_data + bottoms[0]->offset(n, ch) + j * width * height + i * width + ch;
+                                    outptr[i * channels + j] = *ptr;
+                                }
                             }
                         }
                     }

@@ -33,6 +33,23 @@ namespace glasssix
             }
         };
 
+        __global__ void ReduceMeanForward(
+            const int nthreads,
+            const float* const bottom_data,
+            float* const top_data,
+            const int channels,
+            const int steps)
+        {
+            CUDA_KERNEL_LOOP(index, nthreads)
+            {
+				float sum = 0;
+				for (size_t c = 0; c < channels; ++c) {
+					sum += bottom_data[c * steps + index];
+				}
+                top_data[index] = sum / channels;
+            }
+        }
+
         template <typename Op>
         __global__ void op_keepdims_kernel(int N, float v0, const float* bottom_data, float* top_data)
         {
@@ -140,6 +157,41 @@ namespace glasssix
             }
         }
 
+        static void reduction_mean(const std::shared_ptr<memory::tensor<float>>& bottom, std::shared_ptr<memory::tensor<float>>& top)
+        {
+            //auto shape = bottom->data_shape();
+            //int channels_num = shape[1];
+            //int steps = shape[2] * shape[3];
+
+            //shape[1] = 1; //reset outTensor channels
+            //top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
+            //float* bottom_data = bottom->mutable_gpu_data();
+            //float* top_data = top->mutable_gpu_data();
+            //const int top_count = top->count();
+            //ReduceMeanForward << <CUDA_GET_BLOCKS(top_count), CUDA_NUM_THREADS >> > (top_count, bottom_data, top_data, channels_num, steps);
+            auto shape = bottom->data_shape();
+            int NUM = shape[0];
+            int Channels = shape[1];
+            int Height = shape[2];
+            int Width = shape[3];
+            int HWsize = Height * Width;
+            int bottomCHWstp = Channels * Height * Width;
+
+            shape[1] = 1; //reset outTensor channels
+            top.reset(new memory::tensor<float>(shape, bottom->device(), bottom->order(), bottom->allocator()));
+            int topCHWstp = top->channels() * top->height() * top->width(); //top_count
+
+            float* top_data = top->mutable_cpu_data();
+            float* bottom_data = bottom->mutable_cpu_data();
+
+            for (int num = 0; num < NUM; ++num) { // BatchNum
+                float* top_data_num = top_data + num * topCHWstp;
+                const float* bottom_data_num = bottom_data + num * bottomCHWstp;
+                ReduceMeanForward << <CUDA_GET_BLOCKS(topCHWstp), CUDA_NUM_THREADS >> > (topCHWstp, bottom_data_num, top_data_num, Channels, HWsize);
+
+            }
+        }
+
         template <class Dtype>
         void operation_reduction<Dtype>::forward_gpu_f32(
             cublasHandle_t& cublas_handle_,
@@ -168,6 +220,8 @@ namespace glasssix
 
             if (operation_ == ReductionOp_L2)
                 reduction<reduction_op_sumsq<float>, reduction_op_add<float>, post_process_sqrt<float>>(bottoms[0], tops[0], 0.f, reduce_w, reduce_h, reduce_c, true, keepdims_);
+            else if (operation_ == ReductionOp_MEAN)
+                reduction_mean(bottoms[0], tops[0]); //support 3dims only
             else
                 NOT_IMPLEMENTED;
         }
