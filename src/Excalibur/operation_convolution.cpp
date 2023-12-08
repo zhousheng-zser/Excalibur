@@ -20,12 +20,12 @@ namespace glasssix
 #ifdef USE_CUDA
 #ifdef USE_CUDNN
                 // kernel
-                int input_channel = this->weight_data_size_ / this->output_channel_ / this->group_ / this->kernel_size_h_ / this->kernel_size_w_ * this->group_;
+                int input_channel_g = this->weight_data_size_ / this->output_channel_ / this->kernel_size_h_ / this->kernel_size_w_;
                 cudnnCreateFilterDescriptor(&kernel_descriptor_);
                 cudnnSetFilter4dDescriptor(kernel_descriptor_,
                     CUDNN_DATA_FLOAT,
                     CUDNN_TENSOR_NCHW,
-                    this->output_channel_, input_channel, this->kernel_size_h_, this->kernel_size_w_);
+                    this->output_channel_ / this->group_, input_channel_g, this->kernel_size_h_, this->kernel_size_w_);
                 // cudnnConvolutionDescriptor_t conv_descriptor;
                 cudnnCreateConvolutionDescriptor(&conv_descriptor_);
                 cudnnSetConvolution2dDescriptor(conv_descriptor_,

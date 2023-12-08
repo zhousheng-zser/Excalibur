@@ -143,6 +143,7 @@ namespace glasssix
             this->output_spatial_dim_ = this->output_dim_w_ * this->output_dim_h_;
             this->kernel_dim_ = this->input_channel_ * this->kernel_size_h_ * this->kernel_size_w_;
 
+
             if (order == memory::NCHW)
             {
                 tops[0].reset(new memory::tensor<float>(std::vector<int>{this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, order, bottoms[0]->allocator()));
@@ -158,16 +159,65 @@ namespace glasssix
             float *top_data = tops[0]->mutable_gpu_data();
             int top_dim = tops[0]->count(1, 4);
 #ifdef USE_CUDNN
-            // input
-            cudnnSetTensor4dDescriptor(input_descriptor_,
-                                       CUDNN_TENSOR_NCHW,
-                                       CUDNN_DATA_FLOAT,
-                                       this->num_, this->input_channel_, this->input_dim_h_, this->input_dim_w_);
-            // output
-            cudnnSetTensor4dDescriptor(output_descriptor_,
-                                       CUDNN_TENSOR_NCHW,
-                                       CUDNN_DATA_FLOAT,
-                                       this->num_, this->output_channel_, this->output_dim_h_, this->output_dim_w_);
+            if (order == memory::NCHW)
+            {
+                // input
+                cudnnSetTensor4dDescriptorEx(
+                    input_descriptor_,
+                    CUDNN_DATA_FLOAT,
+                    this->num_,
+                    this->input_channel_ / this->group_,
+                    this->input_dim_h_,
+                    this->input_dim_w_,
+                    bottom_dim,
+                    this->input_dim_h_ * this->input_dim_w_,
+                    this->input_dim_w_,
+                    1
+                );
+                // output
+                cudnnSetTensor4dDescriptorEx(
+                    output_descriptor_,
+                    CUDNN_DATA_FLOAT,
+                    this->num_,
+                    this->output_channel_ / this->group_,
+                    this->output_dim_h_,
+                    this->output_dim_w_,
+                    top_dim,
+                    this->output_spatial_dim_,
+                    this->output_dim_w_,
+                    1
+                );
+            }
+            else
+            {
+                // input
+                cudnnSetTensor4dDescriptorEx(
+                    input_descriptor_,
+                    CUDNN_DATA_FLOAT,
+                    this->num_,
+                    this->input_channel_ / this->group_,
+                    this->input_dim_h_,
+                    this->input_dim_w_,
+                    bottom_dim,
+                    1,
+                    this->input_channel_ * this->input_dim_w_,
+                    this->input_channel_
+                );
+                // output
+                cudnnSetTensor4dDescriptorEx(
+                    output_descriptor_,
+                    CUDNN_DATA_FLOAT,
+                    this->num_,
+                    this->output_channel_ / this->group_,
+                    this->output_dim_h_,
+                    this->output_dim_w_,
+                    top_dim,
+                    1,
+                    this->output_channel_ * this->output_dim_w_,
+                    this->output_channel_
+                );
+            }
+            
             // convolution
             void *workspace = nullptr;
             size_t workspace_size = 0;
@@ -181,12 +231,15 @@ namespace glasssix
                                                     &workspace_size);
             cudaMalloc(&workspace, workspace_size);
             auto alpha = 1.0f, beta = 0.0f;
-            cudnnConvolutionForward(cudnn_handle,
-                                    &alpha, input_descriptor_, bottom_data,
-                                    kernel_descriptor_, weights_data,
-                                    conv_descriptor_, algo_,
-                                    workspace, workspace_size,
-                                    &beta, output_descriptor_, top_data);
+            for (int g = 0; g < this->group_; g++)
+            {
+                cudnnConvolutionForward(cudnn_handle,
+                    &alpha, input_descriptor_, bottom_data + g * bottom_dim / this->group_,
+                    kernel_descriptor_, weights_data + g * this->weight_data_size_ / this->group_,
+                    conv_descriptor_, algo_,
+                    workspace, workspace_size,
+                    &beta, output_descriptor_, top_data + g * top_dim / this->group_);
+            }
             cudaFree(workspace);
 #else
             col_buffer_.reset(new memory::tensor<float>(std::vector<int>{this->kernel_dim_ / this->group_, this->output_dim_h_, this->output_dim_w_}, this->params_.device_, memory::NCHW, bottoms[0]->allocator()));
