@@ -36,6 +36,8 @@ namespace glasssix
             //Accroding to NCNN protocol, axis start in domension c(CHW), when write to param file, it -1 without any reason.
             //So we should +2 to restore the Correct axis in NCHW/NHWC
             int concat_axis = axis_ + 2;
+            if (concat_axis == -1)
+                concat_axis = bottoms[0]->data_shape().size() - 1;
             int concat_axis_dim = 0;
             if (bottoms[0]->order() == memory::NCHW)
             {
@@ -190,6 +192,8 @@ namespace glasssix
             //Accroding to NCNN protocol, axis start in domension c(CHW), when write to param file, it -1 without any reason.
             //So we should +2 to restore the Correct axis in NCHW/NHWC
             int concat_axis = axis_ + 2;
+            if (concat_axis == -1)
+                concat_axis = bottoms[0]->data_shape().size() - 1;
             int concat_axis_dim = 0;
             if (bottoms[0]->order() == memory::NCHW)
             {
