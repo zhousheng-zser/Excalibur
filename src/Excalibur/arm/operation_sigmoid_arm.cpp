@@ -20,10 +20,11 @@ namespace glasssix
 			std::vector<std::shared_ptr<memory::tensor<float>>>& tops)
 		{
 			CHECK_EQ(bottoms.size(), tops.size());
-			tops = bottoms;
 
 			for (size_t i = 0; i < bottoms.size(); i++)
 			{
+				tops[i].reset(new memory::tensor<float>(bottoms[i]->data_shape(), bottoms[i]->device(), bottoms[i]->order(), bottoms[i]->allocator()));
+
 				int num = bottoms[i]->num();
 				int w = bottoms[i]->width();
 				int h = bottoms[i]->height();
@@ -32,11 +33,13 @@ namespace glasssix
 
 				for (int num_i = 0; num_i < num; num_i++)
 				{
-					float *bottom_data = bottoms[i]->mutable_cpu_data() + num_i * channels * size;
+					const float *bottom_base = bottoms[i]->cpu_data() + num_i * channels * size;
+					float* top_base = tops[i]->mutable_cpu_data() + num_i * channels * size;
 #pragma omp parallel for num_threads(2) 
 					for (int q = 0; q < channels; q++)
 					{
-						float* ptr = bottom_data + (q)* size;
+						const float* bottom_data = bottom_base + (q)* size;
+						float* top_data = top_base + (q)* size;
 
 #if __ARM_NEON
 						int nn = size >> 2;
@@ -49,23 +52,25 @@ namespace glasssix
 						float32x4_t _one = vdupq_n_f32(1.f);
 						for (; nn > 0; nn--)
 						{
-							float32x4_t _p = vld1q_f32(ptr);
+							float32x4_t _p = vld1q_f32(bottom_data);
 							_p = vnegq_f32(_p);
 							_p = exp_ps(_p);
 							_p = vaddq_f32(_p, _one);
 							float32x4_t _outp = vrecpeq_f32(_p);
 							_outp = vmulq_f32(vrecpsq_f32(_p, _outp), _outp);
 							//             _outp = vmulq_f32(vrecpsq_f32(_p, _outp), _outp);
-							vst1q_f32(ptr, _outp);
+							vst1q_f32(top_data, _outp);
 
-							ptr += 4;
+							bottom_data += 4;
+							top_data += 4;
 						}
 #endif // __ARM_NEON
 						for (; remain > 0; remain--)
 						{
-							*ptr = 1.f / (1.f + std::exp(-*ptr));
+							*top_data = 1.f / (1.f + std::exp(-*bottom_data));
 
-							ptr++;
+							bottom_data++;
+							top_data++;
 						}
 					}
 				}
