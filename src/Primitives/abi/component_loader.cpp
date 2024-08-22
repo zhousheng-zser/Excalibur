@@ -82,25 +82,8 @@ namespace glasssix::exposing
 
 		param_string force_unix_conventional_library_file_name(utf8_string_view name)
 		{
-			static constexpr utf8_string_view file_name_prefix{ u8"lib" };
-
-#ifdef _WIN32
-			static constexpr auto regex_flags = std::regex_constants::ECMAScript | std::regex_constants::icase;
-#else
-			static constexpr auto regex_flags = std::regex_constants::ECMAScript;
-#endif
-			thread_local std::basic_regex<utf8_char> pattern{ fmt::format(FMT_STRING(u8R"(({})?(.+?)(\.{})?)"), file_name_prefix, dll_extension), regex_flags };
-
-			if (std::cmatch matches; std::regex_match(name.data(), name.data() + name.size(), matches, pattern))
-			{
-				return format(
-					FMT_STRING(u8"{}{}{}"),
-					matches[1].matched ? param_string{} : param_string{ file_name_prefix },
-					matches[2].str(),
-					matches[3].matched ? param_string{} : param_string{ dll_extension });
-			}
-
-			return name;
+			std::string temp = std::string("lib") + name.data() + dll_extension.data();
+			return exposing::to_param_string(temp);
 		}
 	}
 }
