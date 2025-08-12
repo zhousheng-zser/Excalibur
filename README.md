@@ -38,17 +38,3 @@ A SIMD supported [BLAS](http://www.netlib.org/blas/) library. For more details, 
 
 The foundation of Excalibur. please ref [doc](docs/Primitives).
 
-## Contributors
-
-- Glasssix Research: [J. Hu](https://github.com/inlmouse)
-- Glasssix Research: [Y. Zhang](https://github.com/zhangyifu2016)
-- Glasssix Research: [J. Zhang](https://github.com/fengye2two)
-- Glasssix Research: [M. Zhang](https://github.com/mingyu92)
-
-## Copyright
-
-Copyright © 2014 - 2020 Glasssix. All Rights Reserved. 
-
-第六镜科技 版权所有
-
-
